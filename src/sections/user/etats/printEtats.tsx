@@ -1,72 +1,70 @@
-import React, { useRef, useState, forwardRef } from 'react';
-import PrintIcon from '@mui/icons-material/Print';
-import Button from '@mui/material/Button';
-import ReactToPrint from 'react-to-print';
-import { styled, alpha } from '@mui/material/styles';
-import Menu, { MenuProps } from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Divider from '@mui/material/Divider';
+import React, { forwardRef, useRef, useState } from 'react';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import { ListeDesMembres } from './listeMembrePdf';
-import { FicheDecision } from './ficheDecision';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import PrintIcon from '@mui/icons-material/Print';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
+import Menu, { type MenuProps } from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import { alpha, styled } from '@mui/material/styles';
+import ReactToPrint from 'react-to-print';
+
+import {
+  canUseDesktopPrint,
+  exportDesktopPdf,
+  openDesktopPrintPreview,
+} from 'src/utils/desktop-print';
+
 import CoursDeBaseForm from './ficheCoursDebase';
+import { FicheDecision } from './ficheDecision';
+import { ListeDesMembres } from './listeMembrePdf';
 
 const StyledMenu = styled((props: MenuProps) => (
   <Menu
     elevation={0}
-    anchorOrigin={{
-      vertical: 'bottom',
-      horizontal: 'right',
-    }}
-    transformOrigin={{
-      vertical: 'top',
-      horizontal: 'right',
-    }}
+    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
     {...props}
   />
 ))(({ theme }) => ({
   '& .MuiPaper-root': {
-    borderRadius: 6,
+    borderRadius: 10,
     marginTop: theme.spacing(1),
-    minWidth: 180,
+    minWidth: 240,
     color: theme.palette.mode === 'light' ? 'rgb(55, 65, 81)' : theme.palette.grey[300],
     boxShadow:
-      'rgb(255, 255, 255) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.05) 0px 4px 6px -2px',
+      'rgb(255, 255, 255) 0 0 0 0, rgba(15, 23, 42, 0.06) 0 0 0 1px, rgba(15, 23, 42, 0.14) 0 18px 40px -12px',
     '& .MuiMenu-list': {
-      padding: '4px 0',
+      padding: '6px',
     },
     '& .MuiMenuItem-root': {
+      borderRadius: 8,
       '& .MuiSvgIcon-root': {
         fontSize: 18,
         color: theme.palette.text.secondary,
         marginRight: theme.spacing(1.5),
       },
       '&:active': {
-        backgroundColor: alpha(
-          theme.palette.primary.main,
-          theme.palette.action.selectedOpacity,
-        ),
+        backgroundColor: alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity),
       },
     },
   },
 }));
 
-// Composant pour imprimer la liste des membres
-const ComponentToPrintMembres = forwardRef<HTMLDivElement>((props, ref) => (
+const ComponentToPrintMembres = forwardRef<HTMLDivElement>((_, ref) => (
   <div ref={ref}>
     <ListeDesMembres />
   </div>
 ));
 
-// Composant pour imprimer la liste des diacres
-const ComponentToPrintDiacres = forwardRef<HTMLDivElement>((props, ref) => (
+const ComponentToPrintFicheDecision = forwardRef<HTMLDivElement>((_, ref) => (
   <div ref={ref}>
     <FicheDecision />
   </div>
 ));
 
-// Composant pour imprimer la fiche de cours de base
-const ComponentToPrintCoursDebase = forwardRef<HTMLDivElement>((props, ref) => (
+const ComponentToPrintCoursDeBase = forwardRef<HTMLDivElement>((_, ref) => (
   <div ref={ref}>
     <CoursDeBaseForm />
   </div>
@@ -75,25 +73,55 @@ const ComponentToPrintCoursDebase = forwardRef<HTMLDivElement>((props, ref) => (
 const PrintEtatGlobal = () => {
   const membreRef = useRef<HTMLDivElement>(null);
   const ficheDecisionRef = useRef<HTMLDivElement>(null);
-  const coursDebaseRef = useRef<HTMLDivElement>(null);
-
+  const coursDeBaseRef = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
+  const isDesktopPrint = canUseDesktopPrint();
   const open = Boolean(anchorEl);
-  
+
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    // On memorise l'origine du clic pour positionner le menu d'impression.
     setAnchorEl(event.currentTarget);
   };
-  
+
   const handleClose = () => {
+    // On ferme le menu a la fin de chaque action.
     setAnchorEl(null);
   };
+
+  const buildDesktopHandlers = (
+    ref: React.RefObject<HTMLDivElement>,
+    title: string,
+    fileName: string
+  ) => ({
+    preview: async () => {
+      // On ferme le menu avant d'ouvrir l'aperçu natif du desktop.
+      handleClose();
+      await openDesktopPrintPreview(ref.current, { title: `Apercu - ${title}`, fileName });
+    },
+    pdf: async () => {
+      // On ferme le menu avant d'exporter le document cible au format PDF.
+      handleClose();
+      await exportDesktopPdf(ref.current, { title, fileName });
+    },
+  });
+
+  const membersHandlers = buildDesktopHandlers(membreRef, 'Liste des membres', 'liste-membres');
+  const ficheHandlers = buildDesktopHandlers(
+    ficheDecisionRef,
+    'Fiche de decision',
+    'fiche-decision'
+  );
+  const coursHandlers = buildDesktopHandlers(
+    coursDeBaseRef,
+    'Fiche de cours de base',
+    'fiche-cours-de-base'
+  );
 
   return (
     <div>
       <Button
-        id="demo-customized-button"
-        aria-controls={open ? 'demo-customized-menu' : undefined}
+        id="print-user-button"
+        aria-controls={open ? 'print-user-menu' : undefined}
         aria-haspopup="true"
         aria-expanded={open ? 'true' : undefined}
         variant="contained"
@@ -105,59 +133,75 @@ const PrintEtatGlobal = () => {
       </Button>
 
       <StyledMenu
-        id="demo-customized-menu"
-        MenuListProps={{
-          'aria-labelledby': 'demo-customized-button',
-        }}
+        id="print-user-menu"
+        MenuListProps={{ 'aria-labelledby': 'print-user-button' }}
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
       >
-        <MenuItem 
-          onClick={handleClose}
-          sx={{ height: 32 }}
-        >
-          <PrintIcon />
-          <ReactToPrint
-            trigger={() => <div>Liste des membres</div>}
-            content={() => membreRef.current}
-          />
-          <div style={{ display: 'none' }}>
-            <ComponentToPrintMembres ref={membreRef} />
-          </div>
-        </MenuItem>
+        {isDesktopPrint ? (
+          <>
+            <MenuItem onClick={membersHandlers.preview}>
+              <VisibilityIcon />
+              Apercu membres
+            </MenuItem>
+            <MenuItem onClick={membersHandlers.pdf}>
+              <PictureAsPdfIcon />
+              PDF membres
+            </MenuItem>
+            <Divider sx={{ my: 0.5 }} />
 
-        <Divider sx={{ my: 0.5 }} />
-        
-        <MenuItem 
-          onClick={handleClose}
-          sx={{ height: 32 }}
-        >
-          <PrintIcon />
-          <ReactToPrint
-            trigger={() => <div>Fiche de décision</div>}
-            content={() => ficheDecisionRef.current}
-          />
-          <div style={{ display: 'none' }}>
-            <ComponentToPrintDiacres ref={ficheDecisionRef} />
-          </div>
-        </MenuItem>
-        
-        {/* <Divider sx={{ my: 0.5 }} />
-        <MenuItem 
-          onClick={handleClose}
-          sx={{ height: 32 }}
-        >
-          <PrintIcon />
-          <ReactToPrint
-            trigger={() => <div>Fiche de cours de base</div>}
-            content={() => coursDebaseRef.current}
-          />
-          <div style={{ display: 'none' }}>
-            <ComponentToPrintCoursDebase ref={coursDebaseRef} />
-          </div>
-        </MenuItem> */}
+            <MenuItem onClick={ficheHandlers.preview}>
+              <VisibilityIcon />
+              Apercu fiche de decision
+            </MenuItem>
+            <MenuItem onClick={ficheHandlers.pdf}>
+              <PictureAsPdfIcon />
+              PDF fiche de decision
+            </MenuItem>
+            <Divider sx={{ my: 0.5 }} />
+
+            <MenuItem onClick={coursHandlers.preview}>
+              <VisibilityIcon />
+              Apercu cours de base
+            </MenuItem>
+            <MenuItem onClick={coursHandlers.pdf}>
+              <PictureAsPdfIcon />
+              PDF cours de base
+            </MenuItem>
+          </>
+        ) : (
+          <>
+            <MenuItem onClick={handleClose}>
+              <PrintIcon />
+              <ReactToPrint
+                trigger={() => <div>Liste des membres</div>}
+                content={() => membreRef.current}
+              />
+            </MenuItem>
+            <MenuItem onClick={handleClose}>
+              <PrintIcon />
+              <ReactToPrint
+                trigger={() => <div>Fiche de decision</div>}
+                content={() => ficheDecisionRef.current}
+              />
+            </MenuItem>
+            <MenuItem onClick={handleClose}>
+              <PrintIcon />
+              <ReactToPrint
+                trigger={() => <div>Fiche de cours de base</div>}
+                content={() => coursDeBaseRef.current}
+              />
+            </MenuItem>
+          </>
+        )}
       </StyledMenu>
+
+      <div style={{ display: 'none' }}>
+        <ComponentToPrintMembres ref={membreRef} />
+        <ComponentToPrintFicheDecision ref={ficheDecisionRef} />
+        <ComponentToPrintCoursDeBase ref={coursDeBaseRef} />
+      </div>
     </div>
   );
 };

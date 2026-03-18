@@ -1,24 +1,18 @@
 import React from 'react';
-import "./App.css";
+import { Box, Stack } from '@mui/material';
+
 import { FicheDecisionIndividuelPDf } from './ficheDecisionIndividuels';
 
 export const FicheIndividuelDecision = () => (
-  <div
-    style={{
-      width: "100%",
-      justifyContent: "center",
-      alignSelf: "center",
-      alignContent: "center",
-      alignItems: "center",
-      display: 'flex'
-    }}
-  >
-    <div style={{ padding: 3, marginLeft: 10 }}>
-      <FicheDecisionIndividuelPDf />
-    </div>
+  <Box sx={{ width: '100%' }}>
+    <Stack spacing={3}>
+      <Box>
+        <FicheDecisionIndividuelPDf />
+      </Box>
 
-    <div style={{ padding: 3, marginLeft: 10 }}>
-      <FicheDecisionIndividuelPDf />
-    </div>
-  </div>
+      <Box>
+        <FicheDecisionIndividuelPDf />
+      </Box>
+    </Stack>
+  </Box>
 );

@@ -1,26 +1,18 @@
-import React from 'react'
-import "./App.css";
+import React from 'react';
+import { Box, Stack } from '@mui/material';
+
 import { FicheDecisionPDf } from './ficheDecisionComponent';
 
-export const FicheDecision = () => ( 
-
-    <div
-      style={{
-        width: "100%",
-        justifyContent: "center",
-        alignSelf: "center",
-        alignContent: "center",
-        alignItems: "center",
-        display: 'flex'
-      }}>
-      <div style={{padding:3,marginLeft:10}}>
+export const FicheDecision = () => (
+  <Box sx={{ width: '100%' }}>
+    <Stack spacing={3}>
+      <Box>
         <FicheDecisionPDf />
-      </div>
+      </Box>
 
-      <div style={{padding:3,marginLeft:10}}>
+      <Box>
         <FicheDecisionPDf />
-      </div>
-    </div>
-  );
-
-
+      </Box>
+    </Stack>
+  </Box>
+);

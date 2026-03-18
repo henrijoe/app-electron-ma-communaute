@@ -1,322 +1,152 @@
 import React from 'react';
+import { Box, Stack, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
-import { Checkbox, FormControlLabel, Typography, Box } from '@mui/material';
-import moment from "moment";
-import { IReduxState } from '../../../store/store';
+import moment from 'moment';
+
+import { PrintDocumentLayout } from 'src/components/print/print-document';
+import {
+  PrintCheckboxItem,
+  PrintFieldLine,
+  PrintFormSection,
+} from 'src/components/print/print-form-kit';
+import type { IReduxState } from '../../../store/store';
 
 export const FicheDecisionIndividuelPDf = () => {
   const membreItem = useSelector((state: IReduxState) => state.membre.membreItem);
+  const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
+
+  // On prepare une date lisible uniquement si la decision est bien renseignee.
+  const decisionDate = membreItem?.dateDecisionMembre
+    ? moment(membreItem.dateDecisionMembre).format('DD/MM/YYYY')
+    : '';
 
   return (
-    <Box sx={{ justifyContent: "center", width: "100%" }}>
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <Box sx={{
-          alignItems: "center",
-          alignContent: "center",
-          alignSelf: "center",
-          textAlign: "center",
-          fontWeight: "bold",
-          color: "#42A5F5",
-          border: "5px solid #42A5F5",
-          fontSize: 14,
-          width: 500,
-          borderRadius: 5,
-          boxShadow: "0 4px 8px rgba(0, 1, 0, 0.5)",
-          borderWidth: "3px 3px 8px 3px",
-          height: 80,
-          p: 1.25
-        }}>
-          <Typography variant="body2" sx={{ fontWeight: "bold", mb: 0.5 }}>
-            ÉGLISE ÉVANGÉLIQUE DES ASSEMBLÉES DE DIEU DE CÔTE D&apos;IVOIRE
-          </Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", mb: 0.5 }}>
-            ÉGLISE LOCALE DE YOPOUGON-ANDOKOI TEMPLE PÉNIEL
-          </Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-            21 BP 2131 ABIDJAN 21 / 07 32 34 99 / 08 51 02 22 / 46 60 66 69
-          </Typography>
-        </Box>
-      </Box>
+    <PrintDocumentLayout
+      identity={utilisateurData}
+      title="Fiche de decision individuelle"
+      subtitle="Etat individuel d'un membre pour le suivi pastoral, la visitation et l'accompagnement spirituel."
+      countLabel="Document"
+      countValue={1}
+    >
+      <Stack spacing={2.25}>
+        <PrintFormSection title="Identite du membre">
+          <PrintFieldLine label="Nom" value={membreItem?.nomMembre} />
+          <PrintFieldLine label="Prenoms" value={membreItem?.prenomMembre} />
+          <PrintFieldLine label="Ethnie" value={membreItem?.ethnieMembre} />
+          <PrintFieldLine label="Age" value="" />
+          <PrintFieldLine label="Profession" value={membreItem?.fonctionMembre} />
+          <PrintFieldLine label="Lieu de travail" value="" />
+          <PrintFieldLine label="Contact" value={membreItem?.contactMembre} />
+          <PrintFieldLine label="Quartier de residence" value={membreItem?.residenceMembre} />
+        </PrintFormSection>
 
-      <Box sx={{
-        justifyContent: "center",
-        alignItems: "center",
-        alignSelf: "center",
-        textAlign: "center",
-        fontWeight: "bold",
-        fontSize: 17,
-        color: "#42A5F5",
-        border: "4px solid #42A5F5",
-        width: 260,
-        borderRadius: 5,
-        margin: "0 auto",
-        padding: 1.25,
-        mt: 1.25,
-      }}>
-        <Typography variant="h5" sx={{ fontWeight: "bold", m: 0 }}>
-          FICHE DE DÉCISION
-        </Typography>
-      </Box>
-
-      <Box sx={{ color: '#42A5F5', ml: -1.25 }}>
-        <Box sx={{ mt: 2.5, display: "flex", fontSize: 14 }}>
-          <Typography variant="body2">Nom:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 0.625, fontSize: 16 }}>
-            {membreItem?.nomMembre}
-          </Typography>
-          <Typography variant="body2" sx={{ ml: 2.5 }}>Prénoms:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 0.625, fontSize: 16 }}>
-            {membreItem?.prenomMembre}
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: "flex", mt: 1.25, fontSize: 14 }}>
-          <Typography variant="body2">Ethnie:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 1.25, fontSize: 16 }}>
-            {membreItem?.ethnieMembre}
-          </Typography>
-          <Typography variant="body2" sx={{ ml: 2.5 }}>Age:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 1.25, fontSize: 16 }} />
-        </Box>
-
-        <Box sx={{ display: "flex", mt: 1.25, fontSize: 14 }}>
-          <Typography variant="body2">Profession:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 1.25, fontSize: 16 }}>
-            {membreItem?.fonctionMembre}
-          </Typography>
-          <Typography variant="body2" sx={{ ml: 1.875 }}>Lieu de travail:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 1.25, fontSize: 16 }} />
-        </Box>
-
-        <Box sx={{ display: "flex", mt: 1.25, fontSize: 14 }}>
-          <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", fontSize: 14, ml: 0.625 }}>
-            <Typography variant="body2" sx={{ mr: 1.25 }}>Statut matrimonial:</Typography>
-            <Box sx={{ ml: 1.25, display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={membreItem?.situationMatrimonialeMembre === "Marié(e)"}
-                    readOnly
-                    sx={{
-                      color: '#42A5F5',
-                      padding: 0.5,
-                      '& .MuiSvgIcon-root': { fontSize: '1.2rem' }
-                    }}
-                  />
-                }
-                label="Marié(e)"
-                sx={{ mr: 1.25, '& .MuiTypography-root': { fontSize: '0.875rem' } }}
+        <PrintFormSection title="Situation personnelle">
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#27415f', mb: 0.75 }}>
+              Statut matrimonial
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <PrintCheckboxItem
+                label="Marie(e)"
+                checked={membreItem?.situationMatrimonialeMembre === 'Marié(e)'}
               />
-              
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={membreItem?.situationMatrimonialeMembre === "Concubinage"}
-                    readOnly
-                    sx={{
-                      color: '#42A5F5',
-                      padding: 0.5,
-                      '& .MuiSvgIcon-root': { fontSize: '1.2rem' }
-                    }}
-                  />
-                }
+              <PrintCheckboxItem
                 label="Concubinage"
-                sx={{ mr: 1.25, '& .MuiTypography-root': { fontSize: '0.875rem' } }}
+                checked={membreItem?.situationMatrimonialeMembre === 'Concubinage'}
               />
-              
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={membreItem?.situationMatrimonialeMembre === "Célibataire"}
-                    readOnly
-                    sx={{
-                      color: '#42A5F5',
-                      padding: 0.5,
-                      '& .MuiSvgIcon-root': { fontSize: '1.2rem' }
-                    }}
-                  />
-                }
-                label="Célibataire"
-                sx={{ mr: 1.25, '& .MuiTypography-root': { fontSize: '0.875rem' } }}
+              <PrintCheckboxItem
+                label="Celibataire"
+                checked={membreItem?.situationMatrimonialeMembre === 'Célibataire'}
               />
-              
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={membreItem?.situationMatrimonialeMembre === "Copain/Copine"}
-                    readOnly
-                    sx={{
-                      color: '#42A5F5',
-                      padding: 0.5,
-                      '& .MuiSvgIcon-root': { fontSize: '1.2rem' }
-                    }}
-                  />
-                }
-                label="Copain"
-                sx={{ '& .MuiTypography-root': { fontSize: '0.875rem' } }}
+              <PrintCheckboxItem
+                label="Copain / Copine"
+                checked={membreItem?.situationMatrimonialeMembre === 'Copain/Copine'}
               />
-            </Box>
-          </Box>
-        </Box>
-
-        <Box sx={{ display: "flex", mt: 1.25, fontSize: 14 }}>
-          <Typography variant="body2">Cel:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 1.25, fontSize: 16 }}>
-            {membreItem?.contactMembre ?? ""}
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: "flex", mt: 1.25, fontSize: 14 }}>
-          <Typography variant="body2">Quartier de résidence:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 1.25, fontSize: 16 }}>
-            {membreItem?.residenceMembre ?? ""}
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: "flex", mt: 1.25, fontSize: 14, alignItems: "center" }}>
-          <Typography variant="body2" sx={{ mr: 1.25 }}>Savez-vous lire et écrire?</Typography>
-          
-          <FormControlLabel
-            control={
-              <Checkbox
-                size="small"
-                checked={membreItem?.idNiveauEtude !== 14 && membreItem?.idNiveauEtude !== null}
-                readOnly
-                sx={{
-                  color: '#42A5F5',
-                  padding: 0.5,
-                  '& .MuiSvgIcon-root': { fontSize: '1.2rem' }
-                }}
-              />
-            }
-            label="Oui"
-            sx={{ mr: 2.5, '& .MuiTypography-root': { fontSize: '0.875rem' } }}
-          />
-          
-          <FormControlLabel
-            control={
-              <Checkbox
-                size="small"
-                checked={membreItem?.idNiveauEtude === 14}
-                readOnly
-                sx={{
-                  color: '#42A5F5',
-                  padding: 0.5,
-                  '& .MuiSvgIcon-root': { fontSize: '1.2rem' }
-                }}
-              />
-            }
-            label="Non"
-            sx={{ '& .MuiTypography-root': { fontSize: '0.875rem' } }}
-          />
-        </Box>
-
-        <Box sx={{ display: "flex", mt: 0.625, fontSize: 14, alignItems: "center" }}>
-          <Typography variant="body2" sx={{ mr: 1.25 }}>Parlez-vous couramment français?</Typography>
-          
-          <FormControlLabel
-            control={
-              <Checkbox
-                size="small"
-                checked={membreItem?.idNiveauEtude !== 14 && membreItem?.idNiveauEtude !== null}
-                readOnly
-                sx={{
-                  color: '#42A5F5',
-                  padding: 0.5,
-                  '& .MuiSvgIcon-root': { fontSize: '1.2rem' }
-                }}
-              />
-            }
-            label="Oui"
-            sx={{ mr: 2.5, '& .MuiTypography-root': { fontSize: '0.875rem' } }}
-          />
-          
-          <FormControlLabel
-            control={
-              <Checkbox
-                size="small"
-                checked={membreItem?.idNiveauEtude === 14}
-                readOnly
-                sx={{
-                  color: '#42A5F5',
-                  padding: 0.5,
-                  '& .MuiSvgIcon-root': { fontSize: '1.2rem' }
-                }}
-              />
-            }
-            label="Non"
-            sx={{ '& .MuiTypography-root': { fontSize: '0.875rem' } }}
-          />
-        </Box>
-
-        <Box sx={{ display: "flex", mt: 1, fontSize: 14 }}>
-          <Typography variant="body2">Nom d&apos;un ami dans l&apos;église:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 1.25, fontSize: 16 }} />
-        </Box>
-
-        <Box sx={{ display: "flex", mt: 1, fontSize: 14, alignItems: "center" }}>
-          <Typography variant="body2" sx={{ mr: 1.25 }}>Pouvez-vous recevoir de la visite?</Typography>
-          
-          <FormControlLabel
-            control={
-              <Checkbox
-                size="small"
-                checked={membreItem?.visiteMembre === "Oui"}
-                readOnly
-                sx={{
-                  color: '#42A5F5',
-                  padding: 0.5,
-                  '& .MuiSvgIcon-root': { fontSize: '1.2rem' }
-                }}
-              />
-            }
-            label="Oui"
-            sx={{ mr: 2.5, '& .MuiTypography-root': { fontSize: '0.875rem' } }}
-          />
-          
-          <Typography variant="body2" sx={{ mr: 1.25 }}>Heure:</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 1.25 }}>
-            {membreItem?.heureVisiteMembre ?? ""}
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: "flex", mt: 1, fontSize: 14 }}>
-          <Typography variant="body2">Si non, pourquoi?</Typography>
-          <Typography variant="body2" sx={{ fontWeight: "bold", ml: 1.25, fontSize: 16 }}>
-            {membreItem?.raisonNonVisiteMembre ?? ""}
-          </Typography>
-        </Box>
-
-        <Box sx={{ mt: 1.25, fontSize: 14 }}>
-          <Box sx={{ fontSize: 14, mt: 1.25, ml: 10 }}>
-            <Typography variant="body2">NB : À remplir et à ramener à la prochaine réunion</Typography>
+            </Stack>
           </Box>
 
-          <Box sx={{ display: 'flex', mt: 1.25 }}>
-            <Typography variant="body2" sx={{ textDecoration: 'underline', mt: 0 }}>Décision</Typography>
-            <Typography variant="body2" sx={{ fontSize: "0.8125rem", mt: "0.3125rem", fontStyle: 'italic', fontWeight: "bold", ml: 0.375 }}>
-              :« Me reconnaissant(e) pécheur et perdu, je décide d&apos;accepter JESUS comme Seigneur et Sauveur personnel »
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#27415f', mb: 0.75 }}>
+              Savez-vous lire et ecrire ?
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <PrintCheckboxItem
+                label="Oui"
+                checked={membreItem?.idNiveauEtude !== 14 && membreItem?.idNiveauEtude !== null}
+              />
+              <PrintCheckboxItem label="Non" checked={membreItem?.idNiveauEtude === 14} />
+            </Stack>
+          </Box>
+
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#27415f', mb: 0.75 }}>
+              Parlez-vous couramment francais ?
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <PrintCheckboxItem
+                label="Oui"
+                checked={membreItem?.idNiveauEtude !== 14 && membreItem?.idNiveauEtude !== null}
+              />
+              <PrintCheckboxItem label="Non" checked={membreItem?.idNiveauEtude === 14} />
+            </Stack>
+          </Box>
+        </PrintFormSection>
+
+        <PrintFormSection title="Suivi et visitation">
+          <PrintFieldLine label="Nom d'un ami dans l'eglise" value="" />
+
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#27415f', mb: 0.75 }}>
+              Peut recevoir de la visite ?
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
+              <PrintCheckboxItem label="Oui" checked={membreItem?.visiteMembre === 'Oui'} />
+              <PrintFieldLine label="Heure" value={membreItem?.heureVisiteMembre} flex={0.55} />
+            </Stack>
+          </Box>
+
+          <PrintFieldLine label="Si non, pourquoi ?" value={membreItem?.raisonNonVisiteMembre} />
+        </PrintFormSection>
+
+        <PrintFormSection title="Engagement spirituel">
+          <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.8 }}>
+            NB : A remplir et a ramener a la prochaine reunion.
+          </Typography>
+
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2.5,
+              backgroundColor: '#eef5ff',
+              border: '1px solid rgba(28, 83, 128, 0.12)',
+            }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f274a' }}>
+              Decision
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 0.75, color: '#1e293b', fontStyle: 'italic' }}>
+              « Me reconnaissant(e) pecheur et perdu, je decide d&apos;accepter JESUS comme
+              Seigneur et Sauveur personnel »
             </Typography>
           </Box>
 
-          <Box sx={{ display: "flex", fontSize: 12, mt: 1.25 }}>
-            <Typography variant="body2">Date:</Typography>
-            <Typography variant="body2" sx={{ fontWeight: "bold", ml: 1.25, fontSize: 16 }}>
-              {membreItem?.dateDecisionMembre ? moment(membreItem.dateDecisionMembre).format('DD/MM/YYYY') : ""}
-            </Typography>
-          </Box>
-        </Box>
+          <PrintFieldLine label="Date" value={decisionDate} />
+        </PrintFormSection>
 
-        <Box sx={{ fontWeight: 'bold', fontSize: 13, textAlign: 'center', mt: 1.875, fontStyle: 'italic' }}>
-          <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
-            Les cours de base ont lieu tous les dimanches après le culte à l&apos;église.
+        <Box
+          sx={{
+            textAlign: 'center',
+            p: 2,
+            borderRadius: 3,
+            backgroundColor: '#fff8e8',
+            border: '1px solid rgba(181, 142, 61, 0.18)',
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 700, color: '#7a5b16' }}>
+            Les cours de base ont lieu tous les dimanches apres le culte a l&apos;eglise.
           </Typography>
         </Box>
-      </Box>
-    </Box>
+      </Stack>
+    </PrintDocumentLayout>
   );
 };

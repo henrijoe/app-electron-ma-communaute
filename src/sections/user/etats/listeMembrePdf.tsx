@@ -1,346 +1,192 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
+import { Avatar, Box, Chip, Typography } from '@mui/material';
+
 import {
-  Box,
-  Typography,
-  Table,
-  TableHead,
+  PrintDocumentLayout,
+  PrintEmptyState,
+  PrintTable,
   TableBody,
-  TableRow,
   TableCell,
-  Avatar,
-  Chip,
-  Divider
-} from '@mui/material';
-import { HeaderPageComponents } from './HeaderPageComponent';
-import { IReduxState } from '../../../store/store';
+  TableHead,
+  TableRow,
+} from 'src/components/print/print-document';
+import type { IReduxState } from '../../../store/store';
 import { dataResponsabilite } from '../../../store/membreSlice';
-import "../../../global.css"
 import { formaterValueLabels } from '../view/filterbyIndice';
-import { formatMembreForDisplay } from '../utils';
+import { formatMembreForDisplay, getPhotoUrl } from '../utils';
+
+const formatContact = (contact: string) => {
+  // On affiche une valeur neutre quand aucun contact n'est disponible.
+  if (!contact) {
+    return 'Non specifie';
+  }
+
+  // On retire les caracteres non numeriques pour les numeros classiques.
+  const cleanedContact = contact.replace(/\D/g, '');
+
+  // Si on a exactement 10 chiffres, on applique un format plus lisible a l'impression.
+  if (cleanedContact.length === 10) {
+    return cleanedContact.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
+  }
+
+  // Sinon on garde le texte initial pour ne rien perdre.
+  return contact;
+};
 
 export const ListeDesMembres = () => {
   const listMembre = useSelector((state: IReduxState) => state.membre.listMembre);
   const dataFilterDepartement = useSelector((state: IReduxState) => state.departement.dataFilterDepartement);
-  const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
   const dataFilterCellule = useSelector((state: IReduxState) => state.cellule.dataFilterCellule);
+  const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
+
+  // On transforme les listes de reference en couples value/label pour les affichages papier.
+  const dataDepartement = formaterValueLabels(
+    dataFilterDepartement,
+    'idDepartement',
+    'libelleCourtDepartement'
+  );
+  const dataCellule = formaterValueLabels(dataFilterCellule, 'idCellule', 'nomCellule');
 
   const getMembreResponsabilite = (id: number) => {
-    const representant = dataResponsabilite?.find((e) => e.value === id);
-    return representant?.label || 'Non spécifié';
+    // On retrouve le libelle de responsabilite a partir de son identifiant.
+    const responsabilite = dataResponsabilite?.find((item) => item.value === id);
+    return responsabilite?.label || 'Non specifie';
   };
 
-  const dataDepartement = formaterValueLabels(dataFilterDepartement, "idDepartement", "libelleCourtDepartement");
-  const dataCellule = formaterValueLabels(dataFilterCellule, "idCellule", "nomCellule");
-
   const getMembreDepartement = (id: number) => {
-    const representant = dataDepartement?.find((e: any) => e.value === id);
-    return representant?.label || 'Non spécifié';
+    // On retrouve le departement en version courte pour garder une cellule compacte.
+    const departement = dataDepartement?.find((item: any) => item.value === id);
+    return departement?.label || 'Non specifie';
   };
 
   const getMembreCellule = (id: number) => {
-    const representant = dataCellule?.find((e: any) => e.value === id);
-    return representant?.label || 'Non spécifié';
-  };
-
-  // Fonction pour obtenir l'URL de la photo
-  const getPhotoUrl = (photoMembre: string) => {
-    if (!photoMembre || photoMembre === '') {
-      return null;
-    }
-
-    if (photoMembre.startsWith('data:image/') || photoMembre.startsWith('http') || photoMembre.startsWith('/')) {
-      return photoMembre;
-    }
-
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/photos/${photoMembre}`;
-  };
-
-  // Fonction pour obtenir la couleur du badge selon le baptême
-  const getBaptemeColor = (baptemeValue: string) => {
-    const formatted = formatMembreForDisplay({ baptemeEauMembre: baptemeValue } as any);
-    return formatted.baptemeEauMembre === 'Oui' ? 'success' : 'default';
-  };
-
-  // Fonction pour styliser le contact
-  const formatContact = (contact: string) => {
-    if (!contact) return 'Non spécifié';
-    // Formater le numéro de téléphone si c'est un numéro
-    const phoneRegex = /^[0-9+\s-]+$/;
-    if (phoneRegex.test(contact.replace(/\s/g, ''))) {
-      // Format français : 01 23 45 67 89
-      const cleaned = contact.replace(/\D/g, '');
-      if (cleaned.length === 10) {
-        return cleaned.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
-      }
-    }
-    return contact;
+    // On retrouve la cellule rattachee pour enrichir la ligne du membre.
+    const cellule = dataCellule?.find((item: any) => item.value === id);
+    return cellule?.label || 'Non specifie';
   };
 
   return (
-    <Box
-      sx={{
-        width: "100%",
-        maxWidth: 1200,
-        mx: 'auto',
-        p: 3,
-        backgroundColor: '#f9fafb',
-        minHeight: '100vh'
-      }}
+    <PrintDocumentLayout
+      identity={utilisateurData}
+      title="Liste des membres"
+      subtitle="Etat imprimable complet des membres avec photo, rattachement, responsabilite et contact principal."
+      countLabel="Total membres"
+      countValue={listMembre?.length || 0}
     >
-      <HeaderPageComponents paramEtab={utilisateurData} />
-      
-      <Box 
-        sx={{
-          p: 3,
-          mb: 4,
-          backgroundColor: 'white',
-          borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-        }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            mb: 4
-          }}
-        >
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 600,
-              color: 'primary.main',
-              textTransform: 'uppercase',
-              letterSpacing: 1,
-              mb: 1
-            }}
-          >
-            Liste des membres
-          </Typography>
-          <Divider sx={{ width: '80%', my: 2 }} />
-          <Typography
-            variant="body2"
-            sx={{
-              color: 'text.secondary',
-              textAlign: 'center',
-              maxWidth: 600
-            }}
-          >
-            Liste complète des membres de l&apos;église avec leurs informations détaillées
-          </Typography>
-        </Box>
+      {!listMembre?.length ? (
+        <PrintEmptyState
+          title="Aucun membre trouve"
+          message="Aucun membre n'est actuellement enregistre dans la base locale."
+        />
+      ) : (
+        <PrintTable minWidth={1120}>
+          <TableHead>
+            <TableRow>
+              <TableCell align="center" sx={{ width: 52 }}>
+                N°
+              </TableCell>
+              <TableCell align="center" sx={{ width: 86 }}>
+                Photo
+              </TableCell>
+              <TableCell>Nom et prenoms</TableCell>
+              <TableCell>Residence</TableCell>
+              <TableCell>Responsabilite</TableCell>
+              <TableCell align="center">Baptise(e)</TableCell>
+              <TableCell>Departement</TableCell>
+              <TableCell>Cellule</TableCell>
+              <TableCell>Contact</TableCell>
+            </TableRow>
+          </TableHead>
 
-        <Box 
-          sx={{
-            overflow: 'hidden',
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            backgroundColor: 'white'
-          }}
-        >
-          <Box sx={{ overflowX: 'auto' }}>
-            <Table 
-              sx={{
-                minWidth: 1000,
-                '& .MuiTableCell-root': {
-                  py: 1.5,
-                  borderRight: '1px solid',
-                  borderColor: 'divider',
-                  '&:last-child': {
-                    borderRight: 'none'
-                  }
-                },
-                '& .MuiTableHead-root': {
-                  backgroundColor: 'primary.lighter',
-                  '& .MuiTableCell-root': {
-                    color: 'primary.dark',
-                    fontWeight: 600,
-                    fontSize: '0.875rem',
-                    borderBottom: '2px solid',
-                    borderColor: 'primary.main'
-                  }
-                },
-                '& .MuiTableBody-root': {
-                  '& .MuiTableRow-root': {
-                    '&:nth-of-type(even)': {
-                      backgroundColor: 'action.hover'
-                    },
-                    '&:hover': {
-                      backgroundColor: 'action.selected'
-                    }
-                  }
-                }
-              }}
-            >
-              <TableHead>
-                <TableRow>
-                  <TableCell align="center" sx={{ width: 60 }}>N°</TableCell>
-                  <TableCell align="center" sx={{ width: 80 }}>Photo</TableCell>
-                  <TableCell align="left">Nom et Prénoms</TableCell>
-                  <TableCell align="left">Lieu d&apos;habitation</TableCell>
-                  <TableCell align="left">Responsabilité</TableCell>
-                  <TableCell align="center">Baptisé(e)</TableCell>
-                  <TableCell align="left">Département</TableCell>
-                  <TableCell align="left">Cellule</TableCell>
-                  <TableCell align="center">Contact</TableCell>
+          <TableBody>
+            {listMembre.map((item: any, index: number) => {
+              // On reutilise le formatteur metier deja existant pour garder les memes libelles.
+              const formattedMembre = formatMembreForDisplay(item);
+              // On resolve la photo avec la logique web/electron deja centralisee.
+              const photoUrl = getPhotoUrl(item.photoMembre);
+
+              return (
+                <TableRow key={item.idMembre || index}>
+                  <TableCell align="center">
+                    <Typography variant="body2" fontWeight={700}>
+                      {index + 1}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell align="center">
+                    <Avatar
+                      src={photoUrl || undefined}
+                      alt={`${item.nomMembre || ''} ${item.prenomMembre || ''}`}
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        mx: 'auto',
+                        border: '2px solid rgba(25, 118, 210, 0.22)',
+                      }}
+                    >
+                      {!photoUrl &&
+                        `${item.nomMembre?.charAt(0) || ''}${item.prenomMembre?.charAt(0) || ''}`}
+                    </Avatar>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      {`${item.nomMembre || ''} ${item.prenomMembre || ''}`.trim() || 'Non specifie'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {item.emailMembre || 'Email non specifie'}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography variant="body2">{item.residenceMembre || 'Non specifie'}</Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    <Chip
+                      label={getMembreResponsabilite(item.idResponsabilite)}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      sx={{ fontWeight: 700 }}
+                    />
+                  </TableCell>
+
+                  <TableCell align="center">
+                    <Chip
+                      label={formattedMembre.baptemeEauMembre}
+                      size="small"
+                      color={formattedMembre.baptemeEauMembre === 'Oui' ? 'success' : 'default'}
+                      sx={{ fontWeight: 700, minWidth: 64 }}
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography variant="body2">{getMembreDepartement(item.idDepartement)}</Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    <Chip
+                      label={getMembreCellule(item.idCellule)}
+                      size="small"
+                      color="secondary"
+                      variant="outlined"
+                      sx={{ fontWeight: 700 }}
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700 }}>
+                      {formatContact(item.contactMembre)}
+                    </Typography>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-
-              <TableBody>
-                {listMembre?.map((item: any, index: number) => {
-                  const formattedMembre = formatMembreForDisplay(item);
-                  const photoUrl = getPhotoUrl(item.photoMembre);
-                  
-                  return (
-                    <TableRow key={item.idMembre || index}>
-                      <TableCell align="center">
-                        <Typography variant="body2" fontWeight="medium">
-                          {index + 1}
-                        </Typography>
-                      </TableCell>
-
-                      <TableCell align="center">
-                        <Avatar
-                          src={photoUrl || undefined}
-                          alt={`${item.nomMembre} ${item.prenomMembre}`}
-                          sx={{ 
-                            width: 48, 
-                            height: 48,
-                            mx: 'auto',
-                            border: '2px solid',
-                            borderColor: 'primary.light'
-                          }}
-                        >
-                          {!photoUrl && (
-                            <Typography variant="h6" color="primary.main">
-                              {`${item.nomMembre?.charAt(0) || ''}${item.prenomMembre?.charAt(0) || ''}`}
-                            </Typography>
-                          )}
-                        </Avatar>
-                      </TableCell>
-
-                      <TableCell>
-                        <Box>
-                          <Typography variant="subtitle2" fontWeight="medium">
-                            {`${item.nomMembre || ''} ${item.prenomMembre || ''}`}
-                          </Typography>
-                          {item.emailMembre && (
-                            <Typography 
-                              variant="caption" 
-                              color="text.secondary"
-                              sx={{ display: 'block', mt: 0.5 }}
-                            >
-                              {item.emailMembre}
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-
-                      <TableCell>
-                        <Typography variant="body2">
-                          {item.residenceMembre || 'Non spécifié'}
-                        </Typography>
-                      </TableCell>
-
-                      <TableCell>
-                        <Chip
-                          label={getMembreResponsabilite(item.idResponsabilite)}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                          sx={{ fontWeight: 500 }}
-                        />
-                      </TableCell>
-
-                      <TableCell align="center">
-                        <Chip
-                          label={formattedMembre.baptemeEauMembre}
-                          size="small"
-                          color={getBaptemeColor(item.baptemeEauMembre)}
-                          sx={{ 
-                            fontWeight: 500,
-                            minWidth: 60
-                          }}
-                        />
-                      </TableCell>
-
-                      <TableCell>
-                        <Typography variant="body2">
-                          {getMembreDepartement(item.idDepartement)}
-                        </Typography>
-                      </TableCell>
-
-                      <TableCell>
-                        <Chip
-                          label={getMembreCellule(item.idCellule)}
-                          size="small"
-                          color="secondary"
-                          variant="outlined"
-                          sx={{ fontWeight: 500 }}
-                        />
-                      </TableCell>
-
-                      <TableCell align="center">
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            fontFamily: 'monospace',
-                            fontWeight: 500 
-                          }}
-                        >
-                          {formatContact(item.contactMembre)}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Box>
-
-          {listMembre?.length === 0 && (
-            <Box
-              sx={{
-                py: 8,
-                textAlign: 'center',
-                color: 'text.secondary'
-              }}
-            >
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                Aucun membre trouvé
-              </Typography>
-              <Typography variant="body2">
-                Aucun membre n&apos;est actuellement enregistré dans le système.
-              </Typography>
-            </Box>
-          )}
-        </Box>
-
-        <Box
-          sx={{
-            mt: 3,
-            pt: 2,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}
-        >
-          <Typography variant="body2" color="text.secondary">
-            Document généré le {new Date().toLocaleDateString('fr-FR')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Total : {listMembre?.length || 0} membre(s)
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
+              );
+            })}
+          </TableBody>
+        </PrintTable>
+      )}
+    </PrintDocumentLayout>
   );
 };
