@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## Ma communaute ([Free version](https://free.minimals.cc/))
 
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -46,3 +47,7 @@ Distributed under the [MIT](https://github.com/minimal-ui-kit/minimal.free/blob/
 ## Contact us
 
 Email: support@minimals.cc
+=======
+# app-electron-ma-communaute
+Application de gestion des eglises version desktop (electron)
+>>>>>>> 05b8f1b0d50d3e312bc153861e4fa2cd9cb35e0a
