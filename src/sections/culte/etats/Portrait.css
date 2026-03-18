@@ -1,0 +1,116 @@
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media print {
+
+  @page {
+    size: auto;
+    margin: 5mm 5mm 15mm 5mm;
+    background-color: white;
+  }
+
+  .page {
+    width: 210mm;
+    height: 296mm;
+    -webkit-print-color-adjust: exact;
+    background-color: white;
+  }
+
+  .pagePaysage {
+    -webkit-print-color-adjust: exact;
+  }
+
+  .footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 50px;
+    font-size: 15px;
+    color: rgba(8, 0, 0, 0.875);
+    page-break-after: always;
+    page-break-before: always;
+    text-align: left;
+  }
+
+  .footerPaysage {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    font-size: 15px;
+    color: rgba(8, 0, 0, 0.875);
+    page-break-after: always;
+    page-break-before: always;
+    text-align: left;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+
+  /* CSS Fiche de décision */
+  .body {
+    font-family: Arial, sans-serif;
+  }
+  .container {
+    width: 80%;
+    margin: 0 auto;
+    border: 2px solid blue;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  .header {
+    text-align: center;
+    font-weight: bold;
+    color: blue;
+  }
+  .section-title {
+    margin-top: 20px;
+    font-weight: bold;
+  }
+  .form-group {
+    margin-top: 10px;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+  }
+  .form-group input[type="text"],
+  .form-group input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid blue;
+    border-radius: 4px;
+  }
+  .form-group input[type="checkbox"] {
+    margin-right: 10px;
+  }
+  .form-group .checkbox-group {
+    display: flex;
+    align-items: center;
+  }
+  .form-group .checkbox-group label {
+    margin-right: 20px;
+  }
+  .footer {
+    margin-top: 20px;
+    font-weight: bold;
+  }
+  .note {
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  .decision {
+    margin-top: 20px;
+  }
+}

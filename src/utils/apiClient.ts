@@ -1,0 +1,362 @@
+// apiClient.ts
+import { getServerUrl, getConnectionMode } from './functions';
+
+export const BASE_URL_DEV = 'http://localhost:49300/';
+export const BASE_URL_ONLINE = import.meta.env.VITE_API_URL || '';
+
+const normalizeBaseUrl = (url: string): string => (url.endsWith('/') ? url : `${url}/`);
+
+export const getApiMode = (): 'local' | 'online' => getConnectionMode();
+
+// Fonction pour obtenir l'URL de base
+export const getBaseUrl = (): string => {
+  // En développement, utilisez localhost:49300 (votre serveur Express)
+  if (import.meta.env.DEV) {
+    return BASE_URL_DEV;
+  }
+
+  // En production, utilisez soit:
+  // 1. L'URL du serveur depuis Redux store (si disponible)
+  // 2. Une variable d'environnement VITE_API_URL
+  // 3. L'URL de votre backend hébergé
+
+  const serverUrl = getServerUrl();
+  if (serverUrl) {
+    return serverUrl.endsWith('/') ? serverUrl : `${serverUrl}/`;
+  }
+
+  // Fallback: variable d'environnement ou URL par défaut
+  return import.meta.env.VITE_API_URL ||
+    (window.location.hostname === 'localhost'
+      ? BASE_URL_DEV
+      : 'http://localhost:49300/'
+      // : 'https://votre-backend-production.com/'
+    );
+};
+
+export const resolveApiBaseUrl = (): string => {
+  const connectionMode = getApiMode();
+  const serverUrl = getServerUrl();
+
+  if ((window as any)?.desktopApp?.isDesktop) {
+    return normalizeBaseUrl(import.meta.env.VITE_LOCAL_API_URL || BASE_URL_DEV);
+  }
+
+  if (connectionMode === 'online') {
+    if (serverUrl) {
+      return normalizeBaseUrl(serverUrl);
+    }
+
+    if (BASE_URL_ONLINE) {
+      return normalizeBaseUrl(BASE_URL_ONLINE);
+    }
+  }
+
+  if (import.meta.env.VITE_LOCAL_API_URL) {
+    return normalizeBaseUrl(import.meta.env.VITE_LOCAL_API_URL);
+  }
+
+  if (import.meta.env.DEV || window.location.hostname === 'localhost') {
+    return normalizeBaseUrl(BASE_URL_DEV);
+  }
+
+  if (serverUrl) {
+    return normalizeBaseUrl(serverUrl);
+  }
+
+  return normalizeBaseUrl(BASE_URL_ONLINE || BASE_URL_DEV);
+};
+
+// Interface pour la structure d'une réponse du serveur
+export interface IServerResponse {
+  status: number;
+  data?: any;
+  error?: any;
+  errors?: any;
+  message?: string;
+}
+
+// Interface pour la configuration d'une requête
+export interface IConfig extends RequestInit {
+  headers?: Record<string, string>;
+}
+
+export class ApiError extends Error {
+  status: number;
+
+  data: unknown;
+
+  constructor(message: string, status: number, data?: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
+// Extrait un message exploitable depuis les differents formats d'erreur du backend.
+const buildErrorMessage = (data: any, fallback: string): string => {
+  if (!data) return fallback;
+
+  if (typeof data === 'string') return data;
+  if (typeof data?.message === 'string') return data.message;
+  if (typeof data?.error === 'string') return data.error;
+  if (typeof data?.errors === 'string') return data.errors;
+  if (typeof data?.error?.message === 'string') return data.error.message;
+  if (typeof data?.errors?.message === 'string') return data.errors.message;
+
+  return fallback;
+};
+
+// Assemble l'URL finale sans doublon de slash entre base et route.
+const cleanUrl = (baseUrl: string, route: string): string => {
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const cleanRoute = route.startsWith('/') ? route : `/${route}`;
+  return `${cleanBase}${cleanRoute}`;
+};
+
+export const getPhotosBaseUrl = (): string => cleanUrl(resolveApiBaseUrl(), 'photos');
+
+export const buildPhotoUrl = (photoName: string): string =>
+  cleanUrl(resolveApiBaseUrl(), `photos/${photoName}`);
+
+// Point d'entree commun pour toutes les requetes HTTP du front.
+export async function request<T>(
+  route: string,
+  config?: IConfig,
+  customBaseUrl?: string
+): Promise<T> {
+  const baseUrl = customBaseUrl || resolveApiBaseUrl();
+  const url = cleanUrl(baseUrl, route);
+
+  try {
+    if ((window as any)?.desktopApp?.isDesktop) {
+      console.info('[desktop-api]', url);
+    }
+
+    const response = await fetch(url, {
+      ...config,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...config?.headers,
+      },
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const responseData = isJson ? await response.json() : await response.text();
+
+    if (!response.ok) {
+      const message = buildErrorMessage(responseData, `HTTP error! status: ${response.status}`);
+      throw new ApiError(message, response.status, responseData);
+    }
+
+    return responseData as T;
+  } catch (error) {
+    console.error(`Request failed for ${url}:`, error);
+    throw error;
+  }
+}
+
+  // API Client spécifique pour votre backend
+export const apiClient = {
+  // Recupere l'IP et l'URL LAN du serveur pour affichage dans l'application.
+  getServerInfo: () =>
+    request<IServerResponse>('communaute/server-info', { method: 'GET' }),
+
+  // Retourne l'etat courant du blocage desktop pour l'utilisateur cible.
+  getDesktopSecurityStatus: (nomUtilisateur: string) =>
+    request<IServerResponse>(
+      `communaute/desktop-control/status?nomUtilisateur=${encodeURIComponent(nomUtilisateur)}`,
+      { method: 'GET' }
+    ),
+
+  // Permet au superadmin de debloquer l'application desktop pour une nouvelle periode.
+  unlockDesktopAccess: (data: { nomUtilisateur: string; extendDays?: number }) =>
+    request<IServerResponse>('communaute/desktop-control/unlock', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Membres
+  // Recupere la liste complete des membres.
+  getMembres: () =>
+    request<IServerResponse>('communaute/listemembre', { method: 'GET' }),
+
+  // Recupere uniquement les membres rattaches a un utilisateur.
+  getMembresByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupmembrebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  // Cree un membre.
+  createMembre: (data: any) =>
+    request<IServerResponse>('communaute/inserermembre', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Met a jour un membre existant.
+  updateMembre: (data: any) =>
+    request<IServerResponse>('communaute/modifiermembre', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Supprime un membre en gardant le contexte utilisateur si besoin.
+  deleteMembre: (idMembre: number, idUtilisateur?: number | null) =>
+    request<IServerResponse>('communaute/supprimermembre', {
+      method: 'POST',
+      body: JSON.stringify({ idMembre, idUtilisateur }),
+    }),
+
+
+  // cultes
+  // Recupere tous les cultes.
+  getCultes: () =>
+    request<IServerResponse>('communaute/listeculte', { method: 'GET' }),
+
+  // Recupere les cultes d'un utilisateur.
+  getCultesByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupcultebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  // Cree un culte.
+  createCulte: (data: any) =>
+    request<IServerResponse>('communaute/insererculte', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Met a jour un culte.
+  updateCulte: (data: any) =>
+    request<IServerResponse>('communaute/modifierculte', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Supprime un culte.
+  deleteCulte: (idCulte: number, idUtilisateur?: number | null) =>
+    request<IServerResponse>('communaute/supprimerculte', {
+      method: 'POST',
+      body: JSON.stringify({ idCulte, idUtilisateur }),
+    }),
+
+  // departements
+  // Recupere la liste des departements.
+  getDepartements: () =>
+    request<IServerResponse>('communaute/listedepartement', { method: 'GET' }),
+
+  // Recupere les departements lies a un utilisateur.
+  getDepartementsByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupdepartementbyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  // Cree un departement.
+  createDepartement: (data: any) =>
+    request<IServerResponse>('communaute/insererdepartement', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Met a jour un departement.
+  updateDepartement: (data: any) =>
+    request<IServerResponse>('communaute/modifierdepartement', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Supprime un departement.
+  deleteDepartement: (idDepartement: number, idUtilisateur?: number | null) =>
+    request<IServerResponse>('communaute/supprimerdepartement', {
+      method: 'POST',
+      body: JSON.stringify({ idDepartement, idUtilisateur }),
+    }),
+
+  // Utilisateur
+  // Authentifie un utilisateur avec son nom et son mot de passe.
+  login: (data: { nomUtilisateur: string; password: string }) =>
+    request<IServerResponse>('communaute/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Cree un compte utilisateur dans le backend principal.
+  registerUtilisateur: (data: {
+    logoUtilisateur?: string;
+    nomTemple: string;
+    nomUtilisateur: string;
+    prenomUtilisateur: string;
+    telephoneUtilisateur: string;
+    password: string;
+    confirmPassword: string;
+    email?: string;
+  }) =>
+    request<IServerResponse>('communaute/ajouterutilisateur', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Demande au backend de creer la base SQLite locale de la communaute.
+  createCommunauteDatabase: (data: {
+    idUtilisateur: number;
+    nomTemple: string;
+    nomEglise: string;
+    dossierBase?: string;
+  }) =>
+    request<IServerResponse>('communaute/creer-base-sqlite', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Cree l'eglise rattachee a l'utilisateur nouvellement inscrit.
+  createEglise: (data: {
+    nomEglise: string;
+    idUtilisateur: number;
+    idComptabilite?: number;
+  }) =>
+    request<IServerResponse>('communaute/inserereglise', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Alias historique pour recuperer les cultes d'un utilisateur.
+  getCulteByUtilisateur: (idUtilisateur: string) =>
+    request<IServerResponse>(`communaute/recupcultebyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+
+  // Endpoint de test pour verifier que le backend repond.
+  testConnection: () =>
+    request<IServerResponse>('test', { method: 'GET' }),
+
+  // Méthodes génériques
+  // Prepare la future synchronisation des donnees distantes vers la base locale.
+  syncRemoteToLocal: (data?: { idUtilisateur?: number | string }) =>
+    request<IServerResponse>('communaute/sync/remote-to-local', {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+    }),
+
+  // Effectue une requete GET libre vers le backend.
+  get: <T = IServerResponse>(route: string, config?: IConfig) =>
+    request<T>(route, { method: 'GET', ...config }),
+
+  // Effectue une requete POST libre vers le backend.
+  post: <T = IServerResponse>(route: string, data?: any, config?: IConfig) =>
+    request<T>(route, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      ...config
+    }),
+
+  // Effectue une requete PUT libre vers le backend.
+  put: <T = IServerResponse>(route: string, data?: any, config?: IConfig) =>
+    request<T>(route, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      ...config
+    }),
+
+  // Effectue une requete DELETE libre vers le backend.
+  delete: <T = IServerResponse>(route: string, config?: IConfig) =>
+    request<T>(route, { method: 'DELETE', ...config }),
+};
