@@ -1,22 +1,23 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
-import Popover from '@mui/material/Popover';
-import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
-import MenuList from '@mui/material/MenuList';
-import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
+import MenuList from '@mui/material/MenuList';
+import Popover from '@mui/material/Popover';
+import TableCell from '@mui/material/TableCell';
+import TableRow from '@mui/material/TableRow';
 
-import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
-import { Avatar } from '@mui/material';
+import { Label } from 'src/components/label';
 
-// import ConfirmDialog from 'src/components/alert/ConfirmDialog';
-import type { IMembre } from '../../store/membreSlice';
-import { formatMembreForDisplay, getPhotoUrl } from './utils';
 import ConfirmDialog from '../../components/alert/confirmDialog';
+import type { IMembre } from '../../store/membreSlice';
+
+import { formatMembreForDisplay, getPhotoUrl } from './utils';
 
 // ----------------------------------------------------------------------
 
@@ -34,8 +35,8 @@ type UserTableRowProps = {
   row: IMembre;
   selected: boolean;
   onSelectRow: () => void;
-  onEdit: (membre: IMembre) => void; // Ajoutez cette prop
-  onDelete: (idMembre: number) => void; // Ajoutez cette prop
+  onEdit: (membre: IMembre) => void;
+  onDelete: (idMembre: number) => void;
   isDeleting?: boolean;
 };
 
@@ -44,6 +45,7 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, isD
   const [openConfirm, setOpenConfirm] = useState(false);
 
   const navigate = useNavigate();
+
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setOpenPopover(event.currentTarget);
   }, []);
@@ -52,18 +54,15 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, isD
     setOpenPopover(null);
   }, []);
 
-
   const handleViewDetail = useCallback(() => {
     handleClosePopover();
-    navigate(`/details/${row.idMembre}`); // NAVIGATION VERS LA PAGE DE DÉTAIL
-  }, [navigate, row.idMembre, handleClosePopover]);
-
+    navigate(`/details/${row.idMembre}`);
+  }, [handleClosePopover, navigate, row.idMembre]);
 
   const handleEdit = useCallback(() => {
     handleClosePopover();
     onEdit(row);
-  }, [row, onEdit, handleClosePopover]);
-
+  }, [handleClosePopover, onEdit, row]);
 
   const handleDelete = useCallback(() => {
     handleClosePopover();
@@ -74,28 +73,23 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, isD
     onDelete(row.idMembre);
     setOpenConfirm(false);
     handleClosePopover();
-  }, [onDelete, row.idMembre, handleClosePopover]);
+  }, [handleClosePopover, onDelete, row.idMembre]);
 
-
-
-  // Utiliser les données formatées
   const formattedRow = formatMembreForDisplay(row);
 
-  // Fonction pour obtenir le label de la situation matrimoniale
   const getSituationMatrimonial = (value: string | number) => {
-    if (value === 1 || value === '1') return 'Célibataire';
-    if (value === 2 || value === '2') return 'Célibataire sans enfant';
-    if (value === 3 || value === '3') return 'Fiancé(e)';
+    if (value === 1 || value === '1') return 'Celibataire';
+    if (value === 2 || value === '2') return 'Celibataire sans enfant';
+    if (value === 3 || value === '3') return 'Fiance(e)';
     if (value === 4 || value === '4') return 'Concubinage';
-    if (value === 5 || value === '5') return 'Marié(e)';
-    if (value === 6 || value === '6') return 'Divorcé(e)';
+    if (value === 5 || value === '5') return 'Marie(e)';
+    if (value === 6 || value === '6') return 'Divorce(e)';
     if (value === 7 || value === '7') return 'Veuve';
     if (value === 8 || value === '8') return 'Veuf';
     if (value === 9 || value === '9') return 'Copain / Copine';
     if (value === 10 || value === '10') return 'Polygame';
-    return value;
+    return String(value || '');
   };
-
 
   const photoUrl = getPhotoUrl(row.photoMembre);
 
@@ -140,9 +134,7 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, isD
         </TableCell>
         <TableCell>{row.lieuBaptemeEauMembre}</TableCell>
         <TableCell>{row.fonctionMembre}</TableCell>
-        <TableCell>
-          {getSituationMatrimonial(row.situationMatrimonialeMembre)}
-        </TableCell>
+        <TableCell>{getSituationMatrimonial(row.situationMatrimonialeMembre)}</TableCell>
         <TableCell>{row.contactMembre}</TableCell>
 
         <TableCell align="right">
@@ -182,7 +174,7 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, isD
         >
           <MenuItem onClick={handleViewDetail}>
             <Iconify icon="solar:eye-bold" />
-            Détail
+            Detail
           </MenuItem>
 
           <MenuItem onClick={handleEdit}>

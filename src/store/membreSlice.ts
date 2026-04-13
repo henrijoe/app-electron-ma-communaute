@@ -2,7 +2,7 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 
 import { createSlice } from '@reduxjs/toolkit';
 
-// Interfaces pour les types de données
+// Interfaces pour les types de donnÃ©es
 export interface IDataChoice {
   value: number;
   label: string;
@@ -58,6 +58,8 @@ export interface IMembre {
   idGroupe: number | null;
   idResponsabilite: number | null;
   idDomaineActivite: number | null;
+  estDecede?: number | null;
+  dateDecesMembre?: string | null;
   idUtilisateur: number;
 }
 
@@ -80,7 +82,7 @@ export interface IMembreSlice {
   titreDocument: string;
 }
 
-// Données statiques
+// DonnÃ©es statiques
 export const dataBapteme: IDataChoice[] = [
   { value: 1, label: 'Oui' },
   { value: 2, label: 'Non' },
@@ -154,7 +156,7 @@ export const dataResponsabilite: IDataChoice[] = [
   { value: 5, label: 'Diacre' },
   { value: 6, label: 'Diaconesse' },
   { value: 7, label: 'Responsable de cellule' },
-  { value: 8, label: 'Responsable de département' },
+  { value: 8, label: 'Responsable de departement' },
   { value: 9, label: 'Responsable de groupe de prière' },
   { value: 10, label: 'Responsable AOC' },
   { value: 11, label: "Directeur/Directrice de l'ECODIM" },
@@ -234,10 +236,12 @@ export const membre: any = {
   idDepartement: null,
   idGroupe: null,
   idResponsabilite: null,
+  estDecede: 0,
+  dateDecesMembre: null,
   idUtilisateur: null
 };
 
-// Initialisation de l'état
+// Initialisation de l'Ãtat
 const initialState: IMembreSlice = {
   dataMembre: [],
   dataFilterMembre: [],
@@ -257,9 +261,9 @@ const initialState: IMembreSlice = {
   titreDocument: '',
 };
 
-// Reducers et slice sont ensuite définis ici, comme vous l'avez déjà fait dans votre code original
+// Reducers du module membre
 
-// Création du slice
+// Creation du slice
 export const MembreSlice = createSlice({
   name: 'membre',
   initialState,
@@ -308,13 +312,13 @@ export const MembreSlice = createSlice({
       state.dataDiacre = Array.isArray(state.dataDiacre) ? state.dataDiacre : [];
       state.dataResponsable = Array.isArray(state.dataResponsable) ? state.dataResponsable : [];
 
-      // Mettre à jour listMembre
+      // Mettre a jour listMembre
       state.listMembre = state.listMembre.filter((item) => item.idMembre !== action.payload);
 
-      // Mettre à jour dataFilterMembre
+      // Mettre a jour dataFilterMembre
       state.dataFilterMembre = state.dataFilterMembre.filter((item) => item.idMembre !== action.payload);
 
-      // Mettre à jour les autres listes si nécessaire
+      // Mettre a jour les autres listes si necessaire
       state.dataNouvelleAme = state.dataNouvelleAme.filter((item) => item.idMembre !== action.payload);
       state.dataAncien = state.dataAncien.filter((item) => item.idMembre !== action.payload);
       state.dataDiacre = state.dataDiacre.filter((item) => item.idMembre !== action.payload);
@@ -332,21 +336,21 @@ export const MembreSlice = createSlice({
     setDataModifiesMembre: (state, action: PayloadAction<IMembre>) => {
       const updatedMembre = action.payload;
 
-      console.log("Mise à jour du membre:", updatedMembre);
+      console.log("Mise Ã  jour du membre:", updatedMembre);
       console.log("ID du membre:", updatedMembre.idMembre);
 
-      // Créer une copie profonde pour forcer le re-render
+      // Creer une copie profonde pour forcer le re-render
       const updateMembreInArray = (array: IMembre[]) => {
         if (!Array.isArray(array)) {
           return [];
         }
         return array.map((item) => {
         if (item.idMembre === updatedMembre.idMembre) {
-          // Fusionner proprement les données
+          // Fusionner proprement les donnees
           return {
             ...item,
             ...updatedMembre,
-            // Assurer que tous les champs sont présents
+            // Assurer que tous les champs sont presents
             idNiveauEtude: updatedMembre.idNiveauEtude !== undefined ? updatedMembre.idNiveauEtude : item.idNiveauEtude,
             idCellule: updatedMembre.idCellule !== undefined ? updatedMembre.idCellule : item.idCellule,
             idDepartement: updatedMembre.idDepartement !== undefined ? updatedMembre.idDepartement : item.idDepartement,
@@ -365,7 +369,7 @@ export const MembreSlice = createSlice({
       });
       };
 
-      // Mettre à jour toutes les listes avec la nouvelle copie
+      // Mettre a jour toutes les listes avec la nouvelle copie
       state.listMembre = updateMembreInArray(state.listMembre);
       state.dataFilterMembre = updateMembreInArray(state.dataFilterMembre);
       state.dataNouvelleAme = updateMembreInArray(state.dataNouvelleAme);
@@ -373,7 +377,7 @@ export const MembreSlice = createSlice({
       state.dataDiacre = updateMembreInArray(state.dataDiacre);
       state.dataResponsable = updateMembreInArray(state.dataResponsable);
 
-      console.log("Liste mise à jour:", state.listMembre);
+      console.log("Liste mise Ã  jour:", state.listMembre);
     },
 
     setDataNouvelleAme: (state, action: PayloadAction<IMembre[]>) => {
@@ -445,3 +449,4 @@ export const {
 } = MembreSlice.actions;
 
 export default MembreSlice.reducer;
+

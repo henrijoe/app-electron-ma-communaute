@@ -44,11 +44,18 @@ export function CulteEditView() {
   const [culte, setCulte] = useState<ICulte | null>(null);
   const [formData, setFormData] = useState<any>({});
 
-  const listCulte = useSelector((state: any) => state.culte);
+  const listCulte = useSelector((state: any) => state.culte?.listCulte || []);
+  const appUserConnected = useSelector((state: any) => state.application?.userConnected);
+  const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
+  const currentUserId =
+    Number(appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateur)
+    || null;
 
 
   // Charger le membre depuis le store
   useEffect(() => {
+    // On lit directement la liste des cultes du store Redux.
     if (id && listCulte.length > 0) {
       const culteId = parseInt(id, 10);
       const FoundCulte = listCulte.find((m: ICulte) => m.idCulte === culteId);
@@ -108,8 +115,8 @@ export function CulteEditView() {
       const cleanedData = {
         ...formData,
         idCulte: culte.idCulte,
-        // Convertir les nombres
-        typeCulte: formData.typeCulte ? Number(formData.typeCulte) : null,
+        // Le backend exige aussi idUtilisateur sur la modification.
+        idUtilisateur: currentUserId || culte.idUtilisateur || null,
       };
 
       console.log('Données à envoyer:', cleanedData);

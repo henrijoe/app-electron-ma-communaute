@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import Tooltip from '@mui/material/Tooltip';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -15,14 +17,16 @@ type DepartementTableToolbarProps = {
   onFilterName: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onDelete?: () => void;
   deleteLoading?: boolean;
+  advancedFilters?: ReactNode;
 };
 
-export function UserTableToolbar({ 
-  numSelected, 
-  filterName, 
-  onFilterName, 
+export function UserTableToolbar({
+  numSelected,
+  filterName,
+  onFilterName,
   onDelete,
-  deleteLoading = false 
+  deleteLoading = false,
+  advancedFilters,
 }: DepartementTableToolbarProps) {
   return (
     <Toolbar
@@ -39,14 +43,14 @@ export function UserTableToolbar({
     >
       {numSelected > 0 ? (
         <Typography component="div" variant="subtitle1">
-          {numSelected} dÃ©partement(s) sÃ©lectionnÃ©(s)
+          {numSelected} département(s) sélectionné(s)
         </Typography>
       ) : (
         <OutlinedInput
           fullWidth
           value={filterName}
           onChange={onFilterName}
-          placeholder="Rechercher un dÃ©partement..."
+          placeholder="Rechercher un département..."
           startAdornment={
             <InputAdornment position="start">
               <Iconify width={20} icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
@@ -55,22 +59,21 @@ export function UserTableToolbar({
           sx={{ maxWidth: 320 }}
         />
       )}
-      
+
       {numSelected > 0 ? (
-        <Tooltip title="Supprimer les dÃ©partements sÃ©lectionnÃ©s">
-          <IconButton 
-            onClick={onDelete}
-            disabled={deleteLoading}
-          >
+        <Tooltip title="Supprimer les départements sélectionnés">
+          <IconButton onClick={onDelete} disabled={deleteLoading}>
             <Iconify icon="solar:trash-bin-trash-bold" />
           </IconButton>
         </Tooltip>
       ) : (
-        <Tooltip title="Options de filtrage">
-          <IconButton>
-            <Iconify icon="ic:round-filter-list" />
-          </IconButton>
-        </Tooltip>
+        advancedFilters || (
+          <Tooltip title="Options de filtrage">
+            <IconButton>
+              <Iconify icon="ic:round-filter-list" />
+            </IconButton>
+          </Tooltip>
+        )
       )}
     </Toolbar>
   );

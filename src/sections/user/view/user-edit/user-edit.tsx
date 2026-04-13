@@ -37,10 +37,7 @@ import { apiClient, buildPhotoUrl } from 'src/utils/apiClient';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { 
   IMembre, 
-  dataNiveauEtude, 
-  dataDepartement, 
-  dataCellule, 
-  dataGroupe, 
+  dataNiveauEtude,
   dataResponsabilite,
   dataCivilite,
   dataGenre,
@@ -49,8 +46,10 @@ import {
   dataBapteme,
   dataCapaciteSpirituelle,
   setDataModifiesMembre,
-  addMembre
 } from '../../../../store/membreSlice';
+import { setListDepartement } from '../../../../store/departementSlice';
+import { setListCellule } from '../../../../store/celluleSlice';
+import { setListGroupe } from '../../../../store/groupeSlice';
 
 // ----------------------------------------------------------------------
 
@@ -70,7 +69,27 @@ export function UserEditView() {
   // On lit directement la vraie liste des membres depuis le slice Redux.
   // Cela évite de manipuler tout l'objet `state.membre`, ce qui casse
   // ensuite les appels a `.length` et `.find(...)`.
-  const { listMembre } = useSelector((state: any) => state.membre);
+  const { listMembre, listResponsabilite } = useSelector((state: any) => state.membre);
+  const listDepartement = useSelector((state: any) => state.departement.listDepartement);
+  const listCellule = useSelector((state: any) => state.cellule.listCellule);
+  const listGroupe = useSelector((state: any) => state.groupe.listGroupe);
+  const appUserConnected = useSelector((state: any) => state.application?.userConnected);
+  const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
+  const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || null;
+
+  // Les listes dynamiques evitent de maintenir des options statiques cote front.
+  const departementOptions = Array.isArray(listDepartement) && listDepartement.length > 0
+    ? listDepartement.map((item: any) => ({ value: item.idDepartement, label: item.libelleLongDepartement }))
+    : [];
+  const celluleOptions = Array.isArray(listCellule) && listCellule.length > 0
+    ? listCellule.map((item: any) => ({ value: item.idCellule, label: item.nomCellule }))
+    : [];
+  const groupeOptions = Array.isArray(listGroupe) && listGroupe.length > 0
+    ? listGroupe.map((item: any) => ({ value: item.idGroupe, label: item.libelleGroupe }))
+    : [];
+  const responsabiliteOptions = Array.isArray(listResponsabilite) && listResponsabilite.length > 0
+    ? listResponsabilite.map((item: any) => ({ value: item.idResponsabilite, label: item.libelleResponsabilite }))
+    : dataResponsabilite;
 
   // Les champs `select` de MUI manipulent ici des valeurs de formulaire sous
   // forme de chaines. Cette fonction normalise donc les donnees venant de
@@ -78,6 +97,33 @@ export function UserEditView() {
   // fiables pendant l'edition.
   const normalizeSelectValue = (value: string | number | null | undefined): string =>
     value === null || value === undefined || value === '' ? '' : String(value);
+  useEffect(() => {
+    const loadReferenceData = async () => {
+      if (!currentUserId) return;
+
+      try {
+        const [departementsResponse, cellulesResponse, groupesResponse] = await Promise.all([
+          apiClient.getDepartementsByUtilisateur(currentUserId),
+          apiClient.getCellulesByUtilisateur(currentUserId),
+          apiClient.getGroupesByUtilisateur(currentUserId),
+        ]);
+
+        if (departementsResponse.status === 1) {
+          dispatch(setListDepartement(Array.isArray(departementsResponse.data) ? departementsResponse.data : []));
+        }
+        if (cellulesResponse.status === 1) {
+          dispatch(setListCellule(Array.isArray(cellulesResponse.data) ? cellulesResponse.data : []));
+        }
+        if (groupesResponse.status === 1) {
+          dispatch(setListGroupe(Array.isArray(groupesResponse.data) ? groupesResponse.data : []));
+        }
+      } catch (error) {
+        console.error('Erreur de chargement des listes li�es au membre:', error);
+      }
+    };
+
+    loadReferenceData();
+  }, [currentUserId, dispatch]);
 
   // Charger le membre depuis le store
   useEffect(() => {
@@ -87,6 +133,7 @@ export function UserEditView() {
       
       if (foundMembre) {
         setMembre(foundMembre);
+        // On normalise les valeurs au chargement pour eviter les incoherences entre nombres, null et chaines.
         // Initialiser les données du formulaire
         const initialData = {
           nomMembre: foundMembre.nomMembre || '',
@@ -621,31 +668,27 @@ export function UserEditView() {
               </TextField>
             </Grid>
 
-            {formData.situationMatrimonialeMembre === "3" && (
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Nom fiancé(e)"
-                  name="nomFiance"
-                  value={formData.nomFiance || ''}
-                  onChange={handleChange}
-                />
-              </Grid>
-            )}
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                label="Nom fiancé(e)"
+                name="nomFiance"
+                value={formData.nomFiance || ''}
+                onChange={handleChange}
+              />
+            </Grid>
 
-            {formData.situationMatrimonialeMembre === "5" && (
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  type="date"
-                  label="Date de mariage"
-                  name="dateMariageMembre"
-                  value={formData.dateMariageMembre || ''}
-                  onChange={handleChange}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-            )}
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                type="date"
+                label="Date de mariage"
+                name="dateMariageMembre"
+                value={formData.dateMariageMembre || ''}
+                onChange={handleChange}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
 
             {/* Vie spirituelle */}
             <Grid item xs={12}>
@@ -710,30 +753,27 @@ export function UserEditView() {
               </TextField>
             </Grid>
 
-            {formData.baptemeEauMembre === "1" && (
-              <>
-                <Grid item xs={12} sm={6} md={4}>
-                  <TextField
-                    fullWidth
-                    type="date"
-                    label="Date du baptême d&apos;eau"
-                    name="dateBaptemeMembre"
-                    value={formData.dateBaptemeMembre || ''}
-                    onChange={handleChange}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <TextField
-                    fullWidth
-                    label="Lieu du baptême"
-                    name="lieuBaptemeEauMembre"
-                    value={formData.lieuBaptemeEauMembre || ''}
-                    onChange={handleChange}
-                  />
-                </Grid>
-              </>
-            )}
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                type="date"
+                label="Date du baptême d&apos;eau"
+                name="dateBaptemeMembre"
+                value={formData.dateBaptemeMembre || ''}
+                onChange={handleChange}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                label="Lieu du baptême"
+                name="lieuBaptemeEauMembre"
+                value={formData.lieuBaptemeEauMembre || ''}
+                onChange={handleChange}
+              />
+            </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
               <TextField
@@ -752,20 +792,17 @@ export function UserEditView() {
               </TextField>
             </Grid>
 
-            {formData.baptemeSaintEspritMembre === "1" && (
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  type="date"
-                  label="Date du baptême Saint-Esprit"
-                  name="dateBaptemeSaintEspritMembre"
-                  value={formData.dateBaptemeSaintEspritMembre || ''}
-                  onChange={handleChange}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-            )}
-
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                type="date"
+                label="Date du baptême Saint-Esprit"
+                name="dateBaptemeSaintEspritMembre"
+                value={formData.dateBaptemeSaintEspritMembre || ''}
+                onChange={handleChange}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
             <Grid item xs={12} sm={6} md={4}>
               <TextField
                 fullWidth
@@ -802,7 +839,7 @@ export function UserEditView() {
                 <MenuItem value="">
                   <em>Sélectionner</em>
                 </MenuItem>
-                {dataResponsabilite?.map((option: any) => (
+                {responsabiliteOptions.map((option: any) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -822,7 +859,7 @@ export function UserEditView() {
                 <MenuItem value="">
                   <em>Sélectionner</em>
                 </MenuItem>
-                {dataDepartement?.map((option: any) => (
+                {departementOptions.map((option: any) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -842,7 +879,7 @@ export function UserEditView() {
                 <MenuItem value="">
                   <em>Sélectionner</em>
                 </MenuItem>
-                {dataCellule?.map((option: any) => (
+                {celluleOptions.map((option: any) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -862,7 +899,7 @@ export function UserEditView() {
                 <MenuItem value="">
                   <em>Sélectionner</em>
                 </MenuItem>
-                {dataGroupe?.map((option: any) => (
+                {groupeOptions.map((option: any) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -899,3 +936,6 @@ export function UserEditView() {
 }
 
 export default UserEditView;
+
+
+

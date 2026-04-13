@@ -10,6 +10,7 @@ export interface IDecesSlice {
 }
   export interface IDeces {
     idDeces: number|null;
+    idMembre: number|null;
     idUtilisateur: number|null;
     nomMembreDeces: string;
     dateDeces: string|null;
@@ -19,6 +20,7 @@ export interface IDecesSlice {
 
 export const Deces:any = {
   idDeces:null,
+  idMembre:null,
   idUtilisateur:null,
   nomMembreDeces:"",
   dateDeces: null,

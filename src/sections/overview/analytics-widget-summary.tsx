@@ -24,8 +24,8 @@ type Props = CardProps & {
   color?: ColorType;
   icon: React.ReactNode;
   chart: {
- series: number[];
- categories: string[];
+    series: number[];
+    categories: string[];
     options?: ChartOptions;
   };
 };
@@ -46,31 +46,31 @@ export function AnalyticsWidgetSummary({
   const chartColors = [theme.palette[color].dark];
 
   const chartOptions = useChart({
- chart: { sparkline: { enabled: true } },
- colors: chartColors,
- xaxis: { categories: chart.categories },
- grid: {
- padding: {
- top: 6,
- left: 6,
- right: 6,
- bottom: 6,
+    chart: { sparkline: { enabled: true } },
+    colors: chartColors,
+    xaxis: { categories: chart.categories },
+    grid: {
+      padding: {
+        top: 6,
+        left: 6,
+        right: 6,
+        bottom: 6,
       },
     }, tooltip: {
- y: { formatter: (value: number) => fNumber(value), title: { formatter: () => '' } },
+      y: { formatter: (value: number) => fNumber(value), title: { formatter: () => '' } },
     },
     ...chart.options,
   });
 
-  const renderTrending = (
+  const renderTrending = percent === 0 ? null : (
     <Box
       sx={{
- top: 16,
- gap: 0.5,
- right: 16,
- display: 'flex',
- position: 'absolute',
- alignItems: 'center',
+        top: 16,
+        gap: 0.5,
+        right: 16,
+        display: 'flex',
+        position: 'absolute',
+        alignItems: 'center',
       }}
     >
       <Iconify width={20} icon={percent < 0 ? 'eva:trending-down-fill' : 'eva:trending-up-fill'} />
@@ -85,12 +85,12 @@ export function AnalyticsWidgetSummary({
     <Card
       sx={{
         ...bgGradient({
- color: `135deg, ${varAlpha(theme.vars.palette[color].lighterChannel, 0.48)}, ${varAlpha(theme.vars.palette[color].lightChannel, 0.48)}`,
+          color: `135deg, ${varAlpha(theme.vars.palette[color].lighterChannel, 0.48)}, ${varAlpha(theme.vars.palette[color].lightChannel, 0.48)}`,
         }), p: 3,
- boxShadow: 'none',
- position: 'relative',
- color: `${color}.darker`,
- backgroundColor: 'common.white',
+        boxShadow: 'none',
+        position: 'relative',
+        color: `${color}.darker`,
+        backgroundColor: 'common.white',
         ...sx,
       }}
       {...other}
@@ -101,10 +101,10 @@ export function AnalyticsWidgetSummary({
 
       <Box
         sx={{
- display: 'flex',
- flexWrap: 'wrap',
- alignItems: 'flex-end',
- justifyContent: 'flex-end',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'flex-end',
+          justifyContent: 'flex-end',
         }}
       >
         <Box sx={{ flexGrow: 1, minWidth: 112 }}>
@@ -124,16 +124,17 @@ export function AnalyticsWidgetSummary({
       <SvgColor
         src={shapeSquareUrl}
         sx={{
- top: 0,
- left: -20,
- width: 240,
- zIndex: -1,
- height: 240,
- opacity: 0.24,
- position: 'absolute',
- color: `${color}.main`,
+          top: 0,
+          left: -20,
+          width: 240,
+          zIndex: -1,
+          height: 240,
+          opacity: 0.24,
+          position: 'absolute',
+          color: `${color}.main`,
         }}
       />
     </Card>
   );
 }
+

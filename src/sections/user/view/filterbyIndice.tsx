@@ -1,39 +1,35 @@
 import React, { useState } from 'react';
-import {
-  Button,
-  Menu,
-  MenuItem,
-  TextField,
-  Typography,
-  Box
-} from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import { IReduxState } from 'src/store/store'; // Import absolu en premier
-import {
-  IDataChoice,
-  dataBapteme,
-  dataNouvelAme,
-  setFilterMembre,
-  setTitreDocument
-} from '../../../store/membreSlice'; // Import relatif après
+import { Box, Button, Menu, MenuItem, TextField, Typography } from '@mui/material';
 
-// Fonction simplifiée avec retour implicite
-export const formaterValueLabels = (tableauOriginal: any, idKey: string, labelKey: string) =>
-  (Array.isArray(tableauOriginal) ? tableauOriginal : []).map((item: any) => ({
-    value: item[idKey],
-    label: item[labelKey]
+import { IReduxState } from 'src/store/store';
+import { normalizeForSearch, normalizeText } from 'src/utils/text';
+import { dataBapteme, dataNouvelAme, setFilterMembre, setTitreDocument } from '../../../store/membreSlice';
+
+export const formaterValueLabels = (items: any[], idKey: string, labelKey: string) =>
+  (Array.isArray(items) ? items : []).map((item: any) => ({
+    value: String(item[idKey]),
+    label: normalizeText(item[labelKey]),
   }));
 
+
+const normalizeBinaryValue = (value: unknown): '1' | '2' | '' => {
+  const normalized = normalizeForSearch(value);
+
+  if (!normalized) return '';
+  if (['1', 'oui', 'true', 'vrai', 'yes'].includes(normalized)) return '1';
+  if (['2', 'non', 'false', 'faux', 'no'].includes(normalized)) return '2';
+
+  return '';
+};
 const FilterDropdown = () => {
   const dispatch = useDispatch();
-
-  const dataFilterMembre = useSelector((state: IReduxState) => state.membre.dataFilterMembre);
-
-  const dataFilterDepartement = useSelector((state: IReduxState) => state.departement.dataFilterDepartement);
+  const baseMembres = useSelector((state: IReduxState) => state.membre.dataFilterMembre);
+  const listDepartement = useSelector((state: IReduxState) => state.departement.listDepartement);
   const listResponsabilite = useSelector((state: IReduxState) => state.membre.listResponsabilite);
-  const dataFilterGroupe = useSelector((state: IReduxState) => state.groupe.dataFilterGroupe);
-  const dataFilterCellule = useSelector((state: IReduxState) => state.cellule.dataFilterCellule);
+  const listGroupe = useSelector((state: IReduxState) => state.groupe.listGroupe);
+  const listCellule = useSelector((state: IReduxState) => state.cellule.listCellule);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [filters, setFilters] = useState({
@@ -42,241 +38,109 @@ const FilterDropdown = () => {
     idDepartement: '',
     idResponsabilite: '',
     idCellule: '',
-    idGroupe: ''
+    idGroupe: '',
   });
 
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+  const departementOptions = formaterValueLabels(listDepartement as any[], 'idDepartement', 'libelleLongDepartement');
+  const responsabiliteOptions = formaterValueLabels(listResponsabilite as any[], 'idResponsabilite', 'libelleResponsabilite');
+  const celluleOptions = formaterValueLabels(listCellule as any[], 'idCellule', 'nomCellule');
+  const groupeOptions = formaterValueLabels(listGroupe as any[], 'idGroupe', 'libelleGroupe');
 
-  const handleClose = () => {
+  const handleSearch = () => {
+    let filteredData = [...(Array.isArray(baseMembres) ? baseMembres : [])];
+
+    if (filters.baptemeEauMembre) {
+      filteredData = filteredData.filter((item) => normalizeBinaryValue(item.baptemeEauMembre) === normalizeBinaryValue(filters.baptemeEauMembre));
+    }
+    if (filters.nouvelleAmeMembre) {
+      filteredData = filteredData.filter((item) => normalizeBinaryValue(item.nouvelleAmeMembre) === normalizeBinaryValue(filters.nouvelleAmeMembre));
+    }
+    if (filters.idDepartement) {
+      filteredData = filteredData.filter((item) => String(item.idDepartement || '') === filters.idDepartement);
+    }
+    if (filters.idResponsabilite) {
+      filteredData = filteredData.filter((item) => String(item.idResponsabilite || '') === filters.idResponsabilite);
+    }
+    if (filters.idCellule) {
+      filteredData = filteredData.filter((item) => String(item.idCellule || '') === filters.idCellule);
+    }
+    if (filters.idGroupe) {
+      filteredData = filteredData.filter((item) => String(item.idGroupe || '') === filters.idGroupe);
+    }
+
+    const activeLabel = departementOptions.find((item) => item.value === filters.idDepartement)?.label
+      || responsabiliteOptions.find((item) => item.value === filters.idResponsabilite)?.label
+      || celluleOptions.find((item) => item.value === filters.idCellule)?.label
+      || groupeOptions.find((item) => item.value === filters.idGroupe)?.label
+      || normalizeText(dataBapteme.find((item) => String(item.value) === filters.baptemeEauMembre)?.label)
+      || normalizeText(dataNouvelAme.find((item) => String(item.value) === filters.nouvelleAmeMembre)?.label)
+      || '';
+
+    dispatch(setFilterMembre(filteredData));
+    dispatch(setTitreDocument(activeLabel));
     setAnchorEl(null);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFilters({
-      ...filters,
-      [name]: value
-    });
-  };
-
-  // Utilisez des noms de variables différents pour éviter les redéclarations
-  const dataDepartementFormatted = formaterValueLabels(dataFilterDepartement, "idDepartement", "libelleCourtDepartement");
-  const dataResponsablesFormatted = formaterValueLabels(listResponsabilite, 'idResponsabilite', 'libelleResponsabilite');
-  const dataCelluleFormatted = formaterValueLabels(dataFilterCellule, 'idCellule', 'nomCellule');
-  const dataGroupeFormatted = formaterValueLabels(dataFilterGroupe, 'idGroupe', 'libelleGroupe');
-
-  const handleSearch = () => {
-    let filteredData = [...(Array.isArray(dataFilterMembre) ? dataFilterMembre : [])];
-    let selectedFilterValue = '';
-
-    if (filters.baptemeEauMembre) {
-      filteredData = filteredData.filter(item => item.baptemeEauMembre === filters.baptemeEauMembre);
-      selectedFilterValue = filters.baptemeEauMembre;
-    }
-    if (filters.nouvelleAmeMembre) {
-      filteredData = filteredData.filter(item => item.nouvelleAmeMembre === filters.nouvelleAmeMembre);
-      selectedFilterValue = filters.nouvelleAmeMembre;
-    }
-    if (filters.idDepartement) {
-      filteredData = filteredData.filter(item => {
-        const departement = dataDepartementFormatted.find((dept: any) => dept.value === item.idDepartement);
-        return departement && departement.label === filters.idDepartement;
-      });
-      selectedFilterValue = filters.idDepartement;
-    }
-    if (filters.idResponsabilite) {
-      filteredData = filteredData.filter(item => {
-        const responsabilite = dataResponsablesFormatted.find((res: any) => res.value === item.idResponsabilite);
-        return responsabilite && responsabilite.label === filters.idResponsabilite;
-      });
-      selectedFilterValue = filters.idResponsabilite;
-    }
-    if (filters.idCellule) {
-      filteredData = filteredData.filter(item => {
-        const cellule = dataCelluleFormatted.find((cell: any) => cell.value === item.idCellule);
-        return cellule && cellule.label === filters.idCellule;
-      });
-      selectedFilterValue = filters.idCellule;
-    }
-    if (filters.idGroupe) {
-      filteredData = filteredData.filter(item => {
-        const groupe = dataGroupeFormatted.find((group: any) => group.value === item.idGroupe);
-        return groupe && groupe.label === filters.idGroupe;
-      });
-      selectedFilterValue = filters.idGroupe;
-    }
-
-    dispatch(setFilterMembre(filteredData));
-    handleClose();
-
-    // Mettre à jour le filtre appliqué
-    dispatch(setTitreDocument(selectedFilterValue));
-
-    // Réinitialiser les filtres
+  const handleReset = () => {
+    dispatch(setFilterMembre([]));
+    dispatch(setTitreDocument(''));
     setFilters({
       baptemeEauMembre: '',
       nouvelleAmeMembre: '',
       idDepartement: '',
       idResponsabilite: '',
       idCellule: '',
-      idGroupe: ''
+      idGroupe: '',
     });
+    setAnchorEl(null);
   };
 
   return (
-    <div style={{ marginTop: 0 }}>
+    <div>
       <Button
         aria-controls="filter-menu"
         variant="contained"
         color="inherit"
         size="small"
         aria-haspopup="true"
-        onClick={handleClick}
+        onClick={(event) => setAnchorEl(event.currentTarget)}
         endIcon={<FilterAltIcon />}
-        // color="primary"
-        sx={{
-          justifyContent: 'center',
-          textAlign: 'center',
-          fontSize: '12px',
-        }}
+        sx={{ justifyContent: 'center', textAlign: 'center', fontSize: '12px' }}
       >
         Filtrer
       </Button>
-      <Menu
-        id="filter-menu"
-        anchorEl={anchorEl}
-        keepMounted
-        open={Boolean(anchorEl)}
-        onClose={handleClose}
-      >
-        <Box sx={{ p: 2, width: 250 }}>
-          <Typography variant="h6" gutterBottom>
-            Filtrer
-          </Typography>
 
-          <TextField
-            fullWidth
-            size="small"
-            margin="dense"
-            select
-            type="text"
-            name="baptemeEauMembre"
-            label="Baptisé(e)s"
-            variant="outlined"
-            value={filters.baptemeEauMembre}
-            onChange={handleChange}
-          >
-            {dataBapteme?.map((option: IDataChoice) => (
-              <MenuItem key={option.value} value={option.label}>
-                {option.label}
-              </MenuItem>
-            ))}
+      <Menu id="filter-menu" anchorEl={anchorEl} keepMounted open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+        <Box sx={{ p: 2, width: 280 }}>
+          <Typography variant="h6" gutterBottom>Filtrer</Typography>
+
+          <TextField fullWidth size="small" margin="dense" select name="baptemeEauMembre" label="Bapteme d'eau" value={filters.baptemeEauMembre} onChange={(e) => setFilters({ ...filters, baptemeEauMembre: e.target.value })}>
+            {dataBapteme.map((option) => <MenuItem key={option.value} value={String(option.value)}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
-          <TextField
-            fullWidth
-            size="small"
-            margin="dense"
-            select
-            type="text"
-            name="nouvelleAmeMembre"
-            label="Nouvelle âmes"
-            variant="outlined"
-            value={filters.nouvelleAmeMembre}
-            onChange={handleChange}
-          >
-            {dataNouvelAme?.map((option: IDataChoice) => (
-              <MenuItem key={option.value} value={option.label}>
-                {option.label}
-              </MenuItem>
-            ))}
+          <TextField fullWidth size="small" margin="dense" select name="nouvelleAmeMembre" label="Nouvelle ame" value={filters.nouvelleAmeMembre} onChange={(e) => setFilters({ ...filters, nouvelleAmeMembre: e.target.value })}>
+            {dataNouvelAme.map((option) => <MenuItem key={option.value} value={String(option.value)}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
-          <TextField
-            fullWidth
-            size="small"
-            margin="dense"
-            select
-            type="text"
-            name="idDepartement"
-            label="Départements"
-            variant="outlined"
-            value={filters.idDepartement}
-            onChange={handleChange}
-          >
-            {dataDepartementFormatted?.map((option: IDataChoice) => (
-              <MenuItem key={option.value} value={option.label}>
-                {option.label}
-              </MenuItem>
-            ))}
+          <TextField fullWidth size="small" margin="dense" select name="idDepartement" label="Departement" value={filters.idDepartement} onChange={(e) => setFilters({ ...filters, idDepartement: e.target.value })}>
+            {departementOptions.map((option) => <MenuItem key={option.value} value={option.value}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
-          <TextField
-            fullWidth
-            size="small"
-            margin="dense"
-            select
-            type="text"
-            name="idResponsabilite"
-            label="Responsabilités"
-            variant="outlined"
-            value={filters.idResponsabilite}
-            onChange={handleChange}
-          >
-            {dataResponsablesFormatted?.map((option: IDataChoice) => (
-              <MenuItem key={option.value} value={option.label}>
-                {option.label}
-              </MenuItem>
-            ))}
+          <TextField fullWidth size="small" margin="dense" select name="idResponsabilite" label="Responsabilite" value={filters.idResponsabilite} onChange={(e) => setFilters({ ...filters, idResponsabilite: e.target.value })}>
+            {responsabiliteOptions.map((option) => <MenuItem key={option.value} value={option.value}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
-          <TextField
-            fullWidth
-            size="small"
-            margin="dense"
-            select
-            type="text"
-            name="idCellule"
-            label="Cellules"
-            variant="outlined"
-            value={filters.idCellule}
-            onChange={handleChange}
-          >
-            {dataCelluleFormatted?.map((option: IDataChoice) => (
-              <MenuItem key={option.value} value={option.label}>
-                {option.label}
-              </MenuItem>
-            ))}
+          <TextField fullWidth size="small" margin="dense" select name="idCellule" label="Cellule" value={filters.idCellule} onChange={(e) => setFilters({ ...filters, idCellule: e.target.value })}>
+            {celluleOptions.map((option) => <MenuItem key={option.value} value={option.value}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
-          <TextField
-            fullWidth
-            size="small"
-            margin="dense"
-            select
-            type="text"
-            name="idGroupe"
-            label="Groupes ethnies"
-            variant="outlined"
-            value={filters.idGroupe}
-            onChange={handleChange}
-          >
-            {dataGroupeFormatted?.map((option: IDataChoice) => (
-              <MenuItem key={option.value} value={option.label}>
-                {option.label}
-              </MenuItem>
-            ))}
+          <TextField fullWidth size="small" margin="dense" select name="idGroupe" label="Groupe ethnique" value={filters.idGroupe} onChange={(e) => setFilters({ ...filters, idGroupe: e.target.value })}>
+            {groupeOptions.map((option) => <MenuItem key={option.value} value={option.value}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-            <Button variant="outlined" onClick={handleClose}>
-              Fermer
-            </Button>
-            <Button variant="contained" color="primary" onClick={handleSearch}>
-              Filtrer
-            </Button>
+            <Button variant="outlined" onClick={handleReset}>Reinitialiser</Button>
+            <Button variant="contained" onClick={handleSearch}>Appliquer</Button>
           </Box>
         </Box>
       </Menu>

@@ -21,10 +21,23 @@ export function PrintFormSection({ title, children }: PrintFormSectionProps) {
   return (
     <Box
       sx={{
-        border: '1px solid rgba(15, 23, 42, 0.1)',
-        borderRadius: 3,
-        p: 2.25,
-        backgroundColor: '#fcfdff',
+        position: 'relative',
+        overflow: 'hidden',
+        border: '1px solid rgba(15, 23, 42, 0.08)',
+        borderRadius: 4,
+        p: 2.5,
+        background:
+          'linear-gradient(180deg, rgba(252,253,255,1) 0%, rgba(247,250,255,1) 100%)',
+        boxShadow: '0 10px 24px rgba(15, 23, 42, 0.04)',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 6,
+          height: '100%',
+          background: 'linear-gradient(180deg, #0f274a 0%, #1673c7 100%)',
+        },
       }}
     >
       <Typography
@@ -60,8 +73,8 @@ export function PrintFieldLine({ label, value, flex = 1 }: PrintFieldLineProps) 
       <Box
         sx={{
           flex,
-          minHeight: 28,
-          borderBottom: '1.5px dashed rgba(39, 65, 95, 0.35)',
+          minHeight: 30,
+          borderBottom: '1.5px dashed rgba(22, 115, 199, 0.42)',
           display: 'flex',
           alignItems: 'center',
           pb: 0.25,

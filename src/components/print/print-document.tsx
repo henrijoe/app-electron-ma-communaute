@@ -1,8 +1,8 @@
 import React from 'react';
 import {
   Box,
-  Chip,
   Divider,
+  GlobalStyles,
   Stack,
   Table,
   TableBody,
@@ -27,9 +27,9 @@ type PrintIdentity = {
 type PrintDocumentLayoutProps = {
   identity?: PrintIdentity;
   title: string;
-  subtitle: string;
-  countLabel: string;
-  countValue: number;
+  subtitle?: string;
+  countLabel?: string;
+  countValue?: number;
   children: React.ReactNode;
 };
 
@@ -62,40 +62,74 @@ export function PrintDocumentLayout({
   identity,
   title,
   subtitle,
-  countLabel,
-  countValue,
+  countLabel = 'Total',
+  countValue = 0,
   children,
 }: PrintDocumentLayoutProps) {
   // On prepare l'eventuel logo pour le bandeau haut du document.
   const logoUrl = getPrintableLogoUrl(identity?.logoUtilisateur);
   // On capture la date de generation une seule fois pour tout le document.
   const generatedAt = new Date().toLocaleString('fr-FR');
-  // On construit un nom lisible pour la personne connectee quand l'information existe.
-  const generatedBy = [identity?.prenomUtilisateur, identity?.nomUtilisateur].filter(Boolean).join(' ');
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        maxWidth: 1180,
-        mx: 'auto',
-        p: 3,
-        backgroundColor: '#eef3f8',
-        minHeight: '100vh',
-      }}
-    >
+    <>
+      {/* Regles globales d'impression: mode paysage et prevention des coupures de blocs. */}
+      <GlobalStyles
+        styles={{
+          '@page': {
+            size: 'A4 landscape',
+            margin: '10mm',
+          },
+          '@media print': {
+            'html, body': {
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact',
+            },
+            '.print-block-avoid-break': {
+              breakInside: 'avoid',
+              pageBreakInside: 'avoid',
+            },
+          },
+        }}
+      />
+
       <Box
+        data-count-label={countLabel}
+        data-count-value={countValue}
+        data-subtitle={subtitle || ''}
         sx={{
+          width: '100%',
+          maxWidth: 'none',
+          mx: 'auto',
+          p: { xs: 2, md: 3 },
           background:
-            'linear-gradient(135deg, rgba(14, 37, 74, 0.98) 0%, rgba(28, 83, 128, 0.96) 55%, rgba(181, 142, 61, 0.92) 100%)',
-          color: 'common.white',
-          borderRadius: 4,
-          px: 4,
-          py: 3.5,
-          mb: 3,
-          boxShadow: '0 20px 45px rgba(18, 38, 63, 0.16)',
+            'linear-gradient(180deg, #eaf2fb 0%, #f7fbff 38%, #edf5fc 100%)',
+          minHeight: '100vh',
+          '@media print': {
+            p: 0,
+            minHeight: 'auto',
+            background: '#ffffff',
+          },
         }}
       >
+      <Box
+        sx={{
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: 6,
+          mb: 3,
+          boxShadow: '0 18px 34px rgba(15, 23, 42, 0.10)',
+          background:
+            'linear-gradient(135deg, rgba(5, 36, 79, 0.98) 0%, rgba(19, 110, 194, 0.94) 58%, rgba(44, 169, 225, 0.90) 100%)',
+          color: 'common.white',
+          
+        }}
+      >
+        <Box
+          sx={{
+            display: 'none',
+          }}
+        />
         <Stack direction="row" spacing={3} alignItems="center" justifyContent="space-between">
           <Stack direction="row" spacing={2.5} alignItems="center">
             <Box
@@ -141,15 +175,6 @@ export function PrintDocumentLayout({
           </Stack>
 
           <Stack spacing={1} alignItems="flex-end">
-            <Chip
-              label={countLabel}
-              sx={{
-                color: 'common.white',
-                backgroundColor: 'rgba(255,255,255,0.16)',
-                border: '1px solid rgba(255,255,255,0.16)',
-                fontWeight: 700,
-              }}
-            />
             <Typography variant="caption" sx={{ opacity: 0.84 }}>
               {generatedAt}
             </Typography>
@@ -159,11 +184,14 @@ export function PrintDocumentLayout({
 
       <Box
         sx={{
+          position: 'relative',
+          overflow: 'hidden',
           backgroundColor: 'common.white',
-          borderRadius: 4,
-          p: 4,
-          boxShadow: '0 16px 40px rgba(15, 23, 42, 0.08)',
+          borderRadius: 6,
+          p: { xs: 3, md: 4 },
+          boxShadow: '0 18px 40px rgba(15, 23, 42, 0.08)',
           border: '1px solid rgba(15, 23, 42, 0.08)',
+          
         }}
       >
         <Stack
@@ -171,62 +199,56 @@ export function PrintDocumentLayout({
           spacing={2}
           justifyContent="space-between"
           alignItems={{ xs: 'flex-start', md: 'center' }}
-          sx={{ mb: 3 }}
+          sx={{ mb: 1.5 }}
         >
           <Box>
             <Typography
               variant="h4"
-              sx={{ fontWeight: 800, color: '#0f274a', textTransform: 'uppercase', letterSpacing: 0.8 }}
+              sx={{
+                fontWeight: 900,
+                color: '#0f274a',
+                textTransform: 'uppercase',
+                letterSpacing: 0.8,
+              }}
             >
               {title}
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mt: 1, maxWidth: 760 }}>
-              {subtitle}
-            </Typography>
           </Box>
-
-          <Stack direction="row" spacing={1.25} flexWrap="wrap">
-            <Chip label={`${countLabel} : ${countValue}`} color="primary" variant="outlined" />
-            <Chip label={`Genere par : ${generatedBy || 'Systeme local'}`} variant="outlined" />
-          </Stack>
         </Stack>
 
         <Divider sx={{ mb: 3 }} />
 
         {children}
-
-        <Divider sx={{ mt: 3, mb: 2 }} />
-
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography variant="body2" color="text.secondary">
-            Document genere automatiquement pour impression ou export PDF.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {countLabel} : {countValue}
-          </Typography>
-        </Stack>
       </Box>
-    </Box>
+      </Box>
+    </>
   );
 }
 
-export function PrintTable({ children, minWidth = 900 }: PrintTableProps) {
+export function PrintTable({ children, minWidth = 760 }: PrintTableProps) {
   return (
     <TableContainer
+      className="print-block-avoid-break"
       sx={{
         borderRadius: 3,
         border: '1px solid rgba(15, 23, 42, 0.1)',
         overflow: 'hidden',
+        '@media print': {
+          borderRadius: 2,
+        },
       }}
     >
       <Table
         sx={{
           minWidth,
+          tableLayout: 'fixed',
           '& .MuiTableCell-root': {
             py: 1.5,
             px: 1.5,
             borderColor: 'rgba(15, 23, 42, 0.08)',
             verticalAlign: 'top',
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
           },
           '& .MuiTableHead-root': {
             backgroundColor: '#e8f0fb',
@@ -240,6 +262,19 @@ export function PrintTable({ children, minWidth = 900 }: PrintTableProps) {
           },
           '& .MuiTableBody-root .MuiTableRow-root:nth-of-type(even)': {
             backgroundColor: '#f8fafc',
+          },
+          '& .MuiTableRow-root': {
+            breakInside: 'avoid',
+            pageBreakInside: 'avoid',
+          },
+          '@media print': {
+            minWidth: '100%',
+            '& .MuiTableCell-root': {
+              py: 0.8,
+              px: 0.9,
+              fontSize: '0.72rem',
+              lineHeight: 1.2,
+            },
           },
         }}
       >

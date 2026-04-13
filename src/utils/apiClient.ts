@@ -10,22 +10,23 @@ export const getApiMode = (): 'local' | 'online' => getConnectionMode();
 
 // Fonction pour obtenir l'URL de base
 export const getBaseUrl = (): string => {
-  // En développement, utilisez localhost:49300 (votre serveur Express)
+  // En developpement, utilise localhost:49300 (serveur Express local)
   if (import.meta.env.DEV) {
     return BASE_URL_DEV;
   }
 
-  // En production, utilisez soit:
-  // 1. L'URL du serveur depuis Redux store (si disponible)
+  // En production, utilise soit:
+  // 1. L'URL du serveur depuis le store (si disponible)
   // 2. Une variable d'environnement VITE_API_URL
-  // 3. L'URL de votre backend hébergé
+  // 3. L'URL de ton backend heberge
+
 
   const serverUrl = getServerUrl();
   if (serverUrl) {
     return serverUrl.endsWith('/') ? serverUrl : `${serverUrl}/`;
   }
 
-  // Fallback: variable d'environnement ou URL par défaut
+  // Fallback: variable d'environnement ou URL par defaut
   return import.meta.env.VITE_API_URL ||
     (window.location.hostname === 'localhost'
       ? BASE_URL_DEV
@@ -67,7 +68,7 @@ export const resolveApiBaseUrl = (): string => {
   return normalizeBaseUrl(BASE_URL_ONLINE || BASE_URL_DEV);
 };
 
-// Interface pour la structure d'une réponse du serveur
+// Interface pour la structure d'une reponse du serveur
 export interface IServerResponse {
   status: number;
   data?: any;
@@ -76,7 +77,7 @@ export interface IServerResponse {
   message?: string;
 }
 
-// Interface pour la configuration d'une requête
+// Interface pour la configuration d'une requete
 export interface IConfig extends RequestInit {
   headers?: Record<string, string>;
 }
@@ -117,9 +118,46 @@ const cleanUrl = (baseUrl: string, route: string): string => {
 
 export const getPhotosBaseUrl = (): string => cleanUrl(resolveApiBaseUrl(), 'photos');
 
-export const buildPhotoUrl = (photoName: string): string =>
-  cleanUrl(resolveApiBaseUrl(), `photos/${photoName}`);
+const normalizePhotoName = (photoName: string): string => {
+  if (!photoName) return '';
 
+  return photoName
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/^photos\//i, '')
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+};
+
+export const buildPhotoUrl = (photoName: string): string => {
+  const normalized = normalizePhotoName(photoName);
+  return cleanUrl(resolveApiBaseUrl(), normalized ? `photos/${normalized}` : 'photos');
+};
+
+const normalizeGaleriePath = (filePath: string): string => {
+  if (!filePath) return '';
+
+  return filePath
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/^galerie-media\//i, '')
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+};
+
+export const buildGalerieMediaUrl = (filePath: string): string => {
+  const normalized = normalizeGaleriePath(filePath);
+  return cleanUrl(resolveApiBaseUrl(), normalized ? `galerie-media/${normalized}` : 'galerie-media');
+};
+
+export const buildGalerieDownloadUrl = (idGalerie: number | string, idUtilisateur?: number | null): string => {
+  const suffix = typeof idUtilisateur === 'number' ? `?idUtilisateur=${encodeURIComponent(String(idUtilisateur))}` : '';
+  return cleanUrl(resolveApiBaseUrl(), `communaute/telechargergalerie/${idGalerie}${suffix}`);
+};
 // Point d'entree commun pour toutes les requetes HTTP du front.
 export async function request<T>(
   route: string,
@@ -159,7 +197,7 @@ export async function request<T>(
   }
 }
 
-  // API Client spécifique pour votre backend
+  // API client specifique pour le backend de l'application
 export const apiClient = {
   // Recupere l'IP et l'URL LAN du serveur pour affichage dans l'application.
   getServerInfo: () =>
@@ -173,7 +211,7 @@ export const apiClient = {
     ),
 
   // Permet au superadmin de debloquer l'application desktop pour une nouvelle periode.
-  unlockDesktopAccess: (data: { nomUtilisateur: string; extendDays?: number }) =>
+  unlockDesktopAccess: (data: { nomUtilisateur: string; password: string; extendDays?: number }) =>
     request<IServerResponse>('communaute/desktop-control/unlock', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -270,6 +308,261 @@ export const apiClient = {
       body: JSON.stringify({ idDepartement, idUtilisateur }),
     }),
 
+  // cellules
+  // Recupere toutes les cellules.
+  getCellules: () =>
+    request<IServerResponse>('communaute/listecellule', { method: 'GET' }),
+
+  // Recupere les cellules d'un utilisateur.
+  getCellulesByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupcellulebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  // Cree une cellule.
+  createCellule: (data: any) =>
+    request<IServerResponse>('communaute/inserercellule', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Met a jour une cellule.
+  updateCellule: (data: any) =>
+    request<IServerResponse>('communaute/modifiercellule', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Supprime une cellule.
+  deleteCellule: (idCellule: number, idUtilisateur?: number | null) =>
+    request<IServerResponse>('communaute/supprimercellule', {
+      method: 'POST',
+      body: JSON.stringify({ idCellule, idUtilisateur }),
+    }),
+
+  // groupes
+  // Recupere tous les groupes.
+  getGroupes: () =>
+    request<IServerResponse>('communaute/listegroupe', { method: 'GET' }),
+
+  // Recupere les groupes d'un utilisateur.
+  getGroupesByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupgroupebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  // Cree un groupe.
+  createGroupe: (data: any) =>
+    request<IServerResponse>('communaute/inserergroupe', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Met a jour un groupe.
+  updateGroupe: (data: any) =>
+    request<IServerResponse>('communaute/modifiergroupe', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Supprime un groupe.
+  deleteGroupe: (idGroupe: number, idUtilisateur?: number | null) =>
+    request<IServerResponse>('communaute/supprimergroupe', {
+      method: 'POST',
+      body: JSON.stringify({ idGroupe, idUtilisateur }),
+    }),
+  // agenda
+  getAgendaByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupagendabyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  createAgenda: (data: any) =>
+    request<IServerResponse>('communaute/insereragenda', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateAgenda: (data: any) =>
+    request<IServerResponse>('communaute/modifieragenda', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteAgenda: (idAgenda: number, idUtilisateur?: number | null) =>
+    request<IServerResponse>('communaute/supprimeragenda', {
+      method: 'POST',
+      body: JSON.stringify({ idAgenda, idUtilisateur }),
+    }),
+
+  // comptabilite
+  getComptabilitesByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/listecomptabilite/${idUtilisateur}`, { method: 'GET' }),
+
+  createComptabilite: (data: any) =>
+    request<IServerResponse>('communaute/inserercomptabilite', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateComptabilite: (data: any) =>
+    request<IServerResponse>(`communaute/modifiercomptabilite/${data.idComptabilite}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteComptabilite: (idComptabilite: number) =>
+    request<IServerResponse>(`communaute/supprimercomptabilite/${idComptabilite}`, {
+      method: 'POST',
+      body: JSON.stringify({ idComptabilite }),
+    }),
+  // galerie
+  getGaleriesByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupgaleriebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  createGalerie: (data: any) =>
+    request<IServerResponse>('communaute/inserergalerie', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateGalerie: (data: any) =>
+    request<IServerResponse>('communaute/modifiergalerie', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteGalerie: (idGalerie: number, idUtilisateur?: number | null) =>
+    request<IServerResponse>('communaute/supprimergalerie', {
+      method: 'POST',
+      body: JSON.stringify({ idGalerie, idUtilisateur }),
+    }),
+
+  getGalerieImages: (idGalerie: number | string) =>
+    request<IServerResponse>(`communaute/recupimagesgalerie/${idGalerie}`, { method: 'GET' }),
+
+  addGalerieImages: (data: any) =>
+    request<IServerResponse>('communaute/ajouterimagesgalerie', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteGalerieImage: (idGalerieImage: number, idUtilisateur?: number | null) =>
+    request<IServerResponse>('communaute/supprimerimagegalerie', {
+      method: 'POST',
+      body: JSON.stringify({ idGalerieImage, idUtilisateur }),
+    }),
+
+  updateGalerieImage: (data: { idGalerieImage: number; legendeImage: string; idUtilisateur?: number | null }) =>
+    request<IServerResponse>('communaute/modifierimagegalerie', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  setGalerieCover: (data: { idGalerie: number; idGalerieImage: number; idUtilisateur?: number | null }) =>
+    request<IServerResponse>('communaute/definircouverturegalerie', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // cas sociaux - mariages
+  // Recupere les mariages de l'utilisateur connecte.
+  getMariagesByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupmariagebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  // Cree un mariage.
+  createMariage: (data: any) =>
+    request<IServerResponse>('communaute/inserermariage', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Met a jour un mariage.
+  updateMariage: (data: any) =>
+    request<IServerResponse>('communaute/modifiermariage', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Supprime un mariage.
+  deleteMariage: (idMariage: number) =>
+    request<IServerResponse>('communaute/supprimermariage', {
+      method: 'POST',
+      body: JSON.stringify({ idMariage }),
+    }),
+
+  // cas sociaux - naissances
+  // Recupere les naissances de l'utilisateur connecte.
+  getNaissancesByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupnaissancebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  // Cree une naissance.
+  createNaissance: (data: any) =>
+    request<IServerResponse>('communaute/inserernaissance', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Met a jour une naissance.
+  updateNaissance: (data: any) =>
+    request<IServerResponse>('communaute/modifiernaissance', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Supprime une naissance.
+  deleteNaissance: (idNaissance: number, idUtilisateur?: number | null) =>
+    request<IServerResponse>('communaute/supprimernaissance', {
+      method: 'POST',
+      body: JSON.stringify({ idNaissance, idUtilisateur }),
+    }),
+
+  // cas sociaux - deces
+  // Recupere les deces de l'utilisateur connecte.
+  getDecesByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupdecesbyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  // Cree un deces.
+  createDeces: (data: any) =>
+    request<IServerResponse>('communaute/insererdeces', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Met a jour un deces.
+  updateDeces: (data: any) =>
+    request<IServerResponse>('communaute/modifierdeces', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Supprime un deces.
+  deleteDeces: (idDeces: number) =>
+    request<IServerResponse>('communaute/supprimerdeces', {
+      method: 'POST',
+      body: JSON.stringify({ idDeces }),
+    }),
+
+  // cas sociaux - maladies
+  // Recupere les maladies de l'utilisateur connecte.
+  getMaladiesByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupmaladiebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  // Cree un cas de maladie.
+  createMaladie: (data: any) =>
+    request<IServerResponse>('communaute/inserermaladie', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Met a jour un cas de maladie.
+  updateMaladie: (data: any) =>
+    request<IServerResponse>('communaute/modifiermaladie', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Supprime un cas de maladie.
+  deleteMaladie: (idMaladie: number) =>
+    request<IServerResponse>('communaute/supprimermaladie', {
+      method: 'POST',
+      body: JSON.stringify({ idMaladie }),
+    }),
+
   // Utilisateur
   // Authentifie un utilisateur avec son nom et son mot de passe.
   login: (data: { nomUtilisateur: string; password: string }) =>
@@ -328,7 +621,6 @@ export const apiClient = {
   testConnection: () =>
     request<IServerResponse>('test', { method: 'GET' }),
 
-  // Méthodes génériques
   // Prepare la future synchronisation des donnees distantes vers la base locale.
   syncRemoteToLocal: (data?: { idUtilisateur?: number | string }) =>
     request<IServerResponse>('communaute/sync/remote-to-local', {
@@ -360,3 +652,4 @@ export const apiClient = {
   delete: <T = IServerResponse>(route: string, config?: IConfig) =>
     request<T>(route, { method: 'DELETE', ...config }),
 };
+

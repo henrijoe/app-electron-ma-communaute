@@ -140,60 +140,58 @@ const PrintEtatGlobal = () => {
         onClose={handleClose}
       >
         {isDesktopPrint ? (
-          <>
-            <MenuItem onClick={membersHandlers.preview}>
+          [
+            <MenuItem key="members-preview" onClick={membersHandlers.preview}>
               <VisibilityIcon />
               Apercu membres
-            </MenuItem>
-            <MenuItem onClick={membersHandlers.pdf}>
+            </MenuItem>,
+            <MenuItem key="members-pdf" onClick={membersHandlers.pdf}>
               <PictureAsPdfIcon />
               PDF membres
-            </MenuItem>
-            <Divider sx={{ my: 0.5 }} />
-
-            <MenuItem onClick={ficheHandlers.preview}>
+            </MenuItem>,
+            <Divider key="members-divider" sx={{ my: 0.5 }} />,
+            <MenuItem key="fiche-preview" onClick={ficheHandlers.preview}>
               <VisibilityIcon />
               Apercu fiche de decision
-            </MenuItem>
-            <MenuItem onClick={ficheHandlers.pdf}>
+            </MenuItem>,
+            <MenuItem key="fiche-pdf" onClick={ficheHandlers.pdf}>
               <PictureAsPdfIcon />
               PDF fiche de decision
-            </MenuItem>
-            <Divider sx={{ my: 0.5 }} />
-
-            <MenuItem onClick={coursHandlers.preview}>
+            </MenuItem>,
+            <Divider key="fiche-divider" sx={{ my: 0.5 }} />,
+            <MenuItem key="cours-preview" onClick={coursHandlers.preview}>
               <VisibilityIcon />
               Apercu cours de base
-            </MenuItem>
-            <MenuItem onClick={coursHandlers.pdf}>
+            </MenuItem>,
+            <MenuItem key="cours-pdf" onClick={coursHandlers.pdf}>
               <PictureAsPdfIcon />
               PDF cours de base
-            </MenuItem>
-          </>
+            </MenuItem>,
+          ]
         ) : (
-          <>
-            <MenuItem onClick={handleClose}>
+          [
+            <MenuItem key="print-members" onClick={handleClose}>
               <PrintIcon />
               <ReactToPrint
                 trigger={() => <div>Liste des membres</div>}
                 content={() => membreRef.current}
               />
-            </MenuItem>
-            <MenuItem onClick={handleClose}>
+            </MenuItem>,
+            <MenuItem key="print-fiche" onClick={handleClose}>
               <PrintIcon />
               <ReactToPrint
                 trigger={() => <div>Fiche de decision</div>}
                 content={() => ficheDecisionRef.current}
               />
-            </MenuItem>
-            <MenuItem onClick={handleClose}>
+            </MenuItem>,
+            <MenuItem key="print-cours" onClick={handleClose}>
               <PrintIcon />
               <ReactToPrint
                 trigger={() => <div>Fiche de cours de base</div>}
                 content={() => coursDeBaseRef.current}
               />
-            </MenuItem>
-          </>
+            </MenuItem>,
+          ]
         )}
       </StyledMenu>
 

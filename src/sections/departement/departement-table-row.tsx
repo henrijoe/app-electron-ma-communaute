@@ -1,23 +1,21 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
-import Popover from '@mui/material/Popover';
-import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
-import MenuList from '@mui/material/MenuList';
-import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
+import MenuList from '@mui/material/MenuList';
+import Popover from '@mui/material/Popover';
+import TableCell from '@mui/material/TableCell';
+import TableRow from '@mui/material/TableRow';
 import Tooltip from '@mui/material/Tooltip';
 
-import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
+import { Label } from 'src/components/label';
 
 import ConfirmDialog from '../../components/alert/confirmDialog';
 import { IDepartement } from '../../store/departementSlice';
 import { formatDepartementForDisplay } from './utils';
-
-// -------------------------------------
 
 type DepartementTableRowProps = {
   row: IDepartement;
@@ -28,19 +26,21 @@ type DepartementTableRowProps = {
   isDeleting?: boolean;
 };
 
-export function DepartementTableRow({ 
-  row, 
-  selected, 
-  onSelectRow, 
-  onEdit, 
-  onDelete, 
-  isDeleting 
+export function DepartementTableRow({
+  row,
+  selected,
+  onSelectRow,
+  onEdit,
+  onDelete,
+  isDeleting,
 }: DepartementTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
   const [openConfirm, setOpenConfirm] = useState(false);
   const navigate = useNavigate();
 
   const departementData = Array.isArray(row) ? row[0] : row;
+  // Validation defensive pour conserver le meme flux que les autres listes.
+  formatDepartementForDisplay(departementData);
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setOpenPopover(event.currentTarget);
@@ -53,12 +53,12 @@ export function DepartementTableRow({
   const handleViewDetail = useCallback(() => {
     handleClosePopover();
     navigate(`/detaildepartement/${row.idDepartement}`);
-  }, [navigate, row.idDepartement, handleClosePopover]);
+  }, [handleClosePopover, navigate, row.idDepartement]);
 
   const handleEdit = useCallback(() => {
     handleClosePopover();
     onEdit(row);
-  }, [row, onEdit, handleClosePopover]);
+  }, [handleClosePopover, onEdit, row]);
 
   const handleDelete = useCallback(() => {
     handleClosePopover();
@@ -69,11 +69,7 @@ export function DepartementTableRow({
     onDelete(row.idDepartement);
     setOpenConfirm(false);
     handleClosePopover();
-  }, [onDelete, row.idDepartement, handleClosePopover]);
-
-  // Utiliser les données formatées
-  const formattedRow = formatDepartementForDisplay(departementData);
-  
+  }, [handleClosePopover, onDelete, row.idDepartement]);
 
   return (
     <>
@@ -94,15 +90,14 @@ export function DepartementTableRow({
           />
         </TableCell>
 
-        {/* Libellé long */}
         <TableCell>
           <Tooltip title={row.libelleLongDepartement || ''} arrow>
-            <Box 
-              sx={{ 
+            <Box
+              sx={{
                 maxWidth: 200,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
               }}
             >
               {row.libelleLongDepartement || ''}
@@ -110,22 +105,20 @@ export function DepartementTableRow({
           </Tooltip>
         </TableCell>
 
-        {/* Libellé court */}
         <TableCell>
           <Label color="primary" variant="filled">
             {row.libelleCourtDepartement || ''}
           </Label>
         </TableCell>
 
-        {/* Slogan */}
         <TableCell>
           <Tooltip title={row.sloganDepartement || ''} arrow>
-            <Box 
-              sx={{ 
+            <Box
+              sx={{
                 maxWidth: 150,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
               }}
             >
               {row.sloganDepartement || ''}
@@ -133,12 +126,8 @@ export function DepartementTableRow({
           </Tooltip>
         </TableCell>
 
-        {/* Responsable */}
-        <TableCell>
-          {row.responsableDepartement || ''}
-        </TableCell>
+        <TableCell>{row.responsableDepartement || ''}</TableCell>
 
-        {/* Actions */}
         <TableCell align="center">
           <IconButton
             onClick={(event) => {
@@ -176,7 +165,7 @@ export function DepartementTableRow({
         >
           <MenuItem onClick={handleViewDetail}>
             <Iconify icon="solar:eye-bold" />
-            Détail
+            Detail
           </MenuItem>
 
           <MenuItem onClick={handleEdit}>
@@ -184,11 +173,7 @@ export function DepartementTableRow({
             Modifier
           </MenuItem>
 
-          <MenuItem
-            onClick={handleDelete}
-            sx={{color: 'error.main'}}
-            disabled={isDeleting}
-          >
+          <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }} disabled={isDeleting}>
             <Iconify icon="solar:trash-bin-trash-bold" />
             {isDeleting ? 'Suppression...' : 'Supprimer'}
           </MenuItem>
@@ -197,8 +182,8 @@ export function DepartementTableRow({
 
       <ConfirmDialog
         open={openConfirm}
-        title="Suppression du département"
-        message={`Voulez-vous vraiment supprimer le département "${row.libelleLongDepartement}" (${row.libelleCourtDepartement}) ?`}
+        title="Suppression du departement"
+        message={`Voulez-vous vraiment supprimer le departement "${row.libelleLongDepartement}" (${row.libelleCourtDepartement}) ?`}
         confirmText="Supprimer"
         cancelText="Annuler"
         loading={isDeleting}

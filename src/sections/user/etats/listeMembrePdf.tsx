@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Avatar, Box, Chip, Typography } from '@mui/material';
+import { Avatar, Chip, Typography } from '@mui/material';
+import { normalizeText } from 'src/utils/text';
 
 import {
   PrintDocumentLayout,
@@ -89,7 +90,7 @@ export const ListeDesMembres = () => {
               <TableCell align="center" sx={{ width: 86 }}>
                 Photo
               </TableCell>
-              <TableCell>Nom et prenoms</TableCell>
+              <TableCell sx={{ width: 280 }}>Nom et prenoms</TableCell>
               <TableCell>Residence</TableCell>
               <TableCell>Responsabilite</TableCell>
               <TableCell align="center">Baptise(e)</TableCell>
@@ -132,20 +133,20 @@ export const ListeDesMembres = () => {
 
                   <TableCell>
                     <Typography variant="subtitle2" fontWeight={700}>
-                      {`${item.nomMembre || ''} ${item.prenomMembre || ''}`.trim() || 'Non specifie'}
+                      {normalizeText(`${item.nomMembre || ''} ${item.prenomMembre || ''}`.trim()) || 'Non specifie'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {item.emailMembre || 'Email non specifie'}
+                      {normalizeText(item.emailMembre) || 'Email non specifie'}
                     </Typography>
                   </TableCell>
 
                   <TableCell>
-                    <Typography variant="body2">{item.residenceMembre || 'Non specifie'}</Typography>
+                    <Typography variant="body2">{normalizeText(item.residenceMembre) || 'Non specifie'}</Typography>
                   </TableCell>
 
                   <TableCell>
                     <Chip
-                      label={getMembreResponsabilite(item.idResponsabilite)}
+                      label={normalizeText(getMembreResponsabilite(item.idResponsabilite))}
                       size="small"
                       color="primary"
                       variant="outlined"
@@ -163,12 +164,12 @@ export const ListeDesMembres = () => {
                   </TableCell>
 
                   <TableCell>
-                    <Typography variant="body2">{getMembreDepartement(item.idDepartement)}</Typography>
+                    <Typography variant="body2">{normalizeText(getMembreDepartement(item.idDepartement))}</Typography>
                   </TableCell>
 
                   <TableCell>
                     <Chip
-                      label={getMembreCellule(item.idCellule)}
+                      label={normalizeText(getMembreCellule(item.idCellule))}
                       size="small"
                       color="secondary"
                       variant="outlined"

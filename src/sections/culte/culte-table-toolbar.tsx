@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import Tooltip from '@mui/material/Tooltip';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -13,16 +15,18 @@ type CulteTableToolbarProps = {
   numSelected: number;
   filterName: string;
   onFilterName: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onDelete?: () => void; // Ajouter cette prop
-  deleteLoading?: boolean; // Ajouter pour gérer l'état de chargement
+  onDelete?: () => void;
+  deleteLoading?: boolean;
+  advancedFilters?: ReactNode;
 };
 
-export function UserTableToolbar({ 
-  numSelected, 
-  filterName, 
-  onFilterName, 
+export function UserTableToolbar({
+  numSelected,
+  filterName,
+  onFilterName,
   onDelete,
-  deleteLoading = false 
+  deleteLoading = false,
+  advancedFilters,
 }: CulteTableToolbarProps) {
   return (
     <Toolbar
@@ -39,7 +43,7 @@ export function UserTableToolbar({
     >
       {numSelected > 0 ? (
         <Typography component="div" variant="subtitle1">
-          {numSelected} sélectionné(s)
+          {numSelected} s�lectionn�(s)
         </Typography>
       ) : (
         <OutlinedInput
@@ -55,23 +59,21 @@ export function UserTableToolbar({
           sx={{ maxWidth: 320 }}
         />
       )}
-      
+
       {numSelected > 0 ? (
         <Tooltip title="Supprimer">
-          <IconButton 
-            onClick={onDelete} // Ajouter l'event handler
-            disabled={deleteLoading} // Désactiver pendant le chargement
-          >
+          <IconButton onClick={onDelete} disabled={deleteLoading}>
             <Iconify icon="solar:trash-bin-trash-bold" />
           </IconButton>
         </Tooltip>
       ) : (
-        <Tooltip title="Filter list">
-          <IconButton>
-            <Iconify icon="ic:round-filter-list" />
-
-          </IconButton>
-        </Tooltip>
+        advancedFilters || (
+          <Tooltip title="Filtrer la liste">
+            <IconButton>
+              <Iconify icon="ic:round-filter-list" />
+            </IconButton>
+          </Tooltip>
+        )
       )}
     </Toolbar>
   );

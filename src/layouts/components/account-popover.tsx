@@ -1,26 +1,24 @@
 import type { IconButtonProps } from '@mui/material/IconButton';
 
-import { useState, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
+import { useCallback, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
+import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Avatar from '@mui/material/Avatar';
-import Popover from '@mui/material/Popover';
 import Divider from '@mui/material/Divider';
-import MenuList from '@mui/material/MenuList';
-import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
-
-import { useRouter, usePathname } from 'src/routes/hooks';
+import MenuList from '@mui/material/MenuList';
+import Popover from '@mui/material/Popover';
+import Typography from '@mui/material/Typography';
 
 import { _myAccount } from 'src/_mock';
+import { usePathname, useRouter } from 'src/routes/hooks';
 import { setUserConnected, setUserLoggedIn } from 'src/store/appSlice';
+import type { IReduxState } from 'src/store/store';
 import { setConnecter, setUtilisateurData } from 'src/store/userSlice';
 import { resolveStaticAssetUrl } from 'src/utils/asset-url';
-
-// ----------------------------------------------------------------------
 
 export type AccountPopoverProps = IconButtonProps & {
   data?: {
@@ -34,11 +32,28 @@ export type AccountPopoverProps = IconButtonProps & {
 export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps) {
   const dispatch = useDispatch();
   const router = useRouter();
-
   const pathname = usePathname();
+  const userConnected = useSelector((state: IReduxState) => state.application.userConnected);
+  const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
 
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
-  const accountPhotoUrl = _myAccount.photoURL ? resolveStaticAssetUrl(_myAccount.photoURL) : undefined;
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+
+  // On privilegie les vraies informations Redux puis on garde le mock comme filet de secours.
+  const accountName =
+    [utilisateurData?.prenomUtilisateur, utilisateurData?.nomUtilisateur]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+    || utilisateurData?.nomUtilisateur
+    || userConnected?.nomUtilisateur
+    || _myAccount.displayName;
+  const accountEmail = utilisateurData?.email || userConnected?.email || _myAccount.email;
+  const rawPhotoUrl = utilisateurData?.logoUtilisateur || userConnected?.logoUtilisateur || _myAccount.photoURL;
+  const accountPhotoUrl = useMemo(
+    () => (rawPhotoUrl && !avatarLoadFailed ? resolveStaticAssetUrl(rawPhotoUrl) : undefined),
+    [avatarLoadFailed, rawPhotoUrl]
+  );
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setOpenPopover(event.currentTarget);
@@ -79,8 +94,13 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
         }}
         {...other}
       >
-        <Avatar src={accountPhotoUrl} alt={_myAccount.displayName} sx={{ width: 1, height: 1 }}>
-          {_myAccount.displayName?.charAt(0)?.toUpperCase()}
+        <Avatar
+          src={accountPhotoUrl}
+          alt={accountName}
+          imgProps={{ onError: () => setAvatarLoadFailed(true) }}
+          sx={{ width: 1, height: 1 }}
+        >
+          {accountName?.charAt(0)?.toUpperCase()}
         </Avatar>
       </IconButton>
 
@@ -92,17 +112,17 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{
           paper: {
-            sx: { width: 200 },
+            sx: { width: 220 },
           },
         }}
       >
         <Box sx={{ p: 2, pb: 1.5 }}>
           <Typography variant="subtitle2" noWrap>
-            {_myAccount?.displayName}
+            {accountName}
           </Typography>
 
           <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
-            {_myAccount?.email}
+            {accountEmail}
           </Typography>
         </Box>
 

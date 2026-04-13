@@ -2,11 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import Grid from '@mui/material/Unstable_Grid2';
+import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import {
+  ApartmentRounded,
+  ChurchRounded,
+  Diversity3Rounded,
+  GroupsRounded,
+  HomeRounded,
+} from '@mui/icons-material';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 import { apiClient } from 'src/utils/apiClient';
-import { resolveStaticAssetUrl } from 'src/utils/asset-url';
 
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
 import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
@@ -14,130 +21,240 @@ import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 
 // ----------------------------------------------------------------------
 
-export function OverviewAnalyticsView() {
-  const membersIconUrl = resolveStaticAssetUrl('/assets/icons/glass/ic-glass-users.svg');
-  const cultesIconUrl = resolveStaticAssetUrl('/assets/icons/glass/ic-glass-buy.svg');
-  const departementsIconUrl = resolveStaticAssetUrl('/assets/icons/glass/ic-glass-bag.svg');
+const StatIcon = ({ children }: { children: React.ReactNode }) => (
+  <Box
+    sx={{
+      width: 48,
+      height: 48,
+      borderRadius: 2,
+      display: 'grid',
+      placeItems: 'center',
+      bgcolor: 'common.white',
+      boxShadow: (theme) => theme.customShadows.z8,
+    }}
+  >
+    {children}
+  </Box>
+);
 
+export function OverviewAnalyticsView() {
   const [totals, setTotals] = useState({
     membres: 0,
     cultes: 0,
     departements: 0,
+    cellules: 0,
+    groupes: 0,
   });
 
   const listMembre = useSelector((state: any) => state.membre?.listMembre || []);
   const listCulte = useSelector((state: any) => state.culte?.listCulte || []);
   const listDepartement = useSelector((state: any) => state.departement?.listDepartement || []);
+  const listCellule = useSelector((state: any) => state.cellule?.listCellule || []);
+  const listGroupe = useSelector((state: any) => state.groupe?.listGroupe || []);
+  const appUserConnected = useSelector((state: any) => state.application?.userConnected);
+  const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
+  const currentUserId =
+    Number(appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateur)
+    || null;
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [membresRes, cultesRes, departementsRes] = await Promise.all([
+        // Toutes les cartes du dashboard restent bornees au compte connecte.
+        const [membresRes, cultesRes, departementsRes, cellulesRes, groupesRes] = await Promise.all([
           apiClient.getMembres(),
-          apiClient.getCultes(),
-          apiClient.getDepartements(),
+          currentUserId ? apiClient.getCultesByUtilisateur(currentUserId) : apiClient.getCultes(),
+          currentUserId
+            ? apiClient.getDepartementsByUtilisateur(currentUserId)
+            : apiClient.getDepartements(),
+          currentUserId ? apiClient.getCellulesByUtilisateur(currentUserId) : apiClient.getCellules(),
+          currentUserId ? apiClient.getGroupesByUtilisateur(currentUserId) : apiClient.getGroupes(),
         ]);
 
+        const allMembres = Array.isArray(membresRes?.data)
+          ? membresRes.data
+          : listMembre;
+
         setTotals({
-          membres: Array.isArray(membresRes?.data) ? membresRes.data.length : listMembre.length,
+          membres: allMembres.length,
           cultes: Array.isArray(cultesRes?.data) ? cultesRes.data.length : listCulte.length,
           departements: Array.isArray(departementsRes?.data)
             ? departementsRes.data.length
             : listDepartement.length,
+          cellules: Array.isArray(cellulesRes?.data) ? cellulesRes.data.length : listCellule.length,
+          groupes: Array.isArray(groupesRes?.data) ? groupesRes.data.length : listGroupe.length,
         });
       } catch (error) {
         setTotals({
           membres: listMembre.length,
           cultes: listCulte.length,
           departements: listDepartement.length,
+          cellules: listCellule.length,
+          groupes: listGroupe.length,
         });
       }
     };
 
     loadStats();
-  }, [listCulte.length, listDepartement.length, listMembre.length]);
+  }, [
+    currentUserId,
+    listCulte.length,
+    listCellule.length,
+    listDepartement.length,
+    listGroupe.length,
+    listMembre,
+  ]);
 
   const totalGeneral = useMemo(
-    () => totals.membres + totals.cultes + totals.departements,
+    // On garde un total global unique pour alimenter les sous-titres et la synthese.
+    () => totals.membres + totals.cultes + totals.departements + totals.cellules + totals.groupes,
     [totals]
   );
 
   return (
     <DashboardContent maxWidth="xl">
-      <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
-        TABLEAU DE BORD
+      <Typography variant="h4" sx={{ mb: 1 }}>
+        Tableau de bord communautaire
+      </Typography>
+
+      <Typography sx={{ color: 'text.secondary', mb: { xs: 3, md: 5 } }}>
+        Vue synthetique des membres, de la vie d&apos;eglise et de la structure interne.
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid xs={12} sm={6} md={4}>
+        {/* Ces cartes resument les volumes principaux de la communaute. */}
+        <Grid xs={12} sm={6} md={4} lg={2.4}>
           <AnalyticsWidgetSummary
             title="Membres"
             total={totals.membres}
             percent={0}
-            icon={<img alt="Membres" src={membersIconUrl} />}
+            icon={
+              <StatIcon>
+                <GroupsRounded color="primary" />
+              </StatIcon>
+            }
             chart={{
-              categories: ['Total'],
+              categories: ['Membres'],
               series: [totals.membres],
             }}
           />
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
+        <Grid xs={12} sm={6} md={4} lg={2.4}>
           <AnalyticsWidgetSummary
             title="Cultes"
             total={totals.cultes}
             percent={0}
             color="secondary"
-            icon={<img alt="Cultes" src={cultesIconUrl} />}
+            icon={
+              <StatIcon>
+                <ChurchRounded color="secondary" />
+              </StatIcon>
+            }
             chart={{
-              categories: ['Total'],
+              categories: ['Cultes'],
               series: [totals.cultes],
             }}
           />
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
+        <Grid xs={12} sm={6} md={4} lg={2.4}>
           <AnalyticsWidgetSummary
-            title="Départements"
+            title="Departements"
             total={totals.departements}
             percent={0}
             color="warning"
-            icon={<img alt="Départements" src={departementsIconUrl} />}
+            icon={
+              <StatIcon>
+                <ApartmentRounded color="warning" />
+              </StatIcon>
+            }
             chart={{
-              categories: ['Total'],
+              categories: ['Departements'],
               series: [totals.departements],
             }}
           />
         </Grid>
 
+        <Grid xs={12} sm={6} md={4} lg={2.4}>
+          <AnalyticsWidgetSummary
+            title="Cellules"
+            total={totals.cellules}
+            percent={0}
+            color="success"
+            icon={
+              <StatIcon>
+                {/* La cellule represente une maison de priere dans ce contexte. */}
+                <HomeRounded color="success" />
+              </StatIcon>
+            }
+            chart={{
+              categories: ['Cellules'],
+              series: [totals.cellules],
+            }}
+          />
+        </Grid>
+
+        <Grid xs={12} sm={6} md={4} lg={2.4}>
+          <AnalyticsWidgetSummary
+            title="Groupes"
+            total={totals.groupes}
+            percent={0}
+            color="error"
+            icon={
+              <StatIcon>
+                <Diversity3Rounded color="error" />
+              </StatIcon>
+            }
+            chart={{
+              categories: ['Groupes'],
+              series: [totals.groupes],
+            }}
+          />
+        </Grid>
+
         <Grid xs={12} md={6} lg={4}>
+          {/* Cette vue sert a lire d'un coup d'oeil la repartition entre modules. */}
           <AnalyticsCurrentVisits
-            title="Répartition"
+            title="Repartition generale"
+            subheader={`Total enregistre : ${totalGeneral}`}
             chart={{
               series: [
                 { label: 'Membres', value: totals.membres },
                 { label: 'Cultes', value: totals.cultes },
-                { label: 'Départements', value: totals.departements },
+                { label: 'Departements', value: totals.departements },
+                { label: 'Cellules', value: totals.cellules },
+                { label: 'Groupes', value: totals.groupes },
               ],
             }}
           />
         </Grid>
 
         <Grid xs={12} md={6} lg={8}>
+          {/* Cette serie compare toutes les entites sur une meme echelle. */}
           <AnalyticsWebsiteVisits
-            title="Vue globale"
-            subheader={`Total enregistré: ${totalGeneral}`}
+            title="Vue globale de la communaute"
+            subheader={`Total enregistre : ${totalGeneral}`}
             chart={{
-              categories: ['Membres', 'Cultes', 'Départements'],
+              categories: ['Membres', 'Cultes', 'Departements', 'Cellules', 'Groupes'],
               series: [
                 {
                   name: 'Total',
-                  data: [totals.membres, totals.cultes, totals.departements],
+                  data: [
+                    totals.membres,
+                    totals.cultes,
+                    totals.departements,
+                    totals.cellules,
+                    totals.groupes,
+                  ],
                 },
               ],
             }}
           />
         </Grid>
+
+
       </Grid>
     </DashboardContent>
   );

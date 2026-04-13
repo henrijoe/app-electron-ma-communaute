@@ -88,7 +88,7 @@ type ApplyFilterProps = {
 };
 
 
-// fonction améliorée pour appliquer les filtres avec gestion des valeurs nulles ou indéfinies
+// fonction amelioree pour appliquer les filtres avec gestion des valeurs nulles ou indefinies
 
 export function applyFilter({ inputData, comparator, filterName }: ApplyFilterProps) {
   const stabilizedThis = inputData.map((el, index) => [el, index] as const);
@@ -105,13 +105,13 @@ export function applyFilter({ inputData, comparator, filterName }: ApplyFilterPr
     const searchTerm = filterName?.toLowerCase();
     
     inputData = inputData.filter((user) => {
-      // Créez une fonction utilitaire pour convertir en chaîne et vérifier
+      // Creez une fonction utilitaire pour convertir en chaine et verifier
       const safeToString = (value: any): string => {
         if (value === null || value === undefined) return '';
         return String(value)?.toLowerCase();
       };
 
-      // Vérifiez chaque champ de manière sécurisée
+      // Verifiez chaque champ de maniere securisee
       return (
         safeToString(user.nomMembre)?.includes(searchTerm) ||
         safeToString(user.prenomMembre)?.includes(searchTerm) ||
@@ -156,7 +156,7 @@ export const formatMembreForDisplay = (membre: IMembre) => {
   // Convertir en un nouvel objet avec les types corrects
   const formattedMembre: IMembre = {
     ...membre,
-    // Conversion basée sur la valeur string
+    // Conversion basee sur la valeur string
     baptemeEauMembre: convertBooleanField(membre.baptemeEauMembre),
     baptemeSaintEspritMembre: convertBooleanField(membre.baptemeSaintEspritMembre),
     nouvelleAmeMembre: convertBooleanField(membre.nouvelleAmeMembre),
@@ -172,7 +172,7 @@ export const formatMembreForDisplay = (membre: IMembre) => {
 // Fonctions auxiliaires avec gestion de null/undefined
 const convertBooleanField = (value: string | number | null | undefined): string => {
   if (value === null || value === undefined || value === '') {
-    return 'Non'; // Valeur par défaut
+    return 'Non'; // Valeur par defaut
   }
   
   const stringValue = String(value);
@@ -181,12 +181,12 @@ const convertBooleanField = (value: string | number | null | undefined): string 
   if (stringValue === '2') return 'Non';
   if (stringValue === 'Oui' || stringValue === 'Non') return stringValue;
   
-  return 'Non'; // Valeur par défaut
+  return 'Non'; // Valeur par defaut
 };
 
 const convertGenreField = (value: string | number | null | undefined): string => {
   if (value === null || value === undefined || value === '') {
-    return '-'; // Valeur par défaut
+    return '-'; // Valeur par defaut
   }
   
   const stringValue = String(value);
@@ -199,30 +199,30 @@ const convertGenreField = (value: string | number | null | undefined): string =>
 
 const convertSituationMatrimonialeField = (value: string | number | null | undefined): string => {
   if (value === null || value === undefined || value === '') {
-    return 'Non renseigné'; // Valeur par défaut
+    return 'Non renseigne'; // Valeur par defaut
   }
   
   const stringValue = String(value);
   
   const map: Record<string, string> = {
-    '1': 'Célibataire',
-    '2': 'Célibataire sans enfant',
-    '3': 'Fiancé(e)',
+    '1': 'Celibataire',
+    '2': 'Celibataire sans enfant',
+    '3': 'Fiance(e)',
     '4': 'Concubinage',
-    '5': 'Marié(e)',
-    '6': 'Divorcé(e)',
+    '5': 'Marie(e)',
+    '6': 'Divorce(e)',
     '7': 'Veuve',
     '8': 'Veuf',
     '9': 'Copain/Copine',
     '10': 'Polygame',
   };
   
-  return map[stringValue] || stringValue || 'Non renseigné';
+  return map[stringValue] || stringValue || 'Non renseigne';
 };
 
 const convertCapaciteSpirituelleField = (value: string | number | null | undefined): string => {
   if (value === null || value === undefined || value === '') {
-    return 'Non renseignée'; // Valeur par défaut
+    return 'Non renseignee'; // Valeur par defaut
   }
   
   const stringValue = String(value);
@@ -231,10 +231,10 @@ const convertCapaciteSpirituelleField = (value: string | number | null | undefin
   if (stringValue === '2') return 'Moyenne';
   if (stringValue === '3') return 'Nouvellement convertie';
   
-  return stringValue || 'Non renseignée';
+  return stringValue || 'Non renseignee';
 };
 
-// Optionnel : fonction pour formater les champs numériques optionnels (département, cellule, groupe)
+// Optionnel : fonction pour formater les champs numeriques optionnels (departement, cellule, groupe)
 export const formatOptionalField = (value: number | string | null | undefined, options: IDataChoice[]): string => {
   if (value === null || value === undefined || value === '') {
     return '-';
@@ -245,4 +245,5 @@ export const formatOptionalField = (value: number | string | null | undefined, o
   
   return option?.label || stringValue || '-';
 };
+
 

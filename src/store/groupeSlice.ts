@@ -39,9 +39,17 @@ export const GroupeSlice = createSlice({
   name: 'groupe',
   initialState: initialStates,
   reducers: {
+    ensureArray: (state) => {
+      state.dataGroupe = Array.isArray(state.dataGroupe) ? state.dataGroupe : []
+      state.dataFilterGroupe = Array.isArray(state.dataFilterGroupe) ? state.dataFilterGroupe : []
+      state.listGroupe = Array.isArray(state.listGroupe) ? state.listGroupe : []
+      state.filterGroupe = Array.isArray(state.filterGroupe) ? state.filterGroupe : []
+    },
     // fonction pour ajouter un Groupe
     addGroupe: (state, action: PayloadAction<IGroupe>) => {
       state.dataGroupe.unshift(action.payload)
+      state.dataFilterGroupe.unshift(action.payload)
+      state.listGroupe.unshift(action.payload)
     },
 
     setGroupeItem: (state, action) => {
@@ -50,7 +58,7 @@ export const GroupeSlice = createSlice({
 
     // fonction pour ajouter le dernier enregistrement au dessus
     setListGroupe: (state, action) => {
-      state.listGroupe.unshift(action.payload)
+      state.listGroupe = Array.isArray(action.payload) ? action.payload : []
     },
 
     // fonction pour suprimer un Groupe
@@ -60,6 +68,9 @@ export const GroupeSlice = createSlice({
       );
     
       state.dataFilterGroupe = state.dataFilterGroupe.filter(
+        (item) => item.idGroupe !== action.payload
+      );
+      state.listGroupe = state.listGroupe.filter(
         (item) => item.idGroupe !== action.payload
       );
     },
@@ -81,6 +92,9 @@ export const GroupeSlice = createSlice({
       state.dataFilterGroupe = state.dataFilterGroupe?.map((item: any) =>
       item.idGroupe === action.payload.idGroupe ? action.payload : item
       )
+      state.listGroupe = state.listGroupe?.map((item: any) =>
+      item.idGroupe === action.payload.idGroupe ? action.payload : item
+      )
     },
     setFilterGroupe: (state, action) => {
       state.filterGroupe = action.payload
@@ -89,6 +103,7 @@ export const GroupeSlice = createSlice({
 })
 
 export const {
+  ensureArray,
   addGroupe,
   setDataModifiesGroupe,
   deleteGroupe,

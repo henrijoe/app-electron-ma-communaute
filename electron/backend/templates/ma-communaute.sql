@@ -234,6 +234,28 @@ INSERT INTO `groupe` (`idGroupe`, `libelleGroupe`, `descriptionGroupe`, `respons
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `maladie`
+--
+
+CREATE TABLE `maladie` (
+  `idMaladie` int(11) NOT NULL,
+  `nomMembreMaladie` varchar(100) DEFAULT NULL,
+  `typeMaladie` varchar(255) DEFAULT NULL,
+  `dateMaladie` varchar(255) DEFAULT NULL,
+  `lieuHospitalisation` varchar(255) DEFAULT NULL,
+  `observationMaladie` varchar(255) DEFAULT NULL,
+  `idUtilisateur` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Contenu de la table `maladie`
+--
+
+INSERT INTO `maladie` (`idMaladie`, `nomMembreMaladie`, `typeMaladie`, `dateMaladie`, `lieuHospitalisation`, `observationMaladie`, `idUtilisateur`) VALUES
+(1, 'Membre exemple', 'Hospitalisation', '2026-03-01', 'CHU', 'Suivi pastoral en cours', 1);
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `mariage`
 --
 
@@ -818,3 +840,5 @@ ALTER TABLE `responsable_groupe`
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+

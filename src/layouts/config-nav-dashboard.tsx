@@ -1,60 +1,78 @@
-import { Label } from 'src/components/label';
-import { SvgColor } from 'src/components/svg-color';
 import {
-  Church as ChurchIcon,
-  Person as PersonIcon,
+  AccountBalanceWalletRounded,
+  ApartmentRounded,
+  ChurchRounded,
+  DashboardRounded,
+  Diversity3Rounded,
+  GroupsRounded,
+  HomeRounded,
+  PhotoLibraryRounded,
+  EventAvailableRounded,
+  PersonRounded,
+  VolunteerActivismRounded,
+  WarningAmberRounded,
 } from '@mui/icons-material';
-// ----------------------------------------------------------------------
-
-const icon = (name: string) => (
-  <SvgColor width="100%" height="100%" src={`/assets/icons/navbar/${name}.svg`} />
-);
-
 
 export const navData = [
   {
     title: 'Dashboard',
     path: '/',
-    icon: icon('ic-analytics'),
+    icon: <DashboardRounded />,
   },
   {
     title: 'Membre',
     path: '/user',
-    icon: icon('ic-user'),
+    icon: <GroupsRounded />,
   },
   {
     title: 'Culte',
     path: '/culte',
-    icon: (<ChurchIcon/>),
+    icon: <ChurchRounded />,
   },
   {
     title: 'Departement',
     path: '/departement',
-    icon: (<PersonIcon/>),
+    icon: <ApartmentRounded />,
   },
-  // {
-  //   title: 'Product',
-  //   path: '/products',
-  //   icon: icon('ic-cart'),
-  //   info: (
-  //     <Label color="error" variant="inverted">
-  //       +3
-  //     </Label>
-  //   ),
-  // },
-  // {
-  //   title: 'Blog',
-  //   path: '/blog',
-  //   icon: icon('ic-blog'),
-  // },
   {
-    title: 'Sign in',
-    path: '/sign-in',
-    icon: icon('ic-lock'),
+    title: 'Cellule',
+    path: '/cellule',
+    // Une cellule correspond ici a une maison de priere.
+    icon: <HomeRounded />,
+  },
+  {
+    title: 'Groupe',
+    path: '/groupe',
+    icon: <Diversity3Rounded />,
+  },
+  {
+    title: 'Cas sociaux',
+    path: '/cas-sociaux',
+    icon: <VolunteerActivismRounded />,
+  },
+  {
+    title: 'Galerie',
+    path: '/galerie',
+    icon: <PhotoLibraryRounded />,
+  },
+  {
+    title: 'Agenda',
+    path: '/agenda',
+    icon: <EventAvailableRounded />,
+  },
+  {
+    title: 'Comptabilite',
+    path: '/comptabilite',
+    icon: <AccountBalanceWalletRounded />,
+  },
+  {
+    title: 'Profil',
+    path: '/settings',
+    icon: <PersonRounded />,
   },
   {
     title: 'Not found',
     path: '/404',
-    icon: icon('ic-disabled'),
+    icon: <WarningAmberRounded />,
   },
 ];

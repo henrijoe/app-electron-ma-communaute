@@ -16,12 +16,14 @@ import {
 } from '@mui/material';
 
 import { apiClient } from 'src/utils/apiClient';
+import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
 
 import { TableNoData } from '../table-no-data';
 import { DepartementTableRow } from '../departement-table-row';
 import { TableEmptyRows } from '../table-empty-rows';
-import { UserTableToolbar } from '../departement-table-toolbar';
+import { UserTableToolbar } from '../departement-table-toolbar-clean';
 import { DashboardContent } from '../../../layouts/dashboard';
 import { Iconify } from '../../../components/iconify/iconify';
 import { emptyRows, applyFilter, getComparator } from '../utils';
@@ -43,16 +45,22 @@ import {
 export function DepartementView() {
   const dispatch = useDispatch();
   const listDepartement = useSelector((state: any) => state.departement.listDepartement);
-  const utilisateurData = useSelector((state: any) => state.authentification?.utilisateurData || {});
-  const currentUserId = Number(utilisateurData?.idUtilisateur || 0);
+  const appUserConnected = useSelector((state: any) => state.application?.userConnected);
+  const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
+  const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || 0;
 
   const [loading, setLoading] = useState(true);
   const table = useDepartementTable();
 
-  // Destructurer les valeurs nécessaires de useDepartementTable
+  // Destructurer les valeurs nÃ©cessaires de useDepartementTable
   const { selected, onSelectAllRows } = table;
 
   const [filterName, setFilterName] = useState('');
+  const [advancedFilters, setAdvancedFilters] = useState({
+    libelleCourtDepartement: '',
+    responsableDepartement: '',
+    sloganDepartement: '',
+  });
   const [openDialog, setOpenDialog] = useState(false);
   const [maxWidth] = useState<any>('lg');
   const [data, setData] = useState({ ...departement });
@@ -86,7 +94,9 @@ export function DepartementView() {
     try {
       setLoading(true);
       dispatch(ensureArray());
-      const response = await apiClient.getDepartements();
+      const response = currentUserId
+        ? await apiClient.getDepartementsByUtilisateur(currentUserId)
+        : await apiClient.getDepartements();
       if (response.status === 1) {
         dispatch(setListDepartement(Array.isArray(response.data) ? response.data : []));
       }
@@ -95,9 +105,9 @@ export function DepartementView() {
     } finally {
       setLoading(false);
     }
-  }, [dispatch]);
+  }, [currentUserId, dispatch]);
 
-  // Fonction pour supprimer un département
+  // Fonction pour supprimer un dÃ©partement
   const handleDeleteDepartement = useCallback(async (idDepartement: number) => {
     try {
       setDeleteLoading(true);
@@ -121,7 +131,7 @@ export function DepartementView() {
     }
   }, [currentUserId, dispatch, showNotification]);
 
-  // Fonction pour éditer un département
+  // Fonction pour éditer un dÃ©partement
   const handleEditDepartement = useCallback((departementData: IDepartement) => {
     setIsEditMode(true);
     console.log('Donnees pour edition:', departementData);
@@ -130,7 +140,7 @@ export function DepartementView() {
     setOpenDialog(true);
   }, [reset]);
 
-  // Fonction pour mettre à jour un département
+  // Fonction pour mettre à jour un dÃ©partement
   const handleUpdateDepartement = useCallback(async (formData: IDepartement) => {
     try {
       setUpdateLoading(true);
@@ -148,7 +158,7 @@ export function DepartementView() {
         idUtilisateur: currentUserId || currentDepartement?.idUtilisateur || null,
       };
 
-      console.log('Données envoyées à l\'API:', mergedData);
+      console.log('Données envoyÃ©es à l\'API:', mergedData);
 
       const response = await apiClient.updateDepartement(cleanedData);
       if (response.status === 1) {
@@ -167,7 +177,7 @@ export function DepartementView() {
     }
   }, [currentUserId, data.idDepartement, listDepartement, dispatch, handleCloseDialog, showNotification, fetchDepartements]);
 
-  // Fonction pour créer un département
+  // Fonction pour créer un dÃ©partement
   const handleCreateOrUpdateDepartement = useCallback(async (departementData: IDepartement) => {
     if (isEditMode) {
       await handleUpdateDepartement(departementData)
@@ -203,12 +213,12 @@ export function DepartementView() {
   const onFormSubmit = useCallback(() => {
     // Validation
     if (!data.libelleLongDepartement) {
-      showNotification('Le libell? long est requis', 'warning');
+      showNotification('Le libellé long est requis', 'warning');
       return;
     }
 
     if (!data.libelleCourtDepartement) {
-      showNotification('Le libell? court est requis', 'warning');
+      showNotification('Le libellé court est requis', 'warning');
       return;
     }
 
@@ -224,8 +234,8 @@ export function DepartementView() {
     fetchDepartements();
   }, [fetchDepartements]);
 
-  // Filtrer les données
-  const dataFiltered: any[] = useMemo(() => {
+  // On combine la recherche libre avec les champs mï¿½tier les plus utiles.
+  const baseFilteredData: any[] = useMemo(() => {
     const dataToFilter = Array.isArray(listDepartement) ? listDepartement : [];
     return applyFilter({
       inputData: dataToFilter,
@@ -234,7 +244,36 @@ export function DepartementView() {
     });
   }, [listDepartement, table.order, table.orderBy, filterName]);
 
-  const notFound = !dataFiltered?.length && !!filterName;
+  const dataFiltered: any[] = useMemo(
+    () =>
+      baseFilteredData.filter((item) => {
+        if (
+          advancedFilters.libelleCourtDepartement
+          && !normalizeForSearch(item.libelleCourtDepartement ).includes(normalizeForSearch(advancedFilters.libelleCourtDepartement))
+        ) {
+          return false;
+        }
+
+        if (
+          advancedFilters.responsableDepartement
+          && !normalizeForSearch(item.responsableDepartement ).includes(normalizeForSearch(advancedFilters.responsableDepartement))
+        ) {
+          return false;
+        }
+
+        if (
+          advancedFilters.sloganDepartement
+          && !normalizeForSearch(item.sloganDepartement ).includes(normalizeForSearch(advancedFilters.sloganDepartement))
+        ) {
+          return false;
+        }
+
+        return true;
+      }),
+    [advancedFilters, baseFilteredData]
+  );
+
+  const notFound = !dataFiltered?.length && (!!filterName || Object.values(advancedFilters).some(Boolean));
 
   // Trier les données
   const sortedData = useMemo(() => dataFiltered.sort((a, b) => {
@@ -597,6 +636,7 @@ export function useDepartementTable() {
     onChangeRowsPerPage,
   };
 }
+
 
 
 

@@ -52,9 +52,17 @@ export const CelluleSlice = createSlice({
   name: 'cellule',
   initialState: initialStates,
   reducers: {
+    ensureArray: (state) => {
+      state.dataCellule = Array.isArray(state.dataCellule) ? state.dataCellule : []
+      state.dataFilterCellule = Array.isArray(state.dataFilterCellule) ? state.dataFilterCellule : []
+      state.listCellule = Array.isArray(state.listCellule) ? state.listCellule : []
+      state.filterCellule = Array.isArray(state.filterCellule) ? state.filterCellule : []
+    },
     // fonction pour ajouter un Departement
     addCellule: (state, action: PayloadAction<ICellule>) => {
       state.dataCellule.unshift(action.payload)
+      state.dataFilterCellule.unshift(action.payload)
+      state.listCellule.unshift(action.payload)
     },
 
     setCelluleItem: (state, action) => {
@@ -63,7 +71,7 @@ export const CelluleSlice = createSlice({
 
     // fonction pour ajouter le dernier enregistrement au dessus
     setListCellule: (state, action) => {
-      state.listCellule.unshift(action.payload)
+      state.listCellule = Array.isArray(action.payload) ? action.payload : []
     },
 
     // fonction pour suprimer un Departement
@@ -72,6 +80,9 @@ export const CelluleSlice = createSlice({
         (item) => item.idCellule !== action.payload
       );    
       state.dataFilterCellule = state.dataFilterCellule.filter(
+        (item) => item.idCellule !== action.payload
+      );
+      state.listCellule = state.listCellule.filter(
         (item) => item.idCellule !== action.payload
       );
     },
@@ -93,6 +104,9 @@ export const CelluleSlice = createSlice({
       state.dataFilterCellule = state.dataFilterCellule?.map((item: any) =>
       item.idCellule === action.payload.idCellule ? action.payload : item
       )
+      state.listCellule = state.listCellule?.map((item: any) =>
+      item.idCellule === action.payload.idCellule ? action.payload : item
+      )
     },
     setFilterCellule: (state, action) => {
       state.filterCellule = action.payload
@@ -104,6 +118,7 @@ export const CelluleSlice = createSlice({
 })
 
 export const {
+  ensureArray,
   addCellule,
   setDataModifiesCellule,
   deleteCellule,

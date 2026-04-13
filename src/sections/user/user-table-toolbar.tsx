@@ -1,29 +1,27 @@
-import Tooltip from '@mui/material/Tooltip';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import InputAdornment from '@mui/material/InputAdornment';
+import Tooltip from '@mui/material/Tooltip';
 
 import { Iconify } from 'src/components/iconify';
 import FilterDropdown from './view/filterbyIndice';
-
-// ----------------------------------------------------------------------
 
 type UserTableToolbarProps = {
   numSelected: number;
   filterName: string;
   onFilterName: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onDelete?: () => void; // Ajouter cette prop
-  deleteLoading?: boolean; // Ajouter pour gérer l'état de chargement
+  onDelete?: () => void;
+  deleteLoading?: boolean;
 };
 
-export function UserTableToolbar({ 
-  numSelected, 
-  filterName, 
-  onFilterName, 
+export function UserTableToolbar({
+  numSelected,
+  filterName,
+  onFilterName,
   onDelete,
-  deleteLoading = false 
+  deleteLoading = false,
 }: UserTableToolbarProps) {
   return (
     <Toolbar
@@ -40,7 +38,7 @@ export function UserTableToolbar({
     >
       {numSelected > 0 ? (
         <Typography component="div" variant="subtitle1">
-          {numSelected} sélectionné(s)
+          {numSelected} selectionne(s)
         </Typography>
       ) : (
         <OutlinedInput
@@ -56,24 +54,17 @@ export function UserTableToolbar({
           sx={{ maxWidth: 320 }}
         />
       )}
-      
+
       {numSelected > 0 ? (
         <Tooltip title="Supprimer">
-          <IconButton 
-            onClick={onDelete} // Ajouter l'event handler
-            disabled={deleteLoading} // Désactiver pendant le chargement
-          >
+          <IconButton onClick={onDelete} disabled={deleteLoading}>
             <Iconify icon="solar:trash-bin-trash-bold" />
           </IconButton>
         </Tooltip>
       ) : (
-        <Tooltip title="Filter list">
-          {/* <IconButton>
-            <Iconify icon="ic:round-filter-list" />
-
-          </IconButton> */}
-          <FilterDropdown/>
-        </Tooltip>
+        <span>
+          <FilterDropdown />
+        </span>
       )}
     </Toolbar>
   );

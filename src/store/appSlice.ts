@@ -10,6 +10,7 @@ export interface IAppState {
   desktopSecurityMessage: string
   desktopSecurityExpiresAt: string
   desktopSecurityIsSuperAdmin: boolean
+  desktopSecurityDaysRemaining: number
 }
 
 export const appSlice: any = createSlice({
@@ -24,6 +25,7 @@ export const appSlice: any = createSlice({
     desktopSecurityMessage: '',
     desktopSecurityExpiresAt: '',
     desktopSecurityIsSuperAdmin: false,
+    desktopSecurityDaysRemaining: 0,
   },
 
   reducers: {
@@ -49,6 +51,7 @@ export const appSlice: any = createSlice({
       state.desktopSecurityMessage = action.payload?.message || ''
       state.desktopSecurityExpiresAt = action.payload?.expiresAt || ''
       state.desktopSecurityIsSuperAdmin = Boolean(action.payload?.isSuperAdmin)
+      state.desktopSecurityDaysRemaining = Number(action.payload?.daysRemaining || 0)
     },
 
     resetDesktopSecurityStatus: (state) => {
@@ -57,6 +60,7 @@ export const appSlice: any = createSlice({
       state.desktopSecurityMessage = ''
       state.desktopSecurityExpiresAt = ''
       state.desktopSecurityIsSuperAdmin = false
+      state.desktopSecurityDaysRemaining = 0
     },
   },
 })

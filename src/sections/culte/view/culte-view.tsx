@@ -16,7 +16,9 @@ import {
 } from '@mui/material';
 
 import { apiClient } from 'src/utils/apiClient';
+import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
 
 import { TableNoData } from '../table-no-data';
 import { CulteTableRow } from '../culte-table-row';
@@ -46,6 +48,12 @@ import { IDataChoice } from '../../../store/membreSlice';
 export function CulteView() {
   const dispatch = useDispatch();
   const listCulte = useSelector((state: any) => state.culte.listCulte);
+  const appUserConnected = useSelector((state: any) => state.application?.userConnected);
+  const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
+  const currentUserId =
+    Number(appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateur)
+    || null;
 
   const [loading, setLoading] = useState(true);
   const table = useCulteTable();
@@ -54,6 +62,11 @@ export function CulteView() {
   const { selected, onSelectAllRows } = table;
 
   const [filterName, setFilterName] = useState('');
+  const [advancedFilters, setAdvancedFilters] = useState({
+    typeCulte: '',
+    dirigeant: '',
+    dateCulte: '',
+  });
   const [openDialog, setOpenDialog] = useState(false);
   const [maxWidth] = useState<any>('lg');
   const [data, setData] = useState({ ...culte});
@@ -80,7 +93,10 @@ export function CulteView() {
   const fetchCultes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.getCultes();
+      // On recharge les cultes du compte connecté pour éviter de mélanger plusieurs communautés.
+      const response = currentUserId
+        ? await apiClient.getCultesByUtilisateur(currentUserId)
+        : await apiClient.getCultes();
       if (response.status === 1) {
         dispatch(setListCulte(response.data));
       }
@@ -89,14 +105,20 @@ export function CulteView() {
     } finally {
       setLoading(false);
     }
-  }, [dispatch]);
+  }, [currentUserId, dispatch]);
 
 
   // Fonction pour supprimer un culte
   const handleDeleteCulte = useCallback(async (idCulte: number) => {
+    if (!currentUserId) {
+      showNotification('Session expiree: reconnectez-vous pour supprimer un culte', 'warning');
+      return;
+    }
+
     try {
       setDeleteLoading(true);
-      const response = await apiClient.deleteCulte(idCulte);
+      // Le backend exige idUtilisateur pour sécuriser la suppression.
+      const response = await apiClient.deleteCulte(idCulte, currentUserId);
       if (response.status === 1) {
         dispatch(deleteCulte(idCulte));
         showNotification('Culte supprimé avec succès', 'success');
@@ -109,7 +131,7 @@ export function CulteView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [dispatch, showNotification]);
+  }, [currentUserId, dispatch, showNotification]);
 
   // Fonction pour éditer un culte
   const handleEditCulte = useCallback((culteData: ICulte) => {
@@ -143,6 +165,8 @@ export function CulteView() {
 
       const cleanedData: any = {
         ...mergedData,
+        // Le backend filtre aussi l'update par idUtilisateur.
+        idUtilisateur: currentUserId || currentCulte?.idUtilisateur || null,
       };
 
       console.log('Données envoyées à l\'API:', cleanedData);
@@ -163,7 +187,7 @@ export function CulteView() {
     } finally {
       setUpdateLoading(false);
     }
-  }, [data.idCulte, listCulte, dispatch, handleCloseDialog, showNotification,fetchCultes]);
+  }, [currentUserId, data.idCulte, listCulte, dispatch, handleCloseDialog, showNotification, fetchCultes]);
 
 
   // Fonction pour créer un culte
@@ -179,7 +203,7 @@ export function CulteView() {
           ...culteData,
           nombreHommeCulte: Number(culteData.nombreHommeCulte) || 0,
           nombreFemmeCulte: Number(culteData.nombreFemmeCulte) || 0,
-          idUtilisateur: null // À adapter selon votre logique d'authentification
+          idUtilisateur: currentUserId || null
         };
 
         const response = await apiClient.createCulte(cleanedData);
@@ -201,7 +225,7 @@ export function CulteView() {
         setUpdateLoading(false);
       }
     }
-  }, [isEditMode, handleUpdateCulte, dispatch, fetchCultes, handleCloseDialog, showNotification]);
+  }, [currentUserId, isEditMode, handleUpdateCulte, dispatch, fetchCultes, handleCloseDialog, showNotification]);
 
 
 
@@ -231,8 +255,8 @@ export function CulteView() {
   }, [fetchCultes]);
 
 
-  // Filtrer les données
-  const dataFiltered: any[] = useMemo(() => {
+  // On combine la recherche texte avec des crit�res m�tier plus pr�cis.
+  const baseFilteredData: any[] = useMemo(() => {
     const dataToFilter = Array.isArray(listCulte) ? listCulte : [];
     return applyFilter({
       inputData: dataToFilter,
@@ -241,8 +265,30 @@ export function CulteView() {
     });
   }, [listCulte, table.order, table.orderBy, filterName]);
 
-  const notFound = !dataFiltered?.length && !!filterName;
+  const dataFiltered: any[] = useMemo(
+    () =>
+      baseFilteredData.filter((item) => {
+        if (advancedFilters.typeCulte && String(item.typeCulte || '') !== advancedFilters.typeCulte) {
+          return false;
+        }
 
+        if (
+          advancedFilters.dirigeant
+          && !normalizeForSearch(item.dirigeant ).includes(normalizeForSearch(advancedFilters.dirigeant))
+        ) {
+          return false;
+        }
+
+        if (advancedFilters.dateCulte && String(item.dateCulte || '').split('T')[0] !== advancedFilters.dateCulte) {
+          return false;
+        }
+
+        return true;
+      }),
+    [advancedFilters, baseFilteredData]
+  );
+
+  const notFound = !dataFiltered?.length && (!!filterName || Object.values(advancedFilters).some(Boolean));
   // Trier les données
   const sortedData = useMemo(() => dataFiltered.sort((a, b) => {
     const typeA = a.typeCulte?.toLowerCase();
@@ -264,13 +310,17 @@ export function CulteView() {
   // Fonction pour supprimer plusieurs cultes
   const handleDeleteSelected = useCallback(async () => {
     if (selected.length === 0) return;
+    if (!currentUserId) {
+      showNotification('Session expiree: reconnectez-vous pour supprimer des cultes', 'warning');
+      return;
+    }
 
     try {
       setDeleteLoading(true);
 
       const deletePromises = selected?.map((idCulteStr: any) => {
         const idCulte = parseInt(idCulteStr, 10);
-        return apiClient.deleteCulte(idCulte)
+        return apiClient.deleteCulte(idCulte, currentUserId)
           .then(() => {
             dispatch(deleteCulte(idCulte));
             return { success: true, id: idCulte };
@@ -302,7 +352,7 @@ export function CulteView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [selected, onSelectAllRows, dispatch, showNotification]);
+  }, [currentUserId, selected, onSelectAllRows, dispatch, showNotification]);
 
   useEffect(() => {
     if (!openDialog) {
@@ -355,6 +405,40 @@ export function CulteView() {
           }}
           onDelete={handleDeleteSelected}
           deleteLoading={deleteLoading}
+          advancedFilters={
+            <AdvancedFilterMenu
+              buttonLabel="Filtres"
+              fields={[
+                {
+                  key: 'typeCulte',
+                  label: 'Type de culte',
+                  type: 'select',
+                  options: typeCulteOptions.map((option) => ({
+                    value: String(option.value),
+                    label: option.label,
+                  })),
+                },
+                { key: 'dirigeant', label: 'Dirigeant' },
+                { key: 'dateCulte', label: 'Date du culte', type: 'date' },
+              ]}
+              values={advancedFilters}
+              onChange={(key, value) =>
+                setAdvancedFilters((prev) => ({
+                  ...prev,
+                  [key]: value,
+                }))
+              }
+              onApply={() => table.onResetPage()}
+              onReset={() => {
+                setAdvancedFilters({
+                  typeCulte: '',
+                  dirigeant: '',
+                  dateCulte: '',
+                });
+                table.onResetPage();
+              }}
+            />
+          }
         />
 
         <Scrollbar>
@@ -808,3 +892,8 @@ export function useCulteTable() {
     onChangeRowsPerPage,
   };
 }
+
+
+
+
+

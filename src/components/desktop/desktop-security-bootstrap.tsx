@@ -22,7 +22,6 @@ export function DesktopSecurityBootstrap() {
   useEffect(() => {
     let isMounted = true;
 
-    // Hors desktop, on ne garde pas ce mecanisme de blocage local.
     if (!(window as any)?.desktopApp?.isDesktop) {
       dispatch(
         setDesktopSecurityStatus({
@@ -31,10 +30,10 @@ export function DesktopSecurityBootstrap() {
           message: '',
           expiresAt: '',
           isSuperAdmin: false,
-          })
-        );
+          daysRemaining: 0,
+        })
+      );
     } else if (!isLoggedIn || !currentUsername) {
-      // Sans utilisateur connecte, on reinitialise simplement l'etat de controle.
       dispatch(resetDesktopSecurityStatus());
     } else {
       const loadDesktopSecurityStatus = async () => {
@@ -53,10 +52,10 @@ export function DesktopSecurityBootstrap() {
               message: status.blockMessage || '',
               expiresAt: status.expiresAt || '',
               isSuperAdmin: Boolean(status.isSuperAdmin),
+              daysRemaining: Number(status.daysRemaining || 0),
             })
           );
         } catch (_error) {
-          // En cas d'echec reseau local, on evite de bloquer l'application a tort.
           if (!isMounted) {
             return;
           }
@@ -68,12 +67,12 @@ export function DesktopSecurityBootstrap() {
               message: '',
               expiresAt: '',
               isSuperAdmin: false,
+              daysRemaining: 0,
             })
           );
         }
       };
 
-      // On declenche la verification sans bloquer le rendu initial du composant.
       loadDesktopSecurityStatus();
     }
 
