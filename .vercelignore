@@ -1,0 +1,33 @@
+# node
+node_modules
+npm-debug.log
+
+# build outputs
+.next
+.swc
+_static
+out
+dist
+build
+
+# environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+*.log
+*.tsbuildinfo
+.unimportedrc.json

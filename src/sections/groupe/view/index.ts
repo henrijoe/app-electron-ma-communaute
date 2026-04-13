@@ -1,0 +1,2 @@
+export * from './groupe-view';
+
