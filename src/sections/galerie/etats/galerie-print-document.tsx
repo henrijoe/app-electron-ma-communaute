@@ -1,70 +1,148 @@
 import React from 'react';
-import { Box, Grid, Typography } from '@mui/material';
+import { useSelector } from 'react-redux';
+import { Box, GlobalStyles, Typography } from '@mui/material';
 
-import { PrintDocumentLayout } from 'src/components/print/print-document';
+import { PrintDocumentLayout, PrintEmptyState } from 'src/components/print/print-document';
 import { buildGalerieMediaUrl } from 'src/utils/apiClient';
+import type { IReduxState } from 'src/store/store';
 import type { IGalerieEvenement, IGalerieImage } from 'src/store/galerieSlice';
-
-type PrintIdentity = {
-  email?: string;
-  logoUtilisateur?: string;
-  nomTemple?: string;
-  nomUtilisateur?: string;
-  prenomUtilisateur?: string;
-  telephoneUtilisateur?: string;
-};
 
 type GaleriePrintDocumentProps = {
   event: IGalerieEvenement;
-  identity?: PrintIdentity;
   images: IGalerieImage[];
 };
 
-export function GaleriePrintDocument({ event, identity, images }: GaleriePrintDocumentProps) {
-  return (
-    <PrintDocumentLayout
-      identity={identity}
-      title={`Galerie - ${event.titreGalerie}`}
-      subtitle={`${event.typeEvenement || 'Evenement'} • ${event.dateEvenement || 'Date non precisee'} • ${event.lieuEvenement || 'Lieu non precise'}`}
-      countLabel="Total images"
-      countValue={images.length}
-    >
-      <Box className="print-block-avoid-break" sx={{ mb: 3 }}>
-        <Typography variant="body1" sx={{ color: '#304760', mb: 0.5 }}>
-          {event.descriptionGalerie || 'Album evenementiel de la communaute.'}
-        </Typography>
-      </Box>
+const chunkImages = (items: IGalerieImage[], size: number) =>
+  Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
+    items.slice(index * size, index * size + size)
+  );
 
-      <Grid container spacing={2}>
-        {images.map((image) => (
-          <Grid item xs={3} key={image.idGalerieImage || image.cheminImage} className="print-block-avoid-break">
+export function GaleriePrintDocument({ event, images }: GaleriePrintDocumentProps) {
+  const identity = useSelector((state: IReduxState) => ({
+    ...(state.authentification.utilisateurData || {}),
+    ...(state.application.userConnected || {}),
+  }));
+
+  if (!images.length) {
+    return (
+      <PrintDocumentLayout
+        identity={identity}
+        title={`Galerie - ${event.titreGalerie}`}
+        subtitle={`${event.typeEvenement || 'Evenement'} - ${event.dateEvenement || 'Date non precisee'} - ${event.lieuEvenement || 'Lieu non precise'}`}
+        countLabel="Total images"
+        countValue={0}
+        variant="plain"
+      >
+        <PrintEmptyState title="Aucune image" message="Cette galerie ne contient encore aucune photo a imprimer." />
+      </PrintDocumentLayout>
+    );
+  }
+
+  const pages = chunkImages(images, 2);
+
+  return (
+    <>
+      <GlobalStyles
+        styles={{
+          '@page': {
+            size: 'A4 landscape',
+            margin: '10mm',
+          },
+          '@media print': {
+            'html, body': {
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact',
+              background: '#ffffff',
+            },
+            '.galerie-print-page': {
+              breakAfter: 'page',
+              pageBreakAfter: 'always',
+            },
+            '.galerie-print-page:last-of-type': {
+              breakAfter: 'auto',
+              pageBreakAfter: 'auto',
+            },
+            '.galerie-print-block': {
+              breakInside: 'avoid',
+              pageBreakInside: 'avoid',
+            },
+          },
+        }}
+      />
+
+      {pages.map((pageImages, pageIndex) => (
+        <Box
+          key={`page-${pageIndex + 1}`}
+          className="galerie-print-page"
+          sx={{
+            width: '100%',
+            minHeight: '100vh',
+            px: 0,
+            py: 0,
+            background: '#ffffff',
+          }}
+        >
+          <PrintDocumentLayout
+            identity={identity}
+            title={`Galerie - ${event.titreGalerie}`}
+            subtitle={`${event.typeEvenement || 'Evenement'} - ${event.dateEvenement || 'Date non precisee'} - ${event.lieuEvenement || 'Lieu non precise'}`}
+            countLabel="Page"
+            countValue={pageIndex + 1}
+            variant="plain"
+          >
             <Box
               sx={{
-                border: '1px solid rgba(15, 23, 42, 0.12)',
-                borderRadius: 3,
-                overflow: 'hidden',
-                bgcolor: '#fff',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 2,
+                alignItems: 'start',
               }}
             >
-              <Box
-                component="img"
-                src={buildGalerieMediaUrl(image.cheminImage)}
-                alt={image.nomFichier}
-                sx={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }}
-              />
-              <Box sx={{ p: 1.5 }}>
-                <Typography variant="subtitle2" noWrap>
-                  {image.legendeImage || image.nomFichier}
+              {pageImages.map((image, imageIndex) => (
+                <Box
+                key={image.idGalerieImage || image.cheminImage || imageIndex}
+                className="galerie-print-block"
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                }}
+              >
+                <Box
+                  component="img"
+                  src={buildGalerieMediaUrl(image.cheminImage)}
+                  alt={image.nomFichier}
+                  sx={{
+                    width: '100%',
+                    height: '170mm',
+                    objectFit: 'contain',
+                    display: 'block',
+                    backgroundColor: 'transparent',
+                    boxShadow: 'none',
+                    border: 'none',
+                  }}
+                />
+
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 700,
+                    color: '#0f172a',
+                    textAlign: 'center',
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {image.legendeImage || image.nomFichier || `Photo ${pageIndex * 2 + imageIndex + 1}`}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" noWrap>
-                  {image.dateAjout || ''}
-                </Typography>
-              </Box>
+                </Box>
+              ))}
+
+              {pageImages.length === 1 && <Box />}
             </Box>
-          </Grid>
-        ))}
-      </Grid>
-    </PrintDocumentLayout>
+          </PrintDocumentLayout>
+        </Box>
+      ))}
+    </>
   );
 }
 

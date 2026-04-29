@@ -13,7 +13,7 @@ export interface IAuthentificationState {
   filterUtilisateur: IUtilisateur[]
 }
 
-// creer interface comportant des differents entités  d'authentification
+// creer interface comportant des differents entites  d'authentification
 export interface IAuthentification {
   idUtilisateur: number;
   idMembre: number;
@@ -29,21 +29,56 @@ export interface IUser {
 export interface IUtilisateur {
   idUtilisateur: number;
   logoUtilisateur: string;
+  logoEglise: string;
   nomTemple: string;
+  lieuEglise: string;
   nomUtilisateur: string;
   prenomUtilisateur: string;
   telephoneUtilisateur: string;
+  telephoneSecretariatEglise: string;
+  pasteurPrincipal: string;
+  pasteurSecondaire: string;
+  pasteurTroisieme: string;
+  telephonePasteurPrincipal: string;
+  telephonePasteurSecondaire: string;
+  telephonePasteurTroisieme: string;
+  capaciteAccueilEglise: string;
+  nombreCultesDimanche: string;
+  emailEglise: string;
+  boitePostaleEglise: string;
+  dateCreationEglise: string;
+  nombrePasteursEglise: string;
+  nombreAnciensEglise: string;
+  nombreDiacresEglise: string;
   password: string;
   confirmPassword: string;
   email: string;
 }
 
-export const utilisateur: any = {
-  logoUtilisateur:'',
+export const utilisateur: IUtilisateur = {
+  idUtilisateur: 0,
+  logoUtilisateur: '',
+  logoEglise: '',
   nomTemple: '',
+  lieuEglise: '',
   nomUtilisateur: '',
   prenomUtilisateur: '',
   telephoneUtilisateur: '',
+  telephoneSecretariatEglise: '',
+  pasteurPrincipal: '',
+  pasteurSecondaire: '',
+  pasteurTroisieme: '',
+  telephonePasteurPrincipal: '',
+  telephonePasteurSecondaire: '',
+  telephonePasteurTroisieme: '',
+  capaciteAccueilEglise: '',
+  nombreCultesDimanche: '',
+  emailEglise: '',
+  boitePostaleEglise: '',
+  dateCreationEglise: '',
+  nombrePasteursEglise: '',
+  nombreAnciensEglise: '',
+  nombreDiacresEglise: '',
   password: '',
   confirmPassword: '',
   email: ''
@@ -79,9 +114,8 @@ export const userSlice = createSlice({
     setListUtilisateur: (state, action) => {
       state.listUtilisateur = action.payload
     },
-    setUtilisateurData: (state, action) => {
-      state.dataUtilisateurFilter = action.payload;
-      state.utilisateurData = action.payload;
+    setUtilisateurData: (state, action: PayloadAction<IUtilisateur>) => {
+      state.utilisateurData = action.payload
     },
 
     // fonction pour suprimer une ligne d'authentification enregister
@@ -115,7 +149,7 @@ export const userSlice = createSlice({
     },
     setFilterUtilisateur: (state, action) => {
       state.filterUtilisateur = action.payload
-},
+    },
 
   },
 })

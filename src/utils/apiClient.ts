@@ -136,6 +136,24 @@ export const buildPhotoUrl = (photoName: string): string => {
   return cleanUrl(resolveApiBaseUrl(), normalized ? `photos/${normalized}` : 'photos');
 };
 
+const normalizeChurchLogoName = (logoName: string): string => {
+  if (!logoName) return '';
+
+  return logoName
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/^church-logos\//i, '')
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+};
+
+export const buildChurchLogoUrl = (logoName: string): string => {
+  const normalized = normalizeChurchLogoName(logoName);
+  return cleanUrl(resolveApiBaseUrl(), normalized ? `church-logos/${normalized}` : 'church-logos');
+};
+
 const normalizeGaleriePath = (filePath: string): string => {
   if (!filePath) return '';
 
@@ -393,6 +411,9 @@ export const apiClient = {
   getComptabilitesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/listecomptabilite/${idUtilisateur}`, { method: 'GET' }),
 
+  getComptabilitesSupprimeesByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/listecomptabilitesupprimee/${idUtilisateur}`, { method: 'GET' }),
+
   createComptabilite: (data: any) =>
     request<IServerResponse>('communaute/inserercomptabilite', {
       method: 'POST',
@@ -405,10 +426,22 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
-  deleteComptabilite: (idComptabilite: number) =>
+  deleteComptabilite: (idComptabilite: number, idUtilisateur?: number | null, motifSuppressionComptabilite?: string) =>
     request<IServerResponse>(`communaute/supprimercomptabilite/${idComptabilite}`, {
       method: 'POST',
+      body: JSON.stringify({ idComptabilite, idUtilisateur, motifSuppressionComptabilite }),
+    }),
+
+  restoreComptabilite: (idComptabilite: number) =>
+    request<IServerResponse>(`communaute/restaurercomptabilite/${idComptabilite}`, {
+      method: 'POST',
       body: JSON.stringify({ idComptabilite }),
+    }),
+
+  deleteComptabilitePermanently: (idComptabilite: number, nomUtilisateur: string) =>
+    request<IServerResponse>(`communaute/supprimercomptabilitedefinitivement/${idComptabilite}`, {
+      method: 'POST',
+      body: JSON.stringify({ idComptabilite, nomUtilisateur }),
     }),
   // galerie
   getGaleriesByUtilisateur: (idUtilisateur: number | string) =>
@@ -574,15 +607,66 @@ export const apiClient = {
   // Cree un compte utilisateur dans le backend principal.
   registerUtilisateur: (data: {
     logoUtilisateur?: string;
+    logoEglise?: string;
     nomTemple: string;
+    lieuEglise?: string;
     nomUtilisateur: string;
     prenomUtilisateur: string;
     telephoneUtilisateur: string;
+    telephoneSecretariatEglise?: string;
+    pasteurPrincipal?: string;
+    pasteurSecondaire?: string;
+    pasteurTroisieme?: string;
+    telephonePasteurPrincipal?: string;
+    telephonePasteurSecondaire?: string;
+    telephonePasteurTroisieme?: string;
+    capaciteAccueilEglise?: string;
+    nombreCultesDimanche?: string;
+    emailEglise?: string;
+    boitePostaleEglise?: string;
+    dateCreationEglise?: string;
+    nombrePasteursEglise?: string;
+    nombreAnciensEglise?: string;
+    nombreDiacresEglise?: string;
     password: string;
     confirmPassword: string;
     email?: string;
   }) =>
     request<IServerResponse>('communaute/ajouterutilisateur', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Met a jour les informations du profil et de l'eglise rattaches a l'utilisateur.
+  updateUtilisateur: (data: {
+    idUtilisateur: number;
+    logoUtilisateur?: string;
+    logoEglise?: string;
+    nomTemple: string;
+    lieuEglise?: string;
+    nomUtilisateur: string;
+    prenomUtilisateur: string;
+    telephoneUtilisateur: string;
+    telephoneSecretariatEglise?: string;
+    pasteurPrincipal?: string;
+    pasteurSecondaire?: string;
+    pasteurTroisieme?: string;
+    telephonePasteurPrincipal?: string;
+    telephonePasteurSecondaire?: string;
+    telephonePasteurTroisieme?: string;
+    capaciteAccueilEglise?: string;
+    nombreCultesDimanche?: string;
+    emailEglise?: string;
+    boitePostaleEglise?: string;
+    dateCreationEglise?: string;
+    nombrePasteursEglise?: string;
+    nombreAnciensEglise?: string;
+    nombreDiacresEglise?: string;
+    password: string;
+    confirmPassword: string;
+    email?: string;
+  }) =>
+    request<IServerResponse>('communaute/modifierutilisateur', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -652,4 +736,9 @@ export const apiClient = {
   delete: <T = IServerResponse>(route: string, config?: IConfig) =>
     request<T>(route, { method: 'DELETE', ...config }),
 };
+
+
+
+
+
 

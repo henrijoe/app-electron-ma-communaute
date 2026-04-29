@@ -15,18 +15,8 @@ import type { IGalerieEvenement, IGalerieImage } from 'src/store/galerieSlice';
 
 import { GaleriePrintDocument } from './galerie-print-document';
 
-type PrintIdentity = {
-  email?: string;
-  logoUtilisateur?: string;
-  nomTemple?: string;
-  nomUtilisateur?: string;
-  prenomUtilisateur?: string;
-  telephoneUtilisateur?: string;
-};
-
 type PrintEtatGalerieProps = {
   event: IGalerieEvenement;
-  identity?: PrintIdentity;
   images: IGalerieImage[];
 };
 
@@ -52,13 +42,13 @@ const StyledMenu = styled((props: MenuProps) => (
   },
 }));
 
-const ComponentToPrint = forwardRef<HTMLDivElement, PrintEtatGalerieProps>(({ event, identity, images }, ref) => (
+const ComponentToPrint = forwardRef<HTMLDivElement, PrintEtatGalerieProps>(({ event, images }, ref) => (
   <div ref={ref}>
-    <GaleriePrintDocument event={event} identity={identity} images={images} />
+    <GaleriePrintDocument event={event} images={images} />
   </div>
 ));
 
-export function PrintEtatGalerie({ event, identity, images }: PrintEtatGalerieProps) {
+export function PrintEtatGalerie({ event, images }: PrintEtatGalerieProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const isDesktopPrint = canUseDesktopPrint();
@@ -105,7 +95,7 @@ export function PrintEtatGalerie({ event, identity, images }: PrintEtatGaleriePr
         <Divider sx={{ my: 0.5 }} />
       </StyledMenu>
       <div style={{ display: 'none' }}>
-        <ComponentToPrint ref={printRef} event={event} identity={identity} images={images} />
+        <ComponentToPrint ref={printRef} event={event} images={images} />
       </div>
     </>
   );

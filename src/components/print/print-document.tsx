@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import {
   Box,
   Divider,
@@ -13,15 +14,34 @@ import {
   Typography,
 } from '@mui/material';
 
+import { buildChurchLogoUrl } from 'src/utils/apiClient';
+import type { IReduxState } from 'src/store/store';
 import { resolveStaticAssetUrl } from 'src/utils/asset-url';
 
 type PrintIdentity = {
   logoUtilisateur?: string;
+  logoEglise?: string;
   nomTemple?: string;
+  lieuEglise?: string;
   prenomUtilisateur?: string;
   nomUtilisateur?: string;
   telephoneUtilisateur?: string;
+  telephoneSecretariatEglise?: string;
+  pasteurPrincipal?: string;
+  pasteurSecondaire?: string;
+  pasteurTroisieme?: string;
+  telephonePasteurPrincipal?: string;
+  telephonePasteurSecondaire?: string;
+  telephonePasteurTroisieme?: string;
+  boitePostaleEglise?: string;
+  dateCreationEglise?: string;
+  capaciteAccueilEglise?: string;
+  nombreCultesDimanche?: string;
+  nombrePasteursEglise?: string;
+  nombreAnciensEglise?: string;
+  nombreDiacresEglise?: string;
   email?: string;
+  emailEglise?: string;
 };
 
 type PrintDocumentLayoutProps = {
@@ -30,6 +50,7 @@ type PrintDocumentLayoutProps = {
   subtitle?: string;
   countLabel?: string;
   countValue?: number;
+  variant?: 'default' | 'plain';
   children: React.ReactNode;
 };
 
@@ -43,8 +64,16 @@ type PrintEmptyStateProps = {
   message: string;
 };
 
-const getPrintableLogoUrl = (logoPath?: string): string | null => {
+const joinAvailableValues = (...values: Array<string | undefined>): string =>
+  values
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(' - ');
+
+const getPrintableLogoUrl = (identity?: PrintIdentity): string | null => {
   // On ignore les logos absents pour garder un rendu propre sans image cassée.
+  const logoPath = identity?.logoEglise || identity?.logoUtilisateur;
+
   if (!logoPath) {
     return null;
   }
@@ -55,6 +84,10 @@ const getPrintableLogoUrl = (logoPath?: string): string | null => {
   }
 
   // Les logos du bundle front doivent etre resolus contre la base Vite/Electron.
+  if (identity?.logoEglise && logoPath === identity.logoEglise) {
+    return buildChurchLogoUrl(logoPath);
+  }
+
   return resolveStaticAssetUrl(logoPath);
 };
 
@@ -64,12 +97,48 @@ export function PrintDocumentLayout({
   subtitle,
   countLabel = 'Total',
   countValue = 0,
+  variant = 'default',
   children,
 }: PrintDocumentLayoutProps) {
+  const userConnected = useSelector((state: IReduxState) => state.application.userConnected);
+  const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
+
+  const mergedIdentity: PrintIdentity = {
+    ...(utilisateurData || {}),
+    ...(userConnected || {}),
+    ...(identity || {}),
+  };
+
   // On prepare l'eventuel logo pour le bandeau haut du document.
-  const logoUrl = getPrintableLogoUrl(identity?.logoUtilisateur);
+  const logoUrl = getPrintableLogoUrl(mergedIdentity);
   // On capture la date de generation une seule fois pour tout le document.
   const generatedAt = new Date().toLocaleString('fr-FR');
+  const isPlainVariant = variant === 'plain';
+  const primaryContactLine = joinAvailableValues(
+    mergedIdentity.lieuEglise,
+    mergedIdentity.telephoneSecretariatEglise || mergedIdentity.telephoneUtilisateur,
+    mergedIdentity.emailEglise || mergedIdentity.email,
+    mergedIdentity.boitePostaleEglise
+  );
+  const pastorsLine = joinAvailableValues(
+    mergedIdentity.pasteurPrincipal
+      ? `Pasteur principal: ${mergedIdentity.pasteurPrincipal}${mergedIdentity.telephonePasteurPrincipal ? ` (${mergedIdentity.telephonePasteurPrincipal})` : ''}`
+      : undefined,
+    mergedIdentity.pasteurSecondaire
+      ? `Pasteur secondaire: ${mergedIdentity.pasteurSecondaire}${mergedIdentity.telephonePasteurSecondaire ? ` (${mergedIdentity.telephonePasteurSecondaire})` : ''}`
+      : undefined,
+    mergedIdentity.pasteurTroisieme
+      ? `3eme pasteur: ${mergedIdentity.pasteurTroisieme}${mergedIdentity.telephonePasteurTroisieme ? ` (${mergedIdentity.telephonePasteurTroisieme})` : ''}`
+      : undefined
+  );
+  const churchStatsLine = joinAvailableValues(
+    mergedIdentity.dateCreationEglise ? `Creation: ${mergedIdentity.dateCreationEglise}` : undefined,
+    mergedIdentity.capaciteAccueilEglise ? `Capacite: ${mergedIdentity.capaciteAccueilEglise}` : undefined,
+    mergedIdentity.nombreCultesDimanche ? `Cultes dimanche: ${mergedIdentity.nombreCultesDimanche}` : undefined,
+    mergedIdentity.nombrePasteursEglise ? `Pasteurs: ${mergedIdentity.nombrePasteursEglise}` : undefined,
+    mergedIdentity.nombreAnciensEglise ? `Anciens: ${mergedIdentity.nombreAnciensEglise}` : undefined,
+    mergedIdentity.nombreDiacresEglise ? `Diacres: ${mergedIdentity.nombreDiacresEglise}` : undefined
+  );
 
   return (
     <>
@@ -101,10 +170,11 @@ export function PrintDocumentLayout({
           width: '100%',
           maxWidth: 'none',
           mx: 'auto',
-          p: { xs: 2, md: 3 },
-          background:
-            'linear-gradient(180deg, #eaf2fb 0%, #f7fbff 38%, #edf5fc 100%)',
-          minHeight: '100vh',
+          p: isPlainVariant ? 0 : { xs: 2, md: 3 },
+          background: isPlainVariant
+            ? '#ffffff'
+            : 'linear-gradient(180deg, #eaf2fb 0%, #f7fbff 38%, #edf5fc 100%)',
+          minHeight: isPlainVariant ? 'auto' : '100vh',
           '@media print': {
             p: 0,
             minHeight: 'auto',
@@ -164,13 +234,27 @@ export function PrintDocumentLayout({
                 Ma Communaute
               </Typography>
               <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
-                {identity?.nomTemple || 'Communaute locale'}
+                {mergedIdentity.nomTemple || 'Communaute locale'}
               </Typography>
-              <Typography variant="body2" sx={{ mt: 0.75, opacity: 0.92, maxWidth: 520 }}>
-                {identity?.telephoneUtilisateur
-                  ? `Contact principal : ${identity.telephoneUtilisateur}`
-                  : 'Document imprime depuis l’application desktop de gestion communautaire.'}
+              <Typography variant="body2" sx={{ mt: 0.75, opacity: 0.92, maxWidth: 760 }}>
+                {primaryContactLine || "Document imprime depuis l'application de gestion communautaire."}
               </Typography>
+              {pastorsLine && (
+                <Typography
+                  variant="caption"
+                  sx={{ mt: 0.75, opacity: 0.88, maxWidth: 760, display: 'block' }}
+                >
+                  {pastorsLine}
+                </Typography>
+              )}
+              {churchStatsLine && (
+                <Typography
+                  variant="caption"
+                  sx={{ mt: 0.5, opacity: 0.84, maxWidth: 760, display: 'block' }}
+                >
+                  {churchStatsLine}
+                </Typography>
+              )}
             </Box>
           </Stack>
 
@@ -186,12 +270,11 @@ export function PrintDocumentLayout({
         sx={{
           position: 'relative',
           overflow: 'hidden',
-          backgroundColor: 'common.white',
-          borderRadius: 6,
-          p: { xs: 3, md: 4 },
-          boxShadow: '0 18px 40px rgba(15, 23, 42, 0.08)',
-          border: '1px solid rgba(15, 23, 42, 0.08)',
-          
+          backgroundColor: isPlainVariant ? 'transparent' : 'common.white',
+          borderRadius: isPlainVariant ? 0 : 6,
+          p: isPlainVariant ? 0 : { xs: 3, md: 4 },
+          boxShadow: isPlainVariant ? 'none' : '0 18px 40px rgba(15, 23, 42, 0.08)',
+          border: isPlainVariant ? 'none' : '1px solid rgba(15, 23, 42, 0.08)',
         }}
       >
         <Stack
@@ -212,6 +295,20 @@ export function PrintDocumentLayout({
               }}
             >
               {title}
+            </Typography>
+            {subtitle && (
+              <Typography variant="body2" sx={{ mt: 0.75, color: '#5b6b7f' }}>
+                {subtitle}
+              </Typography>
+            )}
+          </Box>
+
+          <Box sx={{ color: '#304760' }}>
+            <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>
+              {countLabel}
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 800 }}>
+              {countValue}
             </Typography>
           </Box>
         </Stack>

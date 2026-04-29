@@ -22,6 +22,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { Iconify } from 'src/components/iconify/iconify';
 import { Scrollbar } from 'src/components/scrollbar/scrollbar';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
 
 import { applyFilter, emptyRows, getComparator } from '../utils';
@@ -59,6 +60,7 @@ export function GroupeView() {
   const [data, setData] = useState({ ...groupe });
   const [isEditMode, setIsEditMode] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [confirmDeleteSelectedOpen, setConfirmDeleteSelectedOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const table = useGroupeTable();
 
@@ -71,7 +73,7 @@ export function GroupeView() {
   }, []);
 
   const fetchGroupes = useCallback(async () => {
-    // On charge uniquement les groupes rattach�s � l'utilisateur courant.
+    // On charge uniquement les groupes rattaches l'utilisateur courant.
     try {
       setLoading(true);
       dispatch(ensureArray());
@@ -102,7 +104,7 @@ export function GroupeView() {
 
   const handleDeleteGroupe = useCallback(async (idGroupe: number) => {
     if (!currentUserId) {
-      showNotification('Session expir�e : reconnectez-vous', 'warning');
+      showNotification('Session expirée : reconnectez-vous', 'warning');
       return;
     }
 
@@ -111,7 +113,7 @@ export function GroupeView() {
       const response = await apiClient.deleteGroupe(idGroupe, currentUserId);
       if (response.status === 1) {
         dispatch(deleteGroupe(idGroupe));
-        showNotification('Groupe supprim� avec succ�s', 'success');
+        showNotification('Groupe supprimé avec succès', 'success');
       }
     } catch (error: any) {
       showNotification(error?.message || 'Erreur lors de la suppression du groupe', 'error');
@@ -125,30 +127,57 @@ export function GroupeView() {
 
     try {
       setDeleteLoading(true);
-      await Promise.all(
-        table.selected.map(async (idGroupe) => {
+
+      const summary = await table.selected.reduce(
+        (promise, idGroupe) => promise.then(async ({ successes, failures }) => {
           const numericId = Number(idGroupe);
-          await apiClient.deleteGroupe(numericId, currentUserId);
-          dispatch(deleteGroupe(numericId));
-        })
+
+          try {
+            const response = await apiClient.deleteGroupe(numericId, currentUserId);
+
+            if (response.status === 1) {
+              dispatch(deleteGroupe(numericId));
+              return { failures, successes: successes + 1 };
+            }
+
+            return { failures: failures + 1, successes };
+          } catch (error) {
+            console.error(`Erreur suppression groupe ${numericId}:`, error);
+            return { failures: failures + 1, successes };
+          }
+        }),
+        Promise.resolve({ failures: 0, successes: 0 })
       );
+
       table.onSelectAllRows(false, []);
-      showNotification('Groupes supprim�s avec succ�s', 'success');
+
+      if (summary.successes > 0) {
+        await fetchGroupes();
+      }
+
+      if (summary.failures === 0) {
+        showNotification(`${summary.successes} groupe(s) supprime(s) avec succes`, 'success');
+      } else {
+        showNotification(
+          `${summary.successes} supprime(s), ${summary.failures} erreur(s)`,
+          summary.failures === table.selected.length ? 'error' : 'warning'
+        );
+      }
     } catch (error: any) {
       showNotification(error?.message || 'Erreur lors de la suppression multiple', 'error');
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, dispatch, showNotification, table]);
+  }, [currentUserId, dispatch, fetchGroupes, showNotification, table]);
 
   const handleSubmit = useCallback(async () => {
     if (!data.libelleGroupe?.trim()) {
-      showNotification('Le libell� du groupe est requis', 'warning');
+      showNotification('Le libellé du groupe est requis', 'warning');
       return;
     }
 
     if (!currentUserId) {
-      showNotification('Session expir�e : reconnectez-vous', 'warning');
+      showNotification('Session expirée : reconnectez-vous', 'warning');
       return;
     }
 
@@ -163,14 +192,14 @@ export function GroupeView() {
         const response = await apiClient.updateGroupe(payload);
         if (response.status === 1) {
           dispatch(setDataModifiesGroupe(payload));
-          showNotification('Groupe modifi� avec succ�s', 'success');
+          showNotification('Groupe modifié avec succés', 'success');
         }
       } else {
         const response = await apiClient.createGroupe(payload);
         if (response.status === 1) {
           const created = Array.isArray(response.data) ? response.data[0] : response.data;
           if (created) dispatch(addGroupe(created));
-          showNotification('Groupe cr�� avec succ�s', 'success');
+          showNotification('Groupe créé avec succés', 'success');
         }
       }
 
@@ -234,7 +263,7 @@ export function GroupeView() {
             setFilterName(event.target.value);
             table.onResetPage();
           }}
-          onDelete={handleDeleteSelected}
+          onDelete={() => setConfirmDeleteSelectedOpen(true)}
           deleteLoading={deleteLoading}
           advancedFilters={
             <AdvancedFilterMenu
@@ -314,7 +343,7 @@ export function GroupeView() {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Libell� du groupe" name="libelleGroupe" value={data.libelleGroupe || ''} onChange={(event) => setData((prev: any) => ({ ...prev, libelleGroupe: event.target.value }))} />
+              <TextField fullWidth label="Libellé du groupe" name="libelleGroupe" value={data.libelleGroupe || ''} onChange={(event) => setData((prev: any) => ({ ...prev, libelleGroupe: event.target.value }))} />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField fullWidth label="Responsable du groupe" name="responsableGroupe" value={data.responsableGroupe || ''} onChange={(event) => setData((prev: any) => ({ ...prev, responsableGroupe: event.target.value }))} />
@@ -329,6 +358,19 @@ export function GroupeView() {
           <Button onClick={handleSubmit} variant="contained" disabled={updateLoading}>Enregistrer</Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDeleteSelectedOpen}
+        title="Supprimer les groupes selectionnes"
+        message={`Voulez-vous vraiment supprimer ${table.selected.length} groupe(s) selectionne(s) ?`}
+        confirmText="Supprimer"
+        loading={deleteLoading}
+        onClose={() => setConfirmDeleteSelectedOpen(false)}
+        onConfirm={async () => {
+          setConfirmDeleteSelectedOpen(false);
+          await handleDeleteSelected();
+        }}
+      />
 
       <NotificationComponent />
     </DashboardContent>

@@ -19,6 +19,7 @@ import { apiClient } from 'src/utils/apiClient';
 import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
+import ConfirmDialog from 'src/components/alert/confirmDialog';
 
 import { TableNoData } from '../table-no-data';
 import { DepartementTableRow } from '../departement-table-row';
@@ -66,6 +67,7 @@ export function DepartementView() {
   const [data, setData] = useState({ ...departement });
   const [isEditMode, setIsEditMode] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [confirmDeleteSelectedOpen, setConfirmDeleteSelectedOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
 
   const {
@@ -303,41 +305,49 @@ export function DepartementView() {
         throw new Error('Utilisateur connecte introuvable pour la suppression');
       }
 
-      const deletePromises = selected?.map((idDepartementStr: any) => {
-        const idDepartement = parseInt(idDepartementStr, 10);
-        return apiClient.deleteDepartement(idDepartement, currentUserId)
-          .then(() => {
-            dispatch(deleteDepartement(idDepartement));
-            return { success: true, id: idDepartement };
-          })
-          .catch((error) => {
-            console.error(`Erreur suppression département ${idDepartement}:`, error);
-            return { success: false, id: idDepartement, error };
-          });
-      });
+      const summary = await selected.reduce(
+        (promise, idDepartementStr) => promise.then(async ({ successes, failures }) => {
+          const idDepartement = parseInt(idDepartementStr, 10);
 
-      const results = await Promise.all(deletePromises);
-      const successes = results.filter(r => r.success).length;
-      const failures = results.length - successes;
+          try {
+            const response = await apiClient.deleteDepartement(idDepartement, currentUserId);
+
+            if (response.status === 1) {
+              dispatch(deleteDepartement(idDepartement));
+              return { failures, successes: successes + 1 };
+            }
+
+            return { failures: failures + 1, successes };
+          } catch (error) {
+            console.error(`Erreur suppression departement ${idDepartement}:`, error);
+            return { failures: failures + 1, successes };
+          }
+        }),
+        Promise.resolve({ failures: 0, successes: 0 })
+      );
 
       onSelectAllRows(false, []);
 
-      if (failures === 0) {
-        showNotification(`${successes} département(s) supprimé(s) avec succès`, 'success');
+      if (summary.successes > 0) {
+        await fetchDepartements();
+      }
+
+      if (summary.failures === 0) {
+        showNotification(`${summary.successes} departement(s) supprime(s) avec succes`, 'success');
       } else {
         showNotification(
-          `${successes} supprimé(s), ${failures} erreur(s)`,
-          failures === selected.length ? 'error' : 'warning'
+          `${summary.successes} supprime(s), ${summary.failures} erreur(s)`,
+          summary.failures === selected.length ? 'error' : 'warning'
         );
       }
 
     } catch (error: any) {
-      console.error('Erreur générale lors de la suppression multiple:', error);
+      console.error('Erreur generale lors de la suppression multiple:', error);
       showNotification(`Erreur: ${error.message || 'Erreur lors de la suppression'}`, 'error');
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, selected, onSelectAllRows, dispatch, showNotification]);
+  }, [currentUserId, selected, onSelectAllRows, dispatch, showNotification, fetchDepartements]);
 
   useEffect(() => {
     if (!openDialog) {
@@ -387,7 +397,7 @@ export function DepartementView() {
             setFilterName(event.target.value);
             table.onResetPage();
           }}
-          onDelete={handleDeleteSelected}
+          onDelete={() => setConfirmDeleteSelectedOpen(true)}
           deleteLoading={deleteLoading}
         />
 
@@ -560,6 +570,19 @@ export function DepartementView() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDeleteSelectedOpen}
+        title="Supprimer les departements selectionnes"
+        message={`Voulez-vous vraiment supprimer ${selected.length} departement(s) selectionne(s) ?`}
+        confirmText="Supprimer"
+        loading={deleteLoading}
+        onClose={() => setConfirmDeleteSelectedOpen(false)}
+        onConfirm={async () => {
+          setConfirmDeleteSelectedOpen(false);
+          await handleDeleteSelected();
+        }}
+      />
 
       <NotificationComponent />
     </DashboardContent>

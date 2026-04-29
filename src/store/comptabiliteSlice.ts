@@ -1,14 +1,23 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 
+export type ComptabiliteType = 'entree' | 'sortie';
+
 export interface IComptabiliteItem {
   idComptabilite?: number;
   idUtilisateur: number | null;
   nomComptabilite: string;
   entreeComptabilite: number;
   sortieComptabilite: number;
+  montantComptabilite: number;
+  typeComptabilite: ComptabiliteType;
   dateComptabilite: string;
   observationComptabilite: string;
+  estSupprimeComptabilite?: number;
+  dateSuppressionComptabilite?: string | null;
+  motifSuppressionComptabilite?: string | null;
+  supprimeParUtilisateur?: number | null;
+  nomUtilisateurSuppression?: string;
 }
 
 export interface IComptabiliteSlice {

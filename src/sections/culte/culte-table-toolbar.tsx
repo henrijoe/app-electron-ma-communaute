@@ -43,7 +43,7 @@ export function UserTableToolbar({
     >
       {numSelected > 0 ? (
         <Typography component="div" variant="subtitle1">
-          {numSelected} sélectionné(s)
+          {numSelected} selectionne(s)
         </Typography>
       ) : (
         <OutlinedInput

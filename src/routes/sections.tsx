@@ -27,6 +27,7 @@ export const CulteDetail = lazy(() => import('src/sections/culte/view/culte-deta
 export const CulteEdit = lazy(() => import('src/sections/culte/view/culte-edit/culte-edit'));
 
 export const UserPage = lazy(() => import('src/pages/user'));
+export const UserImportPage = lazy(() => import('src/pages/user-import'));
 export const UserDetail = lazy(() => import('src/sections/user/view/user-detail/user-detail'));
 export const UserEdit = lazy(() => import('src/sections/user/view/user-edit/user-edit'));
 
@@ -76,6 +77,7 @@ export function Router() {
         { element: <HomePage />, index: true },
         { path: 'home', element: <HomePage /> },
         { path: 'user', element: <UserPage /> },
+        { path: 'user/import', element: <UserImportPage /> },
         { path: 'culte', element: <CultePage /> },
         { path: 'departement', element: <DepartementPage /> },
         { path: 'cellule', element: <CellulePage /> },

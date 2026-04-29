@@ -1,4 +1,6 @@
+import * as XLSX from 'xlsx';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
@@ -24,6 +26,8 @@ import {
 } from '@mui/icons-material';
 
 import { ApiError, apiClient, buildPhotoUrl } from 'src/utils/apiClient';
+import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
+import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 
 import { TableNoData } from '../table-no-data';
@@ -43,8 +47,29 @@ import PrintEtatGlobal from '../etats/printEtats';
 
 
 
+const resolveChoiceLabel = (choices: IDataChoice[], value: unknown): string => {
+  const rawValue = String(value ?? '').trim();
+  if (!rawValue) return '';
+
+  const match = choices.find((choice) => String(choice.value) === rawValue);
+  return match?.label || rawValue;
+};
+
+const resolveReferenceLabel = (
+  items: Array<{ value: number | string; label: string }>,
+  value: unknown
+): string => {
+  const rawValue = String(value ?? '').trim();
+  if (!rawValue) return '';
+
+  const match = items.find((item) => String(item.value) === rawValue);
+  return match?.label || rawValue;
+};
+
+
 export function UserView() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -58,18 +83,27 @@ export function UserView() {
     Number(appUserConnected?.idUtilisateur)
     || Number(authUtilisateurData?.idUtilisateur)
     || null;
-  const departementOptions = Array.isArray(listDepartement) && listDepartement.length > 0
-    ? listDepartement.map((item: any) => ({ value: item.idDepartement, label: item.libelleLongDepartement }))
-    : [];
-  const celluleOptions = Array.isArray(listCellule) && listCellule.length > 0
-    ? listCellule.map((item: any) => ({ value: item.idCellule, label: item.nomCellule }))
-    : [];
-  const groupeOptions = Array.isArray(listGroupe) && listGroupe.length > 0
-    ? listGroupe.map((item: any) => ({ value: item.idGroupe, label: item.libelleGroupe }))
-    : [];
-  const responsabiliteOptions = Array.isArray(listResponsabilite) && listResponsabilite.length > 0
-    ? listResponsabilite.map((item: any) => ({ value: item.idResponsabilite, label: item.libelleResponsabilite }))
-    : dataResponsabilite;
+  const departementOptions = useMemo(() => (
+    Array.isArray(listDepartement) && listDepartement.length > 0
+      ? listDepartement.map((item: any) => ({ value: item.idDepartement, label: item.libelleLongDepartement }))
+      : []
+  ), [listDepartement]);
+  const celluleOptions = useMemo(() => (
+    Array.isArray(listCellule) && listCellule.length > 0
+      ? listCellule.map((item: any) => ({ value: item.idCellule, label: item.nomCellule }))
+      : []
+  ), [listCellule]);
+  const groupeOptions = useMemo(() => (
+    Array.isArray(listGroupe) && listGroupe.length > 0
+      ? listGroupe.map((item: any) => ({ value: item.idGroupe, label: item.libelleGroupe }))
+      : []
+  ), [listGroupe]);
+  const responsabiliteOptions = useMemo(() => (
+    Array.isArray(listResponsabilite) && listResponsabilite.length > 0
+      ? listResponsabilite.map((item: any) => ({ value: item.idResponsabilite, label: item.libelleResponsabilite }))
+      : dataResponsabilite
+  ), [listResponsabilite]);
+  const exportableMembres = useMemo(() => (Array.isArray(listMembre) ? listMembre : []), [listMembre]);
 
   const [loading, setLoading] = useState(true);
   const table = useTable();
@@ -84,6 +118,7 @@ export function UserView() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isEditMode, setIsEditMode] = useState(false); // Ajoutez ce state
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [confirmDeleteSelectedOpen, setConfirmDeleteSelectedOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
 
   const {
@@ -123,6 +158,85 @@ export function UserView() {
       setLoading(false);
     }
   }, [dispatch]);
+
+
+  useEffect(() => {
+    if (!currentUserId) {
+      return undefined;
+    }
+
+    const shouldRefreshForUser = (payload: any) => {
+      if (!payload?.idUtilisateur) {
+        return true;
+      }
+
+      return Number(payload.idUtilisateur) === Number(currentUserId);
+    };
+
+    const refreshMembres = (payload: any) => {
+      if (shouldRefreshForUser(payload)) {
+        fetchMembres();
+      }
+    };
+
+    const handleAjoutDeces = (payload: any) => {
+      if (!shouldRefreshForUser(payload)) {
+        return;
+      }
+
+      fetchMembres();
+      const memberName = String(payload?.nomMembreDeces || '').trim();
+      showNotification(
+        memberName
+          ? `Le membre ${memberName} a ete retire des listes actives.`
+          : 'Un membre a ete retire des listes actives.',
+        'info'
+      );
+    };
+
+    const handleModificationDeces = (payload: any) => {
+      if (!shouldRefreshForUser(payload)) {
+        return;
+      }
+
+      fetchMembres();
+      const memberName = String(payload?.nomMembreDeces || '').trim();
+      showNotification(
+        memberName
+          ? `Le deces de ${memberName} a ete mis a jour et les listes actives ont ete synchronisees.`
+          : "Les listes actives ont ete synchronisees apres mise a jour d'un deces.",
+        'info'
+      );
+    };
+
+    const handleSuppressionDeces = (payload: any) => {
+      if (!shouldRefreshForUser(payload)) {
+        return;
+      }
+
+      fetchMembres();
+      const memberName = String(payload?.nomMembreDeces || '').trim();
+      showNotification(
+        memberName
+          ? `${memberName} est de nouveau visible dans les listes actives.`
+          : 'Le membre concerne est de nouveau visible dans les listes actives.',
+        'success'
+      );
+    };
+
+    const unsubscribers = [
+      subscribeToCommunauteEvent('ajouterMembre', refreshMembres),
+      subscribeToCommunauteEvent('modifierMembre', refreshMembres),
+      subscribeToCommunauteEvent('supprimerMembre', refreshMembres),
+      subscribeToCommunauteEvent('ajouterDeces', handleAjoutDeces),
+      subscribeToCommunauteEvent('modifierDeces', handleModificationDeces),
+      subscribeToCommunauteEvent('supprimerDeces', handleSuppressionDeces),
+    ];
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [currentUserId, fetchMembres, showNotification]);
   const loadReferenceData = useCallback(async () => {
     if (!currentUserId) return;
 
@@ -437,6 +551,59 @@ export function UserView() {
     showNotification,
   ]);
 
+  const handleExportMembres = useCallback(() => {
+    if (!exportableMembres.length) {
+      showNotification('Aucun membre a exporter', 'warning');
+      return;
+    }
+
+    const rows = exportableMembres.map((item: IMembre) => ({
+      nomMembre: item.nomMembre || '',
+      prenomMembre: item.prenomMembre || '',
+      contactMembre: item.contactMembre || '',
+      emailMembre: item.emailMembre || '',
+      sexeMembre: resolveChoiceLabel(dataGenre, item.sexeMembre),
+      civiliteMembre: resolveChoiceLabel(dataCivilite, item.civiliteMembre),
+      dateNaissMembre: item.dateNaissMembre || '',
+      lieuNaissMembre: item.lieuNaissMembre || '',
+      nationaliteMembre: item.nationaliteMembre || '',
+      ethnieMembre: item.ethnieMembre || '',
+      residenceMembre: item.residenceMembre || '',
+      fonctionMembre: item.fonctionMembre || '',
+      situationMatrimonialeMembre: resolveChoiceLabel(dataSituationMembre, item.situationMatrimonialeMembre),
+      nomFiance: item.nomFiance || '',
+      dateMariageMembre: item.dateMariageMembre || '',
+      egliseOrigineMembre: item.egliseOrigineMembre || '',
+      dateConversionMembre: item.dateConversionMembre || '',
+      nouvelleAmeMembre: resolveChoiceLabel(dataNouvelAme, item.nouvelleAmeMembre),
+      baptemeEauMembre: resolveChoiceLabel(dataBapteme, item.baptemeEauMembre),
+      lieuBaptemeEauMembre: item.lieuBaptemeEauMembre || '',
+      baptemeSaintEspritMembre: resolveChoiceLabel(dataBapteme, item.baptemeSaintEspritMembre),
+      capaciteSpirituelleMembre: resolveChoiceLabel(dataCapaciteSpirituelle, item.capaciteSpirituelleMembre),
+      departement: resolveReferenceLabel(departementOptions, item.idDepartement),
+      cellule: resolveReferenceLabel(celluleOptions, item.idCellule),
+      groupe: resolveReferenceLabel(groupeOptions, item.idGroupe),
+      responsabilite: resolveReferenceLabel(responsabiliteOptions, item.idResponsabilite),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet['!cols'] = Object.keys(rows[0]).map((key) => ({
+      wch: Math.max(key.length + 2, 18),
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Membres');
+    XLSX.writeFile(workbook, 'export-membres.xlsx');
+    showNotification(`${rows.length} membre(s) exporte(s)`, 'success');
+  }, [
+    celluleOptions,
+    departementOptions,
+    exportableMembres,
+    groupeOptions,
+    responsabiliteOptions,
+    showNotification,
+  ]);
+
   const onFormSubmit = useCallback((formData: IMembre) => {
     if (!formData.nomMembre.trim()) {
       showNotification('Le nom est requis', 'warning'); // Remplacer alert
@@ -501,50 +668,62 @@ export function UserView() {
   }, []);
 
   const handleDeleteSelected = useCallback(async () => {
-  if (selected.length === 0) return;
+    if (selected.length === 0) return;
 
-  try {
-    setDeleteLoading(true);
+    try {
+      setDeleteLoading(true);
 
-    const deletePromises = selected?.map((idMembreStr) => {
-      const idMembre = parseInt(idMembreStr, 10);
-      const membreToDelete = Array.isArray(listMembre)
-        ? listMembre.find((item: IMembre) => item.idMembre === idMembre)
-        : null;
-      const requestUserId = membreToDelete?.idUtilisateur || currentUserId;
+      const summary = await selected.reduce(
+        (promise, idMembreStr) => promise.then(async ({ successes, failures }) => {
+          const idMembre = parseInt(idMembreStr, 10);
+          const membreToDelete = Array.isArray(listMembre)
+            ? listMembre.find((item: IMembre) => item.idMembre === idMembre)
+            : null;
+          const requestUserId = membreToDelete?.idUtilisateur || currentUserId;
 
-      return apiClient.deleteMembre(idMembre, requestUserId)
-        .then(() => {
-          dispatch(deleteMembre(idMembre));
-          return { success: true, id: idMembre };
-        })
-        .catch((error) => {
-          console.error(`Erreur suppression membre ${idMembre}:`, error);
-          return { success: false, id: idMembre, error };
-        });
-    });
+          if (!requestUserId) {
+            return { failures: failures + 1, successes };
+          }
 
-    const results = await Promise.all(deletePromises);
-    const successes = results.filter((result) => result.success).length;
-    const failures = results.length - successes;
+          try {
+            const response = await apiClient.deleteMembre(idMembre, requestUserId);
 
-    onSelectAllRows(false, []);
+            if (response.status === 1) {
+              dispatch(deleteMembre(idMembre));
+              return { failures, successes: successes + 1 };
+            }
 
-    if (failures === 0) {
-      showNotification(`${successes} membre(s) supprimes avec succes`, 'success');
-    } else {
-      showNotification(
-        `${successes} supprimes, ${failures} erreur(s)`,
-        failures === selected.length ? 'error' : 'warning'
+            console.error(`Erreur lors de la suppression du membre ${idMembre}:`, response.error);
+            return { failures: failures + 1, successes };
+          } catch (error) {
+            console.error(`Erreur suppression membre ${idMembre}:`, error);
+            return { failures: failures + 1, successes };
+          }
+        }),
+        Promise.resolve({ failures: 0, successes: 0 })
       );
+
+      onSelectAllRows(false, []);
+
+      if (summary.successes > 0) {
+        await fetchMembres();
+      }
+
+      if (summary.failures === 0) {
+        showNotification(`${summary.successes} membre(s) supprimes avec succes`, 'success');
+      } else {
+        showNotification(
+          `${summary.successes} supprimes, ${summary.failures} erreur(s)`,
+          summary.failures === selected.length ? 'error' : 'warning'
+        );
+      }
+    } catch (error: any) {
+      console.error('Erreur generale lors de la suppression multiple:', error);
+      showNotification(`Erreur: ${error.message || 'Erreur lors de la suppression'}`, 'error');
+    } finally {
+      setDeleteLoading(false);
     }
-  } catch (error: any) {
-    console.error('Erreur generale lors de la suppression multiple:', error);
-    showNotification(`Erreur: ${error.message || 'Erreur lors de la suppression'}`, 'error');
-  } finally {
-    setDeleteLoading(false);
-  }
-}, [currentUserId, selected, onSelectAllRows, dispatch, listMembre, showNotification]);
+  }, [currentUserId, selected, onSelectAllRows, dispatch, listMembre, showNotification, fetchMembres]);
 
 
   useEffect(() => {
@@ -581,6 +760,26 @@ export function UserView() {
           <PrintEtatGlobal />
 
           <Button
+            variant="outlined"
+            color="inherit"
+            startIcon={<Iconify icon="solar:import-linear" />}
+            onClick={() => navigate('/user/import')}
+            disabled={loading}
+          >
+            Importer membre
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="inherit"
+            startIcon={<Iconify icon="solar:export-linear" />}
+            onClick={handleExportMembres}
+            disabled={loading || !exportableMembres.length}
+          >
+            Exporter les membres
+          </Button>
+
+          <Button
             variant="contained"
             color="inherit"
             startIcon={<Iconify icon="mingcute:add-line" />}
@@ -600,7 +799,7 @@ export function UserView() {
             setFilterName(event.target.value);
             table.onResetPage();
           }}
-          onDelete={handleDeleteSelected}
+          onDelete={() => setConfirmDeleteSelectedOpen(true)}
           deleteLoading={deleteLoading}
         />
 
@@ -1404,6 +1603,19 @@ export function UserView() {
 
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={confirmDeleteSelectedOpen}
+        title="Supprimer les membres selectionnes"
+        message={`Voulez-vous vraiment supprimer ${selected.length} membre(s) selectionne(s) ?`}
+        confirmText="Supprimer"
+        loading={deleteLoading}
+        onClose={() => setConfirmDeleteSelectedOpen(false)}
+        onConfirm={async () => {
+          setConfirmDeleteSelectedOpen(false);
+          await handleDeleteSelected();
+        }}
+      />
+
       <NotificationComponent />
     </DashboardContent>
   );

@@ -43,7 +43,7 @@ export function UserTableToolbar({
     >
       {numSelected > 0 ? (
         <Typography component="div" variant="subtitle1">
-          {numSelected} cellule(s) sélectionnée(s)
+          {numSelected} cellule(s) sÃ©lectionnÃ©e(s)
         </Typography>
       ) : (
         <OutlinedInput
@@ -61,7 +61,7 @@ export function UserTableToolbar({
       )}
 
       {numSelected > 0 ? (
-        <Tooltip title="Supprimer les cellules sélectionnées">
+        <Tooltip title="Supprimer les cellules sï¿½lectionnï¿½es">
           <IconButton onClick={onDelete} disabled={deleteLoading}>
             <Iconify icon="solar:trash-bin-trash-bold" />
           </IconButton>

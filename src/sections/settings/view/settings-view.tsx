@@ -4,10 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   AccountCircleRounded,
   ChurchRounded,
+  DeleteRounded,
   LanguageRounded,
   LaunchRounded,
   SaveRounded,
   StorageRounded,
+  UploadRounded,
 } from '@mui/icons-material';
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
@@ -23,10 +25,8 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { DashboardContent } from 'src/layouts/dashboard';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
-import { apiClient } from 'src/utils/apiClient';
-import { resolveStaticAssetUrl } from 'src/utils/asset-url';
+import { DashboardContent } from 'src/layouts/dashboard';
 import {
   setConnectionMode,
   setDesktopSecurityStatus,
@@ -35,19 +35,62 @@ import {
 } from 'src/store/appSlice';
 import type { IReduxState } from 'src/store/store';
 import { setUtilisateurData } from 'src/store/userSlice';
+import { apiClient, buildChurchLogoUrl } from 'src/utils/apiClient';
 
 type ConnectionMode = 'local' | 'online';
 
 type ProfileFormState = {
   logoUtilisateur: string;
+  logoEglise: string;
   nomTemple: string;
+  lieuEglise: string;
   nomUtilisateur: string;
   prenomUtilisateur: string;
   telephoneUtilisateur: string;
+  telephoneSecretariatEglise: string;
+  pasteurPrincipal: string;
+  pasteurSecondaire: string;
+  pasteurTroisieme: string;
+  telephonePasteurPrincipal: string;
+  telephonePasteurSecondaire: string;
+  telephonePasteurTroisieme: string;
+  capaciteAccueilEglise: string;
+  nombreCultesDimanche: string;
+  emailEglise: string;
+  boitePostaleEglise: string;
+  dateCreationEglise: string;
+  nombrePasteursEglise: string;
+  nombreAnciensEglise: string;
+  nombreDiacresEglise: string;
   email: string;
 };
 
-// Verifie qu'une valeur peut etre interpretee comme une URL HTTP ou HTTPS.
+const emptyProfileForm: ProfileFormState = {
+  logoUtilisateur: '',
+  logoEglise: '',
+  nomTemple: '',
+  lieuEglise: '',
+  nomUtilisateur: '',
+  prenomUtilisateur: '',
+  telephoneUtilisateur: '',
+  telephoneSecretariatEglise: '',
+  pasteurPrincipal: '',
+  pasteurSecondaire: '',
+  pasteurTroisieme: '',
+  telephonePasteurPrincipal: '',
+  telephonePasteurSecondaire: '',
+  telephonePasteurTroisieme: '',
+  capaciteAccueilEglise: '',
+  nombreCultesDimanche: '',
+  emailEglise: '',
+  boitePostaleEglise: '',
+  dateCreationEglise: '',
+  nombrePasteursEglise: '',
+  nombreAnciensEglise: '',
+  nombreDiacresEglise: '',
+  email: '',
+};
+
 const isValidHttpUrl = (value: string): boolean => {
   if (!value.trim()) {
     return false;
@@ -61,14 +104,30 @@ const isValidHttpUrl = (value: string): boolean => {
   }
 };
 
-// Nettoie l'URL saisie pour supprimer les espaces et le slash final inutile.
 const normalizeBrowserUrl = (value: string): string => value.trim().replace(/\/+$/, '');
+const buildBrowserUrlFromIp = (ipAddress: string, port = 49300): string => `http://${ipAddress}:${port}`;
+const getCurrentBrowserOrigin = (): string => normalizeBrowserUrl(window.location.origin);
 
-// Construit l'URL navigateur complete a partir d'une IP locale et du port backend standard.
-const buildBrowserUrlFromIp = (ipAddress: string, port = 49300): string =>
-  `http://${ipAddress}:${port}`;
+const convertFileToBase64DataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
-// Ouvre l'URL de l'application dans le navigateur adapte au contexte courant.
+const getChurchLogoPreviewUrl = (value?: string): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  if (/^(data:|https?:|blob:|file:)/i.test(value)) {
+    return value;
+  }
+
+  return buildChurchLogoUrl(value);
+};
+
 const openApplicationUrlInBrowser = async (url: string): Promise<void> => {
   const normalizedUrl = normalizeBrowserUrl(url);
 
@@ -93,39 +152,38 @@ export function SettingsView() {
   const currentUsername = useSelector(
     (state: IReduxState) => state.application.userConnected?.nomUtilisateur || ''
   );
+
   const [browserUrl, setBrowserUrlInput] = useState(applicationState.serverUrl || '');
   const [connectionMode, setConnectionModeInput] = useState<ConnectionMode>(
     applicationState.connectionMode || 'local'
   );
   const [isDetectingAddress, setIsDetectingAddress] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [extendDays, setExtendDays] = useState('30');
   const [unlockPassword, setUnlockPassword] = useState('');
-  const [profileForm, setProfileForm] = useState<ProfileFormState>({
-    logoUtilisateur: '',
-    nomTemple: '',
-    nomUtilisateur: '',
-    prenomUtilisateur: '',
-    telephoneUtilisateur: '',
-    email: '',
-  });
+  const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm);
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
   const isDesktopApp = Boolean((window as any)?.desktopApp?.isDesktop);
 
   const isUrlReady = useMemo(() => isValidHttpUrl(browserUrl), [browserUrl]);
   const desktopLicenseExpiresAt = applicationState.desktopSecurityExpiresAt;
   const desktopSecurityMessage = applicationState.desktopSecurityMessage;
-  const isDesktopSuperAdmin = applicationState.desktopSecurityIsSuperAdmin;
   const isDesktopBlocked = applicationState.desktopSecurityBlocked;
   const desktopDaysRemaining = applicationState.desktopSecurityDaysRemaining;
-  const isFixedDesktopSuperAdmin = Number(userConnected?.idUtilisateur || utilisateurData?.idUtilisateur || -1) === 0;
-  const profilePhotoUrl = profileForm.logoUtilisateur
-    ? resolveStaticAssetUrl(profileForm.logoUtilisateur)
-    : undefined;
+  const isFixedDesktopSuperAdmin =
+    Number(userConnected?.idUtilisateur || utilisateurData?.idUtilisateur || -1) === 0;
+  const churchLogoPreviewUrl = useMemo(
+    () => getChurchLogoPreviewUrl(profileForm.logoEglise),
+    [profileForm.logoEglise]
+  );
+
   const desktopAlert = useMemo(() => {
     if (isDesktopBlocked) {
       return {
         severity: 'error',
-        message: desktopSecurityMessage || "L'application desktop est actuellement bloquee. Contacte le developpeur pour renouveler l'acces.",
+        message:
+          desktopSecurityMessage ||
+          "L'application desktop est actuellement bloquee. Contacte le developpeur pour renouveler l'acces.",
       } as const;
     }
 
@@ -160,7 +218,6 @@ export function SettingsView() {
     return null;
   }, [desktopDaysRemaining, desktopSecurityMessage, isDesktopBlocked]);
 
-  // On initialise le formulaire a partir des informations utilisateur deja disponibles.
   useEffect(() => {
     const source = {
       ...userConnected,
@@ -169,15 +226,31 @@ export function SettingsView() {
 
     setProfileForm({
       logoUtilisateur: source?.logoUtilisateur || '',
+      logoEglise: source?.logoEglise || '',
       nomTemple: source?.nomTemple || '',
+      lieuEglise: source?.lieuEglise || '',
       nomUtilisateur: source?.nomUtilisateur || '',
       prenomUtilisateur: source?.prenomUtilisateur || '',
       telephoneUtilisateur: source?.telephoneUtilisateur || '',
+      telephoneSecretariatEglise: source?.telephoneSecretariatEglise || '',
+      pasteurPrincipal: source?.pasteurPrincipal || '',
+      pasteurSecondaire: source?.pasteurSecondaire || '',
+      pasteurTroisieme: source?.pasteurTroisieme || '',
+      telephonePasteurPrincipal: source?.telephonePasteurPrincipal || '',
+      telephonePasteurSecondaire: source?.telephonePasteurSecondaire || '',
+      telephonePasteurTroisieme: source?.telephonePasteurTroisieme || '',
+      capaciteAccueilEglise: source?.capaciteAccueilEglise || '',
+      nombreCultesDimanche: source?.nombreCultesDimanche || '',
+      emailEglise: source?.emailEglise || '',
+      boitePostaleEglise: source?.boitePostaleEglise || '',
+      dateCreationEglise: source?.dateCreationEglise || '',
+      nombrePasteursEglise: source?.nombrePasteursEglise || '',
+      nombreAnciensEglise: source?.nombreAnciensEglise || '',
+      nombreDiacresEglise: source?.nombreDiacresEglise || '',
       email: source?.email || '',
     });
   }, [userConnected, utilisateurData]);
 
-  // Recharge l'etat de licence desktop pour l'utilisateur courant.
   const refreshDesktopSecurityStatus = useCallback(async () => {
     if (!isDesktopApp || !currentUsername) {
       return;
@@ -211,11 +284,20 @@ export function SettingsView() {
     }
   }, [currentUsername, dispatch, isDesktopApp]);
 
-  // Detecte l'URL a ouvrir dans le navigateur, depuis Electron ou depuis le serveur en dev.
   const detectPreferredBrowserUrl = useCallback(async () => {
     setIsDetectingAddress(true);
 
     try {
+      if (!isDesktopApp) {
+        const currentOrigin = getCurrentBrowserOrigin();
+
+        if (isValidHttpUrl(currentOrigin)) {
+          setBrowserUrlInput(currentOrigin);
+          dispatch(setServerUrl(currentOrigin));
+          return;
+        }
+      }
+
       if ((window as any)?.desktopNetwork?.getLocalAddress) {
         const result = await (window as any).desktopNetwork.getLocalAddress();
 
@@ -242,14 +324,13 @@ export function SettingsView() {
     } finally {
       setIsDetectingAddress(false);
     }
-  }, [dispatch]);
+  }, [dispatch, isDesktopApp]);
 
   useEffect(() => {
     detectPreferredBrowserUrl();
     refreshDesktopSecurityStatus();
   }, [detectPreferredBrowserUrl, refreshDesktopSecurityStatus]);
 
-  // Sauvegarde les parametres de connexion et l'URL navigateur dans Redux.
   const handleSaveSettings = useCallback(() => {
     const normalizedUrl = normalizeBrowserUrl(browserUrl);
 
@@ -278,7 +359,6 @@ export function SettingsView() {
     }
   }, [browserUrl, showNotification]);
 
-  // Permet uniquement au superadmin fixe de renouveler l'acces desktop.
   const handleUnlockDesktop = useCallback(async () => {
     if (!currentUsername || !isFixedDesktopSuperAdmin) {
       showNotification("Seul le superadmin peut debloquer l'application", 'warning');
@@ -326,22 +406,68 @@ export function SettingsView() {
     []
   );
 
-  // On met a jour les informations locales qui alimentent le menu compte et les documents imprimes.
-  const handleSaveProfile = useCallback(() => {
+  const handleChurchLogoUpload = useCallback(async (file?: File | null) => {
+    if (!file) {
+      return;
+    }
+
+    try {
+      const base64 = await convertFileToBase64DataUrl(file);
+      handleChangeProfileField('logoEglise', base64);
+      showNotification("Logo de l'eglise charge. Enregistre pour le conserver.", 'info');
+    } catch (_error) {
+      showNotification('Impossible de charger ce logo.', 'error');
+    }
+  }, [handleChangeProfileField, showNotification]);
+
+  const handleRemoveChurchLogo = useCallback(() => {
+    handleChangeProfileField('logoEglise', '');
+  }, [handleChangeProfileField]);
+
+  const handleSaveProfile = useCallback(async () => {
+    const existingUser = {
+      ...utilisateurData,
+      ...userConnected,
+    };
+    const idUtilisateur = Number(existingUser?.idUtilisateur || 0);
+
+    if (!idUtilisateur) {
+      showNotification('Utilisateur introuvable. Reconnecte-toi puis recommence.', 'warning');
+      return;
+    }
+
     if (!profileForm.nomUtilisateur.trim()) {
       showNotification("Le nom d'utilisateur est requis", 'warning');
       return;
     }
 
-    const mergedUser = {
-      ...userConnected,
-      ...utilisateurData,
+    if (!profileForm.nomTemple.trim()) {
+      showNotification("Le nom de l'eglise est requis", 'warning');
+      return;
+    }
+
+    const payload = {
+      ...existingUser,
       ...profileForm,
+      idUtilisateur,
+      password: existingUser?.password || '',
+      confirmPassword: existingUser?.confirmPassword || existingUser?.password || '',
     };
 
-    dispatch(setUtilisateurData(mergedUser));
-    dispatch(setUserConnected(mergedUser));
-    showNotification("Profil et informations d'eglise mis a jour", 'success');
+    try {
+      setIsSavingProfile(true);
+      const response = await apiClient.updateUtilisateur(payload);
+      const savedUser = response?.data || payload;
+
+      dispatch(setUtilisateurData(savedUser));
+      dispatch(setUserConnected(savedUser));
+      setProfileForm((prev) => ({ ...prev, ...savedUser }));
+      showNotification("Informations de l'eglise enregistrees avec succes", 'success');
+    } catch (error: any) {
+      showNotification(error?.message || "Impossible d'enregistrer les informations de l'eglise", 'error');
+    } finally {
+      setIsSavingProfile(false);
+    }
   }, [dispatch, profileForm, showNotification, userConnected, utilisateurData]);
 
   return (
@@ -349,7 +475,7 @@ export function SettingsView() {
       <Stack spacing={3}>
         <Box>
           <Typography variant="h4" sx={{ mb: 1 }}>
-            Profil et parametres
+            Parametres
           </Typography>
           <Typography color="text.secondary">
             Gere ici les informations de ton compte, de ton eglise et les parametres techniques de l&apos;application.
@@ -364,20 +490,6 @@ export function SettingsView() {
           />
           <CardContent>
             <Stack spacing={3}>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems={{ xs: 'flex-start', md: 'center' }}>
-                <Avatar src={profilePhotoUrl} alt={profileForm.nomUtilisateur || 'Profil'} sx={{ width: 72, height: 72 }}>
-                  {(profileForm.prenomUtilisateur || profileForm.nomUtilisateur || 'P').charAt(0).toUpperCase()}
-                </Avatar>
-
-                <TextField
-                  fullWidth
-                  label="URL ou chemin du logo utilisateur"
-                  value={profileForm.logoUtilisateur}
-                  onChange={(event) => handleChangeProfileField('logoUtilisateur', event.target.value)}
-                  helperText="Tu peux renseigner une URL, un chemin public ou laisser vide pour utiliser l&apos;initiale."
-                />
-              </Stack>
-
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField
                   fullWidth
@@ -415,24 +527,217 @@ export function SettingsView() {
           <CardHeader
             avatar={<ChurchRounded color="primary" />}
             title="Informations de l&apos;eglise"
-            subheader="Cette zone permet de completer l&apos;identite de l&apos;eglise associee au compte."
+            subheader="Ces informations sont sauvegardees et pourront etre reutilisees dans tous les documents imprimables."
           />
           <CardContent>
             <Stack spacing={3}>
-              <TextField
-                fullWidth
-                label="Nom de l&apos;eglise / temple"
-                value={profileForm.nomTemple}
-                onChange={(event) => handleChangeProfileField('nomTemple', event.target.value)}
-              />
+              <Stack
+                direction={{ xs: 'column', lg: 'row' }}
+                spacing={3}
+                alignItems={{ xs: 'stretch', lg: 'flex-start' }}
+              >
+                <Card
+                  variant="outlined"
+                  sx={{
+                    width: { xs: '100%', lg: 280 },
+                    minWidth: { xs: '100%', lg: 280 },
+                    borderRadius: 3,
+                    alignSelf: 'stretch',
+                  }}
+                >
+                  <CardContent>
+                    <Stack spacing={2.5} alignItems="center">
+                      <Avatar
+                        src={churchLogoPreviewUrl}
+                        alt={profileForm.nomTemple || 'Logo eglise'}
+                        variant="rounded"
+                        sx={{ width: 132, height: 132, borderRadius: 4, bgcolor: 'grey.100' }}
+                      >
+                        <ChurchRounded color="primary" sx={{ fontSize: 44 }} />
+                      </Avatar>
+
+                      <Stack spacing={0.75} alignItems="center">
+                        <Typography variant="subtitle1" fontWeight={700} textAlign="center">
+                          Logo de l&apos;eglise
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" textAlign="center">
+                          Le logo est stocke localement et reutilise automatiquement dans les impressions.
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction={{ xs: 'column', sm: 'row', lg: 'column' }} spacing={1.5} sx={{ width: '100%' }}>
+                        <Button component="label" variant="contained" startIcon={<UploadRounded />} sx={{ width: '100%' }}>
+                          Telecharger le logo
+                          <input
+                            hidden
+                            accept="image/*"
+                            type="file"
+                            onChange={(event) => handleChurchLogoUpload(event.target.files?.[0] || null)}
+                          />
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="inherit"
+                          startIcon={<DeleteRounded />}
+                          sx={{ width: '100%' }}
+                          onClick={handleRemoveChurchLogo}
+                          disabled={!profileForm.logoEglise}
+                        >
+                          Retirer le logo
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </CardContent>
+                </Card>
+
+                <Stack spacing={3} sx={{ flex: 1, minWidth: 0 }}>
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <TextField
+                      fullWidth
+                      label="Nom de l&apos;eglise / temple"
+                      value={profileForm.nomTemple}
+                      onChange={(event) => handleChangeProfileField('nomTemple', event.target.value)}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Lieu de l&apos;eglise"
+                      value={profileForm.lieuEglise}
+                      onChange={(event) => handleChangeProfileField('lieuEglise', event.target.value)}
+                    />
+                  </Stack>
+
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <TextField
+                      fullWidth
+                      label="Pasteur principal"
+                      value={profileForm.pasteurPrincipal}
+                      onChange={(event) => handleChangeProfileField('pasteurPrincipal', event.target.value)}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Telephone pasteur principal"
+                      value={profileForm.telephonePasteurPrincipal}
+                      onChange={(event) => handleChangeProfileField('telephonePasteurPrincipal', event.target.value)}
+                    />
+                  </Stack>
+
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <TextField
+                      fullWidth
+                      label="Pasteur secondaire"
+                      value={profileForm.pasteurSecondaire}
+                      onChange={(event) => handleChangeProfileField('pasteurSecondaire', event.target.value)}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Telephone pasteur secondaire"
+                      value={profileForm.telephonePasteurSecondaire}
+                      onChange={(event) => handleChangeProfileField('telephonePasteurSecondaire', event.target.value)}
+                    />
+                  </Stack>
+
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <TextField
+                      fullWidth
+                      label="3eme pasteur"
+                      value={profileForm.pasteurTroisieme}
+                      onChange={(event) => handleChangeProfileField('pasteurTroisieme', event.target.value)}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Telephone du 3eme pasteur"
+                      value={profileForm.telephonePasteurTroisieme}
+                      onChange={(event) => handleChangeProfileField('telephonePasteurTroisieme', event.target.value)}
+                    />
+                  </Stack>
+
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <TextField
+                      fullWidth
+                      label="Telephone du secretariat"
+                      value={profileForm.telephoneSecretariatEglise}
+                      onChange={(event) => handleChangeProfileField('telephoneSecretariatEglise', event.target.value)}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Email de l&apos;eglise"
+                      value={profileForm.emailEglise}
+                      onChange={(event) => handleChangeProfileField('emailEglise', event.target.value)}
+                    />
+                  </Stack>
+
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <TextField
+                      fullWidth
+                      label="Boite postale"
+                      value={profileForm.boitePostaleEglise}
+                      onChange={(event) => handleChangeProfileField('boitePostaleEglise', event.target.value)}
+                    />
+                    <TextField
+                      fullWidth
+                      type="date"
+                      label="Date de creation"
+                      value={profileForm.dateCreationEglise}
+                      onChange={(event) => handleChangeProfileField('dateCreationEglise', event.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Stack>
+
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Capacite estimee de membres"
+                      value={profileForm.capaciteAccueilEglise}
+                      onChange={(event) => handleChangeProfileField('capaciteAccueilEglise', event.target.value)}
+                    />
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Nombre de cultes par dimanche"
+                      value={profileForm.nombreCultesDimanche}
+                      onChange={(event) => handleChangeProfileField('nombreCultesDimanche', event.target.value)}
+                    />
+                  </Stack>
+
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Nombre de pasteurs"
+                      value={profileForm.nombrePasteursEglise}
+                      onChange={(event) => handleChangeProfileField('nombrePasteursEglise', event.target.value)}
+                    />
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Nombre d&apos;anciens"
+                      value={profileForm.nombreAnciensEglise}
+                      onChange={(event) => handleChangeProfileField('nombreAnciensEglise', event.target.value)}
+                    />
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Nombre de diacres"
+                      value={profileForm.nombreDiacresEglise}
+                      onChange={(event) => handleChangeProfileField('nombreDiacresEglise', event.target.value)}
+                    />
+                  </Stack>
+                </Stack>
+              </Stack>
 
               <Alert severity="info">
-                Les donnees enregistrees ici sont reutilisees par le tableau de bord, l&apos;espace compte et les etats imprimes.
+                Les donnees enregistrees ici sont reutilisees par le tableau de bord, l&apos;espace compte et les etats imprimes. Tu peux les modifier a tout moment sans perdre les valeurs deja saisies.
               </Alert>
 
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <Button variant="contained" startIcon={<SaveRounded />} onClick={handleSaveProfile}>
-                  Enregistrer le profil
+                <Button
+                  variant="contained"
+                  startIcon={<SaveRounded />}
+                  onClick={handleSaveProfile}
+                  disabled={isSavingProfile}
+                >
+                  {isSavingProfile ? 'Enregistrement...' : 'Enregistrer le profil'}
                 </Button>
               </Stack>
             </Stack>
@@ -445,56 +750,58 @@ export function SettingsView() {
           <CardHeader
             avatar={<StorageRounded color="primary" />}
             title="Connexion et URL navigateur"
-            subheader="Cette adresse est construite automatiquement au format http://IP:49300."
+            subheader="Cette adresse pointe vers la vraie interface de l'application accessible depuis ton telephone."
           />
           <CardContent>
-            <Stack spacing={3}>
-              <TextField
-                select
-                fullWidth
-                label="Mode de connexion"
-                value={connectionMode}
-                onChange={(event) => setConnectionModeInput(event.target.value as ConnectionMode)}
-                helperText="Le mode est enregistre pour les futurs lancements de l&apos;application."
-              >
-                <MenuItem value="local">Local</MenuItem>
-                <MenuItem value="online">Online</MenuItem>
-              </TextField>
+            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3} alignItems="stretch">
+              <Stack spacing={3} sx={{ flex: 1, minWidth: 0 }}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Mode de connexion"
+                  value={connectionMode}
+                  onChange={(event) => setConnectionModeInput(event.target.value as ConnectionMode)}
+                  helperText="Le mode est enregistre pour les futurs lancements de l&apos;application."
+                >
+                  <MenuItem value="local">Local</MenuItem>
+                  <MenuItem value="online">Online</MenuItem>
+                </TextField>
 
-              <TextField
-                fullWidth
-                label="URL navigateur"
-                placeholder="http://192.168.1.25:49300"
-                value={browserUrl}
-                onChange={(event) => setBrowserUrlInput(event.target.value)}
-                helperText="Adresse detectee automatiquement depuis la machine qui lance l&apos;application."
-                disabled={isDetectingAddress}
-                InputProps={{
-                  readOnly: Boolean((window as any)?.desktopNetwork?.getLocalAddress),
-                  endAdornment: <LanguageRounded color={isUrlReady ? 'primary' : 'disabled'} />,
-                }}
-              />
-
-              <Box>
-                <Chip
-                  color={isUrlReady ? 'success' : 'default'}
-                  label={isUrlReady ? 'URL prete a etre ouverte' : 'URL a verifier'}
-                  variant={isUrlReady ? 'filled' : 'outlined'}
+                <TextField
+                  fullWidth
+                  label="URL navigateur"
+                  placeholder="http://192.168.1.25:49300"
+                  value={browserUrl}
+                  onChange={(event) => setBrowserUrlInput(event.target.value)}
+                  helperText="Adresse detectee automatiquement depuis la machine qui lance l&apos;application."
+                  disabled={isDetectingAddress}
+                  InputProps={{
+                    readOnly: Boolean((window as any)?.desktopNetwork?.getLocalAddress),
+                    endAdornment: <LanguageRounded color={isUrlReady ? 'primary' : 'disabled'} />,
+                  }}
                 />
-              </Box>
 
-              <Alert severity="info">
-                En desktop, le bouton ci-dessous ouvrira automatiquement cette adresse dans le navigateur par defaut de Windows.
-              </Alert>
+                <Box>
+                  <Chip
+                    color={isUrlReady ? 'success' : 'default'}
+                    label={isUrlReady ? 'URL prete a etre ouverte' : 'URL a verifier'}
+                    variant={isUrlReady ? 'filled' : 'outlined'}
+                  />
+                </Box>
 
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <Button variant="contained" startIcon={<SaveRounded />} onClick={handleSaveSettings}>
-                  Enregistrer
-                </Button>
+                <Alert severity="info">
+                  En desktop, le bouton ci-dessous ouvrira automatiquement cette adresse dans le navigateur par defaut de Windows.
+                </Alert>
 
-                <Button variant="outlined" startIcon={<LaunchRounded />} onClick={handleOpenInBrowser}>
-                  Ouvrir dans le navigateur
-                </Button>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <Button variant="contained" startIcon={<SaveRounded />} onClick={handleSaveSettings}>
+                    Enregistrer
+                  </Button>
+
+                  <Button variant="outlined" startIcon={<LaunchRounded />} onClick={handleOpenInBrowser}>
+                    Ouvrir dans le navigateur
+                  </Button>
+                </Stack>
               </Stack>
             </Stack>
           </CardContent>
@@ -525,11 +832,7 @@ export function SettingsView() {
                   Message courant : {desktopSecurityMessage || 'Aucun message'}
                 </Typography>
 
-                {desktopAlert && (
-                  <Alert severity={desktopAlert.severity}>
-                    {desktopAlert.message}
-                  </Alert>
-                )}
+                {desktopAlert && <Alert severity={desktopAlert.severity}>{desktopAlert.message}</Alert>}
 
                 {isFixedDesktopSuperAdmin ? (
                   <>
@@ -573,4 +876,3 @@ export function SettingsView() {
     </DashboardContent>
   );
 }
-

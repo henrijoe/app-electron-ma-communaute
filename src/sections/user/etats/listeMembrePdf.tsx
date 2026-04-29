@@ -15,7 +15,7 @@ import {
 import type { IReduxState } from '../../../store/store';
 import { dataResponsabilite } from '../../../store/membreSlice';
 import { formaterValueLabels } from '../view/filterbyIndice';
-import { formatMembreForDisplay, getPhotoUrl } from '../utils';
+import { getPhotoUrl } from '../utils';
 
 const formatContact = (contact: string) => {
   // On affiche une valeur neutre quand aucun contact n'est disponible.
@@ -33,6 +33,27 @@ const formatContact = (contact: string) => {
 
   // Sinon on garde le texte initial pour ne rien perdre.
   return contact;
+};
+
+const getBaptemeDisplay = (value: string | number | null | undefined) => {
+  if (value === null || value === undefined || value === '') {
+    return { color: 'default' as const, label: 'Non renseigne' };
+  }
+
+  const normalizedValue = String(value).trim();
+
+  if (normalizedValue === '1') {
+    return { color: 'success' as const, label: 'Oui' };
+  }
+
+  if (normalizedValue === '0' || normalizedValue === '2') {
+    return { color: 'default' as const, label: 'Non' };
+  }
+
+  return {
+    color: normalizedValue.toLowerCase() === 'oui' ? 'success' as const : 'default' as const,
+    label: normalizeText(normalizedValue) || 'Non renseigne',
+  };
 };
 
 export const ListeDesMembres = () => {
@@ -74,6 +95,7 @@ export const ListeDesMembres = () => {
       subtitle="Etat imprimable complet des membres avec photo, rattachement, responsabilite et contact principal."
       countLabel="Total membres"
       countValue={listMembre?.length || 0}
+      variant="plain"
     >
       {!listMembre?.length ? (
         <PrintEmptyState
@@ -102,8 +124,7 @@ export const ListeDesMembres = () => {
 
           <TableBody>
             {listMembre.map((item: any, index: number) => {
-              // On reutilise le formatteur metier deja existant pour garder les memes libelles.
-              const formattedMembre = formatMembreForDisplay(item);
+              const baptemeDisplay = getBaptemeDisplay(item.baptemeEauMembre);
               // On resolve la photo avec la logique web/electron deja centralisee.
               const photoUrl = getPhotoUrl(item.photoMembre);
 
@@ -156,9 +177,9 @@ export const ListeDesMembres = () => {
 
                   <TableCell align="center">
                     <Chip
-                      label={formattedMembre.baptemeEauMembre}
+                      label={baptemeDisplay.label}
                       size="small"
-                      color={formattedMembre.baptemeEauMembre === 'Oui' ? 'success' : 'default'}
+                      color={baptemeDisplay.color}
                       sx={{ fontWeight: 700, minWidth: 64 }}
                     />
                   </TableCell>

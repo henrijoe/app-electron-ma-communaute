@@ -43,7 +43,7 @@ export function UserTableToolbar({
     >
       {numSelected > 0 ? (
         <Typography component="div" variant="subtitle1">
-          {numSelected} groupe(s) sélectionné(s)
+          {numSelected} groupe(s) sÃ©lectionnÃ©(s)
         </Typography>
       ) : (
         <OutlinedInput
@@ -61,7 +61,7 @@ export function UserTableToolbar({
       )}
 
       {numSelected > 0 ? (
-        <Tooltip title="Supprimer les groupes sélectionnés">
+        <Tooltip title="Supprimer les groupes sÃ©lectionnÃ©s">
           <IconButton onClick={onDelete} disabled={deleteLoading}>
             <Iconify icon="solar:trash-bin-trash-bold" />
           </IconButton>

@@ -93,6 +93,29 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, isD
 
   const photoUrl = getPhotoUrl(row.photoMembre);
 
+  const getBaptemeDisplay = (value: string | number | null | undefined) => {
+    if (value === null || value === undefined || value === '') {
+      return { color: 'default' as const, label: 'Non renseigne' };
+    }
+
+    const normalizedValue = String(value).trim();
+
+    if (normalizedValue === '1') {
+      return { color: 'success' as const, label: 'Oui' };
+    }
+
+    if (normalizedValue === '0' || normalizedValue === '2') {
+      return { color: 'error' as const, label: 'Non' };
+    }
+
+    return {
+      color: normalizedValue.toLowerCase() === 'oui' ? 'success' as const : 'default' as const,
+      label: formattedRow.baptemeEauMembre,
+    };
+  };
+
+  const baptemeDisplay = getBaptemeDisplay(row.baptemeEauMembre);
+
   return (
     <>
       <TableRow
@@ -128,8 +151,8 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, isD
         <TableCell>{row.residenceMembre}</TableCell>
 
         <TableCell>
-          <Label color={row.baptemeEauMembre === '1' ? 'success' : 'error'}>
-            {formattedRow.baptemeEauMembre}
+          <Label color={baptemeDisplay.color}>
+            {baptemeDisplay.label}
           </Label>
         </TableCell>
         <TableCell>{row.lieuBaptemeEauMembre}</TableCell>

@@ -148,7 +148,6 @@ export function GalerieView() {
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
   const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || null;
-  const identity = appUserConnected || authUtilisateurData || {};
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<EventSortOption>('date-desc');
@@ -701,7 +700,7 @@ export function GalerieView() {
                         <Button fullWidth={isMobile} component="a" href={buildGalerieDownloadUrl(selectedEvent.idGalerie || 0, currentUserId)} variant="outlined" sx={{ ...secondaryActionButtonSx, width: { xs: '100%', md: 'auto' } }} startIcon={<DownloadRounded />}>
                           Telecharger le dossier
                         </Button>
-                        <PrintEtatGalerie event={selectedEvent} identity={identity} images={galerieImages} />
+                        <PrintEtatGalerie event={selectedEvent} images={galerieImages} />
                         <Typography variant="body2" color="text.secondary">
                           Depose aussi tes images ici par glisser-deposer.
                         </Typography>

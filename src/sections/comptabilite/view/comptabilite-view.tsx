@@ -1,57 +1,118 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
+
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {
-  AccountBalanceWalletRounded,
   AddRounded,
-  ArrowDownwardRounded,
-  ArrowUpwardRounded,
-  DeleteRounded,
   EditRounded,
+  DeleteRounded,
+  RestoreRounded,
+  ArrowUpwardRounded,
   ReceiptLongRounded,
+  ArrowDownwardRounded,
+  DeleteForeverRounded,
+  AccountBalanceWalletRounded,
 } from '@mui/icons-material';
 import {
-  alpha,
   Box,
-  Button,
   Card,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Grid,
-  IconButton,
-  MenuItem,
+  alpha,
   Stack,
   Table,
+  Button,
+  Dialog,
+  MenuItem,
+  TableRow,
   TableBody,
   TableCell,
   TableHead,
-  TableRow,
   TextField,
+  IconButton,
   Typography,
+  DialogTitle,
+  DialogActions,
+  DialogContent,
 } from '@mui/material';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
 
-import ConfirmDialog from 'src/components/alert/confirmDialog';
-import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+import { apiClient } from 'src/utils/apiClient';
+import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
+
 import { DashboardContent } from 'src/layouts/dashboard';
 import {
   removeComptabilite,
+  upsertComptabilite,
   setListComptabilite,
+  type ComptabiliteType,
   setLoadingComptabilite,
   type IComptabiliteItem,
-  upsertComptabilite,
 } from 'src/store/comptabiliteSlice';
-import { apiClient } from 'src/utils/apiClient';
+
+import ConfirmDialog from 'src/components/alert/confirmDialog';
+import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+
+import { PrintEtatComptabilite } from 'src/sections/comptabilite/etats';
+
+const formatDateForStorage = (value?: string | null): string => {
+  const normalized = String(value || '').trim();
+  if (!normalized) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  const slashMatch = normalized.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (slashMatch) {
+    const [, day, month, year] = slashMatch;
+    return `${year}-${month}-${day}`;
+  }
+
+  const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return normalized;
+  }
+
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  return parsed.toISOString().slice(0, 10);
+};
+
+const formatDateForDisplay = (value?: string | null): string => {
+  const normalized = String(value || '').trim();
+  if (!normalized) {
+    return '';
+  }
+
+  const slashMatch = normalized.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (slashMatch) {
+    return normalized;
+  }
+
+  const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    return `${day}/${month}/${year}`;
+  }
+
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) {
+    return normalized;
+  }
+
+  return parsed.toLocaleDateString('fr-FR');
+};
 
 const emptyComptabilite: IComptabiliteItem = {
   idUtilisateur: null,
   nomComptabilite: '',
   entreeComptabilite: 0,
   sortieComptabilite: 0,
-  dateComptabilite: new Date().toISOString().slice(0, 10),
+  montantComptabilite: 0,
+  typeComptabilite: 'entree',
+  dateComptabilite: formatDateForDisplay(new Date().toISOString().slice(0, 10)),
   observationComptabilite: '',
 };
 
@@ -78,22 +139,46 @@ const parseNumber = (value: string | number) => {
   return Number.isFinite(normalized) ? normalized : 0;
 };
 
-const normalizeComptabilite = (item: any): IComptabiliteItem => ({
-  idComptabilite: Number(item?.idComptabilite) || undefined,
-  idUtilisateur: Number(item?.idUtilisateur) || null,
-  nomComptabilite: String(item?.nomComptabilite || ''),
-  entreeComptabilite: parseNumber(item?.entreeComptabilite),
-  sortieComptabilite: parseNumber(item?.sortieComptabilite),
-  dateComptabilite: String(item?.dateComptabilite || '').slice(0, 10),
-  observationComptabilite: String(item?.observationComptabilite || ''),
-});
+const normalizeComptabilite = (item: any): IComptabiliteItem => {
+  const entreeComptabilite = parseNumber(item?.entreeComptabilite);
+  const sortieComptabilite = parseNumber(item?.sortieComptabilite);
+  const typeComptabilite: ComptabiliteType = entreeComptabilite > 0 ? 'entree' : 'sortie';
+  const montantComptabilite = typeComptabilite === 'entree' ? entreeComptabilite : sortieComptabilite;
 
-const buildPayload = (item: IComptabiliteItem, idUtilisateur: number) => ({
-  ...item,
-  idUtilisateur,
-  entreeComptabilite: parseNumber(item.entreeComptabilite),
-  sortieComptabilite: parseNumber(item.sortieComptabilite),
-});
+  return {
+    idComptabilite: Number(item?.idComptabilite) || undefined,
+    idUtilisateur: Number(item?.idUtilisateur) || null,
+    nomComptabilite: String(item?.nomComptabilite || ''),
+    entreeComptabilite,
+    sortieComptabilite,
+    montantComptabilite,
+    typeComptabilite,
+    dateComptabilite: formatDateForDisplay(String(item?.dateComptabilite || '').slice(0, 10)),
+    observationComptabilite: String(item?.observationComptabilite || ''),
+    estSupprimeComptabilite: Number(item?.estSupprimeComptabilite || 0),
+    dateSuppressionComptabilite: item?.dateSuppressionComptabilite
+      ? formatDateForDisplay(String(item.dateSuppressionComptabilite).slice(0, 10))
+      : '',
+    motifSuppressionComptabilite: String(item?.motifSuppressionComptabilite || ''),
+    supprimeParUtilisateur: Number(item?.supprimeParUtilisateur || 0) || null,
+    nomUtilisateurSuppression: String(item?.nomUtilisateurSuppression || ''),
+  };
+};
+
+const buildPayload = (item: IComptabiliteItem, idUtilisateur: number) => {
+  const montant = parseNumber(item.montantComptabilite);
+  const isEntree = item.typeComptabilite === 'entree';
+
+  return {
+    idComptabilite: item.idComptabilite,
+    idUtilisateur,
+    nomComptabilite: item.nomComptabilite,
+    entreeComptabilite: isEntree ? montant : 0,
+    sortieComptabilite: isEntree ? 0 : montant,
+    dateComptabilite: formatDateForStorage(item.dateComptabilite),
+    observationComptabilite: item.observationComptabilite,
+  };
+};
 
 export function ComptabiliteView() {
   const dispatch = useDispatch();
@@ -101,17 +186,33 @@ export function ComptabiliteView() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const { listComptabilite, loadingComptabilite } = useSelector((state: any) => state.comptabilite);
+  const desktopSecurityIsSuperAdmin = useSelector((state: any) => state.application?.desktopSecurityIsSuperAdmin);
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
   const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || null;
+  const currentUsername = String(appUserConnected?.nomUtilisateur || authUtilisateurData?.nomUtilisateur || '');
 
-  const { showNotification } = useNotificationSnackbar();
+  const {
+    showNotification,
+    NotificationComponent,
+  } = useNotificationSnackbar();
+  const showNotificationRef = useRef(showNotification);
+
+  useEffect(() => {
+    showNotificationRef.current = showNotification;
+  }, [showNotification]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [permanentDeleteDialogOpen, setPermanentDeleteDialogOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<IComptabiliteItem>(emptyComptabilite);
   const [itemToDelete, setItemToDelete] = useState<IComptabiliteItem | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'entree' | 'sortie'>('all');
+  const [itemToRestore, setItemToRestore] = useState<IComptabiliteItem | null>(null);
+  const [itemToDeletePermanently, setItemToDeletePermanently] = useState<IComptabiliteItem | null>(null);
+  const [deletedItems, setDeletedItems] = useState<IComptabiliteItem[]>([]);
+  const [loadingDeletedComptabilite, setLoadingDeletedComptabilite] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | ComptabiliteType>('all');
   const [search, setSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -127,15 +228,96 @@ export function ComptabiliteView() {
       const data = Array.isArray(response?.data) ? response.data.map(normalizeComptabilite) : [];
       dispatch(setListComptabilite(data));
     } catch (error: any) {
-      showNotification(error?.message || 'Impossible de charger la comptabilite', 'error');
+      showNotificationRef.current(error?.message || 'Impossible de charger la comptabilite', 'error');
     } finally {
       dispatch(setLoadingComptabilite(false));
     }
-  }, [currentUserId, dispatch, showNotification]);
+  }, [currentUserId, dispatch]);
+
+  const fetchDeletedComptabilite = useCallback(async () => {
+    if (!currentUserId || !desktopSecurityIsSuperAdmin) {
+      setDeletedItems([]);
+      return;
+    }
+
+    setLoadingDeletedComptabilite(true);
+    try {
+      const response = await apiClient.getComptabilitesSupprimeesByUtilisateur(currentUserId);
+      const data = Array.isArray(response?.data) ? response.data.map(normalizeComptabilite) : [];
+      setDeletedItems(data);
+    } catch (error: any) {
+      showNotificationRef.current(error?.message || 'Impossible de charger les ecritures supprimees', 'error');
+    } finally {
+      setLoadingDeletedComptabilite(false);
+    }
+  }, [currentUserId, desktopSecurityIsSuperAdmin]);
 
   useEffect(() => {
     fetchComptabilite();
   }, [fetchComptabilite]);
+
+  useEffect(() => {
+    fetchDeletedComptabilite();
+  }, [fetchDeletedComptabilite]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      return undefined;
+    }
+
+    const refreshActiveOnly = () => {
+      fetchComptabilite();
+    };
+
+    const refreshAll = () => {
+      fetchComptabilite();
+      if (desktopSecurityIsSuperAdmin) {
+        fetchDeletedComptabilite();
+      }
+    };
+
+    const unsubscribers = [
+      subscribeToCommunauteEvent('ajouterComptabilite', (payload) => {
+        if (Number(payload?.idUtilisateur) !== currentUserId) {
+          return;
+        }
+        refreshActiveOnly();
+        showNotificationRef.current('Une nouvelle ecriture a ete synchronisee.', 'info');
+      }),
+      subscribeToCommunauteEvent('modifierComptabilite', (payload) => {
+        if (Number(payload?.idUtilisateur) !== currentUserId) {
+          return;
+        }
+        refreshActiveOnly();
+        showNotificationRef.current('Une ecriture comptable a ete mise a jour.', 'info');
+      }),
+      subscribeToCommunauteEvent('supprimerComptabilite', (payload) => {
+        if (Number(payload?.idUtilisateur) !== currentUserId) {
+          return;
+        }
+        refreshAll();
+        showNotificationRef.current('Une ecriture a ete archivee.', 'info');
+      }),
+      subscribeToCommunauteEvent('restaurerComptabilite', (payload) => {
+        if (Number(payload?.idUtilisateur) !== currentUserId) {
+          return;
+        }
+        refreshAll();
+        showNotificationRef.current('Une ecriture archivee a ete restauree.', 'info');
+      }),
+      subscribeToCommunauteEvent('supprimerComptabiliteDefinitivement', (payload) => {
+        if (Number(payload?.idUtilisateur) !== currentUserId) {
+          return;
+        }
+        refreshAll();
+        showNotificationRef.current('Une ecriture archivee a ete supprimee definitivement.', 'info');
+      }),
+    ];
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [currentUserId, desktopSecurityIsSuperAdmin, fetchComptabilite, fetchDeletedComptabilite]);
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -143,15 +325,15 @@ export function ComptabiliteView() {
       const matchesSearch = !query
         || item.nomComptabilite.toLowerCase().includes(query)
         || item.observationComptabilite.toLowerCase().includes(query)
-        || item.dateComptabilite.includes(query);
+        || item.dateComptabilite.toLowerCase().includes(query);
 
-      const matchesType = filterType === 'all'
-        || (filterType === 'entree' && item.entreeComptabilite > 0)
-        || (filterType === 'sortie' && item.sortieComptabilite > 0);
+      const matchesType = filterType === 'all' || item.typeComptabilite === filterType;
 
       return matchesSearch && matchesType;
     });
   }, [filterType, listComptabilite, search]);
+
+  const activeFilterLabel = filterType === 'all' ? 'Toutes les ecritures' : filterType === 'entree' ? 'Entrees seulement' : 'Sorties seulement';
 
   const totals = useMemo(() => {
     const entree = filteredItems.reduce((sum: number, item: IComptabiliteItem) => sum + parseNumber(item.entreeComptabilite), 0);
@@ -181,24 +363,31 @@ export function ComptabiliteView() {
   const handleChange = (field: keyof IComptabiliteItem, value: string) => {
     setCurrentItem((prev) => ({
       ...prev,
-      [field]: field === 'entreeComptabilite' || field === 'sortieComptabilite' ? parseNumber(value) : value,
+      [field]: field === 'montantComptabilite' || field === 'entreeComptabilite' || field === 'sortieComptabilite'
+        ? parseNumber(value)
+        : value,
     }));
   };
 
   const handleSubmit = async () => {
     if (!currentUserId) {
-      showNotification('Utilisateur non trouve', 'warning');
+      showNotificationRef.current('Utilisateur non trouve', 'warning');
       return;
     }
 
     if (!currentItem.nomComptabilite.trim()) {
-      showNotification('Le libelle est obligatoire', 'warning');
+      showNotificationRef.current('Le libelle est obligatoire', 'warning');
+      return;
+    }
+
+    if (!currentItem.dateComptabilite.trim()) {
+      showNotificationRef.current('La date est obligatoire', 'warning');
       return;
     }
 
     const payload = buildPayload(currentItem, currentUserId);
-    if (payload.entreeComptabilite <= 0 && payload.sortieComptabilite <= 0) {
-      showNotification('Renseigne au moins une entree ou une sortie', 'warning');
+    if (parseNumber(currentItem.montantComptabilite) <= 0) {
+      showNotificationRef.current(currentItem.typeComptabilite === 'entree' ? 'Renseigne le montant de l\'entree' : 'Renseigne le montant de la sortie', 'warning');
       return;
     }
 
@@ -210,11 +399,11 @@ export function ComptabiliteView() {
 
       const normalized = normalizeComptabilite(Array.isArray(response?.data) ? response.data[0] : response?.data);
       dispatch(upsertComptabilite(normalized));
-      showNotification(currentItem.idComptabilite ? 'Ecriture mise a jour' : 'Ecriture enregistree', 'success');
+      showNotificationRef.current(currentItem.idComptabilite ? 'Ecriture mise a jour' : 'Ecriture enregistree', 'success');
       handleCloseDialog();
       fetchComptabilite();
     } catch (error: any) {
-      showNotification(error?.message || 'Impossible denregistrer cette ecriture', 'error');
+      showNotificationRef.current(error?.message || 'Impossible d\'enregistrer cette ecriture', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -229,19 +418,58 @@ export function ComptabiliteView() {
     if (!itemToDelete?.idComptabilite) return;
 
     try {
-      await apiClient.deleteComptabilite(itemToDelete.idComptabilite);
+      await apiClient.deleteComptabilite(
+        itemToDelete.idComptabilite,
+        itemToDelete.idUtilisateur || currentUserId || undefined,
+        'Archivee depuis la comptabilite'
+      );
       dispatch(removeComptabilite(itemToDelete.idComptabilite));
-      showNotification('Ecriture supprimee', 'success');
+      showNotificationRef.current('Ecriture archivee. Elle reste consultable par le superadmin.', 'success');
       setDeleteDialogOpen(false);
       setItemToDelete(null);
       fetchComptabilite();
+      if (desktopSecurityIsSuperAdmin) {
+        fetchDeletedComptabilite();
+      }
     } catch (error: any) {
-      showNotification(error?.message || 'Impossible de supprimer cette ecriture', 'error');
+      showNotificationRef.current(error?.message || 'Impossible d\'archiver cette ecriture', 'error');
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!itemToRestore?.idComptabilite) return;
+
+    try {
+      await apiClient.restoreComptabilite(itemToRestore.idComptabilite);
+      showNotificationRef.current('Ecriture restauree avec succes.', 'success');
+      setRestoreDialogOpen(false);
+      setItemToRestore(null);
+      fetchComptabilite();
+      fetchDeletedComptabilite();
+    } catch (error: any) {
+      showNotificationRef.current(error?.message || 'Impossible de restaurer cette ecriture', 'error');
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!itemToDeletePermanently?.idComptabilite) return;
+
+    try {
+      await apiClient.deleteComptabilitePermanently(itemToDeletePermanently.idComptabilite, currentUsername);
+      showNotificationRef.current('Ecriture supprimee definitivement.', 'success');
+      setPermanentDeleteDialogOpen(false);
+      setItemToDeletePermanently(null);
+      fetchDeletedComptabilite();
+      fetchComptabilite();
+    } catch (error: any) {
+      showNotificationRef.current(error?.message || 'Impossible de supprimer definitivement cette ecriture', 'error');
     }
   };
 
   return (
     <DashboardContent maxWidth="xl">
+      <NotificationComponent />
+
       <Stack spacing={3}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }}>
           <Box>
@@ -251,13 +479,16 @@ export function ComptabiliteView() {
             </Typography>
           </Box>
 
-          <Button
-            startIcon={<AddRounded />}
-            onClick={openCreateDialog}
-            sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }}
-          >
-            Nouvelle ecriture
-          </Button>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ width: { xs: '100%', md: 'auto' } }}>
+            <PrintEtatComptabilite items={filteredItems} deletedItems={deletedItems} search={search} filterLabel={activeFilterLabel} isSuperAdmin={desktopSecurityIsSuperAdmin} />
+            <Button
+              startIcon={<AddRounded />}
+              onClick={openCreateDialog}
+              sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }}
+            >
+              Nouvelle ecriture
+            </Button>
+          </Stack>
         </Stack>
 
         <Grid container spacing={2}>
@@ -319,7 +550,7 @@ export function ComptabiliteView() {
               select
               label="Type"
               value={filterType}
-              onChange={(event) => setFilterType(event.target.value as 'all' | 'entree' | 'sortie')}
+              onChange={(event) => setFilterType(event.target.value as 'all' | ComptabiliteType)}
               sx={{ minWidth: { xs: '100%', md: 220 } }}
             >
               <MenuItem value="all">Toutes les ecritures</MenuItem>
@@ -345,7 +576,7 @@ export function ComptabiliteView() {
               </TableHead>
               <TableBody>
                 {filteredItems.map((item: IComptabiliteItem) => {
-                  const isEntree = item.entreeComptabilite > 0;
+                  const isEntree = item.typeComptabilite === 'entree';
                   return (
                     <TableRow hover key={item.idComptabilite || `${item.nomComptabilite}-${item.dateComptabilite}`}>
                       <TableCell>{item.dateComptabilite || '--'}</TableCell>
@@ -368,10 +599,7 @@ export function ComptabiliteView() {
                         </Stack>
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          size="small"
-                          label={isEntree ? 'Entree' : 'Sortie'}
-                          />
+                        <Chip size="small" label={isEntree ? 'Entree' : 'Sortie'} />
                       </TableCell>
                       <TableCell align="right">{item.entreeComptabilite > 0 ? currencyFormatter.format(item.entreeComptabilite) : '--'}</TableCell>
                       <TableCell align="right">{item.sortieComptabilite > 0 ? currencyFormatter.format(item.sortieComptabilite) : '--'}</TableCell>
@@ -406,13 +634,93 @@ export function ComptabiliteView() {
             </Table>
           </Box>
         </Card>
+
+        {desktopSecurityIsSuperAdmin && (
+          <Card sx={{ p: 2.5, borderRadius: 4 }}>
+            <Stack spacing={2}>
+              <Box>
+                <Typography variant="h6">Ecritures supprimees</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Archive comptable reservee au superadmin. Les lignes supprimees restent consultables ici avec leur trace.
+                </Typography>
+              </Box>
+
+              <Box sx={{ overflowX: 'auto' }}>
+                <Table sx={{ minWidth: 980 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Libelle</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell align="right">Montant</TableCell>
+                      <TableCell>Supprime le</TableCell>
+                      <TableCell>Supprime par</TableCell>
+                      <TableCell>Motif</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {deletedItems.map((item) => (
+                      <TableRow hover key={`deleted-${item.idComptabilite}`}>
+                        <TableCell>{item.dateComptabilite || '--'}</TableCell>
+                        <TableCell>{item.nomComptabilite}</TableCell>
+                        <TableCell>
+                          <Chip size="small" color={item.typeComptabilite === 'entree' ? 'success' : 'error'} label={item.typeComptabilite === 'entree' ? 'Entree' : 'Sortie'} />
+                        </TableCell>
+                        <TableCell align="right">{currencyFormatter.format(item.montantComptabilite || 0)}</TableCell>
+                        <TableCell>{item.dateSuppressionComptabilite || '--'}</TableCell>
+                        <TableCell>{item.nomUtilisateurSuppression || '--'}</TableCell>
+                        <TableCell>{item.motifSuppressionComptabilite || '--'}</TableCell>
+                        <TableCell align="right">
+                          <Stack direction="row" justifyContent="flex-end">
+                            <IconButton
+                              color="primary"
+                              onClick={() => {
+                                setItemToRestore(item);
+                                setRestoreDialogOpen(true);
+                              }}
+                            >
+                              <RestoreRounded fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              color="error"
+                              onClick={() => {
+                                setItemToDeletePermanently(item);
+                                setPermanentDeleteDialogOpen(true);
+                              }}
+                            >
+                              <DeleteForeverRounded fontSize="small" />
+                            </IconButton>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+
+                    {!loadingDeletedComptabilite && deletedItems.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8}>
+                          <Stack spacing={1} alignItems="center" sx={{ py: 4 }}>
+                            <Typography variant="subtitle1">Aucune ecriture archivee</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Rien a controler pour le moment dans la corbeille comptable.
+                            </Typography>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </Box>
+            </Stack>
+          </Card>
+        )}
       </Stack>
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} fullScreen={isMobile} fullWidth maxWidth="md">
         <DialogTitle>{currentItem.idComptabilite ? 'Modifier une ecriture' : 'Nouvelle ecriture'}</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} sx={{ pt: 0.5 }}>
-            <Grid item xs={12} md={7}>
+            <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
                 label="Libelle"
@@ -420,32 +728,34 @@ export function ComptabiliteView() {
                 onChange={(event) => handleChange('nomComptabilite', event.target.value)}
               />
             </Grid>
-            <Grid item xs={12} md={5}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
-                type="date"
+                select
+                label="Type"
+                value={currentItem.typeComptabilite}
+                onChange={(event) => handleChange('typeComptabilite', event.target.value)}
+              >
+                <MenuItem value="entree">Entree</MenuItem>
+                <MenuItem value="sortie">Sortie</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
                 label="Date"
+                placeholder="jj/mm/aaaa"
                 value={currentItem.dateComptabilite}
                 onChange={(event) => handleChange('dateComptabilite', event.target.value)}
-                InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
                 type="number"
-                label="Entree"
-                value={currentItem.entreeComptabilite || ''}
-                onChange={(event) => handleChange('entreeComptabilite', event.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Sortie"
-                value={currentItem.sortieComptabilite || ''}
-                onChange={(event) => handleChange('sortieComptabilite', event.target.value)}
+                label={currentItem.typeComptabilite === 'entree' ? 'Montant de l\'entree' : 'Montant de la sortie'}
+                value={currentItem.montantComptabilite || ''}
+                onChange={(event) => handleChange('montantComptabilite', event.target.value)}
               />
             </Grid>
             <Grid item xs={12}>
@@ -473,10 +783,36 @@ export function ComptabiliteView() {
           setItemToDelete(null);
         }}
         onConfirm={handleDelete}
-        title="Supprimer cette ecriture"
-        message="Cette action retirera la ligne de comptabilite de la liste actuelle."
-        confirmText="Supprimer"
+        title="Archiver cette ecriture"
+        message="Cette ecriture disparaitra de la liste active, mais restera conservee dans l'archive comptable visible par le superadmin."
+        confirmText="Archiver"
+      />
+
+      <ConfirmDialog
+        open={restoreDialogOpen}
+        onClose={() => {
+          setRestoreDialogOpen(false);
+          setItemToRestore(null);
+        }}
+        onConfirm={handleRestore}
+        title="Restaurer cette ecriture"
+        message="Cette ecriture va revenir dans la liste active de la comptabilite."
+        confirmText="Restaurer"
+      />
+
+      <ConfirmDialog
+        open={permanentDeleteDialogOpen}
+        onClose={() => {
+          setPermanentDeleteDialogOpen(false);
+          setItemToDeletePermanently(null);
+        }}
+        onConfirm={handlePermanentDelete}
+        title="Supprimer definitivement cette ecriture"
+        message="Cette suppression est irreversible. L'ecriture sera retiree meme de l'archive comptable."
+        confirmText="Supprimer definitivement"
       />
     </DashboardContent>
   );
 }
+
+

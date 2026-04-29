@@ -30,12 +30,12 @@ import {
   IDepartement,
   setDataModifiesDepartement,
 } from '../../../../store/departementSlice';
-import {isLibelleLongUnique, isLibelleCourtUnique } from '../../utils';
+import { isLibelleLongUnique, isLibelleCourtUnique } from '../../utils';
 
-// ------------------------------ 
+// ------------------------------
 
 export function DepartementEditView() {
-  const { id } = useParams<{ id: string }>(); 
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { showNotification } = useNotificationSnackbar();
@@ -110,41 +110,39 @@ export function DepartementEditView() {
       ...prev,
       [name]: value,
     }));
-    
-    // Effacer l'erreur du champ modifiÃƒÂ©
+
+    // Effacer l'erreur du champ modifie
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
   const validateForm = (): boolean => {
     const newErrors: { [key: string]: string } = {};
-    
+
     // Validation de base
     if (!formData.libelleLongDepartement?.trim()) {
-      newErrors.libelleLongDepartement = 'Le libellÃƒÂ© long est requis';
+      newErrors.libelleLongDepartement = 'Le libelle long est requis';
     } else if (formData.libelleLongDepartement.length > 100) {
-      // eslint-disable-next-line react/no-unescaped-entities
-      newErrors.libelleLongDepartement = "Le libellÃƒÂ© long ne doit pas dÃƒÂ©passer 100 caractÃƒÂ¨res";
+      newErrors.libelleLongDepartement = 'Le libelle long ne doit pas depasser 100 caracteres';
     } else if (!isLibelleLongUnique(listDepartement, formData.libelleLongDepartement, departement?.idDepartement)) {
-      newErrors.libelleLongDepartement = 'Ce libellÃƒÂ© long est dÃƒÂ©jÃƒ  utilisÃƒÂ©';
+      newErrors.libelleLongDepartement = 'Ce libelle long est deja utilise';
     }
 
     if (!formData.libelleCourtDepartement?.trim()) {
-      newErrors.libelleCourtDepartement = 'Le libellÃƒÂ© court est requis';
+      newErrors.libelleCourtDepartement = 'Le libelle court est requis';
     } else if (formData.libelleCourtDepartement.length > 20) {
-      // eslint-disable-next-line react/no-unescaped-entities
-      newErrors.libelleCourtDepartement = "Le libellÃƒÂ© court ne doit pas dÃƒÂ©passer 20 caractÃƒÂ¨res";
+      newErrors.libelleCourtDepartement = 'Le libelle court ne doit pas depasser 20 caracteres';
     } else if (!isLibelleCourtUnique(listDepartement, formData.libelleCourtDepartement, departement?.idDepartement)) {
-      newErrors.libelleCourtDepartement = 'Ce libellÃƒÂ© court est dÃƒÂ©jÃƒ  utilisÃƒÂ©';
+      newErrors.libelleCourtDepartement = 'Ce libelle court est deja utilise';
     }
 
     if (formData.sloganDepartement && formData.sloganDepartement.length > 200) {
-      newErrors.sloganDepartement = 'Le slogan ne doit pas dÃƒÂ©passer 200 caractÃƒÂ¨res';
+      newErrors.sloganDepartement = 'Le slogan ne doit pas depasser 200 caracteres';
     }
 
     if (formData.responsableDepartement && formData.responsableDepartement.length > 100) {
-      newErrors.responsableDepartement = 'Le nom du responsable ne doit pas dÃƒÂ©passer 100 caractÃƒÂ¨res';
+      newErrors.responsableDepartement = 'Le nom du responsable ne doit pas depasser 100 caracteres';
     }
 
     setErrors(newErrors);
@@ -163,13 +161,13 @@ export function DepartementEditView() {
     try {
       setSaving(true);
 
-      // PrÃƒÂ©parer les donnÃƒÂ©es pour l'API
+      // Preparer les donnees pour l'API
       const cleanedData = {
         ...formData,
         idDepartement: departement.idDepartement,
       };
 
-      console.log('DonnÃƒÂ©es Ãƒ  envoyer:', cleanedData);
+      console.log('Donnees a envoyer:', cleanedData);
 
       const response = await apiClient.updateDepartement(cleanedData);
 
@@ -178,15 +176,15 @@ export function DepartementEditView() {
         const updatedDepartement = response.data || cleanedData;
         dispatch(setDataModifiesDepartement(updatedDepartement));
 
-        showNotification('DÃƒÂ©partement modifiÃƒÂ© avec succÃƒÂ¨s', 'success');
+        showNotification('Departement modifie avec succes', 'success');
 
         // Retourner a la page de detail
         navigate(`/detaildepartement/${id}`);
       } else {
-        showNotification(response.error?.message || 'Erreur lors de la modification du dÃƒÂ©partement', 'error');
+        showNotification(response.error?.message || 'Erreur lors de la modification du departement', 'error');
       }
     } catch (error: any) {
-      console.error('Error updating dÃƒÂ©partement:', error);
+      console.error('Error updating departement:', error);
       showNotification(`Erreur: ${error.message || 'Erreur lors de la modification'}`, 'error');
     } finally {
       setSaving(false);
@@ -233,7 +231,7 @@ export function DepartementEditView() {
         <Container maxWidth="lg">
           <Box textAlign="center" py={10}>
             <Typography variant="h5" color="text.secondary" gutterBottom>
-              Departement non trouvÃ©
+              Departement non trouve
             </Typography>
             <Button
               variant="contained"
@@ -251,7 +249,7 @@ export function DepartementEditView() {
   return (
     <DashboardContent>
       <Container maxWidth="lg">
-        {/* En-tÃƒÂªte avec boutons */}
+        {/* En-tete avec boutons */}
         <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
           <Button
             startIcon={<ArrowBackIcon />}
@@ -294,40 +292,40 @@ export function DepartementEditView() {
           </Alert>
         )}
 
-        {/* Formulaire d'ÃƒÂ©dition */}
+        {/* Formulaire d'edition */}
         <Card sx={{ p: 3, mb: 3 }}>
           <Grid container spacing={3}>
             {/* Informations principales */}
             <Grid item xs={12}>
               <Divider sx={{ mb: 3 }}>
-                <Typography variant="h6">Informations gÃ©nÃ©rales</Typography>
+                <Typography variant="h6">Informations generales</Typography>
               </Divider>
             </Grid>
 
             <Grid item xs={12} md={8}>
               <TextField
                 fullWidth
-                label="LibellÃƒÂ© long *"
+                label="Libelle long *"
                 name="libelleLongDepartement"
                 value={formData.libelleLongDepartement || ''}
                 onChange={handleChange}
                 required
                 error={!!errors.libelleLongDepartement}
-                helperText={errors.libelleLongDepartement || 'Nom complet du dÃƒÂ©partement (max. 100 caractÃƒÂ¨res)'}
-                placeholder="Ex: DÃƒÂ©partement de la Jeunesse et des Sports"
+                helperText={errors.libelleLongDepartement || 'Nom complet du departement (max. 100 caracteres)'}
+                placeholder="Ex: Departement de la Jeunesse et des Sports"
               />
             </Grid>
 
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                label="LibellÃƒÂ© court *"
+                label="Libelle court *"
                 name="libelleCourtDepartement"
                 value={formData.libelleCourtDepartement || ''}
                 onChange={handleChange}
                 required
                 error={!!errors.libelleCourtDepartement}
-                helperText={errors.libelleCourtDepartement || 'AbrÃƒÂ©viation (max. 20 caractÃƒÂ¨res)'}
+                helperText={errors.libelleCourtDepartement || 'Abreviation (max. 20 caracteres)'}
                 placeholder="Ex: DJS"
               />
             </Grid>
@@ -341,8 +339,8 @@ export function DepartementEditView() {
                 value={formData.sloganDepartement || ''}
                 onChange={handleChange}
                 error={!!errors.sloganDepartement}
-                helperText={errors.sloganDepartement || 'Slogan ou devise du dÃƒÂ©partement (max. 200 caractÃƒÂ¨res)'}
-                placeholder="Ex: Servir avec excellence et intÃƒÂ©gritÃƒÂ©"
+                helperText={errors.sloganDepartement || 'Slogan ou devise du departement (max. 200 caracteres)'}
+                placeholder="Ex: Servir avec excellence et integrite"
                 multiline
                 rows={2}
               />
@@ -357,22 +355,22 @@ export function DepartementEditView() {
                 value={formData.responsableDepartement || ''}
                 onChange={handleChange}
                 error={!!errors.responsableDepartement}
-                helperText={errors.responsableDepartement || 'Nom du responsable (max. 100 caractÃƒÂ¨res)'}
+                helperText={errors.responsableDepartement || 'Nom du responsable (max. 100 caracteres)'}
                 placeholder="Ex: Pasteur Jean Dupont"
               />
             </Grid>
 
-            {/* Informations systÃƒÂ¨me */}
+            {/* Informations systeme */}
             <Grid item xs={12}>
               <Divider sx={{ my: 3 }}>
-                <Typography variant="h6">Informations systÃªme</Typography>
+                <Typography variant="h6">Informations systeme</Typography>
               </Divider>
             </Grid>
 
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="ID DÃƒÂ©partement"
+                label="ID Departement"
                 value={departement.idDepartement || ''}
                 InputProps={{
                   readOnly: true,
@@ -398,7 +396,7 @@ export function DepartementEditView() {
             {/* Indicateurs */}
             <Grid item xs={12}>
               <Divider sx={{ my: 3 }}>
-                <Typography variant="h6">stat du departement</Typography>
+                <Typography variant="h6">Stat du departement</Typography>
               </Divider>
             </Grid>
 
@@ -408,7 +406,7 @@ export function DepartementEditView() {
                   Departement
                 </Typography>
                 <Typography variant="h6" color={formData.libelleLongDepartement ? 'success.main' : 'error.main'}>
-                  {formData.libelleLongDepartement ? 'Ã¢Å“â€œ Rempli' : 'Ã¢Å“â€” Manquant'}
+                  {formData.libelleLongDepartement ? 'Rempli' : 'Manquant'}
                 </Typography>
               </Box>
             </Grid>
@@ -416,10 +414,10 @@ export function DepartementEditView() {
             <Grid item xs={12} md={4}>
               <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, textAlign: 'center' }}>
                 <Typography variant="subtitle2" color="text.secondary">
-                  LibellÃ© court
+                  Libelle court
                 </Typography>
                 <Typography variant="h6" color={formData.libelleCourtDepartement ? 'success.main' : 'error.main'}>
-                  {formData.libelleCourtDepartement ? 'Ã¢Å“â€œ Rempli' : 'Ã¢Å“â€” Manquant'}
+                  {formData.libelleCourtDepartement ? 'Rempli' : 'Manquant'}
                 </Typography>
               </Box>
             </Grid>
@@ -430,7 +428,7 @@ export function DepartementEditView() {
                   Responsable
                 </Typography>
                 <Typography variant="h6" color={formData.responsableDepartement ? 'success.main' : 'warning.main'}>
-                  {formData.responsableDepartement ? 'Ã¢Å“â€œ DÃƒÂ©fini' : 'Ã¢Å¡  Optionnel'}
+                  {formData.responsableDepartement ? 'Defini' : 'Optionnel'}
                 </Typography>
               </Box>
             </Grid>
@@ -444,9 +442,9 @@ export function DepartementEditView() {
                   onClick={handleReset}
                   disabled={saving}
                 >
-                  RÃƒÂ©initialiser les modifications
+                  Reinitialiser les modifications
                 </Button>
-                
+
                 <Box display="flex" gap={2}>
                   <Button
                     variant="outlined"
@@ -477,16 +475,16 @@ export function DepartementEditView() {
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
             {/* eslint-disable-next-line react/no-unescaped-entities */}
-            Ã¢â‚¬Â¢ Les champs marquÃƒÂ©s d'un astÃƒÂ©risque (*) sont obligatoires.
+            - Les champs marques d'un asterisque (*) sont obligatoires.
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Ã¢â‚¬Â¢ Le libellÃƒÂ© court est utilisÃƒÂ© comme rÃƒÂ©fÃƒÂ©rence et abrÃƒÂ©viation.
+            - Le libelle court est utilise comme reference et abreviation.
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Ã¢â‚¬Â¢ Le slogan est facultatif mais recommandÃƒÂ© pour identifier le dÃƒÂ©partement.
+            - Le slogan est facultatif mais recommande pour identifier le departement.
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Ã¢â‚¬Â¢ Assurez-vous que les libellÃƒÂ©s sont uniques pour ÃƒÂ©viter les confusions.
+            - Assurez-vous que les libelles sont uniques pour eviter les confusions.
           </Typography>
         </Card>
       </Container>
@@ -495,4 +493,3 @@ export function DepartementEditView() {
 }
 
 export default DepartementEditView;
-

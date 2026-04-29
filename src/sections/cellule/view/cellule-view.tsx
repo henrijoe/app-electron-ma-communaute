@@ -22,6 +22,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { Iconify } from 'src/components/iconify/iconify';
 import { Scrollbar } from 'src/components/scrollbar/scrollbar';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
 
 import { applyFilter, emptyRows, getComparator } from '../utils';
@@ -60,6 +61,7 @@ export function CelluleView() {
   const [data, setData] = useState({ ...cellule });
   const [isEditMode, setIsEditMode] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [confirmDeleteSelectedOpen, setConfirmDeleteSelectedOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const table = useCelluleTable();
 
@@ -73,7 +75,7 @@ export function CelluleView() {
 
   const fetchCellules = useCallback(async () => {
     try {
-      // On charge uniquement les cellules rattach�es � l'utilisateur courant.
+      // On charge uniquement les cellules rattachees  l'utilisateur courant.
       setLoading(true);
       dispatch(ensureArray());
       const response = currentUserId
@@ -96,7 +98,7 @@ export function CelluleView() {
   }, [fetchCellules]);
 
   const handleEditCellule = useCallback((celluleData: ICellule) => {
-    // On pr�pare le formulaire avec les donn�es compl�tes de la cellule s�lectionn�e.
+    // On prepare le formulaire avec les donnees completes de la cellule selectionnee.
     setData({ ...celluleData });
     setIsEditMode(true);
     setOpenDialog(true);
@@ -104,7 +106,7 @@ export function CelluleView() {
 
   const handleDeleteCellule = useCallback(async (idCellule: number) => {
     if (!currentUserId) {
-      showNotification('Session expir�e : reconnectez-vous', 'warning');
+      showNotification('Session expirée : reconnectez-vous', 'warning');
       return;
     }
 
@@ -113,7 +115,7 @@ export function CelluleView() {
       const response = await apiClient.deleteCellule(idCellule, currentUserId);
       if (response.status === 1) {
         dispatch(deleteCellule(idCellule));
-        showNotification('Cellule supprim�e avec succ�s', 'success');
+        showNotification('Cellule supprimée avec succés', 'success');
       }
     } catch (error: any) {
       showNotification(error?.message || 'Erreur lors de la suppression de la cellule', 'error');
@@ -127,21 +129,48 @@ export function CelluleView() {
 
     try {
       setDeleteLoading(true);
-      await Promise.all(
-        table.selected.map(async (idCellule) => {
+
+      const summary = await table.selected.reduce(
+        (promise, idCellule) => promise.then(async ({ successes, failures }) => {
           const numericId = Number(idCellule);
-          await apiClient.deleteCellule(numericId, currentUserId);
-          dispatch(deleteCellule(numericId));
-        })
+
+          try {
+            const response = await apiClient.deleteCellule(numericId, currentUserId);
+
+            if (response.status === 1) {
+              dispatch(deleteCellule(numericId));
+              return { failures, successes: successes + 1 };
+            }
+
+            return { failures: failures + 1, successes };
+          } catch (error) {
+            console.error(`Erreur suppression cellule ${numericId}:`, error);
+            return { failures: failures + 1, successes };
+          }
+        }),
+        Promise.resolve({ failures: 0, successes: 0 })
       );
+
       table.onSelectAllRows(false, []);
-      showNotification('Cellules supprim�es avec succ�s', 'success');
+
+      if (summary.successes > 0) {
+        await fetchCellules();
+      }
+
+      if (summary.failures === 0) {
+        showNotification(`${summary.successes} cellule(s) supprimee(s) avec succes`, 'success');
+      } else {
+        showNotification(
+          `${summary.successes} supprimee(s), ${summary.failures} erreur(s)`,
+          summary.failures === table.selected.length ? 'error' : 'warning'
+        );
+      }
     } catch (error: any) {
       showNotification(error?.message || 'Erreur lors de la suppression multiple', 'error');
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, dispatch, showNotification, table]);
+  }, [currentUserId, dispatch, fetchCellules, showNotification, table]);
 
   const handleSubmit = useCallback(async () => {
     if (!data.nomCellule?.trim()) {
@@ -150,7 +179,7 @@ export function CelluleView() {
     }
 
     if (!currentUserId) {
-      showNotification('Session expir�e : reconnectez-vous', 'warning');
+      showNotification('Session expirée : reconnectez-vous', 'warning');
       return;
     }
 
@@ -166,14 +195,14 @@ export function CelluleView() {
         const response = await apiClient.updateCellule(payload);
         if (response.status === 1) {
           dispatch(setDataModifiesCellule(payload));
-          showNotification('Cellule modifi�e avec succ�s', 'success');
+          showNotification('Cellule modifiée avec succés', 'success');
         }
       } else {
         const response = await apiClient.createCellule(payload);
         if (response.status === 1) {
           const created = Array.isArray(response.data) ? response.data[0] : response.data;
           if (created) dispatch(addCellule(created));
-          showNotification('Cellule cr��e avec succ�s', 'success');
+          showNotification('Cellule créée avec succés', 'success');
         }
       }
 
@@ -244,7 +273,7 @@ export function CelluleView() {
             setFilterName(event.target.value);
             table.onResetPage();
           }}
-          onDelete={handleDeleteSelected}
+          onDelete={() => setConfirmDeleteSelectedOpen(true)}
           deleteLoading={deleteLoading}
           advancedFilters={
             <AdvancedFilterMenu
@@ -349,6 +378,19 @@ export function CelluleView() {
           <Button onClick={handleSubmit} variant="contained" disabled={updateLoading}>Enregistrer</Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDeleteSelectedOpen}
+        title="Supprimer les cellules selectionnees"
+        message={`Voulez-vous vraiment supprimer ${table.selected.length} cellule(s) selectionnee(s) ?`}
+        confirmText="Supprimer"
+        loading={deleteLoading}
+        onClose={() => setConfirmDeleteSelectedOpen(false)}
+        onConfirm={async () => {
+          setConfirmDeleteSelectedOpen(false);
+          await handleDeleteSelected();
+        }}
+      />
 
       <NotificationComponent />
     </DashboardContent>

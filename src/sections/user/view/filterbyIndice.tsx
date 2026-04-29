@@ -19,7 +19,7 @@ const normalizeBinaryValue = (value: unknown): '1' | '2' | '' => {
 
   if (!normalized) return '';
   if (['1', 'oui', 'true', 'vrai', 'yes'].includes(normalized)) return '1';
-  if (['2', 'non', 'false', 'faux', 'no'].includes(normalized)) return '2';
+  if (['0', '2', 'non', 'false', 'faux', 'no'].includes(normalized)) return '2';
 
   return '';
 };

@@ -19,6 +19,7 @@ import { apiClient } from 'src/utils/apiClient';
 import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
+import ConfirmDialog from 'src/components/alert/confirmDialog';
 
 import { TableNoData } from '../table-no-data';
 import { CulteTableRow } from '../culte-table-row';
@@ -72,6 +73,7 @@ export function CulteView() {
   const [data, setData] = useState({ ...culte});
   const [isEditMode, setIsEditMode] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [confirmDeleteSelectedOpen, setConfirmDeleteSelectedOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
 
   const {
@@ -318,41 +320,49 @@ export function CulteView() {
     try {
       setDeleteLoading(true);
 
-      const deletePromises = selected?.map((idCulteStr: any) => {
-        const idCulte = parseInt(idCulteStr, 10);
-        return apiClient.deleteCulte(idCulte, currentUserId)
-          .then(() => {
-            dispatch(deleteCulte(idCulte));
-            return { success: true, id: idCulte };
-          })
-          .catch((error) => {
-            console.error(`Erreur suppression culte ${idCulte}:`, error);
-            return { success: false, id: idCulte, error };
-          });
-      });
+      const summary = await selected.reduce(
+        (promise, idCulteStr) => promise.then(async ({ successes, failures }) => {
+          const idCulte = parseInt(idCulteStr, 10);
 
-      const results = await Promise.all(deletePromises);
-      const successes = results.filter(r => r.success).length;
-      const failures = results.length - successes;
+          try {
+            const response = await apiClient.deleteCulte(idCulte, currentUserId);
+
+            if (response.status === 1) {
+              dispatch(deleteCulte(idCulte));
+              return { failures, successes: successes + 1 };
+            }
+
+            return { failures: failures + 1, successes };
+          } catch (error) {
+            console.error(`Erreur suppression culte ${idCulte}:`, error);
+            return { failures: failures + 1, successes };
+          }
+        }),
+        Promise.resolve({ failures: 0, successes: 0 })
+      );
 
       onSelectAllRows(false, []);
 
-      if (failures === 0) {
-        showNotification(`${successes} culte(s) supprimé(s) avec succès`, 'success');
+      if (summary.successes > 0) {
+        await fetchCultes();
+      }
+
+      if (summary.failures === 0) {
+        showNotification(`${summary.successes} culte(s) supprime(s) avec succes`, 'success');
       } else {
         showNotification(
-          `${successes} supprimé(s), ${failures} erreur(s)`,
-          failures === selected.length ? 'error' : 'warning'
+          `${summary.successes} supprime(s), ${summary.failures} erreur(s)`,
+          summary.failures === selected.length ? 'error' : 'warning'
         );
       }
 
     } catch (error: any) {
-      console.error('Erreur générale lors de la suppression multiple:', error);
+      console.error('Erreur generale lors de la suppression multiple:', error);
       showNotification(`Erreur: ${error.message || 'Erreur lors de la suppression'}`, 'error');
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, selected, onSelectAllRows, dispatch, showNotification]);
+  }, [currentUserId, selected, onSelectAllRows, dispatch, showNotification, fetchCultes]);
 
   useEffect(() => {
     if (!openDialog) {
@@ -403,7 +413,7 @@ export function CulteView() {
             setFilterName(event.target.value);
             table.onResetPage();
           }}
-          onDelete={handleDeleteSelected}
+          onDelete={() => setConfirmDeleteSelectedOpen(true)}
           deleteLoading={deleteLoading}
           advancedFilters={
             <AdvancedFilterMenu
@@ -819,6 +829,19 @@ export function CulteView() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDeleteSelectedOpen}
+        title="Supprimer les cultes selectionnes"
+        message={`Voulez-vous vraiment supprimer ${selected.length} culte(s) selectionne(s) ?`}
+        confirmText="Supprimer"
+        loading={deleteLoading}
+        onClose={() => setConfirmDeleteSelectedOpen(false)}
+        onConfirm={async () => {
+          setConfirmDeleteSelectedOpen(false);
+          await handleDeleteSelected();
+        }}
+      />
 
       <NotificationComponent />
     </DashboardContent>

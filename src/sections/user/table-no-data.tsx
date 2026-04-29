@@ -12,18 +12,28 @@ type TableNoDataProps = TableRowProps & {
 };
 
 export function TableNoData({ searchQuery, ...other }: TableNoDataProps) {
+  const hasSearchQuery = Boolean(searchQuery.trim());
+
   return (
     <TableRow {...other}>
       <TableCell align="center" colSpan={7}>
         <Box sx={{ py: 15, textAlign: 'center' }}>
           <Typography variant="h6" sx={{ mb: 1 }}>
-            Not found
+            Aucun resultat
           </Typography>
 
           <Typography variant="body2">
-            No results found for &nbsp;
-            <strong>&quot;{searchQuery}&quot;</strong>.
-            <br /> Try checking for typos or using complete words.
+            {hasSearchQuery ? (
+              <>
+                Aucun resultat trouve pour <strong>&quot;{searchQuery}&quot;</strong>.
+                <br /> Verifie l&apos;orthographe ou essaie un terme plus complet.
+              </>
+            ) : (
+              <>
+                Aucun membre ne correspond aux filtres appliques.
+                <br /> Modifie ou reinitialise les filtres pour afficher des resultats.
+              </>
+            )}
           </Typography>
         </Box>
       </TableCell>

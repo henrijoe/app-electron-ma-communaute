@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import Grid from '@mui/material/Unstable_Grid2';
@@ -14,6 +14,7 @@ import {
 
 import { DashboardContent } from 'src/layouts/dashboard';
 import { apiClient } from 'src/utils/apiClient';
+import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
 import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
@@ -58,8 +59,7 @@ export function OverviewAnalyticsView() {
     || Number(authUtilisateurData?.idUtilisateur)
     || null;
 
-  useEffect(() => {
-    const loadStats = async () => {
+  const loadStats = useCallback(async () => {
       try {
         // Toutes les cartes du dashboard restent bornees au compte connecte.
         const [membresRes, cultesRes, departementsRes, cellulesRes, groupesRes] = await Promise.all([
@@ -94,9 +94,6 @@ export function OverviewAnalyticsView() {
           groupes: listGroupe.length,
         });
       }
-    };
-
-    loadStats();
   }, [
     currentUserId,
     listCulte.length,
@@ -105,6 +102,43 @@ export function OverviewAnalyticsView() {
     listGroupe.length,
     listMembre,
   ]);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      return undefined;
+    }
+
+    const shouldRefreshForUser = (payload: any) => {
+      if (!payload?.idUtilisateur) {
+        return true;
+      }
+
+      return Number(payload.idUtilisateur) === Number(currentUserId);
+    };
+
+    const refreshStats = (payload: any) => {
+      if (shouldRefreshForUser(payload)) {
+        loadStats();
+      }
+    };
+
+    const unsubscribers = [
+      subscribeToCommunauteEvent('ajouterMembre', refreshStats),
+      subscribeToCommunauteEvent('modifierMembre', refreshStats),
+      subscribeToCommunauteEvent('supprimerMembre', refreshStats),
+      subscribeToCommunauteEvent('ajouterDeces', refreshStats),
+      subscribeToCommunauteEvent('modifierDeces', refreshStats),
+      subscribeToCommunauteEvent('supprimerDeces', refreshStats),
+    ];
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [currentUserId, loadStats]);
 
   const totalGeneral = useMemo(
     // On garde un total global unique pour alimenter les sous-titres et la synthese.

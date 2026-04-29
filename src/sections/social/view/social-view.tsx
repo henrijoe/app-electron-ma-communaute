@@ -44,6 +44,7 @@ import type { IMariage } from 'src/store/mariageSlice';
 import type { IMembre } from 'src/store/membreSlice';
 import type { INaissance } from 'src/store/naissanceSlice';
 import { apiClient } from 'src/utils/apiClient';
+import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 
 type SocialCaseType = 'mariage' | 'naissance' | 'deces' | 'maladie';
 
@@ -306,6 +307,85 @@ export function SocialView() {
   useEffect(() => {
     fetchSocialCases();
   }, [fetchSocialCases]);
+
+
+  useEffect(() => {
+    if (!currentUserId) {
+      return undefined;
+    }
+
+    const shouldRefreshForUser = (payload: any) => {
+      if (!payload?.idUtilisateur) {
+        return true;
+      }
+
+      return Number(payload.idUtilisateur) === Number(currentUserId);
+    };
+
+    const refreshCases = (payload: any) => {
+      if (shouldRefreshForUser(payload)) {
+        fetchSocialCases();
+      }
+    };
+
+    const handleAjoutDeces = (payload: any) => {
+      if (!shouldRefreshForUser(payload)) {
+        return;
+      }
+
+      fetchSocialCases();
+      const memberName = String(payload?.nomMembreDeces || '').trim();
+      showNotification(
+        memberName
+          ? `Deces enregistre: ${memberName} a ete retire des listes actives.`
+          : 'Un deces a ete enregistre et les listes actives ont ete mises a jour.',
+        'info'
+      );
+    };
+
+    const handleModificationDeces = (payload: any) => {
+      if (!shouldRefreshForUser(payload)) {
+        return;
+      }
+
+      fetchSocialCases();
+      const memberName = String(payload?.nomMembreDeces || '').trim();
+      showNotification(
+        memberName
+          ? `Le dossier de deces de ${memberName} a ete mis a jour.`
+          : 'Un dossier de deces a ete mis a jour.',
+        'info'
+      );
+    };
+
+    const handleSuppressionDeces = (payload: any) => {
+      if (!shouldRefreshForUser(payload)) {
+        return;
+      }
+
+      fetchSocialCases();
+      const memberName = String(payload?.nomMembreDeces || '').trim();
+      showNotification(
+        memberName
+          ? `Le deces de ${memberName} a ete supprime et le membre redevient actif.`
+          : 'Le deces a ete supprime et le membre concerne redevient actif.',
+        'success'
+      );
+    };
+
+    const unsubscribers = [
+      subscribeToCommunauteEvent('ajouterMembre', refreshCases),
+      subscribeToCommunauteEvent('modifierMembre', refreshCases),
+      subscribeToCommunauteEvent('supprimerMembre', refreshCases),
+      subscribeToCommunauteEvent('ajouterDeces', handleAjoutDeces),
+      subscribeToCommunauteEvent('modifierDeces', handleModificationDeces),
+      subscribeToCommunauteEvent('supprimerDeces', handleSuppressionDeces),
+    ];
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [currentUserId, fetchSocialCases, showNotification]);
 
   const currentConfig = socialConfig[activeType];
   const currentRows = records[activeType];

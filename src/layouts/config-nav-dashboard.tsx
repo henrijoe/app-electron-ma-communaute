@@ -11,6 +11,7 @@ import {
   PersonRounded,
   VolunteerActivismRounded,
   WarningAmberRounded,
+  SettingsRounded,
 } from '@mui/icons-material';
 
 export const navData = [
@@ -66,9 +67,9 @@ export const navData = [
     icon: <AccountBalanceWalletRounded />,
   },
   {
-    title: 'Profil',
+    title: 'Parametres',
     path: '/settings',
-    icon: <PersonRounded />,
+    icon: <SettingsRounded />,
   },
   {
     title: 'Not found',

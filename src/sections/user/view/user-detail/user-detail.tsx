@@ -197,7 +197,7 @@ export function MembreDetailView() {
         >
           <Box
             sx={{
-              height: { xs: 180, md: 260 },
+              height: { xs: 220, md: 280 },
               px: { xs: 3, md: 5 },
               py: { xs: 3, md: 4 },
               position: 'relative',
@@ -209,16 +209,6 @@ export function MembreDetailView() {
               `,
             }}
           >
-            <Box
-              sx={{
-                position: 'absolute',
-                inset: 0,
-                background: `
-                  linear-gradient(120deg, transparent 0%, ${alpha(theme.palette.common.white, 0.08)} 45%, transparent 70%),
-                  linear-gradient(0deg, ${alpha(theme.palette.common.black, 0.22)} 0%, transparent 55%)
-                `,
-              }}
-            />
 
             <Stack
               direction={{ xs: 'column', md: 'row' }}
@@ -227,34 +217,13 @@ export function MembreDetailView() {
               sx={{ position: 'relative', zIndex: 1 }}
             >
               <Box>
-                <Typography variant="overline" sx={{ opacity: 0.86, letterSpacing: 2.2 }}>
-                  Profil membre
-                </Typography>
                 <Typography variant="h3" sx={{ mt: 1, maxWidth: 680, fontWeight: 800 }}>
                   {fullName}
                 </Typography>
-                <Typography variant="h6" sx={{ mt: 1, opacity: 0.92 }}>
-                  {getResponsabiliteLabel(membre.idResponsabilite)}
-                </Typography>
-                <Typography variant="body1" sx={{ mt: 1.5, maxWidth: 680, opacity: 0.88 }}>
-                  {resolveLabel(membre.fonctionMembre) !== DEFAULT_VALUE
-                    ? `${resolveLabel(membre.fonctionMembre)} a ${resolveLabel(membre.lieuTravailMembre)}`
-                    : `Membre engage dans la communaute de ${resolveLabel(membre.egliseOrigineMembre)}`}
-                </Typography>
+          
               </Box>
 
-              <Stack spacing={1.5} alignItems={{ xs: 'flex-start', md: 'flex-end' }}>
-                <Chip
-                  label={CIVILITE_LABELS[membre.civiliteMembre] || DEFAULT_VALUE}
-                  sx={{ bgcolor: alpha(theme.palette.common.white, 0.18), color: 'common.white' }}
-                />
-                <Typography variant="body2" sx={{ opacity: 0.86 }}>
-                  Residence : {resolveLabel(membre.residenceMembre)}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.86 }}>
-                  Contact : {resolveLabel(membre.contactMembre)}
-                </Typography>
-              </Stack>
+     
             </Stack>
           </Box>
 
@@ -268,10 +237,10 @@ export function MembreDetailView() {
                 src={profilePhoto || undefined}
                 alt={fullName}
                 sx={{
-                  width: { xs: 108, md: 148 },
-                  height: { xs: 108, md: 148 },
+                  width: { xs: 128, md: 168 },
+                  height: { xs: 128, md: 168 },
                   border: `5px solid ${theme.palette.common.white}`,
-                  boxShadow: `0 14px 40px ${alpha(theme.palette.common.black, 0.18)}`,
+                  boxShadow: `0 14px 40px ${alpha(theme.palette.common.black, 0.20)}`,
                 }}
               />
 
@@ -337,16 +306,22 @@ export function MembreDetailView() {
                     label="Naissance"
                     value={`${formatDate(membre.dateNaissMembre)} • ${resolveLabel(membre.lieuNaissMembre)}`}
                   />
+
+                    <ProfileFact
+                      icon={<FavoriteIcon color="primary" />}
+                      label="Situation matrimoniale"
+                      value={SITUATION_LABELS[membre.situationMatrimonialeMembre] || DEFAULT_VALUE}
+                    />
                   <ProfileFact
                     icon={<FlagIcon color="primary" />}
                     label="Origine"
                     value={`${resolveLabel(membre.nationaliteMembre)} • ${resolveLabel(membre.ethnieMembre)}`}
                   />
-                  <ProfileFact
+                  {/* <ProfileFact
                     icon={<SchoolIcon color="primary" />}
                     label="Niveau d'etude"
                     value={getNiveauEtudeLabel(membre.idNiveauEtude)}
-                  />
+                  /> */}
                 </Stack>
               </Card>
 
@@ -409,13 +384,7 @@ export function MembreDetailView() {
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
                 <Grid container spacing={2.5}>
-                  <Grid item xs={12} md={6}>
-                    <InfoBlock
-                      icon={<FavoriteIcon color="primary" />}
-                      title="Situation matrimoniale"
-                      value={SITUATION_LABELS[membre.situationMatrimonialeMembre] || DEFAULT_VALUE}
-                    />
-                  </Grid>
+           
                   <Grid item xs={12} md={6}>
                     <InfoBlock
                       icon={<WorkIcon color="primary" />}

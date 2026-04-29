@@ -17,7 +17,7 @@ import { _myAccount } from 'src/_mock';
 import { usePathname, useRouter } from 'src/routes/hooks';
 import { setUserConnected, setUserLoggedIn } from 'src/store/appSlice';
 import type { IReduxState } from 'src/store/store';
-import { setConnecter, setUtilisateurData } from 'src/store/userSlice';
+import { setConnecter, setUtilisateurData, utilisateur } from 'src/store/userSlice';
 import { resolveStaticAssetUrl } from 'src/utils/asset-url';
 
 export type AccountPopoverProps = IconButtonProps & {
@@ -74,7 +74,7 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
   const handleLogout = useCallback(() => {
     handleClosePopover();
     dispatch(setConnecter(false));
-    dispatch(setUtilisateurData({}));
+    dispatch(setUtilisateurData(utilisateur));
     dispatch(setUserConnected({}));
     dispatch(setUserLoggedIn(false));
     router.push('/sign-in');
