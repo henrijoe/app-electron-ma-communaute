@@ -1,28 +1,29 @@
 import type { Theme, SxProps, Breakpoint } from '@mui/material/styles';
 
 import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
+import IconButton from '@mui/material/IconButton';
 import { useTheme } from '@mui/material/styles';
+import { DarkModeRounded, LightModeRounded } from '@mui/icons-material';
 
-import { _langs, _notifications } from 'src/_mock';
+// import { _notifications } from 'src/_mock';
 
 import { Iconify } from 'src/components/iconify';
+import { setThemeMode } from 'src/store/appSlice';
+import type { IReduxState } from 'src/store/store';
 
 import { Main } from './main';
 import { layoutClasses } from '../classes';
 import { NavMobile, NavDesktop } from './nav';
 import { navData } from '../config-nav-dashboard';
-import { Searchbar } from '../components/searchbar';
 import { MenuButton } from '../components/menu-button';
 import { LayoutSection } from '../core/layout-section';
 import { HeaderSection } from '../core/header-section';
 import { AccountPopover } from '../components/account-popover';
-import { LanguagePopover } from '../components/language-popover';
-import { NotificationsPopover } from '../components/notifications-popover';
-
-// ----------------------------------------------------------------------
+// import { NotificationsPopover } from '../components/notifications-popover';
 
 export type DashboardLayoutProps = {
   sx?: SxProps<Theme>;
@@ -34,6 +35,8 @@ export type DashboardLayoutProps = {
 
 export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) {
   const theme = useTheme();
+  const dispatch = useDispatch();
+  const themeMode = useSelector((state: IReduxState) => state.application.themeMode || 'light');
 
   const [navOpen, setNavOpen] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -42,9 +45,6 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
 
   return (
     <LayoutSection
-      /** **************************************
-       * Header
-       *************************************** */
       headerSection={
         <HeaderSection
           layoutQuery={layoutQuery}
@@ -74,13 +74,18 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
                   data={navData}
                   open={navOpen}
                   onClose={() => setNavOpen(false)}
-                  // workspaces={_workspaces}
                 />
               </>
             ),
             rightArea: (
               <Box gap={1} display="flex" alignItems="center">
-                {/* <NotificationsPopover data={_notifications} /> */}
+                {/* <NotificationsPopover data={_notifications.slice(0, 4) as any} /> */}
+                <IconButton
+                  color="inherit"
+                  onClick={() => dispatch(setThemeMode(themeMode === 'dark' ? 'light' : 'dark'))}
+                >
+                  {themeMode === 'dark' ? <LightModeRounded /> : <DarkModeRounded />}
+                </IconButton>
                 <AccountPopover
                   data={[
                     {
@@ -100,25 +105,15 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
           }}
         />
       }
-      /** **************************************
-       * Sidebar
-       *************************************** */
       sidebarSection={
         <NavDesktop
           data={navData}
           layoutQuery={layoutQuery}
           collapsed={navCollapsed}
           onToggleCollapse={() => setNavCollapsed((prev) => !prev)}
-          /* workspaces={_workspaces} */
         />
       }
-      /** **************************************
-       * Footer
-       *************************************** */
       footerSection={null}
-      /** **************************************
-       * Style
-       *************************************** */
       cssVars={{
         '--layout-nav-vertical-width': navCollapsed ? '96px' : '300px',
         '--layout-dashboard-content-pt': theme.spacing(1),
@@ -138,3 +133,4 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
     </LayoutSection>
   );
 }
+

@@ -31,7 +31,8 @@ import { emptyRows, applyFilter, getComparator } from '../utils';
 import { Scrollbar } from '../../../components/scrollbar/scrollbar';
 import PrintEtatGlobal from '../etats/printEtats';
 import { DepartementTableHead } from '../departement-table-head';
-import { IDataChoice } from '../../../store/membreSlice';
+import type { IMembre } from '../../../store/membreSlice';
+import { buildResponsableMemberOptions, findResponsableContact } from '../../../utils/responsable-members';
 import {
   departement,
   addDepartement,
@@ -48,9 +49,13 @@ export function DepartementView() {
   const listDepartement = useSelector((state: any) => state.departement.listDepartement);
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
-  const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || 0;
+  const currentUserId =
+    Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
+    || 0;
 
   const [loading, setLoading] = useState(true);
+  const [membres, setMembres] = useState<IMembre[]>([]);
   const table = useDepartementTable();
 
   // Destructurer les valeurs nÃ©cessaires de useDepartementTable
@@ -108,6 +113,21 @@ export function DepartementView() {
       setLoading(false);
     }
   }, [currentUserId, dispatch]);
+
+  const fetchResponsableMembers = useCallback(async () => {
+    if (!currentUserId) {
+      setMembres([]);
+      return;
+    }
+
+    try {
+      const response = await apiClient.getMembresByUtilisateur(currentUserId);
+      setMembres(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching responsables:', error);
+      setMembres([]);
+    }
+  }, [currentUserId]);
 
   // Fonction pour supprimer un dÃ©partement
   const handleDeleteDepartement = useCallback(async (idDepartement: number) => {
@@ -235,6 +255,25 @@ export function DepartementView() {
   useEffect(() => {
     fetchDepartements();
   }, [fetchDepartements]);
+
+  useEffect(() => {
+    fetchResponsableMembers();
+  }, [fetchResponsableMembers]);
+
+  const responsableOptions = useMemo(() => buildResponsableMemberOptions(membres, [8]), [membres]);
+  const responsableContactByName = useMemo(() => {
+    const contacts = new Map<string, string>();
+    (Array.isArray(listDepartement) ? listDepartement : []).forEach((item: IDepartement) => {
+      if (item.responsableDepartement) {
+        contacts.set(item.responsableDepartement, findResponsableContact(membres, item.responsableDepartement));
+      }
+    });
+    return contacts;
+  }, [listDepartement, membres]);
+  const selectedResponsableContact = useMemo(
+    () => findResponsableContact(membres, data.responsableDepartement),
+    [data.responsableDepartement, membres]
+  );
 
   // On combine la recherche libre avec les champs mï¿½tier les plus utiles.
   const baseFilteredData: any[] = useMemo(() => {
@@ -421,6 +460,7 @@ export function DepartementView() {
                   { id: 'libelleCourtDepartement', label: 'Sigle' },
                   { id: 'sloganDepartement', label: 'Slogan' },
                   { id: 'responsableDepartement', label: 'Responsable' },
+                  { id: 'contactResponsableDepartement', label: 'Numero responsable' },
                   { id: 'Action', label: 'Actions' },
                 ]}
               />
@@ -439,6 +479,7 @@ export function DepartementView() {
                       onEdit={handleEditDepartement}
                       onDelete={handleDeleteDepartement}
                       isDeleting={deleteLoading}
+                      responsableContact={responsableContactByName.get(row.responsableDepartement) || ''}
                     />
                   ))}
 
@@ -543,11 +584,36 @@ export function DepartementView() {
                   fullWidth
                   size="small"
                   margin="dense"
+                  select
                   label="Responsable"
                   variant="outlined"
-                  value={data.responsableDepartement}
+                  value={data.responsableDepartement || ''}
                   {...register('responsableDepartement')}
                   onChange={handleChange}
+                >
+                  <MenuItem value="">Aucun responsable</MenuItem>
+                  {data.responsableDepartement
+                    && !responsableOptions.some((option) => option.value === data.responsableDepartement) && (
+                      <MenuItem value={data.responsableDepartement}>
+                        {data.responsableDepartement}
+                      </MenuItem>
+                    )}
+                  {responsableOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  margin="dense"
+                  label="Contact du responsable"
+                  value={selectedResponsableContact || ''}
+                  InputProps={{ readOnly: true }}
+                  helperText={selectedResponsableContact ? 'Contact deja saisi sur la fiche membre' : 'Aucun contact trouve pour ce responsable'}
                 />
               </Grid>
             </Grid>

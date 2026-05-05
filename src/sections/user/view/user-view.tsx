@@ -39,7 +39,7 @@ import { DashboardContent } from '../../../layouts/dashboard';
 import { Iconify } from '../../../components/iconify/iconify';
 import { emptyRows, applyFilter, getComparator } from '../utils';
 import { Scrollbar } from '../../../components/scrollbar/scrollbar';
-import { membre, dataGenre, setDataModifiesMembre, deleteMembre, IMembre, IDataChoice, dataBapteme, dataNouvelAme, ensureMembreArrays, setFilterMembre, setListFilterMembre, setListMembre, setTitreDocument, visiteMembres, dataNiveauEtude, dataResponsabilite, dataSituationMembre , dataCapaciteSpirituelle, dataCivilite } from '../../../store/membreSlice';
+import { membre, dataGenre, setDataModifiesMembre, deleteMembre, IMembre, IDataChoice, dataBapteme, dataNouvelAme, ensureMembreArrays, setFilterMembre, setListFilterMembre, setListMembre, setTitreDocument, visiteMembres, dataNiveauEtude, dataSituationMembre , dataCapaciteSpirituelle, dataCivilite, setListResponsabilite } from '../../../store/membreSlice';
 import { setListDepartement } from '../../../store/departementSlice';
 import { setListCellule } from '../../../store/celluleSlice';
 import { setListGroupe } from '../../../store/groupeSlice';
@@ -66,6 +66,8 @@ const resolveReferenceLabel = (
   return match?.label || rawValue;
 };
 
+const isYesValue = (value: unknown): boolean => String(value ?? '').trim() === '1';
+
 
 export function UserView() {
   const dispatch = useDispatch();
@@ -80,8 +82,8 @@ export function UserView() {
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
   const currentUserId =
-    Number(appUserConnected?.idUtilisateur)
-    || Number(authUtilisateurData?.idUtilisateur)
+    Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
   const departementOptions = useMemo(() => (
     Array.isArray(listDepartement) && listDepartement.length > 0
@@ -101,7 +103,7 @@ export function UserView() {
   const responsabiliteOptions = useMemo(() => (
     Array.isArray(listResponsabilite) && listResponsabilite.length > 0
       ? listResponsabilite.map((item: any) => ({ value: item.idResponsabilite, label: item.libelleResponsabilite }))
-      : dataResponsabilite
+      : []
   ), [listResponsabilite]);
   const exportableMembres = useMemo(() => (Array.isArray(listMembre) ? listMembre : []), [listMembre]);
 
@@ -241,10 +243,11 @@ export function UserView() {
     if (!currentUserId) return;
 
     try {
-      const [departementsResponse, cellulesResponse, groupesResponse] = await Promise.all([
+      const [departementsResponse, cellulesResponse, groupesResponse, responsabilitesResponse] = await Promise.all([
         apiClient.getDepartementsByUtilisateur(currentUserId),
         apiClient.getCellulesByUtilisateur(currentUserId),
         apiClient.getGroupesByUtilisateur(currentUserId),
+        apiClient.getResponsabilites(),
       ]);
 
       if (departementsResponse.status === 1) {
@@ -255,6 +258,12 @@ export function UserView() {
       }
       if (groupesResponse.status === 1) {
         dispatch(setListGroupe(Array.isArray(groupesResponse.data) ? groupesResponse.data : []));
+      }
+      if (responsabilitesResponse.status === 1) {
+        const responsabilites = Array.isArray(responsabilitesResponse.data)
+          ? responsabilitesResponse.data.filter((item: any) => Number(item.idUtilisateur) === Number(currentUserId))
+          : [];
+        dispatch(setListResponsabilite(responsabilites));
       }
     } catch (error) {
       console.error('Error fetching reference data for membres:', error);
@@ -451,12 +460,15 @@ export function UserView() {
         const currentMembre = Array.isArray(listMembre)
           ? listMembre.find((item: IMembre) => item.idMembre === data.idMembre)
           : null;
+        const updateUserId =
+          Number(currentMembre?.idUtilisateur || membreData.idUtilisateur || data.idUtilisateur || 0)
+          || currentUserId;
 
         const cleanedData: any = {
           ...currentMembre,
           ...membreData,
           idMembre: data.idMembre,
-          idUtilisateur: currentUserId || currentMembre?.idUtilisateur || null,
+          idUtilisateur: updateUserId,
           idNiveauEtude: membreData.idNiveauEtude ? Number(membreData.idNiveauEtude) : currentMembre?.idNiveauEtude ?? null,
           idCellule: membreData.idCellule ? Number(membreData.idCellule) : currentMembre?.idCellule ?? null,
           idDepartement: membreData.idDepartement ? Number(membreData.idDepartement) : currentMembre?.idDepartement ?? null,
@@ -543,6 +555,7 @@ export function UserView() {
     currentUserId,
     data.idMembre,
     data.photoMembre,
+    data.idUtilisateur,
     dispatch,
     fetchMembres,
     handleCloseDialog,
@@ -615,6 +628,24 @@ export function UserView() {
       return;
     }
 
+    if (
+      isYesValue(data.baptemeEauMembre || formData.baptemeEauMembre)
+      && !String(data.dateBaptemeMembre || formData.dateBaptemeMembre || '').trim()
+    ) {
+      showNotification("La date du bapteme d'eau est requise", 'warning');
+      setFocus('dateBaptemeMembre');
+      return;
+    }
+
+    if (
+      isYesValue(data.baptemeSaintEspritMembre || formData.baptemeSaintEspritMembre)
+      && !String(data.dateBaptemeSaintEspritMembre || formData.dateBaptemeSaintEspritMembre || '').trim()
+    ) {
+      showNotification('La date du bapteme du Saint-Esprit est requise', 'warning');
+      setFocus('dateBaptemeSaintEspritMembre');
+      return;
+    }
+
     console.log(isEditMode ? 'Membre a modifier :' : 'Membre a creer :', formData);
 
     const membreData: IMembre = {
@@ -626,7 +657,18 @@ export function UserView() {
 
     console.log('Donnees preparees :', membreData);
     handleCreateOrUpdateMembre(membreData);
-  }, [isEditMode, data.photoMembre, data.idMembre, handleCreateOrUpdateMembre, showNotification]); // Ajouter showNotification
+  }, [
+    data.baptemeEauMembre,
+    data.baptemeSaintEspritMembre,
+    data.dateBaptemeMembre,
+    data.dateBaptemeSaintEspritMembre,
+    data.idMembre,
+    data.photoMembre,
+    handleCreateOrUpdateMembre,
+    isEditMode,
+    setFocus,
+    showNotification,
+  ]); // Ajouter showNotification
 
   useEffect(() => {
     fetchMembres();
@@ -746,6 +788,8 @@ export function UserView() {
   }, [isEditMode]);
 
   const dialogTitle = isEditMode ? 'Modifier un membre' : 'Ajouter un membre';
+  const isWaterBaptismSelected = isYesValue(data.baptemeEauMembre);
+  const isSpiritBaptismSelected = isYesValue(data.baptemeSaintEspritMembre);
 
 
   return (
@@ -1280,7 +1324,7 @@ export function UserView() {
                   select
                   label="Bapteme d'eau"
                   variant="outlined"
-                  value={data.baptemeEauMembre}
+                  value={data.baptemeEauMembre || ''}
                   {...register('baptemeEauMembre')}
                   onChange={handleChange}
                   error={!!errors.baptemeEauMembre}
@@ -1299,7 +1343,7 @@ export function UserView() {
                   ))}
                 </TextField>
               </Grid>
-              {data.baptemeEauMembre === 1 && (
+              {isWaterBaptismSelected && (
 
                 <Grid item xs={12} sm={6} md={4} lg={3}>
                   <TextField
@@ -1308,9 +1352,13 @@ export function UserView() {
                     margin="dense"
                     type="date"
                     variant="outlined"
-                    helperText="Date de bapteme"
-                    value={data.dateBaptemeMembre}
-                    {...register('dateBaptemeMembre')}
+                    label="Date du bapteme d'eau *"
+                    InputLabelProps={{ shrink: true }}
+                    helperText={errors.dateBaptemeMembre?.message || 'Date de bapteme'}
+                    value={data.dateBaptemeMembre || ''}
+                    {...register('dateBaptemeMembre', {
+                      required: isWaterBaptismSelected ? "La date du bapteme d'eau est requise" : false,
+                    })}
                     onChange={handleChange}
                     error={!!errors.dateBaptemeMembre}
                     onKeyDown={(event) => {
@@ -1323,7 +1371,7 @@ export function UserView() {
                 </Grid>
               )}
 
-              {data.baptemeEauMembre === 1 && (
+              {isWaterBaptismSelected && (
 
                 <Grid item xs={12} sm={6} md={4} lg={3}>
                   <TextField
@@ -1380,7 +1428,7 @@ export function UserView() {
 
 
 
-              {data.baptemeSaintEspritMembre === 1 && (
+              {isSpiritBaptismSelected && (
 
                 <Grid item xs={12} sm={6} md={4} lg={3}>
                   <TextField
@@ -1389,9 +1437,12 @@ export function UserView() {
                     margin="dense"
                     type="date"
                     variant="outlined"
-                    label="Date de bapteme du Saint-Esprit"
-                    value={data.dateBaptemeSaintEspritMembre}
-                    {...register('dateBaptemeSaintEspritMembre')}
+                    label="Date de bapteme du Saint-Esprit *"
+                    InputLabelProps={{ shrink: true }}
+                    value={data.dateBaptemeSaintEspritMembre ||''}
+                    {...register('dateBaptemeSaintEspritMembre', {
+                      required: isSpiritBaptismSelected ? 'La date du bapteme du Saint-Esprit est requise' : false,
+                    })}
                     onChange={handleChange}
                     error={!!errors.dateBaptemeSaintEspritMembre}
                     helperText={errors.dateBaptemeSaintEspritMembre?.message}
@@ -1434,7 +1485,7 @@ export function UserView() {
                 </TextField>
               </Grid>
 
-              {data.baptemeEauMembre === 1 && (
+              {isWaterBaptismSelected && (
 
                 <Grid item xs={12} sm={6} md={4} lg={3}>
                   <TextField

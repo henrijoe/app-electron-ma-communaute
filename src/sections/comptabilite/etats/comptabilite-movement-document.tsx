@@ -53,6 +53,7 @@ export function ComptabiliteMovementDocument({
       countLabel={`Total ${getComptabiliteTypeLabel(type).toLowerCase()}s`}
       countValue={typedItems.length}
       variant="plain"
+      showDocumentMeta={false}
     >
       <ComptabilitePrintHero
         title={title}

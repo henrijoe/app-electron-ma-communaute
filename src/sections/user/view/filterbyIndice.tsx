@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import { Box, Button, Menu, MenuItem, TextField, Typography } from '@mui/material';
@@ -13,7 +13,6 @@ export const formaterValueLabels = (items: any[], idKey: string, labelKey: strin
     label: normalizeText(item[labelKey]),
   }));
 
-
 const normalizeBinaryValue = (value: unknown): '1' | '2' | '' => {
   const normalized = normalizeForSearch(value);
 
@@ -23,6 +22,7 @@ const normalizeBinaryValue = (value: unknown): '1' | '2' | '' => {
 
   return '';
 };
+
 const FilterDropdown = () => {
   const dispatch = useDispatch();
   const baseMembres = useSelector((state: IReduxState) => state.membre.dataFilterMembre);
@@ -39,12 +39,25 @@ const FilterDropdown = () => {
     idResponsabilite: '',
     idCellule: '',
     idGroupe: '',
+    fonctionMembre: '',
   });
 
   const departementOptions = formaterValueLabels(listDepartement as any[], 'idDepartement', 'libelleLongDepartement');
   const responsabiliteOptions = formaterValueLabels(listResponsabilite as any[], 'idResponsabilite', 'libelleResponsabilite');
   const celluleOptions = formaterValueLabels(listCellule as any[], 'idCellule', 'nomCellule');
   const groupeOptions = formaterValueLabels(listGroupe as any[], 'idGroupe', 'libelleGroupe');
+  const fonctionOptions = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          (Array.isArray(baseMembres) ? baseMembres : [])
+            .map((item: any) => String(item?.fonctionMembre || '').trim())
+            .filter(Boolean)
+            .map((fonction) => [normalizeForSearch(fonction), { value: fonction, label: normalizeText(fonction) }])
+        ).values()
+      ),
+    [baseMembres]
+  );
 
   const handleSearch = () => {
     let filteredData = [...(Array.isArray(baseMembres) ? baseMembres : [])];
@@ -67,11 +80,17 @@ const FilterDropdown = () => {
     if (filters.idGroupe) {
       filteredData = filteredData.filter((item) => String(item.idGroupe || '') === filters.idGroupe);
     }
+    if (filters.fonctionMembre) {
+      filteredData = filteredData.filter(
+        (item) => normalizeForSearch(item.fonctionMembre) === normalizeForSearch(filters.fonctionMembre)
+      );
+    }
 
     const activeLabel = departementOptions.find((item) => item.value === filters.idDepartement)?.label
       || responsabiliteOptions.find((item) => item.value === filters.idResponsabilite)?.label
       || celluleOptions.find((item) => item.value === filters.idCellule)?.label
       || groupeOptions.find((item) => item.value === filters.idGroupe)?.label
+      || fonctionOptions.find((item) => item.value === filters.fonctionMembre)?.label
       || normalizeText(dataBapteme.find((item) => String(item.value) === filters.baptemeEauMembre)?.label)
       || normalizeText(dataNouvelAme.find((item) => String(item.value) === filters.nouvelleAmeMembre)?.label)
       || '';
@@ -91,6 +110,7 @@ const FilterDropdown = () => {
       idResponsabilite: '',
       idCellule: '',
       idGroupe: '',
+      fonctionMembre: '',
     });
     setAnchorEl(null);
   };
@@ -138,6 +158,10 @@ const FilterDropdown = () => {
             {groupeOptions.map((option) => <MenuItem key={option.value} value={option.value}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
+          <TextField fullWidth size="small" margin="dense" select name="fonctionMembre" label="Fonction" value={filters.fonctionMembre} onChange={(e) => setFilters({ ...filters, fonctionMembre: e.target.value })}>
+            {fonctionOptions.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
+          </TextField>
+
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
             <Button variant="outlined" onClick={handleReset}>Reinitialiser</Button>
             <Button variant="contained" onClick={handleSearch}>Appliquer</Button>
@@ -149,3 +173,4 @@ const FilterDropdown = () => {
 };
 
 export default FilterDropdown;
+

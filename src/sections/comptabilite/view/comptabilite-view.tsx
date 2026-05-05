@@ -189,7 +189,10 @@ export function ComptabiliteView() {
   const desktopSecurityIsSuperAdmin = useSelector((state: any) => state.application?.desktopSecurityIsSuperAdmin);
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
-  const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || null;
+  const currentUserId =
+    Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
+    || null;
   const currentUsername = String(appUserConnected?.nomUtilisateur || authUtilisateurData?.nomUtilisateur || '');
 
   const {

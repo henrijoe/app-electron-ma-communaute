@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import {
   AccountCircle as AccountCircleIcon,
   ArrowBack as ArrowBackIcon,
-  AttachMoney as AttachMoneyIcon,
+  AttachMoney as MoneyIcon,
   CalendarToday as CalendarIcon,
   Category as CategoryIcon,
   Church as ChurchIcon,
@@ -216,7 +216,7 @@ export function CulteDetailView() {
                       variant="outlined"
                     />
                     <Chip
-                      icon={<AttachMoneyIcon />}
+                      icon={<MoneyIcon />}
                       label={`${getTotalOffrandes().toLocaleString()} FCFA`}
                       color="success"
                       variant="outlined"
@@ -298,7 +298,7 @@ export function CulteDetailView() {
             <Stack spacing={3}>
               <Card sx={{ p: 3 }}>
                 <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AttachMoneyIcon color="primary" />
+                  <MoneyIcon color="primary" />
                   Offrandes et dons
                 </Typography>
                 <Divider sx={{ my: 2 }} />

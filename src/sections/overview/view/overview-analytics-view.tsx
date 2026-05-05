@@ -55,8 +55,8 @@ export function OverviewAnalyticsView() {
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
   const currentUserId =
-    Number(appUserConnected?.idUtilisateur)
-    || Number(authUtilisateurData?.idUtilisateur)
+    Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
 
   const loadStats = useCallback(async () => {

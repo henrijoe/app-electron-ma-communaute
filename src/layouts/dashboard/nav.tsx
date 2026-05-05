@@ -1,25 +1,24 @@
 import type { Theme, SxProps, Breakpoint } from '@mui/material/styles';
 
 import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
 
 import Box from '@mui/material/Box';
+import Drawer, { drawerClasses } from '@mui/material/Drawer';
 import ListItem from '@mui/material/ListItem';
 import Tooltip from '@mui/material/Tooltip';
-import { useTheme } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import ListItemButton from '@mui/material/ListItemButton';
-import Drawer, { drawerClasses } from '@mui/material/Drawer';
 
 import { usePathname } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
+import type { IReduxState } from 'src/store/store';
+import { canAccessModule, getSessionUser } from 'src/utils/access-control';
 
 import { varAlpha } from 'src/theme/styles';
 
 import { Logo } from 'src/components/logo';
 import { Scrollbar } from 'src/components/scrollbar';
-
-
-
-// ----------------------------------------------------------------------
 
 export type NavContentProps = {
   data: {
@@ -27,12 +26,12 @@ export type NavContentProps = {
     title: string;
     icon: React.ReactNode;
     info?: React.ReactNode;
+    permissionKey?: string;
   }[];
   slots?: {
     topArea?: React.ReactNode;
     bottomArea?: React.ReactNode;
   };
-  // workspaces: WorkspacesPopoverProps['data'];
   sx?: SxProps<Theme>;
 };
 
@@ -42,7 +41,6 @@ export function NavDesktop({
   slots,
   collapsed = false,
   onToggleCollapse,
-  // workspaces,
   layoutQuery,
 }: NavContentProps & { layoutQuery: Breakpoint; collapsed?: boolean; onToggleCollapse?: () => void }) {
   const theme = useTheme();
@@ -78,15 +76,12 @@ export function NavDesktop({
   );
 }
 
-// ----------------------------------------------------------------------
-
 export function NavMobile({
   sx,
   data,
   open,
   slots,
   onClose,
-  // workspaces,
 }: NavContentProps & { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
 
@@ -94,8 +89,7 @@ export function NavMobile({
     if (open) {
       onClose();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [onClose, open, pathname]);
 
   return (
     <Drawer
@@ -112,12 +106,10 @@ export function NavMobile({
         },
       }}
     >
-      <NavContent data={data} slots={slots} /* workspaces={workspaces} */ />
+      <NavContent data={data} slots={slots} />
     </Drawer>
   );
 }
-
-// ----------------------------------------------------------------------
 
 type NavContentInternalProps = NavContentProps & {
   collapsed?: boolean;
@@ -132,6 +124,7 @@ export function NavContent({
   onToggleCollapse,
 }: NavContentInternalProps) {
   const pathname = usePathname();
+  const sessionUser = useSelector((state: IReduxState) => getSessionUser(state));
 
   return (
     <>
@@ -149,23 +142,25 @@ export function NavContent({
 
       {slots?.topArea}
 
-
-      {/* <WorkspacesPopover  sx={{ my: 2 }} /> */}
-
-
       <Scrollbar fillContent>
         <Box component="nav" display="flex" flex="1 1 auto" flexDirection="column" sx={sx}>
           <Box component="ul" gap={0.5} display="flex" flexDirection="column">
             {data.map((item) => {
               const isActived = item.path === '/' ? pathname === '/' : pathname.startsWith(item.path);
+              const isAllowed = item.permissionKey ? canAccessModule(sessionUser, item.permissionKey as any) : true;
 
               return (
                 <ListItem disableGutters disablePadding key={item.title}>
-                  <Tooltip title={item.title} placement="right" disableHoverListener={!collapsed}>
+                  <Tooltip
+                    title={isAllowed ? item.title : `${item.title} indisponible pour ce compte`}
+                    placement="right"
+                    disableHoverListener={!collapsed && isAllowed}
+                  >
                     <ListItemButton
                       disableGutters
-                      component={RouterLink}
-                      href={item.path}
+                      component={isAllowed ? RouterLink : 'button'}
+                      href={isAllowed ? item.path : undefined}
+                      disabled={!isAllowed}
                       sx={{
                         pl: collapsed ? 1 : 2,
                         py: 1,
@@ -180,13 +175,19 @@ export function NavContent({
                         '&:hover': {
                           bgcolor: 'var(--layout-nav-item-hover-bg)',
                         },
-                        ...(isActived && {
+                        ...(isActived && isAllowed && {
                           fontWeight: 'fontWeightSemiBold',
                           bgcolor: 'var(--layout-nav-item-active-bg)',
                           color: 'var(--layout-nav-item-active-color)',
                           '&:hover': {
                             bgcolor: 'var(--layout-nav-item-hover-bg)',
                           },
+                        }),
+                        ...(!isAllowed && {
+                          opacity: 0.45,
+                          color: 'text.disabled',
+                          bgcolor: (theme) => alpha(theme.palette.text.disabled, 0.05),
+                          cursor: 'not-allowed',
                         }),
                       }}
                     >
@@ -211,8 +212,6 @@ export function NavContent({
       </Scrollbar>
 
       {slots?.bottomArea}
-
-      {/* <NavUpgrade /> */}
     </>
   );
 }

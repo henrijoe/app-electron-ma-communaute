@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -12,9 +12,11 @@ import Typography from '@mui/material/Typography';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 import { apiClient } from 'src/utils/apiClient';
+import { findResponsableContact } from 'src/utils/responsable-members';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 
 import { ICellule, setDataModifiesCellule } from '../../../../store/celluleSlice';
+import type { IMembre } from '../../../../store/membreSlice';
 
 export default function CelluleEditView() {
   const { id } = useParams<{ id: string }>();
@@ -22,14 +24,26 @@ export default function CelluleEditView() {
   const dispatch = useDispatch();
   const { showNotification } = useNotificationSnackbar();
   const listCellule = useSelector((state: any) => state.cellule.listCellule || []);
+  const listMembre = useSelector((state: any) => state.membre.listMembre || []);
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
-  const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || null;
+  const currentUserId =
+    Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
+    || null;
   const [formData, setFormData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const responsableCelluleContact = useMemo(
+    () => findResponsableContact(listMembre as IMembre[], formData?.responsableCellule),
+    [formData?.responsableCellule, listMembre]
+  );
+  const responsableVisiteContact = useMemo(
+    () => findResponsableContact(listMembre as IMembre[], formData?.responsableVisiteCellule),
+    [formData?.responsableVisiteCellule, listMembre]
+  );
 
   useEffect(() => {
-    // On réhydrate le formulaire depuis le store pour éviter une requête inutile.
+    // On rï¿½hydrate le formulaire depuis le store pour ï¿½viter une requï¿½te inutile.
     const celluleId = Number(id);
     const found = listCellule.find((item: ICellule) => item.idCellule === celluleId);
     setFormData(found || null);
@@ -44,7 +58,7 @@ export default function CelluleEditView() {
       const response = await apiClient.updateCellule(payload);
       if (response.status === 1) {
         dispatch(setDataModifiesCellule(payload));
-        showNotification('Cellule modifiée avec succès', 'success');
+        showNotification('Cellule modifiï¿½e avec succï¿½s', 'success');
         navigate(`/detailcellule/${id}`);
       }
     } catch (error: any) {
@@ -54,7 +68,7 @@ export default function CelluleEditView() {
     }
   }, [currentUserId, dispatch, formData, id, navigate, showNotification]);
 
-  if (!formData) return <DashboardContent><Container maxWidth="lg"><Typography variant="h5">Cellule non trouvée</Typography></Container></DashboardContent>;
+  if (!formData) return <DashboardContent><Container maxWidth="lg"><Typography variant="h5">Cellule non trouvï¿½e</Typography></Container></DashboardContent>;
 
   return (
     <DashboardContent>
@@ -70,7 +84,9 @@ export default function CelluleEditView() {
             <Grid item xs={12} md={6}><TextField fullWidth label="Lieu" value={formData.lieuCellule || ''} onChange={(event) => setFormData((prev: any) => ({ ...prev, lieuCellule: event.target.value }))} /></Grid>
             <Grid item xs={12} md={4}><TextField fullWidth type="number" label="Nombre de membres" value={formData.nombreMembreCellule || ''} onChange={(event) => setFormData((prev: any) => ({ ...prev, nombreMembreCellule: event.target.value }))} /></Grid>
             <Grid item xs={12} md={4}><TextField fullWidth label="Responsable" value={formData.responsableCellule || ''} onChange={(event) => setFormData((prev: any) => ({ ...prev, responsableCellule: event.target.value }))} /></Grid>
+            <Grid item xs={12} md={4}><TextField fullWidth label="Contact responsable" value={responsableCelluleContact || ''} InputProps={{ readOnly: true }} /></Grid>
             <Grid item xs={12} md={4}><TextField fullWidth label="Responsable visite" value={formData.responsableVisiteCellule || ''} onChange={(event) => setFormData((prev: any) => ({ ...prev, responsableVisiteCellule: event.target.value }))} /></Grid>
+            <Grid item xs={12} md={4}><TextField fullWidth label="Contact responsable visite" value={responsableVisiteContact || ''} InputProps={{ readOnly: true }} /></Grid>
           </Grid>
         </Card>
       </Container>

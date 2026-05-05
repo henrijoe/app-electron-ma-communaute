@@ -40,6 +40,7 @@ export function ComptabiliteJournalDocument({ items, search, filterLabel }: Comp
       countLabel="Total ecritures"
       countValue={items.length}
       variant="plain"
+      showDocumentMeta={false}
     >
       <ComptabilitePrintHero
         title="Journal general des ecritures"

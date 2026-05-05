@@ -494,10 +494,27 @@ CREATE TABLE `responsable_groupe` (
 CREATE TABLE `utilisateur` (
   `idUtilisateur` int(11) NOT NULL,
   `logoUtilisateur` text,
+  `logoEglise` text,
   `nomTemple` varchar(255) DEFAULT NULL,
+  `lieuEglise` varchar(255) DEFAULT NULL,
   `nomUtilisateur` varchar(255) DEFAULT NULL,
   `prenomUtilisateur` varchar(255) DEFAULT NULL,
   `telephoneUtilisateur` varchar(15) NOT NULL,
+  `telephoneSecretariatEglise` varchar(30) DEFAULT NULL,
+  `pasteurPrincipal` varchar(255) DEFAULT NULL,
+  `pasteurSecondaire` varchar(255) DEFAULT NULL,
+  `pasteurTroisieme` varchar(255) DEFAULT NULL,
+  `telephonePasteurPrincipal` varchar(30) DEFAULT NULL,
+  `telephonePasteurSecondaire` varchar(30) DEFAULT NULL,
+  `telephonePasteurTroisieme` varchar(30) DEFAULT NULL,
+  `capaciteAccueilEglise` varchar(50) DEFAULT NULL,
+  `nombreCultesDimanche` varchar(50) DEFAULT NULL,
+  `emailEglise` varchar(255) DEFAULT NULL,
+  `boitePostaleEglise` varchar(255) DEFAULT NULL,
+  `dateCreationEglise` varchar(50) DEFAULT NULL,
+  `nombrePasteursEglise` varchar(50) DEFAULT NULL,
+  `nombreAnciensEglise` varchar(50) DEFAULT NULL,
+  `nombreDiacresEglise` varchar(50) DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `confirmPassword` varchar(255) NOT NULL,
   `email` varchar(255) DEFAULT NULL
@@ -507,10 +524,10 @@ CREATE TABLE `utilisateur` (
 -- Contenu de la table `utilisateur`
 --
 
-INSERT INTO `utilisateur` (`idUtilisateur`, `logoUtilisateur`, `nomTemple`, `nomUtilisateur`, `prenomUtilisateur`, `telephoneUtilisateur`, `password`, `confirmPassword`, `email`) VALUES
-(1, '', 'EEAD YABAYO', 'Henri', 'Joel', '0102030405', 'aa', '$2b$20$JWgvBof.ocjQS3Bwfr0cB.ZjnP1iKMjXQkB0r93RC9kiuEOeuxQ7u', 'joel@gmail.com'),
-(11, NULL, 'EGLISE EVANGELIQUE DES ASSEMBLEES DE DIEU ANDOKOI PENIEL', 'Tanella', 'Tryphene', '0102034566', 'cc', '$2b$20$YW4LCaajyaANWa9YtRVvQOH7kXCaz848MSHks.TuKQwOkaQmdqaBm', 'tryphe@gmail.com'),
-(12, NULL, 'EGLISE EVANGELIQUE DES ASSEMBLEES DE DIEU ANDOKOI PENIEL', 'KOUAME', 'ANGE', '0102030617', '0102030617', '$2b$20$KeDF4JJHSODI2LAQ0fDy.eccT07yyXdR6RO0s4Kj9Lv9i4iqSkKYu', 'kouame@gmail.com');
+INSERT INTO `utilisateur` (`idUtilisateur`, `logoUtilisateur`, `logoEglise`, `nomTemple`, `lieuEglise`, `nomUtilisateur`, `prenomUtilisateur`, `telephoneUtilisateur`, `telephoneSecretariatEglise`, `pasteurPrincipal`, `pasteurSecondaire`, `pasteurTroisieme`, `telephonePasteurPrincipal`, `telephonePasteurSecondaire`, `telephonePasteurTroisieme`, `capaciteAccueilEglise`, `nombreCultesDimanche`, `emailEglise`, `boitePostaleEglise`, `dateCreationEglise`, `nombrePasteursEglise`, `nombreAnciensEglise`, `nombreDiacresEglise`, `password`, `confirmPassword`, `email`) VALUES
+(1, '', '', 'EEAD YABAYO', '', 'Henri', 'Joel', '0102030405', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'aa', '$2b$20$JWgvBof.ocjQS3Bwfr0cB.ZjnP1iKMjXQkB0r93RC9kiuEOeuxQ7u', 'joel@gmail.com'),
+(11, NULL, NULL, 'EGLISE EVANGELIQUE DES ASSEMBLEES DE DIEU ANDOKOI PENIEL', NULL, 'Tanella', 'Tryphene', '0102034566', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'cc', '$2b$20$YW4LCaajyaANWa9YtRVvQOH7kXCaz848MSHks.TuKQwOkaQmdqaBm', 'tryphe@gmail.com'),
+(12, NULL, NULL, 'EGLISE EVANGELIQUE DES ASSEMBLEES DE DIEU ANDOKOI PENIEL', NULL, 'KOUAME', 'ANGE', '0102030617', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0102030617', '$2b$20$KeDF4JJHSODI2LAQ0fDy.eccT07yyXdR6RO0s4Kj9Lv9i4iqSkKYu', 'kouame@gmail.com');
 
 --
 -- Index pour les tables exportees
@@ -910,3 +927,4 @@ CREATE TABLE IF NOT EXISTS agenda (
 
 CREATE INDEX IF NOT EXISTS idx_agenda_utilisateur ON agenda (idUtilisateur);
 CREATE INDEX IF NOT EXISTS idx_agenda_date ON agenda (dateAgenda);
+

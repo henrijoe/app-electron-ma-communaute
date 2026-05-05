@@ -66,7 +66,7 @@ export const useNotificationSnackbar = () => {
     severity: 'success' as 'success' | 'error' | 'info' | 'warning',
   });
 
-  const showNotification = (
+  const showNotification = React.useCallback((
     message: string, 
     severity: 'success' | 'error' | 'info' | 'warning' = 'success'
   ) => {
@@ -75,24 +75,24 @@ export const useNotificationSnackbar = () => {
       message,
       severity,
     });
-  };
+  }, []);
 
-  const hideNotification = () => {
+  const hideNotification = React.useCallback(() => {
     setNotification(prev => ({ ...prev, open: false }));
-  };
+  }, []);
 
   return {
     notification,
     showNotification,
     hideNotification,
-    NotificationComponent: () => (
+    NotificationComponent: React.useCallback(() => (
       <NotificationSnackbar
         open={notification.open}
         message={notification.message}
         severity={notification.severity}
         onClose={hideNotification}
       />
-    ),
+    ), [hideNotification, notification.message, notification.open, notification.severity]),
   };
 };
 

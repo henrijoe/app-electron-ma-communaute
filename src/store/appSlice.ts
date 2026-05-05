@@ -4,6 +4,7 @@ export interface IAppState {
   userLoggedIn: boolean
   serverUrl: string
   connectionMode: 'local' | 'online'
+  themeMode: 'light' | 'dark'
   userConnected: any
   desktopSecurityChecked: boolean
   desktopSecurityBlocked: boolean
@@ -19,6 +20,7 @@ export const appSlice: any = createSlice({
     userLoggedIn: false,
     serverUrl: '',
     connectionMode: 'local',
+    themeMode: 'light',
     userConnected: {},
     desktopSecurityChecked: false,
     desktopSecurityBlocked: false,
@@ -35,6 +37,10 @@ export const appSlice: any = createSlice({
 
     setConnectionMode: (state, action) => {
       state.connectionMode = action.payload
+    },
+
+    setThemeMode: (state, action) => {
+      state.themeMode = action.payload
     },
 
     setUserLoggedIn: (state, action) => {
@@ -68,6 +74,7 @@ export const appSlice: any = createSlice({
 export const {
   setServerUrl,
   setConnectionMode,
+  setThemeMode,
   setUtilisateurs,
   setUserLoggedIn,
   setUserConnected,

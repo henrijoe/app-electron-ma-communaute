@@ -34,6 +34,7 @@ export function ComptabiliteSummaryDocument({ items, search, filterLabel }: Comp
       countLabel="Base de calcul"
       countValue={items.length}
       variant="plain"
+      showDocumentMeta={false}
     >
       <ComptabilitePrintHero
         title="Synthese de la caisse"

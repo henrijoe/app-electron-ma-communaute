@@ -1,5 +1,8 @@
 // apiClient.ts
-import { getServerUrl, getConnectionMode } from './functions';
+import type { ModulePermissionKey } from 'src/store/userSlice';
+
+import { canManageModule } from './access-control';
+import { getConnectionMode, getCurrentSessionUser, getServerUrl } from './functions';
 
 export const BASE_URL_DEV = 'http://localhost:49300/';
 export const BASE_URL_ONLINE = import.meta.env.VITE_API_URL || '';
@@ -7,6 +10,22 @@ export const BASE_URL_ONLINE = import.meta.env.VITE_API_URL || '';
 const normalizeBaseUrl = (url: string): string => (url.endsWith('/') ? url : `${url}/`);
 
 export const getApiMode = (): 'local' | 'online' => getConnectionMode();
+
+const assertCanManageModule = (permission: ModulePermissionKey, actionLabel?: string): void => {
+  const currentUser = getCurrentSessionUser();
+
+  if (!currentUser) {
+    return;
+  }
+
+  if (!canManageModule(currentUser, permission)) {
+    throw new ApiError(
+      actionLabel || "Vous avez uniquement un acces en lecture sur ce module.",
+      403,
+      { permission }
+    );
+  }
+};
 
 // Fonction pour obtenir l'URL de base
 export const getBaseUrl = (): string => {
@@ -385,6 +404,28 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify({ idGroupe, idUtilisateur }),
     }),
+
+  // responsabilites
+  getResponsabilites: () =>
+    request<IServerResponse>('communaute/listeresponsabilite', { method: 'GET' }),
+
+  createResponsabilite: (data: any) =>
+    request<IServerResponse>('communaute/insererresponsabilite', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateResponsabilite: (data: any) =>
+    request<IServerResponse>('communaute/modifierresponsabilite', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteResponsabilite: (idResponsabilite: number) =>
+    request<IServerResponse>('communaute/supprimerresponsabilite', {
+      method: 'POST',
+      body: JSON.stringify({ idResponsabilite }),
+    }),
   // agenda
   getAgendaByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupagendabyutilisateur/${idUtilisateur}`, { method: 'GET' }),
@@ -414,35 +455,45 @@ export const apiClient = {
   getComptabilitesSupprimeesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/listecomptabilitesupprimee/${idUtilisateur}`, { method: 'GET' }),
 
-  createComptabilite: (data: any) =>
-    request<IServerResponse>('communaute/inserercomptabilite', {
+  createComptabilite: (data: any) => {
+    assertCanManageModule('comptabilite');
+    return request<IServerResponse>('communaute/inserercomptabilite', {
       method: 'POST',
       body: JSON.stringify(data),
-    }),
+    });
+  },
 
-  updateComptabilite: (data: any) =>
-    request<IServerResponse>(`communaute/modifiercomptabilite/${data.idComptabilite}`, {
+  updateComptabilite: (data: any) => {
+    assertCanManageModule('comptabilite');
+    return request<IServerResponse>(`communaute/modifiercomptabilite/${data.idComptabilite}`, {
       method: 'POST',
       body: JSON.stringify(data),
-    }),
+    });
+  },
 
-  deleteComptabilite: (idComptabilite: number, idUtilisateur?: number | null, motifSuppressionComptabilite?: string) =>
-    request<IServerResponse>(`communaute/supprimercomptabilite/${idComptabilite}`, {
+  deleteComptabilite: (idComptabilite: number, idUtilisateur?: number | null, motifSuppressionComptabilite?: string) => {
+    assertCanManageModule('comptabilite');
+    return request<IServerResponse>(`communaute/supprimercomptabilite/${idComptabilite}`, {
       method: 'POST',
       body: JSON.stringify({ idComptabilite, idUtilisateur, motifSuppressionComptabilite }),
-    }),
+    });
+  },
 
-  restoreComptabilite: (idComptabilite: number) =>
-    request<IServerResponse>(`communaute/restaurercomptabilite/${idComptabilite}`, {
+  restoreComptabilite: (idComptabilite: number) => {
+    assertCanManageModule('comptabilite');
+    return request<IServerResponse>(`communaute/restaurercomptabilite/${idComptabilite}`, {
       method: 'POST',
       body: JSON.stringify({ idComptabilite }),
-    }),
+    });
+  },
 
-  deleteComptabilitePermanently: (idComptabilite: number, nomUtilisateur: string) =>
-    request<IServerResponse>(`communaute/supprimercomptabilitedefinitivement/${idComptabilite}`, {
+  deleteComptabilitePermanently: (idComptabilite: number, nomUtilisateur: string) => {
+    assertCanManageModule('comptabilite');
+    return request<IServerResponse>(`communaute/supprimercomptabilitedefinitivement/${idComptabilite}`, {
       method: 'POST',
       body: JSON.stringify({ idComptabilite, nomUtilisateur }),
-    }),
+    });
+  },
   // galerie
   getGaleriesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupgaleriebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
@@ -736,6 +787,10 @@ export const apiClient = {
   delete: <T = IServerResponse>(route: string, config?: IConfig) =>
     request<T>(route, { method: 'DELETE', ...config }),
 };
+
+
+
+
 
 
 

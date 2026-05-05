@@ -24,9 +24,20 @@ type CelluleTableRowProps = {
   onEdit: (cellule: ICellule) => void;
   onDelete: (idCellule: number) => void;
   isDeleting?: boolean;
+  responsableContact?: string;
+  responsableVisiteContact?: string;
 };
 
-export function CelluleTableRow({ row, selected, onSelectRow, onEdit, onDelete, isDeleting }: CelluleTableRowProps) {
+export function CelluleTableRow({
+  row,
+  selected,
+  onSelectRow,
+  onEdit,
+  onDelete,
+  isDeleting,
+  responsableContact = '',
+  responsableVisiteContact = '',
+}: CelluleTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
   const [openConfirm, setOpenConfirm] = useState(false);
   const navigate = useNavigate();
@@ -83,7 +94,11 @@ export function CelluleTableRow({ row, selected, onSelectRow, onEdit, onDelete, 
 
         <TableCell>{row.responsableCellule || ''}</TableCell>
 
+        <TableCell>{responsableContact || ''}</TableCell>
+
         <TableCell>{row.responsableVisiteCellule || ''}</TableCell>
+
+        <TableCell>{responsableVisiteContact || ''}</TableCell>
 
         <TableCell align="center">
           <IconButton onClick={(event) => { event.stopPropagation(); handleOpenPopover(event); }}>

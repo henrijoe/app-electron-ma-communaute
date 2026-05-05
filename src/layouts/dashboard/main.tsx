@@ -16,9 +16,12 @@ export function Main({ children, sx, ...other }: BoxProps) {
       component="main"
       className={layoutClasses.main}
       sx={{
- display: 'flex',
- flex: '1 1 auto',
- flexDirection: 'column',
+        display: 'flex',
+        flex: '1 1 auto',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        bgcolor: 'var(--layout-content-bg)',
+        color: 'text.primary',
         ...sx,
       }}
       {...other}
@@ -50,21 +53,23 @@ export function DashboardContent({
       className={layoutClasses.content}
       maxWidth={maxWidth || false}
       sx={{
- display: 'flex',
- flex: '1 1 auto',
- flexDirection: 'column',
- pt: 'var(--layout-dashboard-content-pt)',
- pb: 'var(--layout-dashboard-content-pb)',
+        display: 'flex',
+        flex: '1 1 auto',
+        flexDirection: 'column',
+        pt: 'var(--layout-dashboard-content-pt)',
+        pb: 'var(--layout-dashboard-content-pb)',
+        bgcolor: 'transparent',
+        color: 'text.primary',
         [theme.breakpoints.up(layoutQuery)]: {
- px: 'var(--layout-dashboard-content-px)',
+          px: 'var(--layout-dashboard-content-px)',
         },
         ...(disablePadding && {
- p: {
- xs: 0,
- sm: 0,
- md: 0,
- lg: 0,
- xl: 0,
+          p: {
+            xs: 0,
+            sm: 0,
+            md: 0,
+            lg: 0,
+            xl: 0,
           },
         }),
         ...sx,

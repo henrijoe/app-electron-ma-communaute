@@ -24,6 +24,7 @@ type DepartementTableRowProps = {
   onEdit: (departement: IDepartement) => void;
   onDelete: (idDepartement: number) => void;
   isDeleting?: boolean;
+  responsableContact?: string;
 };
 
 export function DepartementTableRow({
@@ -33,6 +34,7 @@ export function DepartementTableRow({
   onEdit,
   onDelete,
   isDeleting,
+  responsableContact = '',
 }: DepartementTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
   const [openConfirm, setOpenConfirm] = useState(false);
@@ -127,6 +129,8 @@ export function DepartementTableRow({
         </TableCell>
 
         <TableCell>{row.responsableDepartement || ''}</TableCell>
+
+        <TableCell>{responsableContact || ''}</TableCell>
 
         <TableCell align="center">
           <IconButton

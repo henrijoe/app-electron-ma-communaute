@@ -23,9 +23,18 @@ type GroupeTableRowProps = {
   onEdit: (groupe: IGroupe) => void;
   onDelete: (idGroupe: number) => void;
   isDeleting?: boolean;
+  responsableContact?: string;
 };
 
-export function GroupeTableRow({ row, selected, onSelectRow, onEdit, onDelete, isDeleting }: GroupeTableRowProps) {
+export function GroupeTableRow({
+  row,
+  selected,
+  onSelectRow,
+  onEdit,
+  onDelete,
+  isDeleting,
+  responsableContact = '',
+}: GroupeTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
   const [openConfirm, setOpenConfirm] = useState(false);
   const navigate = useNavigate();
@@ -83,6 +92,8 @@ export function GroupeTableRow({ row, selected, onSelectRow, onEdit, onDelete, i
         </TableCell>
 
         <TableCell>{row.responsableGroupe || ''}</TableCell>
+
+        <TableCell>{responsableContact || ''}</TableCell>
 
         <TableCell align="center">
           <IconButton onClick={(event) => { event.stopPropagation(); handleOpenPopover(event); }}>

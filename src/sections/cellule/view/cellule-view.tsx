@@ -7,6 +7,7 @@ import Grid from '@mui/material/Grid';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import MenuItem from '@mui/material/MenuItem';
 import TableBody from '@mui/material/TableBody';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -24,8 +25,10 @@ import { Scrollbar } from 'src/components/scrollbar/scrollbar';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
+import { buildResponsableMemberOptions, findResponsableContact } from 'src/utils/responsable-members';
 
 import { applyFilter, emptyRows, getComparator } from '../utils';
+import type { IMembre } from '../../../store/membreSlice';
 import { TableNoData } from '../table-no-data';
 import { PrintEtatGlobal } from '../etats/printEtats';
 import { TableEmptyRows } from '../table-empty-rows';
@@ -48,9 +51,13 @@ export function CelluleView() {
   const listCellule = useSelector((state: any) => state.cellule.listCellule);
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
-  const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || null;
+  const currentUserId =
+    Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
+    || null;
 
   const [loading, setLoading] = useState(true);
+  const [membres, setMembres] = useState<IMembre[]>([]);
   const [filterName, setFilterName] = useState('');
   const [advancedFilters, setAdvancedFilters] = useState({
     lieuCellule: '',
@@ -93,9 +100,51 @@ export function CelluleView() {
     }
   }, [currentUserId, dispatch]);
 
+  const fetchResponsableMembers = useCallback(async () => {
+    if (!currentUserId) {
+      setMembres([]);
+      return;
+    }
+
+    try {
+      const response = await apiClient.getMembresByUtilisateur(currentUserId);
+      setMembres(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching responsables:', error);
+      setMembres([]);
+    }
+  }, [currentUserId]);
+
   useEffect(() => {
     fetchCellules();
   }, [fetchCellules]);
+
+  useEffect(() => {
+    fetchResponsableMembers();
+  }, [fetchResponsableMembers]);
+
+  const responsableCelluleOptions = useMemo(() => buildResponsableMemberOptions(membres, [7]), [membres]);
+  const responsableVisiteOptions = useMemo(() => buildResponsableMemberOptions(membres), [membres]);
+  const responsableContactByName = useMemo(() => {
+    const contacts = new Map<string, string>();
+    (Array.isArray(listCellule) ? listCellule : []).forEach((item: ICellule) => {
+      if (item.responsableCellule) {
+        contacts.set(item.responsableCellule, findResponsableContact(membres, item.responsableCellule));
+      }
+      if (item.responsableVisiteCellule) {
+        contacts.set(item.responsableVisiteCellule, findResponsableContact(membres, item.responsableVisiteCellule));
+      }
+    });
+    return contacts;
+  }, [listCellule, membres]);
+  const selectedResponsableCelluleContact = useMemo(
+    () => findResponsableContact(membres, data.responsableCellule),
+    [data.responsableCellule, membres]
+  );
+  const selectedResponsableVisiteContact = useMemo(
+    () => findResponsableContact(membres, data.responsableVisiteCellule),
+    [data.responsableVisiteCellule, membres]
+  );
 
   const handleEditCellule = useCallback((celluleData: ICellule) => {
     // On prepare le formulaire avec les donnees completes de la cellule selectionnee.
@@ -226,21 +275,21 @@ export function CelluleView() {
       baseFilteredData.filter((item) => {
         if (
           advancedFilters.lieuCellule
-          && !normalizeForSearch(item.lieuCellule ).includes(normalizeForSearch(advancedFilters.lieuCellule))
+          && !normalizeForSearch(item.lieuCellule).includes(normalizeForSearch(advancedFilters.lieuCellule))
         ) {
           return false;
         }
 
         if (
           advancedFilters.responsableCellule
-          && !normalizeForSearch(item.responsableCellule ).includes(normalizeForSearch(advancedFilters.responsableCellule))
+          && !normalizeForSearch(item.responsableCellule).includes(normalizeForSearch(advancedFilters.responsableCellule))
         ) {
           return false;
         }
 
         if (
           advancedFilters.responsableVisiteCellule
-          && !normalizeForSearch(item.responsableVisiteCellule ).includes(normalizeForSearch(advancedFilters.responsableVisiteCellule))
+          && !normalizeForSearch(item.responsableVisiteCellule).includes(normalizeForSearch(advancedFilters.responsableVisiteCellule))
         ) {
           return false;
         }
@@ -305,7 +354,7 @@ export function CelluleView() {
 
         <Scrollbar>
           <TableContainer sx={{ overflow: 'unset' }}>
-            <Table sx={{ minWidth: 900 }}>
+            <Table sx={{ minWidth: 1100 }}>
               <CelluleTableHead
                 order={table.order}
                 orderBy={table.orderBy}
@@ -318,7 +367,9 @@ export function CelluleView() {
                   { id: 'lieuCellule', label: 'Lieu' },
                   { id: 'nombreMembreCellule', label: 'Effectif' },
                   { id: 'responsableCellule', label: 'Responsable' },
+                  { id: 'contactResponsableCellule', label: 'Numero responsable' },
                   { id: 'responsableVisiteCellule', label: 'Responsable visite' },
+                  { id: 'contactResponsableVisiteCellule', label: 'Numero visite' },
                   { id: 'actions', label: 'Actions', align: 'center', width: 100 },
                 ]}
               />
@@ -332,6 +383,8 @@ export function CelluleView() {
                     onEdit={handleEditCellule}
                     onDelete={handleDeleteCellule}
                     isDeleting={deleteLoading}
+                    responsableContact={responsableContactByName.get(row.responsableCellule) || ''}
+                    responsableVisiteContact={responsableContactByName.get(row.responsableVisiteCellule) || ''}
                   />
                 ))}
                 <TableEmptyRows height={68} emptyRows={emptyRows(table.page, table.rowsPerPage, sortedData.length)} />
@@ -366,10 +419,38 @@ export function CelluleView() {
               <TextField fullWidth type="number" label="Nombre de membres" name="nombreMembreCellule" value={data.nombreMembreCellule || ''} onChange={(event) => setData((prev: any) => ({ ...prev, nombreMembreCellule: event.target.value }))} />
             </Grid>
             <Grid item xs={12} md={4}>
-              <TextField fullWidth label="Responsable de cellule" name="responsableCellule" value={data.responsableCellule || ''} onChange={(event) => setData((prev: any) => ({ ...prev, responsableCellule: event.target.value }))} />
+              <TextField select fullWidth label="Responsable de cellule" name="responsableCellule" value={data.responsableCellule || ''} onChange={(event) => setData((prev: any) => ({ ...prev, responsableCellule: event.target.value }))}>
+                <MenuItem value="">Aucun responsable</MenuItem>
+                {data.responsableCellule
+                  && !responsableCelluleOptions.some((option) => option.value === data.responsableCellule) && (
+                    <MenuItem value={data.responsableCellule}>{data.responsableCellule}</MenuItem>
+                  )}
+                {responsableCelluleOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                ))}
+              </TextField>
             </Grid>
             <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Contact responsable cellule"
+                value={selectedResponsableCelluleContact || ''}
+                InputProps={{ readOnly: true }}
+                helperText={selectedResponsableCelluleContact ? 'Contact deja saisi sur la fiche membre' : 'Aucun contact trouve pour ce responsable'}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+
               <TextField fullWidth label="Responsable de visite" name="responsableVisiteCellule" value={data.responsableVisiteCellule || ''} onChange={(event) => setData((prev: any) => ({ ...prev, responsableVisiteCellule: event.target.value }))} />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Contact responsable visite"
+                value={selectedResponsableVisiteContact || ''}
+                InputProps={{ readOnly: true }}
+                helperText={selectedResponsableVisiteContact ? 'Contact deja saisi sur la fiche membre' : 'Aucun contact trouve pour ce responsable'}
+              />
             </Grid>
           </Grid>
         </DialogContent>

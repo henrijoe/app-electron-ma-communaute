@@ -1,6 +1,19 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
-// creer interface pour designer les differents fonction  d'authentification du state
+export type UserRole = 'admin' | 'gestionnaire' | 'lecteur'
+export type ModulePermissionKey =
+  | 'dashboard'
+  | 'user'
+  | 'culte'
+  | 'departement'
+  | 'cellule'
+  | 'groupe'
+  | 'social'
+  | 'galerie'
+  | 'agenda'
+  | 'comptabilite'
+  | 'settings'
+
 export interface IAuthentificationState {
   dataUtilisateur: IUtilisateur[];
   dataFilterUtilisateur: IUtilisateur[];
@@ -13,13 +26,13 @@ export interface IAuthentificationState {
   filterUtilisateur: IUtilisateur[]
 }
 
-// creer interface comportant des differents entites  d'authentification
 export interface IAuthentification {
   idUtilisateur: number;
   idMembre: number;
   userName: string;
   role: string;
 }
+
 export interface IUser {
   idUtilisateur: number;
   nomUtilisateur: number;
@@ -28,6 +41,10 @@ export interface IUser {
 
 export interface IUtilisateur {
   idUtilisateur: number;
+  idUtilisateurParent: number | null;
+  roleUtilisateur: UserRole;
+  permissionsUtilisateur: string;
+  actifUtilisateur: number;
   logoUtilisateur: string;
   logoEglise: string;
   nomTemple: string;
@@ -57,6 +74,10 @@ export interface IUtilisateur {
 
 export const utilisateur: IUtilisateur = {
   idUtilisateur: 0,
+  idUtilisateurParent: null,
+  roleUtilisateur: 'admin',
+  permissionsUtilisateur: '',
+  actifUtilisateur: 1,
   logoUtilisateur: '',
   logoEglise: '',
   nomTemple: '',
@@ -84,7 +105,6 @@ export const utilisateur: IUtilisateur = {
   email: ''
 }
 
-// fonction pour initialiser les differents types des fonction
 const initialStates: IAuthentificationState = {
   dataUtilisateur: [],
   dataFilterUtilisateur: [],
@@ -97,17 +117,14 @@ const initialStates: IAuthentificationState = {
   filterUtilisateur: [],
 };
 
-
 export const userSlice = createSlice({
   name: 'authentification',
   initialState: initialStates,
 
   reducers: {
-    // fonction pour ajouter un authentification
     addUtilisateur: (state, action: PayloadAction<IUtilisateur>) => {
       state.dataUtilisateur.unshift(action.payload)
     },
-    // fonction pour rechecher d'authentification dans le tableau
     setListFilterUtilisateur: (state, action) => {
       state.dataFilterUtilisateur = action.payload
     },
@@ -117,8 +134,6 @@ export const userSlice = createSlice({
     setUtilisateurData: (state, action: PayloadAction<IUtilisateur>) => {
       state.utilisateurData = action.payload
     },
-
-    // fonction pour suprimer une ligne d'authentification enregister
     deleteUtilisateur: (state, action) => {
       state.dataUtilisateur = state.dataUtilisateur.filter(
         (item) => item.idUtilisateur !== action.payload
@@ -126,19 +141,19 @@ export const userSlice = createSlice({
       state.dataFilterUtilisateur = state.dataFilterUtilisateur.filter(
         (item) => item.idUtilisateur !== action.payload
       )
+      state.listUtilisateur = state.listUtilisateur.filter(
+        (item) => item.idUtilisateur !== action.payload
+      )
     },
-    // fonction pour se connecter
     setConnecter: (state, action) => {
       state.connecter = action.payload
     },
-    // fonction pour connaitre un authentification
     setUser: (state, action) => {
       state.user = action.payload
     },
     setUtilisateur: (state, action) => {
       state.utilisateurItem = action.payload
     },
-
     setDataModifiesUtilisateur: (state, action) => {
       state.dataUtilisateur = state.dataUtilisateur.map((item: any) =>
         item.idUtilisateur === action.payload.idUtilisateur ? action.payload : item
@@ -146,13 +161,16 @@ export const userSlice = createSlice({
       state.dataFilterUtilisateur = state.dataFilterUtilisateur.map((item: any) =>
         item.idUtilisateur === action.payload.idUtilisateur ? action.payload : item
       )
+      state.listUtilisateur = state.listUtilisateur.map((item: any) =>
+        item.idUtilisateur === action.payload.idUtilisateur ? action.payload : item
+      )
     },
     setFilterUtilisateur: (state, action) => {
       state.filterUtilisateur = action.payload
     },
-
   },
 })
+
 export const {
   addUtilisateur,
   deleteUtilisateur,

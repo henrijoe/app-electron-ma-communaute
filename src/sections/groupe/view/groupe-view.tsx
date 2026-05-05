@@ -7,6 +7,7 @@ import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Grid from '@mui/material/Grid';
+import MenuItem from '@mui/material/MenuItem';
 import TableBody from '@mui/material/TableBody';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -24,8 +25,10 @@ import { Scrollbar } from 'src/components/scrollbar/scrollbar';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
+import { buildResponsableMemberOptions, findResponsableContact } from 'src/utils/responsable-members';
 
 import { applyFilter, emptyRows, getComparator } from '../utils';
+import type { IMembre } from '../../../store/membreSlice';
 import { TableNoData } from '../table-no-data';
 import { PrintEtatGlobal } from '../etats/printEtats';
 import { TableEmptyRows } from '../table-empty-rows';
@@ -48,9 +51,13 @@ export function GroupeView() {
   const listGroupe = useSelector((state: any) => state.groupe.listGroupe);
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
-  const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || null;
+  const currentUserId =
+    Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
+    || null;
 
   const [loading, setLoading] = useState(true);
+  const [membres, setMembres] = useState<IMembre[]>([]);
   const [filterName, setFilterName] = useState('');
   const [advancedFilters, setAdvancedFilters] = useState({
     responsableGroupe: '',
@@ -92,9 +99,43 @@ export function GroupeView() {
     }
   }, [currentUserId, dispatch]);
 
+  const fetchResponsableMembers = useCallback(async () => {
+    if (!currentUserId) {
+      setMembres([]);
+      return;
+    }
+
+    try {
+      const response = await apiClient.getMembresByUtilisateur(currentUserId);
+      setMembres(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching responsables:', error);
+      setMembres([]);
+    }
+  }, [currentUserId]);
+
   useEffect(() => {
     fetchGroupes();
   }, [fetchGroupes]);
+
+  useEffect(() => {
+    fetchResponsableMembers();
+  }, [fetchResponsableMembers]);
+
+  const responsableOptions = useMemo(() => buildResponsableMemberOptions(membres, [9]), [membres]);
+  const responsableContactByName = useMemo(() => {
+    const contacts = new Map<string, string>();
+    (Array.isArray(listGroupe) ? listGroupe : []).forEach((item: IGroupe) => {
+      if (item.responsableGroupe) {
+        contacts.set(item.responsableGroupe, findResponsableContact(membres, item.responsableGroupe));
+      }
+    });
+    return contacts;
+  }, [listGroupe, membres]);
+  const selectedResponsableContact = useMemo(
+    () => findResponsableContact(membres, data.responsableGroupe),
+    [data.responsableGroupe, membres]
+  );
 
   const handleEditGroupe = useCallback((groupeData: IGroupe) => {
     setData({ ...groupeData });
@@ -293,7 +334,7 @@ export function GroupeView() {
 
         <Scrollbar>
           <TableContainer sx={{ overflow: 'unset' }}>
-            <Table sx={{ minWidth: 900 }}>
+            <Table sx={{ minWidth: 1000 }}>
               <GroupeTableHead
                 order={table.order}
                 orderBy={table.orderBy}
@@ -305,6 +346,7 @@ export function GroupeView() {
                   { id: 'libelleGroupe', label: 'Groupe' },
                   { id: 'descriptionGroupe', label: 'Description' },
                   { id: 'responsableGroupe', label: 'Responsable' },
+                  { id: 'contactResponsableGroupe', label: 'Numero responsable' },
                   { id: 'actions', label: 'Actions', align: 'center', width: 100 },
                 ]}
               />
@@ -318,6 +360,7 @@ export function GroupeView() {
                     onEdit={handleEditGroupe}
                     onDelete={handleDeleteGroupe}
                     isDeleting={deleteLoading}
+                    responsableContact={responsableContactByName.get(row.responsableGroupe) || ''}
                   />
                 ))}
                 <TableEmptyRows height={68} emptyRows={emptyRows(table.page, table.rowsPerPage, sortedData.length)} />
@@ -346,7 +389,25 @@ export function GroupeView() {
               <TextField fullWidth label="Libellé du groupe" name="libelleGroupe" value={data.libelleGroupe || ''} onChange={(event) => setData((prev: any) => ({ ...prev, libelleGroupe: event.target.value }))} />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Responsable du groupe" name="responsableGroupe" value={data.responsableGroupe || ''} onChange={(event) => setData((prev: any) => ({ ...prev, responsableGroupe: event.target.value }))} />
+              <TextField select fullWidth label="Responsable du groupe" name="responsableGroupe" value={data.responsableGroupe || ''} onChange={(event) => setData((prev: any) => ({ ...prev, responsableGroupe: event.target.value }))}>
+                <MenuItem value="">Aucun responsable</MenuItem>
+                {data.responsableGroupe
+                  && !responsableOptions.some((option) => option.value === data.responsableGroupe) && (
+                    <MenuItem value={data.responsableGroupe}>{data.responsableGroupe}</MenuItem>
+                  )}
+                {responsableOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Contact du responsable"
+                value={selectedResponsableContact || ''}
+                InputProps={{ readOnly: true }}
+                helperText={selectedResponsableContact ? 'Contact deja saisi sur la fiche membre' : 'Aucun contact trouve pour ce responsable'}
+              />
             </Grid>
             <Grid item xs={12}>
               <TextField fullWidth multiline minRows={4} label="Description" name="descriptionGroupe" value={data.descriptionGroupe || ''} onChange={(event) => setData((prev: any) => ({ ...prev, descriptionGroupe: event.target.value }))} />

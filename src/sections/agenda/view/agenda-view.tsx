@@ -234,7 +234,10 @@ export function AgendaView() {
   const { listAgenda, loadingAgenda } = useSelector((state: any) => state.agenda);
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
-  const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || null;
+  const currentUserId =
+    Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
+    || null;
   const identity = appUserConnected || authUtilisateurData || {};
   const notifiedReminderKeys = useRef<Set<string>>(new Set());
 

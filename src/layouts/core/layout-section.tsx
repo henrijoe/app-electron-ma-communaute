@@ -31,9 +31,19 @@ export function LayoutSection({
   const inputGlobalStyles = (
     <GlobalStyles
       styles={{
- body: {
+        html: {
+          backgroundColor: 'var(--layout-content-bg)',
+        },
+        body: {
           ...baseVars(theme),
           ...cssVars,
+          margin: 0,
+          backgroundColor: 'var(--layout-content-bg)',
+          color: theme.vars.palette.text.primary,
+        },
+        '#root': {
+          minHeight: '100vh',
+          backgroundColor: 'var(--layout-content-bg)',
         },
       }}
     />
@@ -43,13 +53,23 @@ export function LayoutSection({
     <>
       {inputGlobalStyles}
 
-      <Box id="root__layout" className={layoutClasses.root} sx={sx}>
+      <Box
+        id="root__layout"
+        className={layoutClasses.root}
+        sx={{
+          minHeight: '100vh',
+          bgcolor: 'var(--layout-content-bg)',
+          color: 'text.primary',
+          ...sx,
+        }}
+      >
         {sidebarSection}
         <Box
           display="flex"
           flex="1 1 auto"
           flexDirection="column"
           className={layoutClasses.hasSidebar}
+          sx={{ bgcolor: 'var(--layout-content-bg)' }}
         >
           {headerSection}
           {children}

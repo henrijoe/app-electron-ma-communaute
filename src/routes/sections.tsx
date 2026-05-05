@@ -8,6 +8,7 @@ import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgr
 import { varAlpha } from 'src/theme/styles';
 import { AuthLayout } from 'src/layouts/auth';
 import { DashboardLayout } from 'src/layouts/dashboard';
+import { canAccessModule, getSessionUser } from 'src/utils/access-control';
 
 export const HomePage = lazy(() => import('src/pages/home'));
 export const BlogPage = lazy(() => import('src/pages/blog'));
@@ -56,6 +57,16 @@ const renderFallback = (
   </Box>
 );
 
+function GuardedPage({ permission, element }: { permission: any; element: React.ReactNode }) {
+  const sessionUser = useSelector((state: any) => getSessionUser(state));
+
+  if (!canAccessModule(sessionUser, permission)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{element}</>;
+}
+
 export function Router() {
   const isLoggedIn = useSelector((state: any) => Boolean(state.application?.userLoggedIn) && Boolean(state.authentification?.connecter));
   const desktopSecurityChecked = useSelector((state: any) => Boolean(state.application?.desktopSecurityChecked));
@@ -74,59 +85,59 @@ export function Router() {
         </DashboardLayout>
       ) : <Navigate to="/sign-in" replace />,
       children: [
-        { element: <HomePage />, index: true },
-        { path: 'home', element: <HomePage /> },
-        { path: 'user', element: <UserPage /> },
-        { path: 'user/import', element: <UserImportPage /> },
-        { path: 'culte', element: <CultePage /> },
-        { path: 'departement', element: <DepartementPage /> },
-        { path: 'cellule', element: <CellulePage /> },
-        { path: 'groupe', element: <GroupePage /> },
-        { path: 'cas-sociaux', element: <SocialPage /> },
-        { path: 'galerie', element: <GaleriePage /> },
-        { path: 'agenda', element: <AgendaPage /> },
-        { path: 'comptabilite', element: <ComptabilitePage /> },
+        { element: <GuardedPage permission="dashboard" element={<HomePage />} />, index: true },
+        { path: 'home', element: <GuardedPage permission="dashboard" element={<HomePage />} /> },
+        { path: 'user', element: <GuardedPage permission="user" element={<UserPage />} /> },
+        { path: 'user/import', element: <GuardedPage permission="user" element={<UserImportPage />} /> },
+        { path: 'culte', element: <GuardedPage permission="culte" element={<CultePage />} /> },
+        { path: 'departement', element: <GuardedPage permission="departement" element={<DepartementPage />} /> },
+        { path: 'cellule', element: <GuardedPage permission="cellule" element={<CellulePage />} /> },
+        { path: 'groupe', element: <GuardedPage permission="groupe" element={<GroupePage />} /> },
+        { path: 'cas-sociaux', element: <GuardedPage permission="social" element={<SocialPage />} /> },
+        { path: 'galerie', element: <GuardedPage permission="galerie" element={<GaleriePage />} /> },
+        { path: 'agenda', element: <GuardedPage permission="agenda" element={<AgendaPage />} /> },
+        { path: 'comptabilite', element: <GuardedPage permission="comptabilite" element={<ComptabilitePage />} /> },
         { path: 'products', element: <ProductsPage /> },
-        { path: 'settings', element: <SettingsPage /> },
+        { path: 'settings', element: <GuardedPage permission="settings" element={<SettingsPage />} /> },
         { path: 'blog', element: <BlogPage /> },
         {
           path: 'details',
           children: [
-            { index: true, element: <UserPage /> },
-            { path: ':id', element: <UserDetail /> },
-            { path: 'edit/:id', element: <UserEdit /> },
+            { index: true, element: <GuardedPage permission="user" element={<UserPage />} /> },
+            { path: ':id', element: <GuardedPage permission="user" element={<UserDetail />} /> },
+            { path: 'edit/:id', element: <GuardedPage permission="user" element={<UserEdit />} /> },
           ],
         },
         {
           path: 'detailcultes',
           children: [
-            { index: true, element: <CultePage /> },
-            { path: ':id', element: <CulteDetail /> },
-            { path: 'edit/:id', element: <CulteEdit /> },
+            { index: true, element: <GuardedPage permission="culte" element={<CultePage />} /> },
+            { path: ':id', element: <GuardedPage permission="culte" element={<CulteDetail />} /> },
+            { path: 'edit/:id', element: <GuardedPage permission="culte" element={<CulteEdit />} /> },
           ],
         },
         {
           path: 'detaildepartement',
           children: [
-            { index: true, element: <DepartementPage /> },
-            { path: ':id', element: <DepartementDetail /> },
-            { path: 'edit/:id', element: <DepartementEdit /> },
+            { index: true, element: <GuardedPage permission="departement" element={<DepartementPage />} /> },
+            { path: ':id', element: <GuardedPage permission="departement" element={<DepartementDetail />} /> },
+            { path: 'edit/:id', element: <GuardedPage permission="departement" element={<DepartementEdit />} /> },
           ],
         },
         {
           path: 'detailcellule',
           children: [
-            { index: true, element: <CellulePage /> },
-            { path: ':id', element: <CelluleDetail /> },
-            { path: 'edit/:id', element: <CelluleEdit /> },
+            { index: true, element: <GuardedPage permission="cellule" element={<CellulePage />} /> },
+            { path: ':id', element: <GuardedPage permission="cellule" element={<CelluleDetail />} /> },
+            { path: 'edit/:id', element: <GuardedPage permission="cellule" element={<CelluleEdit />} /> },
           ],
         },
         {
           path: 'detailgroupe',
           children: [
-            { index: true, element: <GroupePage /> },
-            { path: ':id', element: <GroupeDetail /> },
-            { path: 'edit/:id', element: <GroupeEdit /> },
+            { index: true, element: <GuardedPage permission="groupe" element={<GroupePage />} /> },
+            { path: ':id', element: <GuardedPage permission="groupe" element={<GroupeDetail />} /> },
+            { path: 'edit/:id', element: <GuardedPage permission="groupe" element={<GroupeEdit />} /> },
           ],
         },
       ],

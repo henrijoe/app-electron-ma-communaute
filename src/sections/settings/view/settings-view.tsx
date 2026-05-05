@@ -5,8 +5,12 @@ import {
   AccountCircleRounded,
   ChurchRounded,
   DeleteRounded,
+  EditRounded,
+  GroupAddRounded,
   LanguageRounded,
   LaunchRounded,
+  LockPersonRounded,
+  LockResetRounded,
   SaveRounded,
   StorageRounded,
   UploadRounded,
@@ -19,12 +23,17 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
+import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { DashboardContent } from 'src/layouts/dashboard';
 import {
@@ -34,8 +43,20 @@ import {
   setUserConnected,
 } from 'src/store/appSlice';
 import type { IReduxState } from 'src/store/store';
+import type { IResponsable } from 'src/store/membreSlice';
+import { setListResponsabilite as setListMembreResponsabilite } from 'src/store/membreSlice';
+import type { IUtilisateur, ModulePermissionKey, UserRole } from 'src/store/userSlice';
 import { setUtilisateurData } from 'src/store/userSlice';
 import { apiClient, buildChurchLogoUrl } from 'src/utils/apiClient';
+import {
+  ALL_MODULE_PERMISSIONS,
+  MODULE_PERMISSION_LABELS,
+  getScopeUserIdFromUser,
+  getUserRole,
+  parsePermissions,
+  stringifyPermissions,
+} from 'src/utils/access-control';
+import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 
 type ConnectionMode = 'local' | 'online';
 
@@ -63,6 +84,8 @@ type ProfileFormState = {
   nombreAnciensEglise: string;
   nombreDiacresEglise: string;
   email: string;
+  password: string;
+  confirmPassword: string;
 };
 
 const emptyProfileForm: ProfileFormState = {
@@ -89,7 +112,78 @@ const emptyProfileForm: ProfileFormState = {
   nombreAnciensEglise: '',
   nombreDiacresEglise: '',
   email: '',
+  password: '',
+  confirmPassword: '',
 };
+
+type SecondaryUserFormState = {
+  idUtilisateur: number | null;
+  nomUtilisateur: string;
+  prenomUtilisateur: string;
+  telephoneUtilisateur: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  roleUtilisateur: Extract<UserRole, 'gestionnaire' | 'lecteur'>;
+  permissions: ModulePermissionKey[];
+  actifUtilisateur: number;
+};
+
+const emptySecondaryUserForm: SecondaryUserFormState = {
+  idUtilisateur: null,
+  nomUtilisateur: '',
+  prenomUtilisateur: '',
+  telephoneUtilisateur: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  roleUtilisateur: 'gestionnaire',
+  permissions: ['dashboard', 'comptabilite'],
+  actifUtilisateur: 1,
+};
+
+const roleOptions: Array<{ label: string; value: SecondaryUserFormState['roleUtilisateur'] }> = [
+  { label: 'Gestionnaire', value: 'gestionnaire' },
+  { label: 'Lecteur', value: 'lecteur' },
+];
+
+type ResetSecondaryPasswordFormState = {
+  password: string;
+  confirmPassword: string;
+};
+
+const emptyResetSecondaryPasswordForm: ResetSecondaryPasswordFormState = {
+  password: '',
+  confirmPassword: '',
+};
+
+type ResponsabiliteFormState = {
+  idResponsabilite: number | null;
+  libelleResponsabilite: string;
+  descriptionResponsabilite: string;
+};
+
+const emptyResponsabiliteForm: ResponsabiliteFormState = {
+  idResponsabilite: null,
+  libelleResponsabilite: '',
+  descriptionResponsabilite: '',
+};
+
+const buildSecondaryUserFormFromEntity = (user: IUtilisateur): SecondaryUserFormState => ({
+  idUtilisateur: Number(user.idUtilisateur || 0),
+  nomUtilisateur: user.nomUtilisateur || '',
+  prenomUtilisateur: user.prenomUtilisateur || '',
+  telephoneUtilisateur: user.telephoneUtilisateur || '',
+  email: user.email || '',
+  password: '',
+  confirmPassword: '',
+  roleUtilisateur: getUserRole(user) === 'lecteur' ? 'lecteur' : 'gestionnaire',
+  permissions: Array.from(new Set(['dashboard', ...parsePermissions(user.permissionsUtilisateur)])) as ModulePermissionKey[],
+  actifUtilisateur: Number(user.actifUtilisateur || 1),
+});
+
+const normalizePermissions = (permissions: ModulePermissionKey[]): ModulePermissionKey[] =>
+  Array.from(new Set(['dashboard', ...permissions.filter((item) => ALL_MODULE_PERMISSIONS.includes(item))])) as ModulePermissionKey[];
 
 const isValidHttpUrl = (value: string): boolean => {
   if (!value.trim()) {
@@ -107,6 +201,28 @@ const isValidHttpUrl = (value: string): boolean => {
 const normalizeBrowserUrl = (value: string): string => value.trim().replace(/\/+$/, '');
 const buildBrowserUrlFromIp = (ipAddress: string, port = 49300): string => `http://${ipAddress}:${port}`;
 const getCurrentBrowserOrigin = (): string => normalizeBrowserUrl(window.location.origin);
+
+const getDesktopCountdown = (expiresAt: string, now: number) => {
+  const expirationTime = new Date(expiresAt).getTime();
+
+  if (!expiresAt || Number.isNaN(expirationTime)) {
+    return null;
+  }
+
+  const totalSeconds = Math.max(0, Math.floor((expirationTime - now) / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    days,
+    hours,
+    minutes,
+    seconds,
+    isExpired: totalSeconds === 0,
+  };
+};
 
 const convertFileToBase64DataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -150,7 +266,10 @@ export function SettingsView() {
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
   const userConnected = useSelector((state: IReduxState) => state.application.userConnected);
   const currentUsername = useSelector(
-    (state: IReduxState) => state.application.userConnected?.nomUtilisateur || ''
+    (state: IReduxState) =>
+      state.application.userConnected?.nomUtilisateur ||
+      state.authentification.utilisateurData?.nomUtilisateur ||
+      ''
   );
 
   const [browserUrl, setBrowserUrlInput] = useState(applicationState.serverUrl || '');
@@ -162,20 +281,53 @@ export function SettingsView() {
   const [extendDays, setExtendDays] = useState('30');
   const [unlockPassword, setUnlockPassword] = useState('');
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm);
+  const [secondaryUsers, setSecondaryUsers] = useState<IUtilisateur[]>([]);
+  const [loadingSecondaryUsers, setLoadingSecondaryUsers] = useState(false);
+  const [secondaryUserForm, setSecondaryUserForm] = useState<SecondaryUserFormState>(emptySecondaryUserForm);
+  const [isSavingSecondaryUser, setIsSavingSecondaryUser] = useState(false);
+  const [deletingSecondaryUser, setDeletingSecondaryUser] = useState<IUtilisateur | null>(null);
+  const [isDeletingSecondaryUser, setIsDeletingSecondaryUser] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState<IUtilisateur | null>(null);
+  const [resetPasswordForm, setResetPasswordForm] = useState<ResetSecondaryPasswordFormState>(
+    emptyResetSecondaryPasswordForm
+  );
+  const [isResettingSecondaryPassword, setIsResettingSecondaryPassword] = useState(false);
+  const [responsabilites, setResponsabilites] = useState<IResponsable[]>([]);
+  const [loadingResponsabilites, setLoadingResponsabilites] = useState(false);
+  const [responsabiliteForm, setResponsabiliteForm] = useState<ResponsabiliteFormState>(emptyResponsabiliteForm);
+  const [isSavingResponsabilite, setIsSavingResponsabilite] = useState(false);
+  const [deletingResponsabilite, setDeletingResponsabilite] = useState<IResponsable | null>(null);
+  const [isDeletingResponsabilite, setIsDeletingResponsabilite] = useState(false);
+  const [countdownNow, setCountdownNow] = useState(Date.now());
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
   const isDesktopApp = Boolean((window as any)?.desktopApp?.isDesktop);
 
+  const sessionUser = useMemo(() => ({ ...utilisateurData, ...userConnected }), [userConnected, utilisateurData]);
+  const currentRole = useMemo(() => getUserRole(sessionUser), [sessionUser]);
+  const currentSessionUserId = Number(sessionUser?.idUtilisateur || 0);
+  const currentAccountId = getScopeUserIdFromUser(sessionUser) || 0;
+  const isSecondarySessionUser = Number(sessionUser?.idUtilisateurParent || 0) > 0;
+  const canManageSecondaryUsers =
+    currentRole === 'admin' && currentSessionUserId > 0 && !isSecondarySessionUser && currentAccountId > 0;
   const isUrlReady = useMemo(() => isValidHttpUrl(browserUrl), [browserUrl]);
   const desktopLicenseExpiresAt = applicationState.desktopSecurityExpiresAt;
   const desktopSecurityMessage = applicationState.desktopSecurityMessage;
   const isDesktopBlocked = applicationState.desktopSecurityBlocked;
   const desktopDaysRemaining = applicationState.desktopSecurityDaysRemaining;
   const isFixedDesktopSuperAdmin =
-    Number(userConnected?.idUtilisateur || utilisateurData?.idUtilisateur || -1) === 0;
+    Number(userConnected?.idUtilisateur ?? utilisateurData?.idUtilisateur ?? -1) === 0;
+  const canInspectDesktopLicense = isDesktopApp || isFixedDesktopSuperAdmin;
+  const desktopCountdown = useMemo(
+    () => getDesktopCountdown(desktopLicenseExpiresAt, countdownNow),
+    [countdownNow, desktopLicenseExpiresAt]
+  );
   const churchLogoPreviewUrl = useMemo(
     () => getChurchLogoPreviewUrl(profileForm.logoEglise),
     [profileForm.logoEglise]
   );
+  const secondaryUserCount = secondaryUsers.length;
+  const isEditingSecondaryUser = Boolean(secondaryUserForm.idUtilisateur);
+  const isEditingResponsabilite = Boolean(responsabiliteForm.idResponsabilite);
 
   const desktopAlert = useMemo(() => {
     if (isDesktopBlocked) {
@@ -248,11 +400,68 @@ export function SettingsView() {
       nombreAnciensEglise: source?.nombreAnciensEglise || '',
       nombreDiacresEglise: source?.nombreDiacresEglise || '',
       email: source?.email || '',
+      password: '',
+      confirmPassword: '',
     });
   }, [userConnected, utilisateurData]);
 
+  useEffect(() => {
+    if (!isFixedDesktopSuperAdmin || !desktopLicenseExpiresAt) {
+      return undefined;
+    }
+
+    setCountdownNow(Date.now());
+    const intervalId = window.setInterval(() => {
+      setCountdownNow(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [desktopLicenseExpiresAt, isFixedDesktopSuperAdmin]);
+
+  const loadSecondaryUsers = useCallback(async () => {
+    if (!canManageSecondaryUsers) {
+      setSecondaryUsers([]);
+      return;
+    }
+
+    try {
+      setLoadingSecondaryUsers(true);
+      const response = await apiClient.get(`communaute/listeutilisateurparent/${currentAccountId}`);
+      setSecondaryUsers(Array.isArray(response?.data) ? response.data : []);
+    } catch (error: any) {
+      showNotification(error?.message || 'Impossible de charger les utilisateurs secondaires.', 'error');
+    } finally {
+      setLoadingSecondaryUsers(false);
+    }
+  }, [canManageSecondaryUsers, currentAccountId, showNotification]);
+
+  const loadResponsabilites = useCallback(async () => {
+    if (!currentAccountId) {
+      setResponsabilites([]);
+      dispatch(setListMembreResponsabilite([]));
+      return;
+    }
+
+    try {
+      setLoadingResponsabilites(true);
+      const response = await apiClient.getResponsabilites();
+      const items = Array.isArray(response.data)
+        ? response.data.filter((item: IResponsable) => Number(item.idUtilisateur) === Number(currentAccountId))
+        : [];
+
+      setResponsabilites(items);
+      dispatch(setListMembreResponsabilite(items));
+    } catch (error: any) {
+      showNotification(error?.message || 'Impossible de charger les responsabilites.', 'error');
+    } finally {
+      setLoadingResponsabilites(false);
+    }
+  }, [currentAccountId, dispatch, showNotification]);
+
   const refreshDesktopSecurityStatus = useCallback(async () => {
-    if (!isDesktopApp || !currentUsername) {
+    if (!canInspectDesktopLicense || !currentUsername) {
       return;
     }
 
@@ -282,7 +491,7 @@ export function SettingsView() {
         })
       );
     }
-  }, [currentUsername, dispatch, isDesktopApp]);
+  }, [canInspectDesktopLicense, currentUsername, dispatch]);
 
   const detectPreferredBrowserUrl = useCallback(async () => {
     setIsDetectingAddress(true);
@@ -330,6 +539,36 @@ export function SettingsView() {
     detectPreferredBrowserUrl();
     refreshDesktopSecurityStatus();
   }, [detectPreferredBrowserUrl, refreshDesktopSecurityStatus]);
+
+  useEffect(() => {
+    loadSecondaryUsers();
+  }, [loadSecondaryUsers]);
+
+  useEffect(() => {
+    loadResponsabilites();
+  }, [loadResponsabilites]);
+
+  useEffect(() => {
+    if (!canManageSecondaryUsers) {
+      return undefined;
+    }
+
+    const unsubscribers = [
+      subscribeToCommunauteEvent('ajouterUtilisateur', () => {
+        loadSecondaryUsers();
+      }),
+      subscribeToCommunauteEvent('modifierUtilisateur', () => {
+        loadSecondaryUsers();
+      }),
+      subscribeToCommunauteEvent('supprimerUtilisateur', () => {
+        loadSecondaryUsers();
+      }),
+    ];
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [canManageSecondaryUsers, loadSecondaryUsers]);
 
   const handleSaveSettings = useCallback(() => {
     const normalizedUrl = normalizeBrowserUrl(browserUrl);
@@ -446,12 +685,25 @@ export function SettingsView() {
       return;
     }
 
+    if ((profileForm.password || profileForm.confirmPassword)
+      && profileForm.password !== profileForm.confirmPassword) {
+      showNotification('La confirmation du nouveau mot de passe ne correspond pas.', 'warning');
+      return;
+    }
+
+    const nextPassword = profileForm.password.trim()
+      ? profileForm.password.trim()
+      : existingUser?.password || '';
+    const nextConfirmPassword = profileForm.password.trim()
+      ? profileForm.confirmPassword.trim() || profileForm.password.trim()
+      : existingUser?.confirmPassword || existingUser?.password || '';
+
     const payload = {
       ...existingUser,
       ...profileForm,
       idUtilisateur,
-      password: existingUser?.password || '',
-      confirmPassword: existingUser?.confirmPassword || existingUser?.password || '',
+      password: nextPassword,
+      confirmPassword: nextConfirmPassword,
     };
 
     try {
@@ -461,7 +713,12 @@ export function SettingsView() {
 
       dispatch(setUtilisateurData(savedUser));
       dispatch(setUserConnected(savedUser));
-      setProfileForm((prev) => ({ ...prev, ...savedUser }));
+      setProfileForm((prev) => ({
+        ...prev,
+        ...savedUser,
+        password: '',
+        confirmPassword: '',
+      }));
       showNotification("Informations de l'eglise enregistrees avec succes", 'success');
     } catch (error: any) {
       showNotification(error?.message || "Impossible d'enregistrer les informations de l'eglise", 'error');
@@ -469,6 +726,359 @@ export function SettingsView() {
       setIsSavingProfile(false);
     }
   }, [dispatch, profileForm, showNotification, userConnected, utilisateurData]);
+
+  const handleChangeSecondaryUserField = useCallback(
+    (field: keyof SecondaryUserFormState, value: string | number | ModulePermissionKey[]) => {
+      setSecondaryUserForm((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    },
+    []
+  );
+
+  const handleChangeResponsabiliteField = useCallback(
+    (field: keyof ResponsabiliteFormState, value: string) => {
+      setResponsabiliteForm((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    },
+    []
+  );
+
+  const handleResetResponsabiliteForm = useCallback(() => {
+    setResponsabiliteForm(emptyResponsabiliteForm);
+  }, []);
+
+  const handleEditResponsabilite = useCallback((responsabilite: IResponsable) => {
+    setResponsabiliteForm({
+      idResponsabilite: Number(responsabilite.idResponsabilite || 0),
+      libelleResponsabilite: responsabilite.libelleResponsabilite || '',
+      descriptionResponsabilite: responsabilite.descriptionResponsabilite || '',
+    });
+  }, []);
+
+  const handleSaveResponsabilite = useCallback(async () => {
+    if (!currentAccountId) {
+      showNotification('Utilisateur connecte introuvable.', 'warning');
+      return;
+    }
+
+    if (!responsabiliteForm.libelleResponsabilite.trim()) {
+      showNotification('Le libelle de la responsabilite est requis.', 'warning');
+      return;
+    }
+
+    const payload = {
+      idResponsabilite: responsabiliteForm.idResponsabilite || undefined,
+      libelleResponsabilite: responsabiliteForm.libelleResponsabilite.trim(),
+      descriptionResponsabilite: responsabiliteForm.descriptionResponsabilite.trim(),
+      idUtilisateur: currentAccountId,
+    };
+
+    try {
+      setIsSavingResponsabilite(true);
+      if (responsabiliteForm.idResponsabilite) {
+        await apiClient.updateResponsabilite(payload);
+        showNotification('Responsabilite mise a jour avec succes.', 'success');
+      } else {
+        await apiClient.createResponsabilite(payload);
+        showNotification('Responsabilite creee avec succes.', 'success');
+      }
+
+      handleResetResponsabiliteForm();
+      await loadResponsabilites();
+    } catch (error: any) {
+      showNotification(error?.message || 'Impossible de sauvegarder cette responsabilite.', 'error');
+    } finally {
+      setIsSavingResponsabilite(false);
+    }
+  }, [currentAccountId, handleResetResponsabiliteForm, loadResponsabilites, responsabiliteForm, showNotification]);
+
+  const handleResetSecondaryUserForm = useCallback(() => {
+    setSecondaryUserForm(emptySecondaryUserForm);
+  }, []);
+
+  const handleTogglePermission = useCallback((permission: ModulePermissionKey) => {
+    if (permission === 'dashboard') {
+      return;
+    }
+
+    setSecondaryUserForm((prev) => {
+      const exists = prev.permissions.includes(permission);
+      return {
+        ...prev,
+        permissions: normalizePermissions(
+          exists
+            ? prev.permissions.filter((item) => item !== permission)
+            : [...prev.permissions, permission]
+        ),
+      };
+    });
+  }, []);
+
+  const handleEditSecondaryUser = useCallback((user: IUtilisateur) => {
+    setSecondaryUserForm(buildSecondaryUserFormFromEntity(user));
+  }, []);
+
+  const handleOpenResetSecondaryPassword = useCallback((user: IUtilisateur) => {
+    setResetPasswordUser(user);
+    setResetPasswordForm(emptyResetSecondaryPasswordForm);
+  }, []);
+
+  const handleCloseResetSecondaryPassword = useCallback(() => {
+    if (isResettingSecondaryPassword) {
+      return;
+    }
+
+    setResetPasswordUser(null);
+    setResetPasswordForm(emptyResetSecondaryPasswordForm);
+  }, [isResettingSecondaryPassword]);
+
+  const handleSaveSecondaryUser = useCallback(async () => {
+    if (!canManageSecondaryUsers) {
+      showNotification("Cette action est reservee a l'administrateur principal.", 'warning');
+      return;
+    }
+
+    if (!secondaryUserForm.nomUtilisateur.trim()) {
+      showNotification('Le nom utilisateur est requis.', 'warning');
+      return;
+    }
+
+    if (!secondaryUserForm.prenomUtilisateur.trim()) {
+      showNotification("Le prenom de l'utilisateur est requis.", 'warning');
+      return;
+    }
+
+    if (!isEditingSecondaryUser && secondaryUserCount >= 5) {
+      showNotification('Le maximum de 5 utilisateurs secondaires a deja ete atteint.', 'warning');
+      return;
+    }
+
+    if (!isEditingSecondaryUser && !secondaryUserForm.password.trim()) {
+      showNotification('Le mot de passe du nouvel utilisateur est requis.', 'warning');
+      return;
+    }
+
+    if ((secondaryUserForm.password || secondaryUserForm.confirmPassword)
+      && secondaryUserForm.password !== secondaryUserForm.confirmPassword) {
+      showNotification('La confirmation du mot de passe ne correspond pas.', 'warning');
+      return;
+    }
+
+    const existingSecondaryUser = secondaryUsers.find(
+      (item) => item.idUtilisateur === secondaryUserForm.idUtilisateur
+    );
+    const nextPassword = secondaryUserForm.password.trim()
+      ? secondaryUserForm.password.trim()
+      : existingSecondaryUser?.password || '';
+    const nextConfirmPassword = secondaryUserForm.password.trim()
+      ? secondaryUserForm.confirmPassword.trim() || secondaryUserForm.password.trim()
+      : existingSecondaryUser?.confirmPassword || existingSecondaryUser?.password || '';
+
+    const sharedChurchData = {
+      logoUtilisateur: '',
+      logoEglise: sessionUser?.logoEglise || '',
+      nomTemple: sessionUser?.nomTemple || '',
+      lieuEglise: sessionUser?.lieuEglise || '',
+      telephoneSecretariatEglise: sessionUser?.telephoneSecretariatEglise || '',
+      pasteurPrincipal: sessionUser?.pasteurPrincipal || '',
+      pasteurSecondaire: sessionUser?.pasteurSecondaire || '',
+      pasteurTroisieme: sessionUser?.pasteurTroisieme || '',
+      telephonePasteurPrincipal: sessionUser?.telephonePasteurPrincipal || '',
+      telephonePasteurSecondaire: sessionUser?.telephonePasteurSecondaire || '',
+      telephonePasteurTroisieme: sessionUser?.telephonePasteurTroisieme || '',
+      capaciteAccueilEglise: sessionUser?.capaciteAccueilEglise || '',
+      nombreCultesDimanche: sessionUser?.nombreCultesDimanche || '',
+      emailEglise: sessionUser?.emailEglise || '',
+      boitePostaleEglise: sessionUser?.boitePostaleEglise || '',
+      dateCreationEglise: sessionUser?.dateCreationEglise || '',
+      nombrePasteursEglise: sessionUser?.nombrePasteursEglise || '',
+      nombreAnciensEglise: sessionUser?.nombreAnciensEglise || '',
+      nombreDiacresEglise: sessionUser?.nombreDiacresEglise || '',
+    };
+
+    const payload = {
+      ...sharedChurchData,
+      idUtilisateur: secondaryUserForm.idUtilisateur || undefined,
+      idUtilisateurParent: currentAccountId,
+      nomUtilisateur: secondaryUserForm.nomUtilisateur.trim(),
+      prenomUtilisateur: secondaryUserForm.prenomUtilisateur.trim(),
+      telephoneUtilisateur: secondaryUserForm.telephoneUtilisateur.trim(),
+      email: secondaryUserForm.email.trim(),
+      password: nextPassword,
+      confirmPassword: nextConfirmPassword,
+      roleUtilisateur: secondaryUserForm.roleUtilisateur,
+      permissionsUtilisateur: stringifyPermissions(normalizePermissions(secondaryUserForm.permissions)),
+      actifUtilisateur: Number(secondaryUserForm.actifUtilisateur || 1),
+    };
+
+    try {
+      setIsSavingSecondaryUser(true);
+      if (isEditingSecondaryUser && secondaryUserForm.idUtilisateur) {
+        await apiClient.post('communaute/modifierutilisateur', payload);
+        showNotification('Utilisateur secondaire mis a jour avec succes.', 'success');
+      } else {
+        await apiClient.post('communaute/ajouterutilisateur', payload);
+        showNotification('Utilisateur secondaire cree avec succes.', 'success');
+      }
+
+      handleResetSecondaryUserForm();
+      await loadSecondaryUsers();
+    } catch (error: any) {
+      showNotification(error?.message || 'Impossible de sauvegarder cet utilisateur.', 'error');
+    } finally {
+      setIsSavingSecondaryUser(false);
+    }
+  }, [
+    canManageSecondaryUsers,
+    currentAccountId,
+    handleResetSecondaryUserForm,
+    isEditingSecondaryUser,
+    loadSecondaryUsers,
+    secondaryUserCount,
+    secondaryUserForm,
+    secondaryUsers,
+    sessionUser,
+    showNotification,
+  ]);
+
+  const handleResetSecondaryPassword = useCallback(async () => {
+    if (!canManageSecondaryUsers) {
+      showNotification("Cette action est reservee a l'administrateur principal.", 'warning');
+      return;
+    }
+
+    if (!resetPasswordUser?.idUtilisateur) {
+      showNotification('Utilisateur secondaire introuvable.', 'warning');
+      return;
+    }
+
+    if (!resetPasswordForm.password.trim()) {
+      showNotification('Le nouveau mot de passe est requis.', 'warning');
+      return;
+    }
+
+    if (resetPasswordForm.password !== resetPasswordForm.confirmPassword) {
+      showNotification('La confirmation du mot de passe ne correspond pas.', 'warning');
+      return;
+    }
+
+    const sharedChurchData = {
+      logoUtilisateur: '',
+      logoEglise: sessionUser?.logoEglise || '',
+      nomTemple: sessionUser?.nomTemple || '',
+      lieuEglise: sessionUser?.lieuEglise || '',
+      telephoneSecretariatEglise: sessionUser?.telephoneSecretariatEglise || '',
+      pasteurPrincipal: sessionUser?.pasteurPrincipal || '',
+      pasteurSecondaire: sessionUser?.pasteurSecondaire || '',
+      pasteurTroisieme: sessionUser?.pasteurTroisieme || '',
+      telephonePasteurPrincipal: sessionUser?.telephonePasteurPrincipal || '',
+      telephonePasteurSecondaire: sessionUser?.telephonePasteurSecondaire || '',
+      telephonePasteurTroisieme: sessionUser?.telephonePasteurTroisieme || '',
+      capaciteAccueilEglise: sessionUser?.capaciteAccueilEglise || '',
+      nombreCultesDimanche: sessionUser?.nombreCultesDimanche || '',
+      emailEglise: sessionUser?.emailEglise || '',
+      boitePostaleEglise: sessionUser?.boitePostaleEglise || '',
+      dateCreationEglise: sessionUser?.dateCreationEglise || '',
+      nombrePasteursEglise: sessionUser?.nombrePasteursEglise || '',
+      nombreAnciensEglise: sessionUser?.nombreAnciensEglise || '',
+      nombreDiacresEglise: sessionUser?.nombreDiacresEglise || '',
+    };
+
+    const payload = {
+      ...sharedChurchData,
+      idUtilisateur: resetPasswordUser.idUtilisateur,
+      idUtilisateurParent: currentAccountId,
+      nomUtilisateur: resetPasswordUser.nomUtilisateur || '',
+      prenomUtilisateur: resetPasswordUser.prenomUtilisateur || '',
+      telephoneUtilisateur: resetPasswordUser.telephoneUtilisateur || '',
+      email: resetPasswordUser.email || '',
+      password: resetPasswordForm.password.trim(),
+      confirmPassword: resetPasswordForm.confirmPassword.trim(),
+      roleUtilisateur: getUserRole(resetPasswordUser) === 'lecteur' ? 'lecteur' : 'gestionnaire',
+      permissionsUtilisateur: stringifyPermissions(
+        normalizePermissions(parsePermissions(resetPasswordUser.permissionsUtilisateur))
+      ),
+      actifUtilisateur: Number(resetPasswordUser.actifUtilisateur || 1),
+    };
+
+    try {
+      setIsResettingSecondaryPassword(true);
+      await apiClient.post('communaute/modifierutilisateur', payload);
+      showNotification('Mot de passe reinitialise avec succes.', 'success');
+      setResetPasswordUser(null);
+      setResetPasswordForm(emptyResetSecondaryPasswordForm);
+      await loadSecondaryUsers();
+    } catch (error: any) {
+      showNotification(error?.message || 'Impossible de reinitialiser ce mot de passe.', 'error');
+    } finally {
+      setIsResettingSecondaryPassword(false);
+    }
+  }, [
+    canManageSecondaryUsers,
+    currentAccountId,
+    loadSecondaryUsers,
+    resetPasswordForm,
+    resetPasswordUser,
+    sessionUser,
+    showNotification,
+  ]);
+
+  const handleConfirmDeleteSecondaryUser = useCallback(async () => {
+    if (!deletingSecondaryUser?.idUtilisateur) {
+      return;
+    }
+
+    try {
+      setIsDeletingSecondaryUser(true);
+      await apiClient.post('communaute/supprimerutilisateur', {
+        idUtilisateur: deletingSecondaryUser.idUtilisateur,
+      });
+      if (secondaryUserForm.idUtilisateur === deletingSecondaryUser.idUtilisateur) {
+        handleResetSecondaryUserForm();
+      }
+      showNotification('Utilisateur secondaire supprime avec succes.', 'success');
+      setDeletingSecondaryUser(null);
+      await loadSecondaryUsers();
+    } catch (error: any) {
+      showNotification(error?.message || 'Impossible de supprimer cet utilisateur.', 'error');
+    } finally {
+      setIsDeletingSecondaryUser(false);
+    }
+  }, [deletingSecondaryUser, handleResetSecondaryUserForm, loadSecondaryUsers, secondaryUserForm.idUtilisateur, showNotification]);
+
+  const handleConfirmDeleteResponsabilite = useCallback(async () => {
+    if (!deletingResponsabilite?.idResponsabilite) {
+      return;
+    }
+
+    try {
+      setIsDeletingResponsabilite(true);
+      await apiClient.deleteResponsabilite(deletingResponsabilite.idResponsabilite);
+      if (responsabiliteForm.idResponsabilite === deletingResponsabilite.idResponsabilite) {
+        handleResetResponsabiliteForm();
+      }
+      showNotification('Responsabilite supprimee avec succes.', 'success');
+      setDeletingResponsabilite(null);
+      await loadResponsabilites();
+    } catch (error: any) {
+      showNotification(
+        error?.message || 'Impossible de supprimer cette responsabilite. Elle est peut-etre deja utilisee par un membre.',
+        'error'
+      );
+    } finally {
+      setIsDeletingResponsabilite(false);
+    }
+  }, [
+    deletingResponsabilite,
+    handleResetResponsabiliteForm,
+    loadResponsabilites,
+    responsabiliteForm.idResponsabilite,
+    showNotification,
+  ]);
 
   return (
     <DashboardContent>
@@ -482,6 +1092,65 @@ export function SettingsView() {
           </Typography>
         </Box>
 
+        {isFixedDesktopSuperAdmin && (
+          <Card>
+            <CardContent>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="h6">
+                    Compte a rebours avant blocage
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Visible uniquement pour le superadmin fixe connecte.
+                  </Typography>
+                </Box>
+
+                {desktopCountdown ? (
+                  <>
+                    <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                      {[
+                        { label: 'Jours', value: desktopCountdown.days },
+                        { label: 'Heures', value: desktopCountdown.hours },
+                        { label: 'Minutes', value: desktopCountdown.minutes },
+                        { label: 'Secondes', value: desktopCountdown.seconds },
+                      ].map((item) => (
+                        <Box
+                          key={item.label}
+                          sx={{
+                            minWidth: 96,
+                            px: 1.5,
+                            py: 1.25,
+                            borderRadius: 2,
+                            bgcolor: 'background.neutral',
+                            textAlign: 'center',
+                          }}
+                        >
+                          <Typography variant="h5" fontWeight={800}>
+                            {String(item.value).padStart(2, '0')}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {item.label}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+
+                    {desktopCountdown.isExpired && (
+                      <Alert severity="warning">
+                        La licence est arrivee a expiration. Debloque le desktop pour relancer une nouvelle periode.
+                      </Alert>
+                    )}
+                  </>
+                ) : (
+                  <Alert severity="info">
+                    Chargement du compte a rebours de la licence desktop...
+                  </Alert>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader
             avatar={<AccountCircleRounded color="primary" />}
@@ -493,9 +1162,11 @@ export function SettingsView() {
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField
                   fullWidth
-                  label="Nom"
+                  label="Nom utilisateur"
                   value={profileForm.nomUtilisateur}
                   onChange={(event) => handleChangeProfileField('nomUtilisateur', event.target.value)}
+                  disabled={isFixedDesktopSuperAdmin}
+                  helperText={isFixedDesktopSuperAdmin ? 'Le superadmin fixe se configure cote serveur.' : ''}
                 />
                 <TextField
                   fullWidth
@@ -519,6 +1190,49 @@ export function SettingsView() {
                   onChange={(event) => handleChangeProfileField('email', event.target.value)}
                 />
               </Stack>
+
+              {isFixedDesktopSuperAdmin ? (
+                <Alert severity="info">
+                  Les identifiants du superadmin fixe se modifient dans la configuration backend, pas dans le profil.
+                </Alert>
+              ) : (
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <TextField
+                    fullWidth
+                    type="password"
+                    label="Nouveau mot de passe"
+                    value={profileForm.password}
+                    onChange={(event) => handleChangeProfileField('password', event.target.value)}
+                    helperText="Laisse vide pour conserver le mot de passe actuel."
+                  />
+                  <TextField
+                    fullWidth
+                    type="password"
+                    label="Confirmer le nouveau mot de passe"
+                    value={profileForm.confirmPassword}
+                    onChange={(event) => handleChangeProfileField('confirmPassword', event.target.value)}
+                    error={Boolean(profileForm.confirmPassword && profileForm.password !== profileForm.confirmPassword)}
+                    helperText={
+                      profileForm.confirmPassword && profileForm.password !== profileForm.confirmPassword
+                        ? 'La confirmation ne correspond pas.'
+                        : 'Confirme uniquement si tu changes le mot de passe.'
+                    }
+                  />
+                </Stack>
+              )}
+
+              {!isFixedDesktopSuperAdmin && (
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <Button
+                    variant="contained"
+                    startIcon={<SaveRounded />}
+                    onClick={handleSaveProfile}
+                    disabled={isSavingProfile}
+                  >
+                    {isSavingProfile ? 'Enregistrement...' : 'Enregistrer les identifiants'}
+                  </Button>
+                </Stack>
+              )}
             </Stack>
           </CardContent>
         </Card>
@@ -744,6 +1458,325 @@ export function SettingsView() {
           </CardContent>
         </Card>
 
+
+        <Card>
+          <CardHeader
+            avatar={<GroupAddRounded color="primary" />}
+            title="Responsabilites"
+            subheader="Ces responsabilites alimentent le select des membres et sont enregistrees dans la base de donnees."
+          />
+          <CardContent>
+            <Stack spacing={3}>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                <TextField
+                  fullWidth
+                  label="Libelle"
+                  value={responsabiliteForm.libelleResponsabilite}
+                  onChange={(event) => handleChangeResponsabiliteField('libelleResponsabilite', event.target.value)}
+                />
+                <TextField
+                  fullWidth
+                  label="Description"
+                  value={responsabiliteForm.descriptionResponsabilite}
+                  onChange={(event) => handleChangeResponsabiliteField('descriptionResponsabilite', event.target.value)}
+                />
+              </Stack>
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Button
+                  variant="contained"
+                  startIcon={<SaveRounded />}
+                  onClick={handleSaveResponsabilite}
+                  disabled={isSavingResponsabilite}
+                >
+                  {isSavingResponsabilite
+                    ? 'Enregistrement...'
+                    : isEditingResponsabilite
+                      ? 'Modifier la responsabilite'
+                      : 'Ajouter la responsabilite'}
+                </Button>
+                <Button variant="outlined" onClick={handleResetResponsabiliteForm} disabled={isSavingResponsabilite}>
+                  Reinitialiser
+                </Button>
+              </Stack>
+
+              {loadingResponsabilites ? (
+                <Alert severity="info">Chargement des responsabilites...</Alert>
+              ) : responsabilites.length === 0 ? (
+                <Alert severity="info">Aucune responsabilite n&apos;a encore ete creee pour cette eglise.</Alert>
+              ) : (
+                <Stack spacing={1.5}>
+                  {responsabilites.map((responsabilite) => (
+                    <Card key={responsabilite.idResponsabilite} variant="outlined" sx={{ borderRadius: 3 }}>
+                      <CardContent>
+                        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between">
+                          <Box>
+                            <Typography variant="subtitle1" fontWeight={700}>
+                              {responsabilite.libelleResponsabilite}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {responsabilite.descriptionResponsabilite || 'Aucune description'}
+                            </Typography>
+                          </Box>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<EditRounded />}
+                              onClick={() => handleEditResponsabilite(responsabilite)}
+                            >
+                              Modifier
+                            </Button>
+                            <Button
+                              size="small"
+                              color="error"
+                              variant="outlined"
+                              startIcon={<DeleteRounded />}
+                              onClick={() => setDeletingResponsabilite(responsabilite)}
+                            >
+                              Supprimer
+                            </Button>
+                          </Stack>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+
+
+        {canManageSecondaryUsers && (
+          <Card>
+            <CardHeader
+              avatar={<GroupAddRounded color="primary" />}
+              title="Utilisateurs et droits d'acces"
+              subheader="Creer jusqu'a 5 utilisateurs secondaires relies a cette eglise. Les acces determinent les onglets visibles, et le role lecteur bloque les actions d'ecriture."
+            />
+            <CardContent>
+              <Stack spacing={3}>
+                <Stack direction={{ xs: 'column', xl: 'row' }} spacing={3} alignItems="stretch">
+                  <Stack spacing={2} sx={{ flex: 1, minWidth: 0 }}>
+                    <Alert severity="info">
+                      Utilisateurs secondaires crees : {secondaryUserCount} / 5. Le dashboard reste toujours accessible pour eviter de bloquer une session apres connexion.
+                    </Alert>
+
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                      <TextField
+                        fullWidth
+                        label="Nom utilisateur"
+                        value={secondaryUserForm.nomUtilisateur}
+                        onChange={(event) => handleChangeSecondaryUserField('nomUtilisateur', event.target.value)}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Prenom"
+                        value={secondaryUserForm.prenomUtilisateur}
+                        onChange={(event) => handleChangeSecondaryUserField('prenomUtilisateur', event.target.value)}
+                      />
+                    </Stack>
+
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                      <TextField
+                        fullWidth
+                        label="Telephone"
+                        value={secondaryUserForm.telephoneUtilisateur}
+                        onChange={(event) => handleChangeSecondaryUserField('telephoneUtilisateur', event.target.value)}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Email"
+                        value={secondaryUserForm.email}
+                        onChange={(event) => handleChangeSecondaryUserField('email', event.target.value)}
+                      />
+                    </Stack>
+
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                      <TextField
+                        fullWidth
+                        type="password"
+                        label={isEditingSecondaryUser ? 'Nouveau mot de passe (facultatif)' : 'Mot de passe'}
+                        value={secondaryUserForm.password}
+                        onChange={(event) => handleChangeSecondaryUserField('password', event.target.value)}
+                      />
+                      <TextField
+                        fullWidth
+                        type="password"
+                        label={isEditingSecondaryUser ? 'Confirmer le nouveau mot de passe' : 'Confirmer le mot de passe'}
+                        value={secondaryUserForm.confirmPassword}
+                        onChange={(event) => handleChangeSecondaryUserField('confirmPassword', event.target.value)}
+                      />
+                    </Stack>
+
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                      <TextField
+                        select
+                        fullWidth
+                        label="Role"
+                        value={secondaryUserForm.roleUtilisateur}
+                        onChange={(event) => handleChangeSecondaryUserField('roleUtilisateur', event.target.value)}
+                      >
+                        {roleOptions.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+
+                      <TextField
+                        select
+                        fullWidth
+                        label="Statut"
+                        value={String(secondaryUserForm.actifUtilisateur)}
+                        onChange={(event) => handleChangeSecondaryUserField('actifUtilisateur', Number(event.target.value))}
+                      >
+                        <MenuItem value="1">Actif</MenuItem>
+                        <MenuItem value="0">Bloque</MenuItem>
+                      </TextField>
+                    </Stack>
+
+                    <Stack spacing={1}>
+                      <Typography variant="subtitle2">Permissions par onglet</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Le role <strong>gestionnaire</strong> peut agir dans les modules choisis. Le role <strong>lecteur</strong> peut seulement consulter les modules choisis.
+                      </Typography>
+                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                        {ALL_MODULE_PERMISSIONS.map((permission) => {
+                          const isSelected = secondaryUserForm.permissions.includes(permission);
+                          const isLocked = permission === 'dashboard';
+
+                          return (
+                            <Chip
+                              key={permission}
+                              label={MODULE_PERMISSION_LABELS[permission]}
+                              color={isSelected ? 'primary' : 'default'}
+                              variant={isSelected ? 'filled' : 'outlined'}
+                              onClick={isLocked ? undefined : () => handleTogglePermission(permission)}
+                              icon={isLocked ? <LockPersonRounded /> : undefined}
+                              sx={{ cursor: isLocked ? 'default' : 'pointer' }}
+                            />
+                          );
+                        })}
+                      </Stack>
+                    </Stack>
+
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                      <Button
+                        variant="contained"
+                        startIcon={<SaveRounded />}
+                        onClick={handleSaveSecondaryUser}
+                        disabled={isSavingSecondaryUser}
+                      >
+                        {isSavingSecondaryUser
+                          ? 'Enregistrement...'
+                          : isEditingSecondaryUser
+                            ? "Mettre a jour l'utilisateur"
+                            : "Creer l'utilisateur"}
+                      </Button>
+                      <Button variant="outlined" onClick={handleResetSecondaryUserForm} disabled={isSavingSecondaryUser}>
+                        Reinitialiser
+                      </Button>
+                    </Stack>
+                  </Stack>
+
+                  <Stack spacing={1.5} sx={{ width: { xs: '100%', xl: 360 }, minWidth: { xs: '100%', xl: 360 } }}>
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      Utilisateurs secondaires
+                    </Typography>
+                    {loadingSecondaryUsers ? (
+                      <Alert severity="info">Chargement des utilisateurs...</Alert>
+                    ) : secondaryUsers.length === 0 ? (
+                      <Alert severity="info">Aucun utilisateur secondaire n&apos;a encore ete cree pour cette eglise.</Alert>
+                    ) : (
+                      secondaryUsers.map((user) => {
+                        const permissions = normalizePermissions(parsePermissions(user.permissionsUtilisateur));
+                        return (
+                          <Card key={user.idUtilisateur} variant="outlined" sx={{ borderRadius: 3 }}>
+                            <CardContent>
+                              <Stack spacing={1.5}>
+                                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+                                  <Box>
+                                    <Typography variant="subtitle1" fontWeight={700}>
+                                      {user.prenomUtilisateur || 'Utilisateur'} {user.nomUtilisateur}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      {user.email || 'Email non renseigne'}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {user.telephoneUtilisateur || 'Telephone non renseigne'}
+                                    </Typography>
+                                  </Box>
+                                  <Chip
+                                    size="small"
+                                    color={Number(user.actifUtilisateur || 1) === 1 ? 'success' : 'default'}
+                                    label={Number(user.actifUtilisateur || 1) === 1 ? 'Actif' : 'Bloque'}
+                                  />
+                                </Stack>
+
+                                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                                  <Chip
+                                    size="small"
+                                    color={getUserRole(user) === 'lecteur' ? 'warning' : 'primary'}
+                                    label={getUserRole(user) === 'lecteur' ? 'Lecteur' : 'Gestionnaire'}
+                                  />
+                                  {permissions.map((permission) => (
+                                    <Chip
+                                      key={`${user.idUtilisateur}${permission}`}
+                                      size="small"
+                                      variant="outlined"
+                                      label={MODULE_PERMISSION_LABELS[permission]}
+                                    />
+                                  ))}
+                                </Stack>
+
+                                <Stack direction="row" spacing={1}>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<EditRounded />}
+                                    onClick={() => handleEditSecondaryUser(user)}
+                                  >
+                                    Modifier
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<LockResetRounded />}
+                                    onClick={() => handleOpenResetSecondaryPassword(user)}
+                                  >
+                                    Mot de passe
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    color="error"
+                                    variant="outlined"
+                                    startIcon={<DeleteRounded />}
+                                    onClick={() => setDeletingSecondaryUser(user)}
+                                  >
+                                    Supprimer
+                                  </Button>
+                                </Stack>
+                              </Stack>
+                            </CardContent>
+                          </Card>
+                        );
+                      })
+                    )}
+                  </Stack>
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
+
+        {!canManageSecondaryUsers && !isFixedDesktopSuperAdmin && (
+          <Alert severity="info">
+            La creation des utilisateurs secondaires est reservee a l&apos;administrateur principal de cette eglise.
+          </Alert>
+        )}
+
         <Divider />
 
         <Card>
@@ -871,8 +1904,98 @@ export function SettingsView() {
           </Card>
         )}
 
+        <ConfirmDialog
+          open={Boolean(deletingSecondaryUser)}
+          title="Supprimer cet utilisateur secondaire"
+          message={`L'utilisateur ${deletingSecondaryUser?.nomUtilisateur || ''} sera retire de cette eglise.`}
+          confirmText="Supprimer"
+          loading={isDeletingSecondaryUser}
+          onConfirm={handleConfirmDeleteSecondaryUser}
+          onClose={() => setDeletingSecondaryUser(null)}
+        />
+
+        <ConfirmDialog
+          open={Boolean(deletingResponsabilite)}
+          title="Supprimer cette responsabilite"
+          message={`La responsabilite ${deletingResponsabilite?.libelleResponsabilite || ''} sera supprimee si elle n'est pas utilisee.`}
+          confirmText="Supprimer"
+          loading={isDeletingResponsabilite}
+          onConfirm={handleConfirmDeleteResponsabilite}
+          onClose={() => setDeletingResponsabilite(null)}
+        />
+
+        <Dialog
+          open={Boolean(resetPasswordUser)}
+          onClose={handleCloseResetSecondaryPassword}
+          fullWidth
+          maxWidth="xs"
+        >
+          <DialogTitle>Reinitialiser le mot de passe</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <Alert severity="info">
+                Cette action est visible uniquement par l&apos;administrateur principal. Elle remplace le mot de passe de{' '}
+                <strong>
+                  {resetPasswordUser?.prenomUtilisateur || 'cet utilisateur'} {resetPasswordUser?.nomUtilisateur || ''}
+                </strong>
+                .
+              </Alert>
+              <TextField
+                autoFocus
+                fullWidth
+                type="password"
+                label="Nouveau mot de passe"
+                value={resetPasswordForm.password}
+                onChange={(event) =>
+                  setResetPasswordForm((prev) => ({ ...prev, password: event.target.value }))
+                }
+              />
+              <TextField
+                fullWidth
+                type="password"
+                label="Confirmer le mot de passe"
+                value={resetPasswordForm.confirmPassword}
+                error={Boolean(
+                  resetPasswordForm.confirmPassword
+                  && resetPasswordForm.password !== resetPasswordForm.confirmPassword
+                )}
+                helperText={
+                  resetPasswordForm.confirmPassword
+                  && resetPasswordForm.password !== resetPasswordForm.confirmPassword
+                    ? 'La confirmation ne correspond pas.'
+                    : ' '
+                }
+                onChange={(event) =>
+                  setResetPasswordForm((prev) => ({ ...prev, confirmPassword: event.target.value }))
+                }
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseResetSecondaryPassword} disabled={isResettingSecondaryPassword}>
+              Annuler
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleResetSecondaryPassword}
+              disabled={isResettingSecondaryPassword}
+            >
+              {isResettingSecondaryPassword ? 'Reinitialisation...' : 'Reinitialiser'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <NotificationComponent />
       </Stack>
     </DashboardContent>
   );
 }
+
+
+
+
+
+
+
+
+

@@ -38,7 +38,6 @@ import { useNotificationSnackbar } from 'src/components/alert/notificationSnackb
 import { 
   IMembre, 
   dataNiveauEtude,
-  dataResponsabilite,
   dataCivilite,
   dataGenre,
   dataSituationMembre,
@@ -46,12 +45,15 @@ import {
   dataBapteme,
   dataCapaciteSpirituelle,
   setDataModifiesMembre,
+  setListResponsabilite,
 } from '../../../../store/membreSlice';
 import { setListDepartement } from '../../../../store/departementSlice';
 import { setListCellule } from '../../../../store/celluleSlice';
 import { setListGroupe } from '../../../../store/groupeSlice';
 
 // ----------------------------------------------------------------------
+
+const isYesValue = (value: unknown): boolean => String(value ?? '').trim() === '1';
 
 export function UserEditView() {
   const { id } = useParams<{ id: string }>();
@@ -75,7 +77,10 @@ export function UserEditView() {
   const listGroupe = useSelector((state: any) => state.groupe.listGroupe);
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
-  const currentUserId = Number(appUserConnected?.idUtilisateur) || Number(authUtilisateurData?.idUtilisateur) || null;
+  const currentUserId =
+    Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
+    || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
+    || null;
 
   // Les listes dynamiques evitent de maintenir des options statiques cote front.
   const departementOptions = Array.isArray(listDepartement) && listDepartement.length > 0
@@ -89,7 +94,7 @@ export function UserEditView() {
     : [];
   const responsabiliteOptions = Array.isArray(listResponsabilite) && listResponsabilite.length > 0
     ? listResponsabilite.map((item: any) => ({ value: item.idResponsabilite, label: item.libelleResponsabilite }))
-    : dataResponsabilite;
+    : [];
 
   // Les champs `select` de MUI manipulent ici des valeurs de formulaire sous
   // forme de chaines. Cette fonction normalise donc les donnees venant de
@@ -102,10 +107,11 @@ export function UserEditView() {
       if (!currentUserId) return;
 
       try {
-        const [departementsResponse, cellulesResponse, groupesResponse] = await Promise.all([
+        const [departementsResponse, cellulesResponse, groupesResponse, responsabilitesResponse] = await Promise.all([
           apiClient.getDepartementsByUtilisateur(currentUserId),
           apiClient.getCellulesByUtilisateur(currentUserId),
           apiClient.getGroupesByUtilisateur(currentUserId),
+          apiClient.getResponsabilites(),
         ]);
 
         if (departementsResponse.status === 1) {
@@ -117,8 +123,14 @@ export function UserEditView() {
         if (groupesResponse.status === 1) {
           dispatch(setListGroupe(Array.isArray(groupesResponse.data) ? groupesResponse.data : []));
         }
+        if (responsabilitesResponse.status === 1) {
+          const responsabilites = Array.isArray(responsabilitesResponse.data)
+            ? responsabilitesResponse.data.filter((item: any) => Number(item.idUtilisateur) === Number(currentUserId))
+            : [];
+          dispatch(setListResponsabilite(responsabilites));
+        }
       } catch (error) {
-        console.error('Erreur de chargement des listes li�es au membre:', error);
+        console.error('Erreur de chargement des listes li�es au membre:', error);
       }
     };
 
@@ -266,6 +278,19 @@ export function UserEditView() {
       return;
     }
 
+    if (isYesValue(formData.baptemeEauMembre) && !String(formData.dateBaptemeMembre || '').trim()) {
+      showNotification("La date du bapteme d'eau est requise", 'warning');
+      return;
+    }
+
+    if (
+      isYesValue(formData.baptemeSaintEspritMembre)
+      && !String(formData.dateBaptemeSaintEspritMembre || '').trim()
+    ) {
+      showNotification('La date du bapteme du Saint-Esprit est requise', 'warning');
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -273,6 +298,7 @@ export function UserEditView() {
       const cleanedData = {
         ...formData,
         idMembre: membre.idMembre,
+        idUtilisateur: Number(membre.idUtilisateur || currentUserId || 0) || null,
         // Convertir les chaînes vides en null pour l'API
         idNiveauEtude: formData.idNiveauEtude ? Number(formData.idNiveauEtude) : null,
         idCellule: formData.idCellule ? Number(formData.idCellule) : null,
@@ -353,6 +379,9 @@ export function UserEditView() {
       </DashboardContent>
     );
   }
+
+  const isWaterBaptismSelected = isYesValue(formData.baptemeEauMembre);
+  const isSpiritBaptismSelected = isYesValue(formData.baptemeSaintEspritMembre);
 
   return (
     <DashboardContent>
@@ -753,27 +782,32 @@ export function UserEditView() {
               </TextField>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Date du baptême d&apos;eau"
-                name="dateBaptemeMembre"
-                value={formData.dateBaptemeMembre || ''}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+            {isWaterBaptismSelected && (
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  required
+                  type="date"
+                  label="Date du bapteme d'eau"
+                  name="dateBaptemeMembre"
+                  value={formData.dateBaptemeMembre || ''}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+            )}
 
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="Lieu du baptême"
-                name="lieuBaptemeEauMembre"
-                value={formData.lieuBaptemeEauMembre || ''}
-                onChange={handleChange}
-              />
-            </Grid>
+            {isWaterBaptismSelected && (
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label="Lieu du bapteme"
+                  name="lieuBaptemeEauMembre"
+                  value={formData.lieuBaptemeEauMembre || ''}
+                  onChange={handleChange}
+                />
+              </Grid>
+            )}
 
             <Grid item xs={12} sm={6} md={4}>
               <TextField
@@ -792,17 +826,20 @@ export function UserEditView() {
               </TextField>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Date du baptême Saint-Esprit"
-                name="dateBaptemeSaintEspritMembre"
-                value={formData.dateBaptemeSaintEspritMembre || ''}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+            {isSpiritBaptismSelected && (
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  required
+                  type="date"
+                  label="Date du bapteme Saint-Esprit"
+                  name="dateBaptemeSaintEspritMembre"
+                  value={formData.dateBaptemeSaintEspritMembre || ''}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+            )}
             <Grid item xs={12} sm={6} md={4}>
               <TextField
                 fullWidth

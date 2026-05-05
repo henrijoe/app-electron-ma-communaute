@@ -1,21 +1,23 @@
+import type { IReduxState } from 'src/store/store';
+
 import React from 'react';
 import { useSelector } from 'react-redux';
+
 import {
   Box,
-  Divider,
-  GlobalStyles,
   Stack,
   Table,
+  Divider,
+  TableRow,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
-  TableRow,
   Typography,
+  GlobalStyles,
+  TableContainer,
 } from '@mui/material';
 
 import { buildChurchLogoUrl } from 'src/utils/apiClient';
-import type { IReduxState } from 'src/store/store';
 import { resolveStaticAssetUrl } from 'src/utils/asset-url';
 
 type PrintIdentity = {
@@ -51,6 +53,8 @@ type PrintDocumentLayoutProps = {
   countLabel?: string;
   countValue?: number;
   variant?: 'default' | 'plain';
+  showDocumentMeta?: boolean;
+  showPagination?: boolean;
   children: React.ReactNode;
 };
 
@@ -64,6 +68,16 @@ type PrintEmptyStateProps = {
   message: string;
 };
 
+type PrintHeaderProps = {
+  identity: PrintIdentity;
+  logoUrl: string | null;
+};
+
+type PrintFooterProps = {
+  contactLine: string;
+  showPagination: boolean;
+};
+
 const joinAvailableValues = (...values: Array<string | undefined>): string =>
   values
     .map((value) => String(value || '').trim())
@@ -71,25 +85,98 @@ const joinAvailableValues = (...values: Array<string | undefined>): string =>
     .join(' - ');
 
 const getPrintableLogoUrl = (identity?: PrintIdentity): string | null => {
-  // On ignore les logos absents pour garder un rendu propre sans image cassée.
   const logoPath = identity?.logoEglise || identity?.logoUtilisateur;
 
   if (!logoPath) {
     return null;
   }
 
-  // Les logos deja absolus ou embarques peuvent etre utilises directement.
   if (/^(https?:|data:|blob:|file:)/i.test(logoPath)) {
     return logoPath;
   }
 
-  // Les logos du bundle front doivent etre resolus contre la base Vite/Electron.
   if (identity?.logoEglise && logoPath === identity.logoEglise) {
     return buildChurchLogoUrl(logoPath);
   }
 
   return resolveStaticAssetUrl(logoPath);
 };
+
+function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: '88px minmax(0, 1fr)',
+        alignItems: 'center',
+        gap: 2,
+        pb: 1.75,
+        mb: 2.25,
+        borderBottom: '2px solid #0f274a',
+      }}
+    >
+      <Box
+        sx={{
+          width: 78,
+          height: 78,
+          borderRadius: 2,
+          border: '1px solid rgba(15, 39, 74, 0.16)',
+          backgroundColor: '#ffffff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          p: 0.75,
+        }}
+      >
+        {logoUrl ? (
+          <Box
+            component="img"
+            src={logoUrl}
+            alt="Logo eglise"
+            sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+          />
+        ) : (
+          <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f274a' }}>
+            MC
+          </Typography>
+        )}
+      </Box>
+
+      <Typography variant="h4" sx={{ fontWeight: 900, lineHeight: 1.05, color: '#0f274a' }}>
+        {identity.nomTemple || 'Communaute locale'}
+      </Typography>
+    </Box>
+  );
+}
+
+function PrintFooter({ contactLine, showPagination }: PrintFooterProps) {
+  return (
+    <Box
+      className="print-page-footer"
+      sx={{
+        mt: 2,
+        pt: 1,
+        borderTop: '1px solid rgba(15, 39, 74, 0.12)',
+        color: '#5b6b7f',
+        fontSize: '0.72rem',
+      }}
+    >
+      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+        <Typography variant="caption" sx={{ color: 'inherit' }}>
+          {contactLine || "Document interne de l'eglise"}
+        </Typography>
+        {showPagination ? (
+          <Typography variant="caption" sx={{ color: 'inherit' }}>
+            Page <span className="print-page-current" />
+          </Typography>
+        ) : (
+          <Box />
+        )}
+      </Stack>
+    </Box>
+  );
+}
 
 export function PrintDocumentLayout({
   identity,
@@ -98,6 +185,8 @@ export function PrintDocumentLayout({
   countLabel = 'Total',
   countValue = 0,
   variant = 'default',
+  showDocumentMeta = true,
+  showPagination = false,
   children,
 }: PrintDocumentLayoutProps) {
   const userConnected = useSelector((state: IReduxState) => state.application.userConnected);
@@ -109,40 +198,17 @@ export function PrintDocumentLayout({
     ...(identity || {}),
   };
 
-  // On prepare l'eventuel logo pour le bandeau haut du document.
   const logoUrl = getPrintableLogoUrl(mergedIdentity);
-  // On capture la date de generation une seule fois pour tout le document.
-  const generatedAt = new Date().toLocaleString('fr-FR');
   const isPlainVariant = variant === 'plain';
-  const primaryContactLine = joinAvailableValues(
+  const footerContactLine = joinAvailableValues(
     mergedIdentity.lieuEglise,
     mergedIdentity.telephoneSecretariatEglise || mergedIdentity.telephoneUtilisateur,
     mergedIdentity.emailEglise || mergedIdentity.email,
     mergedIdentity.boitePostaleEglise
   );
-  const pastorsLine = joinAvailableValues(
-    mergedIdentity.pasteurPrincipal
-      ? `Pasteur principal: ${mergedIdentity.pasteurPrincipal}${mergedIdentity.telephonePasteurPrincipal ? ` (${mergedIdentity.telephonePasteurPrincipal})` : ''}`
-      : undefined,
-    mergedIdentity.pasteurSecondaire
-      ? `Pasteur secondaire: ${mergedIdentity.pasteurSecondaire}${mergedIdentity.telephonePasteurSecondaire ? ` (${mergedIdentity.telephonePasteurSecondaire})` : ''}`
-      : undefined,
-    mergedIdentity.pasteurTroisieme
-      ? `3eme pasteur: ${mergedIdentity.pasteurTroisieme}${mergedIdentity.telephonePasteurTroisieme ? ` (${mergedIdentity.telephonePasteurTroisieme})` : ''}`
-      : undefined
-  );
-  const churchStatsLine = joinAvailableValues(
-    mergedIdentity.dateCreationEglise ? `Creation: ${mergedIdentity.dateCreationEglise}` : undefined,
-    mergedIdentity.capaciteAccueilEglise ? `Capacite: ${mergedIdentity.capaciteAccueilEglise}` : undefined,
-    mergedIdentity.nombreCultesDimanche ? `Cultes dimanche: ${mergedIdentity.nombreCultesDimanche}` : undefined,
-    mergedIdentity.nombrePasteursEglise ? `Pasteurs: ${mergedIdentity.nombrePasteursEglise}` : undefined,
-    mergedIdentity.nombreAnciensEglise ? `Anciens: ${mergedIdentity.nombreAnciensEglise}` : undefined,
-    mergedIdentity.nombreDiacresEglise ? `Diacres: ${mergedIdentity.nombreDiacresEglise}` : undefined
-  );
 
   return (
     <>
-      {/* Regles globales d'impression: mode paysage et prevention des coupures de blocs. */}
       <GlobalStyles
         styles={{
           '@page': {
@@ -158,11 +224,26 @@ export function PrintDocumentLayout({
               breakInside: 'avoid',
               pageBreakInside: 'avoid',
             },
+            '.print-document-root': {
+              paddingBottom: '18mm',
+            },
+            '.print-page-footer': {
+              position: 'fixed',
+              left: '10mm',
+              right: '10mm',
+              bottom: '6mm',
+              marginTop: 0,
+              backgroundColor: '#ffffff',
+            },
+            '.print-page-current::after': {
+              content: 'counter(page)',
+            },
           },
         }}
       />
 
       <Box
+        className="print-document-root"
         data-count-label={countLabel}
         data-count-value={countValue}
         data-subtitle={subtitle || ''}
@@ -182,141 +263,65 @@ export function PrintDocumentLayout({
           },
         }}
       >
-      <Box
-        sx={{
-          position: 'relative',
-          overflow: 'hidden',
-          borderRadius: 6,
-          mb: 3,
-          boxShadow: '0 18px 34px rgba(15, 23, 42, 0.10)',
-          background:
-            'linear-gradient(135deg, rgba(5, 36, 79, 0.98) 0%, rgba(19, 110, 194, 0.94) 58%, rgba(44, 169, 225, 0.90) 100%)',
-          color: 'common.white',
-          
-        }}
-      >
+        <PrintHeader identity={mergedIdentity} logoUrl={logoUrl} />
+
         <Box
           sx={{
-            display: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            backgroundColor: isPlainVariant ? 'transparent' : 'common.white',
+            borderRadius: isPlainVariant ? 0 : 6,
+            p: isPlainVariant ? 0 : { xs: 3, md: 4 },
+            boxShadow: isPlainVariant ? 'none' : '0 18px 40px rgba(15, 23, 42, 0.08)',
+            border: isPlainVariant ? 'none' : '1px solid rgba(15, 23, 42, 0.08)',
           }}
-        />
-        <Stack direction="row" spacing={3} alignItems="center" justifyContent="space-between">
-          <Stack direction="row" spacing={2.5} alignItems="center">
-            <Box
-              sx={{
-                width: 72,
-                height: 72,
-                borderRadius: 3,
-                backgroundColor: 'rgba(255,255,255,0.12)',
-                border: '1px solid rgba(255,255,255,0.22)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-              }}
-            >
-              {logoUrl ? (
-                <Box
-                  component="img"
-                  src={logoUrl}
-                  alt="Logo"
-                  sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <Typography variant="h5" sx={{ fontWeight: 800 }}>
-                  MC
-                </Typography>
-              )}
-            </Box>
-
-            <Box>
-              <Typography variant="overline" sx={{ letterSpacing: 2, opacity: 0.85 }}>
-                Ma Communaute
-              </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
-                {mergedIdentity.nomTemple || 'Communaute locale'}
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 0.75, opacity: 0.92, maxWidth: 760 }}>
-                {primaryContactLine || "Document imprime depuis l'application de gestion communautaire."}
-              </Typography>
-              {pastorsLine && (
-                <Typography
-                  variant="caption"
-                  sx={{ mt: 0.75, opacity: 0.88, maxWidth: 760, display: 'block' }}
-                >
-                  {pastorsLine}
-                </Typography>
-              )}
-              {churchStatsLine && (
-                <Typography
-                  variant="caption"
-                  sx={{ mt: 0.5, opacity: 0.84, maxWidth: 760, display: 'block' }}
-                >
-                  {churchStatsLine}
-                </Typography>
-              )}
-            </Box>
-          </Stack>
-
-          <Stack spacing={1} alignItems="flex-end">
-            <Typography variant="caption" sx={{ opacity: 0.84 }}>
-              {generatedAt}
-            </Typography>
-          </Stack>
-        </Stack>
-      </Box>
-
-      <Box
-        sx={{
-          position: 'relative',
-          overflow: 'hidden',
-          backgroundColor: isPlainVariant ? 'transparent' : 'common.white',
-          borderRadius: isPlainVariant ? 0 : 6,
-          p: isPlainVariant ? 0 : { xs: 3, md: 4 },
-          boxShadow: isPlainVariant ? 'none' : '0 18px 40px rgba(15, 23, 42, 0.08)',
-          border: isPlainVariant ? 'none' : '1px solid rgba(15, 23, 42, 0.08)',
-        }}
-      >
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', md: 'center' }}
-          sx={{ mb: 1.5 }}
         >
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 900,
-                color: '#0f274a',
-                textTransform: 'uppercase',
-                letterSpacing: 0.8,
-              }}
-            >
-              {title}
-            </Typography>
-            {subtitle && (
-              <Typography variant="body2" sx={{ mt: 0.75, color: '#5b6b7f' }}>
-                {subtitle}
-              </Typography>
-            )}
-          </Box>
+          {showDocumentMeta && (
+            <>
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={2}
+                justifyContent="space-between"
+                alignItems={{ xs: 'flex-start', md: 'center' }}
+                sx={{ mb: 1.5 }}
+              >
+                <Box>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontWeight: 900,
+                      color: '#0f274a',
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.8,
+                    }}
+                  >
+                    {title}
+                  </Typography>
+                  {subtitle && (
+                    <Typography variant="body2" sx={{ mt: 0.75, color: '#5b6b7f' }}>
+                      {subtitle}
+                    </Typography>
+                  )}
+                </Box>
 
-          <Box sx={{ color: '#304760' }}>
-            <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>
-              {countLabel}
-            </Typography>
-            <Typography variant="h5" sx={{ fontWeight: 800 }}>
-              {countValue}
-            </Typography>
-          </Box>
-        </Stack>
+                <Box sx={{ color: '#304760' }}>
+                  <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                    {countLabel}
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                    {countValue}
+                  </Typography>
+                </Box>
+              </Stack>
 
-        <Divider sx={{ mb: 3 }} />
+              <Divider sx={{ mb: 3 }} />
+            </>
+          )}
 
-        {children}
-      </Box>
+          {children}
+        </Box>
+
+        <PrintFooter contactLine={footerContactLine} showPagination={showPagination} />
       </Box>
     </>
   );
@@ -402,4 +407,4 @@ export function PrintEmptyState({ title, message }: PrintEmptyStateProps) {
   );
 }
 
-export { TableBody, TableCell, TableHead, TableRow };
+export { TableRow, TableBody, TableCell, TableHead, PrintFooter, PrintHeader };

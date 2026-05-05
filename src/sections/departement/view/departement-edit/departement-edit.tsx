@@ -1,5 +1,5 @@
 // src/sections/departement/view/departement-edit/departement-edit.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -25,11 +25,13 @@ import {
 import { Iconify } from 'src/components/iconify';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { apiClient } from 'src/utils/apiClient';
+import { findResponsableContact } from 'src/utils/responsable-members';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import {
   IDepartement,
   setDataModifiesDepartement,
 } from '../../../../store/departementSlice';
+import type { IMembre } from '../../../../store/membreSlice';
 import { isLibelleLongUnique, isLibelleCourtUnique } from '../../utils';
 
 // ------------------------------
@@ -47,6 +49,11 @@ export function DepartementEditView() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const listDepartement = useSelector((state: any) => state.departement.listDepartement);
+  const listMembre = useSelector((state: any) => state.membre.listMembre || []);
+  const responsableContact = useMemo(
+    () => findResponsableContact(listMembre as IMembre[], formData.responsableDepartement),
+    [formData.responsableDepartement, listMembre]
+  );
 
   // Charger le departement depuis le store
   useEffect(() => {
@@ -357,6 +364,15 @@ export function DepartementEditView() {
                 error={!!errors.responsableDepartement}
                 helperText={errors.responsableDepartement || 'Nom du responsable (max. 100 caracteres)'}
                 placeholder="Ex: Pasteur Jean Dupont"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Contact du responsable"
+                value={responsableContact || ''}
+                InputProps={{ readOnly: true }}
+                helperText={responsableContact ? 'Contact deja saisi sur la fiche membre' : 'Aucun contact trouve pour ce responsable'}
               />
             </Grid>
 

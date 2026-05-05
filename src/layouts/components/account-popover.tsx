@@ -1,6 +1,6 @@
 import type { IconButtonProps } from '@mui/material/IconButton';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import Avatar from '@mui/material/Avatar';
@@ -18,7 +18,6 @@ import { usePathname, useRouter } from 'src/routes/hooks';
 import { setUserConnected, setUserLoggedIn } from 'src/store/appSlice';
 import type { IReduxState } from 'src/store/store';
 import { setConnecter, setUtilisateurData, utilisateur } from 'src/store/userSlice';
-import { resolveStaticAssetUrl } from 'src/utils/asset-url';
 
 export type AccountPopoverProps = IconButtonProps & {
   data?: {
@@ -29,6 +28,14 @@ export type AccountPopoverProps = IconButtonProps & {
   }[];
 };
 
+const buildInitials = (name: string) =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'U';
+
 export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps) {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -37,9 +44,7 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
 
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
-  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
 
-  // On privilegie les vraies informations Redux puis on garde le mock comme filet de secours.
   const accountName =
     [utilisateurData?.prenomUtilisateur, utilisateurData?.nomUtilisateur]
       .filter(Boolean)
@@ -49,11 +54,7 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
     || userConnected?.nomUtilisateur
     || _myAccount.displayName;
   const accountEmail = utilisateurData?.email || userConnected?.email || _myAccount.email;
-  const rawPhotoUrl = utilisateurData?.logoUtilisateur || userConnected?.logoUtilisateur || _myAccount.photoURL;
-  const accountPhotoUrl = useMemo(
-    () => (rawPhotoUrl && !avatarLoadFailed ? resolveStaticAssetUrl(rawPhotoUrl) : undefined),
-    [avatarLoadFailed, rawPhotoUrl]
-  );
+  const accountInitials = buildInitials(accountName);
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setOpenPopover(event.currentTarget);
@@ -95,12 +96,16 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
         {...other}
       >
         <Avatar
-          src={accountPhotoUrl}
           alt={accountName}
-          imgProps={{ onError: () => setAvatarLoadFailed(true) }}
-          sx={{ width: 1, height: 1 }}
+          sx={{
+            width: 1,
+            height: 1,
+            fontWeight: 700,
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+          }}
         >
-          {accountName?.charAt(0)?.toUpperCase()}
+          {accountInitials}
         </Avatar>
       </IconButton>
 

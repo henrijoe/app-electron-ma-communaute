@@ -38,6 +38,7 @@ export function ComptabiliteArchiveDocument({
       countLabel="Ecritures archivees"
       countValue={items.length}
       variant="plain"
+      showDocumentMeta={false}
     >
       <ComptabilitePrintHero
         title="Ecritures supprimees et conservees"

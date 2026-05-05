@@ -164,6 +164,8 @@ export const dataResponsabilite: IDataChoice[] = [
   { value: 13, label: 'Responsable service d\'ordre' },
   { value: 14, label: 'Responsable nettoyage du temple' },
   { value: 15, label: 'Responsable Scoot' },
+  { value: 16, label: 'Responsable Témoin conseiller' },
+  { value: 17, label: 'Secretaire église' },
 ];
 
 export const dataDepartement: IDataChoice[] = [
