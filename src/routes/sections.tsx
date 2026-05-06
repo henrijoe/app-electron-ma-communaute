@@ -5,10 +5,11 @@ import { Outlet, Navigate, useRoutes } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 
+import { getSessionUser, canAccessModule } from 'src/utils/access-control';
+
 import { varAlpha } from 'src/theme/styles';
 import { AuthLayout } from 'src/layouts/auth';
 import { DashboardLayout } from 'src/layouts/dashboard';
-import { canAccessModule, getSessionUser } from 'src/utils/access-control';
 
 export const HomePage = lazy(() => import('src/pages/home'));
 export const BlogPage = lazy(() => import('src/pages/blog'));
@@ -16,6 +17,7 @@ export const SignInPage = lazy(() => import('src/pages/sign-in'));
 export const SignUpPage = lazy(() => import('src/pages/sign-up'));
 export const ProductsPage = lazy(() => import('src/pages/products'));
 export const SettingsPage = lazy(() => import('src/pages/settings'));
+export const ResponsabilitesPage = lazy(() => import('src/pages/responsabilites'));
 export const DesktopLockedPage = lazy(() => import('src/pages/desktop-locked'));
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
 export const SocialPage = lazy(() => import('src/pages/cas-sociaux'));
@@ -97,6 +99,7 @@ export function Router() {
         { path: 'galerie', element: <GuardedPage permission="galerie" element={<GaleriePage />} /> },
         { path: 'agenda', element: <GuardedPage permission="agenda" element={<AgendaPage />} /> },
         { path: 'comptabilite', element: <GuardedPage permission="comptabilite" element={<ComptabilitePage />} /> },
+        { path: 'responsabilites', element: <GuardedPage permission="settings" element={<ResponsabilitesPage />} /> },
         { path: 'products', element: <ProductsPage /> },
         { path: 'settings', element: <GuardedPage permission="settings" element={<SettingsPage />} /> },
         { path: 'blog', element: <BlogPage /> },

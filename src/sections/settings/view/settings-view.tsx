@@ -43,8 +43,6 @@ import {
   setUserConnected,
 } from 'src/store/appSlice';
 import type { IReduxState } from 'src/store/store';
-import type { IResponsable } from 'src/store/membreSlice';
-import { setListResponsabilite as setListMembreResponsabilite } from 'src/store/membreSlice';
 import type { IUtilisateur, ModulePermissionKey, UserRole } from 'src/store/userSlice';
 import { setUtilisateurData } from 'src/store/userSlice';
 import { apiClient, buildChurchLogoUrl } from 'src/utils/apiClient';
@@ -155,18 +153,6 @@ type ResetSecondaryPasswordFormState = {
 const emptyResetSecondaryPasswordForm: ResetSecondaryPasswordFormState = {
   password: '',
   confirmPassword: '',
-};
-
-type ResponsabiliteFormState = {
-  idResponsabilite: number | null;
-  libelleResponsabilite: string;
-  descriptionResponsabilite: string;
-};
-
-const emptyResponsabiliteForm: ResponsabiliteFormState = {
-  idResponsabilite: null,
-  libelleResponsabilite: '',
-  descriptionResponsabilite: '',
 };
 
 const buildSecondaryUserFormFromEntity = (user: IUtilisateur): SecondaryUserFormState => ({
@@ -292,12 +278,6 @@ export function SettingsView() {
     emptyResetSecondaryPasswordForm
   );
   const [isResettingSecondaryPassword, setIsResettingSecondaryPassword] = useState(false);
-  const [responsabilites, setResponsabilites] = useState<IResponsable[]>([]);
-  const [loadingResponsabilites, setLoadingResponsabilites] = useState(false);
-  const [responsabiliteForm, setResponsabiliteForm] = useState<ResponsabiliteFormState>(emptyResponsabiliteForm);
-  const [isSavingResponsabilite, setIsSavingResponsabilite] = useState(false);
-  const [deletingResponsabilite, setDeletingResponsabilite] = useState<IResponsable | null>(null);
-  const [isDeletingResponsabilite, setIsDeletingResponsabilite] = useState(false);
   const [countdownNow, setCountdownNow] = useState(Date.now());
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
   const isDesktopApp = Boolean((window as any)?.desktopApp?.isDesktop);
@@ -327,7 +307,6 @@ export function SettingsView() {
   );
   const secondaryUserCount = secondaryUsers.length;
   const isEditingSecondaryUser = Boolean(secondaryUserForm.idUtilisateur);
-  const isEditingResponsabilite = Boolean(responsabiliteForm.idResponsabilite);
 
   const desktopAlert = useMemo(() => {
     if (isDesktopBlocked) {
@@ -437,29 +416,6 @@ export function SettingsView() {
     }
   }, [canManageSecondaryUsers, currentAccountId, showNotification]);
 
-  const loadResponsabilites = useCallback(async () => {
-    if (!currentAccountId) {
-      setResponsabilites([]);
-      dispatch(setListMembreResponsabilite([]));
-      return;
-    }
-
-    try {
-      setLoadingResponsabilites(true);
-      const response = await apiClient.getResponsabilites();
-      const items = Array.isArray(response.data)
-        ? response.data.filter((item: IResponsable) => Number(item.idUtilisateur) === Number(currentAccountId))
-        : [];
-
-      setResponsabilites(items);
-      dispatch(setListMembreResponsabilite(items));
-    } catch (error: any) {
-      showNotification(error?.message || 'Impossible de charger les responsabilites.', 'error');
-    } finally {
-      setLoadingResponsabilites(false);
-    }
-  }, [currentAccountId, dispatch, showNotification]);
-
   const refreshDesktopSecurityStatus = useCallback(async () => {
     if (!canInspectDesktopLicense || !currentUsername) {
       return;
@@ -543,10 +499,6 @@ export function SettingsView() {
   useEffect(() => {
     loadSecondaryUsers();
   }, [loadSecondaryUsers]);
-
-  useEffect(() => {
-    loadResponsabilites();
-  }, [loadResponsabilites]);
 
   useEffect(() => {
     if (!canManageSecondaryUsers) {
@@ -736,65 +688,6 @@ export function SettingsView() {
     },
     []
   );
-
-  const handleChangeResponsabiliteField = useCallback(
-    (field: keyof ResponsabiliteFormState, value: string) => {
-      setResponsabiliteForm((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
-    },
-    []
-  );
-
-  const handleResetResponsabiliteForm = useCallback(() => {
-    setResponsabiliteForm(emptyResponsabiliteForm);
-  }, []);
-
-  const handleEditResponsabilite = useCallback((responsabilite: IResponsable) => {
-    setResponsabiliteForm({
-      idResponsabilite: Number(responsabilite.idResponsabilite || 0),
-      libelleResponsabilite: responsabilite.libelleResponsabilite || '',
-      descriptionResponsabilite: responsabilite.descriptionResponsabilite || '',
-    });
-  }, []);
-
-  const handleSaveResponsabilite = useCallback(async () => {
-    if (!currentAccountId) {
-      showNotification('Utilisateur connecte introuvable.', 'warning');
-      return;
-    }
-
-    if (!responsabiliteForm.libelleResponsabilite.trim()) {
-      showNotification('Le libelle de la responsabilite est requis.', 'warning');
-      return;
-    }
-
-    const payload = {
-      idResponsabilite: responsabiliteForm.idResponsabilite || undefined,
-      libelleResponsabilite: responsabiliteForm.libelleResponsabilite.trim(),
-      descriptionResponsabilite: responsabiliteForm.descriptionResponsabilite.trim(),
-      idUtilisateur: currentAccountId,
-    };
-
-    try {
-      setIsSavingResponsabilite(true);
-      if (responsabiliteForm.idResponsabilite) {
-        await apiClient.updateResponsabilite(payload);
-        showNotification('Responsabilite mise a jour avec succes.', 'success');
-      } else {
-        await apiClient.createResponsabilite(payload);
-        showNotification('Responsabilite creee avec succes.', 'success');
-      }
-
-      handleResetResponsabiliteForm();
-      await loadResponsabilites();
-    } catch (error: any) {
-      showNotification(error?.message || 'Impossible de sauvegarder cette responsabilite.', 'error');
-    } finally {
-      setIsSavingResponsabilite(false);
-    }
-  }, [currentAccountId, handleResetResponsabiliteForm, loadResponsabilites, responsabiliteForm, showNotification]);
 
   const handleResetSecondaryUserForm = useCallback(() => {
     setSecondaryUserForm(emptySecondaryUserForm);
@@ -1049,36 +942,6 @@ export function SettingsView() {
       setIsDeletingSecondaryUser(false);
     }
   }, [deletingSecondaryUser, handleResetSecondaryUserForm, loadSecondaryUsers, secondaryUserForm.idUtilisateur, showNotification]);
-
-  const handleConfirmDeleteResponsabilite = useCallback(async () => {
-    if (!deletingResponsabilite?.idResponsabilite) {
-      return;
-    }
-
-    try {
-      setIsDeletingResponsabilite(true);
-      await apiClient.deleteResponsabilite(deletingResponsabilite.idResponsabilite);
-      if (responsabiliteForm.idResponsabilite === deletingResponsabilite.idResponsabilite) {
-        handleResetResponsabiliteForm();
-      }
-      showNotification('Responsabilite supprimee avec succes.', 'success');
-      setDeletingResponsabilite(null);
-      await loadResponsabilites();
-    } catch (error: any) {
-      showNotification(
-        error?.message || 'Impossible de supprimer cette responsabilite. Elle est peut-etre deja utilisee par un membre.',
-        'error'
-      );
-    } finally {
-      setIsDeletingResponsabilite(false);
-    }
-  }, [
-    deletingResponsabilite,
-    handleResetResponsabiliteForm,
-    loadResponsabilites,
-    responsabiliteForm.idResponsabilite,
-    showNotification,
-  ]);
 
   return (
     <DashboardContent>
@@ -1458,96 +1321,6 @@ export function SettingsView() {
           </CardContent>
         </Card>
 
-
-        <Card>
-          <CardHeader
-            avatar={<GroupAddRounded color="primary" />}
-            title="Responsabilites"
-            subheader="Ces responsabilites alimentent le select des membres et sont enregistrees dans la base de donnees."
-          />
-          <CardContent>
-            <Stack spacing={3}>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                <TextField
-                  fullWidth
-                  label="Libelle"
-                  value={responsabiliteForm.libelleResponsabilite}
-                  onChange={(event) => handleChangeResponsabiliteField('libelleResponsabilite', event.target.value)}
-                />
-                <TextField
-                  fullWidth
-                  label="Description"
-                  value={responsabiliteForm.descriptionResponsabilite}
-                  onChange={(event) => handleChangeResponsabiliteField('descriptionResponsabilite', event.target.value)}
-                />
-              </Stack>
-
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveRounded />}
-                  onClick={handleSaveResponsabilite}
-                  disabled={isSavingResponsabilite}
-                >
-                  {isSavingResponsabilite
-                    ? 'Enregistrement...'
-                    : isEditingResponsabilite
-                      ? 'Modifier la responsabilite'
-                      : 'Ajouter la responsabilite'}
-                </Button>
-                <Button variant="outlined" onClick={handleResetResponsabiliteForm} disabled={isSavingResponsabilite}>
-                  Reinitialiser
-                </Button>
-              </Stack>
-
-              {loadingResponsabilites ? (
-                <Alert severity="info">Chargement des responsabilites...</Alert>
-              ) : responsabilites.length === 0 ? (
-                <Alert severity="info">Aucune responsabilite n&apos;a encore ete creee pour cette eglise.</Alert>
-              ) : (
-                <Stack spacing={1.5}>
-                  {responsabilites.map((responsabilite) => (
-                    <Card key={responsabilite.idResponsabilite} variant="outlined" sx={{ borderRadius: 3 }}>
-                      <CardContent>
-                        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between">
-                          <Box>
-                            <Typography variant="subtitle1" fontWeight={700}>
-                              {responsabilite.libelleResponsabilite}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {responsabilite.descriptionResponsabilite || 'Aucune description'}
-                            </Typography>
-                          </Box>
-                          <Stack direction="row" spacing={1}>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              startIcon={<EditRounded />}
-                              onClick={() => handleEditResponsabilite(responsabilite)}
-                            >
-                              Modifier
-                            </Button>
-                            <Button
-                              size="small"
-                              color="error"
-                              variant="outlined"
-                              startIcon={<DeleteRounded />}
-                              onClick={() => setDeletingResponsabilite(responsabilite)}
-                            >
-                              Supprimer
-                            </Button>
-                          </Stack>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-          </CardContent>
-        </Card>
-
-
         {canManageSecondaryUsers && (
           <Card>
             <CardHeader
@@ -1912,16 +1685,6 @@ export function SettingsView() {
           loading={isDeletingSecondaryUser}
           onConfirm={handleConfirmDeleteSecondaryUser}
           onClose={() => setDeletingSecondaryUser(null)}
-        />
-
-        <ConfirmDialog
-          open={Boolean(deletingResponsabilite)}
-          title="Supprimer cette responsabilite"
-          message={`La responsabilite ${deletingResponsabilite?.libelleResponsabilite || ''} sera supprimee si elle n'est pas utilisee.`}
-          confirmText="Supprimer"
-          loading={isDeletingResponsabilite}
-          onConfirm={handleConfirmDeleteResponsabilite}
-          onClose={() => setDeletingResponsabilite(null)}
         />
 
         <Dialog

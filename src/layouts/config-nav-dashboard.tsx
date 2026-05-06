@@ -1,19 +1,20 @@
+import type { ModulePermissionKey } from 'src/store/userSlice';
+
 import {
-  AccountBalanceWalletRounded,
-  ApartmentRounded,
+  HomeRounded,
+  BadgeRounded,
   ChurchRounded,
+  GroupsRounded,
+  SettingsRounded,
+  ApartmentRounded,
   DashboardRounded,
   Diversity3Rounded,
-  GroupsRounded,
-  HomeRounded,
   PhotoLibraryRounded,
+  WarningAmberRounded,
   EventAvailableRounded,
   VolunteerActivismRounded,
-  WarningAmberRounded,
-  SettingsRounded,
+  AccountBalanceWalletRounded,
 } from '@mui/icons-material';
-
-import type { ModulePermissionKey } from 'src/store/userSlice';
 
 export type DashboardNavItem = {
   title: string;
@@ -83,6 +84,12 @@ export const navData: DashboardNavItem[] = [
     path: '/comptabilite',
     icon: <AccountBalanceWalletRounded />,
     permissionKey: 'comptabilite',
+  },
+  {
+    title: 'Responsabilites',
+    path: '/responsabilites',
+    icon: <BadgeRounded />,
+    permissionKey: 'settings',
   },
   {
     title: 'Parametres',
