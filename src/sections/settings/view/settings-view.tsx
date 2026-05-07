@@ -3,9 +3,11 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import {
   AccountCircleRounded,
+  AutorenewRounded,
   ChurchRounded,
   DeleteRounded,
   EditRounded,
+  FileDownloadRounded,
   GroupAddRounded,
   LanguageRounded,
   LaunchRounded,
@@ -150,6 +152,14 @@ type ResetSecondaryPasswordFormState = {
   confirmPassword: string;
 };
 
+type DesktopUnlockCode = {
+  id: string;
+  code: string;
+  label: string;
+  durationDays: number;
+  createdAt: string;
+};
+
 const emptyResetSecondaryPasswordForm: ResetSecondaryPasswordFormState = {
   password: '',
   confirmPassword: '',
@@ -230,6 +240,48 @@ const getChurchLogoPreviewUrl = (value?: string): string | undefined => {
   return buildChurchLogoUrl(value);
 };
 
+const sanitizeFileNamePart = (value: string): string =>
+  (value || 'eglise')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'eglise';
+
+const buildDesktopUnlockCodesText = (codes: DesktopUnlockCode[], churchName: string): string => [
+  'Codes de deblocage offline - Ma Communaute',
+  `Eglise: ${churchName || '-'}`,
+  `Genere le: ${new Date().toLocaleString('fr-FR')}`,
+  '',
+  'Important:',
+  '- Chaque code est a usage unique.',
+  '- Donne un seul code au client quand il faut renouveler son acces.',
+  '- Apres utilisation, le meme code ne pourra plus debloquer l\'application.',
+  '',
+  ...codes.map((code, index) =>
+    `${String(index + 1).padStart(2, '0')}. ${code.code} - ${code.label} - ${code.durationDays} jours`
+  ),
+  '',
+].join('\n');
+
+const downloadDesktopUnlockCodesFile = (
+  codes: DesktopUnlockCode[],
+  churchName: string,
+  suffix: string
+): void => {
+  const fileContent = buildDesktopUnlockCodesText(codes, churchName);
+  const fileName = `codes-deblocage-${sanitizeFileNamePart(churchName)}-${suffix}.txt`;
+  const fileBlob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+  const fileUrl = URL.createObjectURL(fileBlob);
+  const link = document.createElement('a');
+
+  link.href = fileUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(fileUrl);
+};
+
 const openApplicationUrlInBrowser = async (url: string): Promise<void> => {
   const normalizedUrl = normalizeBrowserUrl(url);
 
@@ -266,6 +318,9 @@ export function SettingsView() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [extendDays, setExtendDays] = useState('30');
   const [unlockPassword, setUnlockPassword] = useState('');
+  const [isExportingUnlockCodes, setIsExportingUnlockCodes] = useState(false);
+  const [isGeneratingUnlockCodes, setIsGeneratingUnlockCodes] = useState(false);
+  const [isRebindingMachine, setIsRebindingMachine] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm);
   const [secondaryUsers, setSecondaryUsers] = useState<IUtilisateur[]>([]);
   const [loadingSecondaryUsers, setLoadingSecondaryUsers] = useState(false);
@@ -283,6 +338,7 @@ export function SettingsView() {
   const isDesktopApp = Boolean((window as any)?.desktopApp?.isDesktop);
 
   const sessionUser = useMemo(() => ({ ...utilisateurData, ...userConnected }), [userConnected, utilisateurData]);
+  const desktopUnlockCodesChurchName = String(sessionUser?.nomTemple || profileForm.nomTemple || currentUsername || 'eglise');
   const currentRole = useMemo(() => getUserRole(sessionUser), [sessionUser]);
   const currentSessionUserId = Number(sessionUser?.idUtilisateur || 0);
   const currentAccountId = getScopeUserIdFromUser(sessionUser) || 0;
@@ -294,6 +350,9 @@ export function SettingsView() {
   const desktopSecurityMessage = applicationState.desktopSecurityMessage;
   const isDesktopBlocked = applicationState.desktopSecurityBlocked;
   const desktopDaysRemaining = applicationState.desktopSecurityDaysRemaining;
+  const isDesktopMachineCurrent = applicationState.desktopSecurityMachineCurrent;
+  const desktopMachineDescription = applicationState.desktopSecurityMachineDescription;
+  const desktopCurrentMachineDescription = applicationState.desktopSecurityCurrentMachineDescription;
   const isFixedDesktopSuperAdmin =
     Number(userConnected?.idUtilisateur ?? utilisateurData?.idUtilisateur ?? -1) === 0;
   const canInspectDesktopLicense = isDesktopApp || isFixedDesktopSuperAdmin;
@@ -433,6 +492,7 @@ export function SettingsView() {
           expiresAt: status.expiresAt || '',
           isSuperAdmin: Boolean(status.isSuperAdmin),
           daysRemaining: Number(status.daysRemaining || 0),
+          machineBinding: status.machineBinding,
         })
       );
     } catch (_error) {
@@ -577,6 +637,7 @@ export function SettingsView() {
           expiresAt: status.expiresAt || '',
           isSuperAdmin: Boolean(status.isSuperAdmin),
           daysRemaining: Number(status.daysRemaining || 0),
+          machineBinding: status.machineBinding,
         })
       );
 
@@ -586,6 +647,121 @@ export function SettingsView() {
       showNotification(error?.message || "Impossible de debloquer l'application", 'error');
     }
   }, [currentUsername, dispatch, extendDays, isFixedDesktopSuperAdmin, showNotification, unlockPassword]);
+
+  const handleRebindMachine = useCallback(async () => {
+    if (!currentUsername || !isFixedDesktopSuperAdmin) {
+      showNotification("Seul le superadmin peut rattacher la licence a ce poste.", 'warning');
+      return;
+    }
+
+    if (!unlockPassword.trim()) {
+      showNotification('Le mot de passe superadmin est requis', 'warning');
+      return;
+    }
+
+    try {
+      setIsRebindingMachine(true);
+      const response = await apiClient.rebindDesktopLicenseMachine({
+        nomUtilisateur: currentUsername,
+        password: unlockPassword,
+      });
+      const status = response?.data || {};
+
+      dispatch(
+        setDesktopSecurityStatus({
+          checked: true,
+          isBlocked: Boolean(status.isBlocked),
+          message: status.blockMessage || '',
+          expiresAt: status.expiresAt || '',
+          isSuperAdmin: Boolean(status.isSuperAdmin),
+          daysRemaining: Number(status.daysRemaining || 0),
+          machineBinding: status.machineBinding,
+        })
+      );
+
+      showNotification('Licence rattachee a ce poste avec succes.', 'success');
+    } catch (error: any) {
+      showNotification(error?.message || "Impossible de rattacher la licence a ce poste.", 'error');
+    } finally {
+      setIsRebindingMachine(false);
+    }
+  }, [currentUsername, dispatch, isFixedDesktopSuperAdmin, showNotification, unlockPassword]);
+
+  const handleExportInitialUnlockCodes = useCallback(async () => {
+    if (!currentUsername || !isFixedDesktopSuperAdmin) {
+      showNotification("Seul le superadmin peut exporter les codes de deblocage.", 'warning');
+      return;
+    }
+
+    if (!unlockPassword.trim()) {
+      showNotification('Le mot de passe superadmin est requis', 'warning');
+      return;
+    }
+
+    try {
+      setIsExportingUnlockCodes(true);
+      const response = await apiClient.exportDesktopUnlockCodes({
+        nomUtilisateur: currentUsername,
+        password: unlockPassword,
+      });
+      const codes = (response?.data?.codes || []) as DesktopUnlockCode[];
+
+      if (codes.length === 0) {
+        throw new Error('Aucun code a exporter.');
+      }
+
+      downloadDesktopUnlockCodesFile(codes, desktopUnlockCodesChurchName, 'initial');
+      showNotification(`${codes.length} code(s) de deblocage exporte(s).`, 'success');
+    } catch (error: any) {
+      showNotification(error?.message || "Impossible d'exporter les codes de deblocage.", 'error');
+    } finally {
+      setIsExportingUnlockCodes(false);
+    }
+  }, [
+    currentUsername,
+    desktopUnlockCodesChurchName,
+    isFixedDesktopSuperAdmin,
+    showNotification,
+    unlockPassword,
+  ]);
+
+  const handleGenerateUnlockCodes = useCallback(async () => {
+    if (!currentUsername || !isFixedDesktopSuperAdmin) {
+      showNotification("Seul le superadmin peut generer les codes de deblocage.", 'warning');
+      return;
+    }
+
+    if (!unlockPassword.trim()) {
+      showNotification('Le mot de passe superadmin est requis', 'warning');
+      return;
+    }
+
+    try {
+      setIsGeneratingUnlockCodes(true);
+      const response = await apiClient.generateDesktopUnlockCodes({
+        nomUtilisateur: currentUsername,
+        password: unlockPassword,
+      });
+      const codes = (response?.data?.codes || []) as DesktopUnlockCode[];
+
+      if (codes.length === 0) {
+        throw new Error('Aucun code genere.');
+      }
+
+      downloadDesktopUnlockCodesFile(codes, desktopUnlockCodesChurchName, 'nouveau-pack');
+      showNotification(`${codes.length} nouveau(x) code(s) genere(s) et exporte(s).`, 'success');
+    } catch (error: any) {
+      showNotification(error?.message || "Impossible de generer les codes de deblocage.", 'error');
+    } finally {
+      setIsGeneratingUnlockCodes(false);
+    }
+  }, [
+    currentUsername,
+    desktopUnlockCodesChurchName,
+    isFixedDesktopSuperAdmin,
+    showNotification,
+    unlockPassword,
+  ]);
 
   const handleChangeProfileField = useCallback(
     (field: keyof ProfileFormState, value: string) => {
@@ -1638,6 +1814,11 @@ export function SettingsView() {
                   Message courant : {desktopSecurityMessage || 'Aucun message'}
                 </Typography>
 
+                <Alert severity={isDesktopMachineCurrent ? 'info' : 'warning'}>
+                  Licence rattachee a : {desktopMachineDescription || 'poste non renseigne'}.
+                  Poste actuel : {desktopCurrentMachineDescription || 'poste non detecte'}.
+                </Alert>
+
                 {desktopAlert && <Alert severity={desktopAlert.severity}>{desktopAlert.message}</Alert>}
 
                 {isFixedDesktopSuperAdmin ? (
@@ -1665,6 +1846,53 @@ export function SettingsView() {
                       <Button variant="contained" onClick={handleUnlockDesktop}>
                         Debloquer le desktop
                       </Button>
+
+                      <Button
+                        variant="outlined"
+                        color="warning"
+                        onClick={handleRebindMachine}
+                        disabled={isRebindingMachine}
+                      >
+                        {isRebindingMachine ? 'Association...' : 'Associer a ce poste'}
+                      </Button>
+                    </Stack>
+
+                    <Divider />
+
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography variant="h6">
+                          Codes de deblocage offline
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Pack de 25 codes : 10 codes de 30 jours, 5 de 60 jours, 5 de 6 mois et 5 de 1 an.
+                        </Typography>
+                      </Box>
+
+                      <Alert severity="warning">
+                        L&apos;export initial est disponible une seule fois. Generer un nouveau pack remplace les codes non utilises.
+                      </Alert>
+
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                        <Button
+                          variant="outlined"
+                          startIcon={<FileDownloadRounded />}
+                          onClick={handleExportInitialUnlockCodes}
+                          disabled={isExportingUnlockCodes || isGeneratingUnlockCodes}
+                        >
+                          {isExportingUnlockCodes ? 'Export...' : 'Exporter le pack initial'}
+                        </Button>
+
+                        <Button
+                          variant="outlined"
+                          color="warning"
+                          startIcon={<AutorenewRounded />}
+                          onClick={handleGenerateUnlockCodes}
+                          disabled={isExportingUnlockCodes || isGeneratingUnlockCodes}
+                        >
+                          {isGeneratingUnlockCodes ? 'Generation...' : 'Generer un nouveau pack'}
+                        </Button>
+                      </Stack>
                     </Stack>
                   </>
                 ) : (

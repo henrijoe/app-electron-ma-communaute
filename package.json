@@ -15,7 +15,9 @@
     "desktop:dev:backend": "node electron/run-desktop.cjs --backend",
     "desktop:build:web": "vite build --base=./",
     "desktop:build:backend": "npm --prefix ../server run build && node electron/prepare-backend.cjs",
-    "desktop:pack": "yarn desktop:build:backend && yarn desktop:build:web && electron-builder",
+    "desktop:pack": "yarn desktop:build:backend && yarn desktop:build:web && electron-builder --config.directories.output=release",
+    "desktop:pack:win": "yarn desktop:build:backend && yarn desktop:build:web && electron-builder --win --config.directories.output=release/windows",
+    "desktop:pack:mac": "yarn desktop:build:backend && yarn desktop:build:web && electron-builder --mac --config.directories.output=release/mac",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "lint:fix": "eslint --fix \"src/**/*.{js,jsx,ts,tsx}\"",
     "fm:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx}\"",
@@ -123,6 +125,14 @@
     "win": {
       "icon": "public/assets/images/logoCom1.png",
       "target": "nsis"
+    },
+    "mac": {
+      "icon": "public/assets/images/logoCom1.png",
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
     }
   }
 }

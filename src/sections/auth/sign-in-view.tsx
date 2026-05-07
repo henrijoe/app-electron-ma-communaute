@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
@@ -31,9 +32,13 @@ export function SignInView() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [unlockLoading, setUnlockLoading] = useState(false);
   const [nomUtilisateur, setNomUtilisateur] = useState('');
   const [password, setPassword] = useState('');
+  const [unlockCode, setUnlockCode] = useState('');
+  const [showUnlockCodeForm, setShowUnlockCodeForm] = useState(false);
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
+  const isDesktopApp = Boolean((window as any)?.desktopApp?.isDesktop);
 
   const handleSignIn = useCallback(async () => {
     if (loading) {
@@ -66,11 +71,52 @@ export function SignInView() {
       showNotification('Connexion reussie', 'success');
       router.push('/');
     } catch (error: any) {
-      showNotification(error?.message || 'Echec de la connexion', 'error');
+      const errorMessage = error?.message || 'Echec de la connexion';
+      showNotification(errorMessage, 'error');
+
+      if (isDesktopApp && /licence|bloqu/i.test(errorMessage)) {
+        setShowUnlockCodeForm(true);
+      }
     } finally {
       setLoading(false);
     }
-  }, [dispatch, loading, nomUtilisateur, password, router, showNotification]);
+  }, [dispatch, isDesktopApp, loading, nomUtilisateur, password, router, showNotification]);
+
+  const handleUnlockWithCode = useCallback(async () => {
+    if (unlockLoading) {
+      return;
+    }
+
+    if (!nomUtilisateur.trim()) {
+      showNotification("Renseigne d'abord le nom utilisateur du client.", 'warning');
+      return;
+    }
+
+    if (!unlockCode.trim()) {
+      showNotification('Le code de deblocage est requis.', 'warning');
+      return;
+    }
+
+    try {
+      setUnlockLoading(true);
+      const response = await apiClient.unlockDesktopAccessWithCode({
+        nomUtilisateur: nomUtilisateur.trim(),
+        code: unlockCode.trim(),
+      });
+
+      if (response.status !== 1) {
+        throw new Error(response.error?.message || 'Code de deblocage invalide');
+      }
+
+      setUnlockCode('');
+      setShowUnlockCodeForm(false);
+      showNotification('Application debloquee. Tu peux maintenant te connecter.', 'success');
+    } catch (error: any) {
+      showNotification(error?.message || 'Code de deblocage invalide.', 'error');
+    } finally {
+      setUnlockLoading(false);
+    }
+  }, [nomUtilisateur, showNotification, unlockCode, unlockLoading]);
 
   return (
     <>
@@ -151,6 +197,54 @@ export function SignInView() {
         >
           Se connecter
         </LoadingButton>
+
+        {isDesktopApp && !showUnlockCodeForm && (
+          <Link
+            component="button"
+            type="button"
+            variant="body2"
+            color="inherit"
+            onClick={() => setShowUnlockCodeForm(true)}
+            sx={{ alignSelf: 'center' }}
+          >
+            J&apos;ai un code de deblocage
+          </Link>
+        )}
+
+        {isDesktopApp && showUnlockCodeForm && (
+          <Stack
+            spacing={2}
+            sx={{
+              p: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              bgcolor: 'background.neutral',
+            }}
+          >
+            <Alert severity="info">
+              Saisis le code fourni par le developpeur pour debloquer cette installation.
+            </Alert>
+
+            <TextField
+              fullWidth
+              label="Code de deblocage"
+              value={unlockCode}
+              onChange={(event) => setUnlockCode(event.target.value.toUpperCase())}
+              placeholder="MC-XXXX-XXXX-XXXX-XXXX"
+            />
+
+            <LoadingButton
+              fullWidth
+              type="button"
+              variant="outlined"
+              loading={unlockLoading}
+              onClick={handleUnlockWithCode}
+            >
+              Debloquer avec ce code
+            </LoadingButton>
+          </Stack>
+        )}
       </Stack>
 
       <Typography variant="body2" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>

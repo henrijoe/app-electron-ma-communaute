@@ -53,6 +53,7 @@ export function DesktopSecurityBootstrap() {
               expiresAt: status.expiresAt || '',
               isSuperAdmin: Boolean(status.isSuperAdmin),
               daysRemaining: Number(status.daysRemaining || 0),
+              machineBinding: status.machineBinding,
             })
           );
         } catch (_error) {

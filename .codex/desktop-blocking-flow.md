@@ -20,8 +20,8 @@ Les valeurs importantes configurees en dur sont :
   - mot de passe : `dihj060195`
 - secret de reference local :
   - `com2026!`
-- duree avant blocage automatique :
-  - `40 jours`
+- duree avant blocage automatique pour demo  :
+  - `15 jours`
 
 Le fichier qui contient ces references est :
 

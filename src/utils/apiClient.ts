@@ -254,6 +254,34 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  // Rattache la licence desktop locale a l'ordinateur courant.
+  rebindDesktopLicenseMachine: (data: { nomUtilisateur: string; password: string }) =>
+    request<IServerResponse>('communaute/desktop-control/rebind-machine', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Debloque l'application desktop avec un code offline fourni au client.
+  unlockDesktopAccessWithCode: (data: { nomUtilisateur: string; code: string }) =>
+    request<IServerResponse>('communaute/desktop-control/unlock-code', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Exporte une seule fois les codes initiaux generes avec la licence locale.
+  exportDesktopUnlockCodes: (data: { nomUtilisateur: string; password: string }) =>
+    request<IServerResponse>('communaute/desktop-control/unlock-codes/export', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Genere un nouveau pack de codes et remplace les codes non utilises.
+  generateDesktopUnlockCodes: (data: { nomUtilisateur: string; password: string }) =>
+    request<IServerResponse>('communaute/desktop-control/unlock-codes/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // Membres
   // Recupere la liste complete des membres.
   getMembres: () =>

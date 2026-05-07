@@ -12,6 +12,9 @@ export interface IAppState {
   desktopSecurityExpiresAt: string
   desktopSecurityIsSuperAdmin: boolean
   desktopSecurityDaysRemaining: number
+  desktopSecurityMachineCurrent: boolean
+  desktopSecurityMachineDescription: string
+  desktopSecurityCurrentMachineDescription: string
 }
 
 export const appSlice: any = createSlice({
@@ -28,6 +31,9 @@ export const appSlice: any = createSlice({
     desktopSecurityExpiresAt: '',
     desktopSecurityIsSuperAdmin: false,
     desktopSecurityDaysRemaining: 0,
+    desktopSecurityMachineCurrent: true,
+    desktopSecurityMachineDescription: '',
+    desktopSecurityCurrentMachineDescription: '',
   },
 
   reducers: {
@@ -58,6 +64,9 @@ export const appSlice: any = createSlice({
       state.desktopSecurityExpiresAt = action.payload?.expiresAt || ''
       state.desktopSecurityIsSuperAdmin = Boolean(action.payload?.isSuperAdmin)
       state.desktopSecurityDaysRemaining = Number(action.payload?.daysRemaining || 0)
+      state.desktopSecurityMachineCurrent = action.payload?.machineBinding?.isCurrentMachine !== false
+      state.desktopSecurityMachineDescription = action.payload?.machineBinding?.description || ''
+      state.desktopSecurityCurrentMachineDescription = action.payload?.machineBinding?.currentDescription || ''
     },
 
     resetDesktopSecurityStatus: (state) => {
@@ -67,6 +76,9 @@ export const appSlice: any = createSlice({
       state.desktopSecurityExpiresAt = ''
       state.desktopSecurityIsSuperAdmin = false
       state.desktopSecurityDaysRemaining = 0
+      state.desktopSecurityMachineCurrent = true
+      state.desktopSecurityMachineDescription = ''
+      state.desktopSecurityCurrentMachineDescription = ''
     },
   },
 })

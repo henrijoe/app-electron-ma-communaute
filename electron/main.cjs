@@ -11,6 +11,20 @@ const SERVER_ROOT = path.join(__dirname, "..", "..", "server");
 const DESKTOP_BACKEND_PORT = Number(process.env.PORT || 49300);
 let mainWindowRef = null;
 
+const WINDOWS_SQLITE_DB_DIR = "C:\\base-communaute";
+
+function resolveDesktopSqliteDbDir() {
+  if (process.env.SQLITE_DB_DIR) {
+    return process.env.SQLITE_DB_DIR;
+  }
+
+  if (process.platform === "win32") {
+    return WINDOWS_SQLITE_DB_DIR;
+  }
+
+  return path.join(app.getPath("userData"), "base-communaute");
+}
+
 // Determine si l'adresse appartient a un reseau local classique utile pour le LAN client.
 function isPrivateIpv4Address(address) {
   return (
@@ -470,7 +484,7 @@ async function startEmbeddedBackend() {
       // Cette variable permet au binaire Electron d'executer un script Node emballe.
       ELECTRON_RUN_AS_NODE: backendEntry.useElectronAsNode ? "1" : process.env.ELECTRON_RUN_AS_NODE,
       // Ce dossier centralise les bases SQLite desktop sur la machine cliente.
-      SQLITE_DB_DIR: process.env.SQLITE_DB_DIR || "C:\\base-communaute",
+      SQLITE_DB_DIR: resolveDesktopSqliteDbDir(),
     },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
