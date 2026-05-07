@@ -209,11 +209,13 @@ export async function request<T>(
       console.info('[desktop-api]', url);
     }
 
+    const isFormDataBody = typeof FormData !== 'undefined' && config?.body instanceof FormData;
+
     const response = await fetch(url, {
       ...config,
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
+        ...(isFormDataBody ? {} : { 'Content-Type': 'application/json' }),
         ...config?.headers,
       },
     });
@@ -281,6 +283,19 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  // Restaure une sauvegarde SQLite locale depuis un fichier zip.
+  restoreSqliteBackup: (data: { nomUtilisateur: string; password: string; backupFile: File }) => {
+    const formData = new FormData();
+    formData.append('nomUtilisateur', data.nomUtilisateur);
+    formData.append('password', data.password);
+    formData.append('backup', data.backupFile);
+
+    return request<IServerResponse>('communaute/desktop-control/sqlite-backups/restore', {
+      method: 'POST',
+      body: formData,
+    });
+  },
 
   // Membres
   // Recupere la liste complete des membres.

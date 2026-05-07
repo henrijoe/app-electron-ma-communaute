@@ -321,6 +321,7 @@ export function SettingsView() {
   const [isExportingUnlockCodes, setIsExportingUnlockCodes] = useState(false);
   const [isGeneratingUnlockCodes, setIsGeneratingUnlockCodes] = useState(false);
   const [isRebindingMachine, setIsRebindingMachine] = useState(false);
+  const [isRestoringSqliteBackup, setIsRestoringSqliteBackup] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm);
   const [secondaryUsers, setSecondaryUsers] = useState<IUtilisateur[]>([]);
   const [loadingSecondaryUsers, setLoadingSecondaryUsers] = useState(false);
@@ -762,6 +763,61 @@ export function SettingsView() {
     showNotification,
     unlockPassword,
   ]);
+
+  const handleRestoreSqliteBackup = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const backupFile = event.target.files?.[0] || null;
+      event.target.value = '';
+
+      if (!backupFile) {
+        return;
+      }
+
+      if (!currentUsername || !isFixedDesktopSuperAdmin) {
+        showNotification('Seul le superadmin peut restaurer une sauvegarde SQLite.', 'warning');
+        return;
+      }
+
+      if (!unlockPassword.trim()) {
+        showNotification('Le mot de passe superadmin est requis', 'warning');
+        return;
+      }
+
+      if (!backupFile.name.toLowerCase().endsWith('.zip')) {
+        showNotification('Veuillez choisir une sauvegarde au format .zip.', 'warning');
+        return;
+      }
+
+      const confirmed = window.confirm(
+        'Cette action va remplacer les bases SQLite locales par le contenu de la sauvegarde. '
+        + 'Une sauvegarde de securite sera creee avant la restauration. Continuer ?'
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        setIsRestoringSqliteBackup(true);
+        const response = await apiClient.restoreSqliteBackup({
+          nomUtilisateur: currentUsername,
+          password: unlockPassword,
+          backupFile,
+        });
+        const restoredCount = Number(response?.data?.databaseCount || 0);
+
+        showNotification(
+          `Restauration terminee : ${restoredCount} base(s) restauree(s). Redemarrez l'application pour recharger les donnees.`,
+          'success'
+        );
+      } catch (error: any) {
+        showNotification(error?.message || 'Impossible de restaurer cette sauvegarde SQLite.', 'error');
+      } finally {
+        setIsRestoringSqliteBackup(false);
+      }
+    },
+    [currentUsername, isFixedDesktopSuperAdmin, showNotification, unlockPassword]
+  );
 
   const handleChangeProfileField = useCallback(
     (field: keyof ProfileFormState, value: string) => {
@@ -1893,6 +1949,41 @@ export function SettingsView() {
                           {isGeneratingUnlockCodes ? 'Generation...' : 'Generer un nouveau pack'}
                         </Button>
                       </Stack>
+                    </Stack>
+
+                    <Divider />
+
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography variant="h6">
+                          Sauvegarde et restauration SQLite
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          La restauration remplace les bases locales par le contenu du zip choisi.
+                        </Typography>
+                      </Box>
+
+                      <Alert severity="warning">
+                        Avant la restauration, une sauvegarde de securite est creee automatiquement dans le dossier sauvegardes.
+                      </Alert>
+
+                      <Box>
+                        <Button
+                          component="label"
+                          variant="outlined"
+                          color="warning"
+                          startIcon={<UploadRounded />}
+                          disabled={isRestoringSqliteBackup}
+                        >
+                          {isRestoringSqliteBackup ? 'Restauration...' : 'Restaurer une sauvegarde'}
+                          <input
+                            hidden
+                            type="file"
+                            accept=".zip,application/zip"
+                            onChange={handleRestoreSqliteBackup}
+                          />
+                        </Button>
+                      </Box>
                     </Stack>
                   </>
                 ) : (
