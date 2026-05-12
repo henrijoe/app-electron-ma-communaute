@@ -34,6 +34,8 @@ import {
   Typography,
   alpha,
 } from '@mui/material';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 
 import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
@@ -255,6 +257,8 @@ const normalizeText = (value: unknown) =>
 const buildMembreLabel = (membre: IMembre) => `${membre.nomMembre || ''} ${membre.prenomMembre || ''}`.trim();
 
 export function SocialView() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const userConnected = useSelector((state: any) => state.application?.userConnected);
   const utilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
   const currentUserId = Number(userConnected?.idUtilisateur || utilisateurData?.idUtilisateur || 0);
@@ -491,7 +495,7 @@ export function SocialView() {
 
   return (
     <DashboardContent maxWidth="xl">
-      <Stack spacing={3}>
+      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 330, sm: 560, lg: 1180 }, mx: 'auto' }}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
           justifyContent="space-between"
@@ -507,27 +511,34 @@ export function SocialView() {
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={1.5}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            sx={{
+              width: { xs: 1, md: 'auto' },
+              '& > *': { width: { xs: '100%', sm: 'auto' } },
+            }}
+          >
             <PrintEtatSociaux activeType={activeType} identity={utilisateurData} rows={currentRows} />
-            <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={openCreateDialog}>
+            <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={openCreateDialog} fullWidth={isMobile}>
               Ajouter
             </Button>
           </Stack>
         </Stack>
 
-        <Grid container spacing={2}>
+        <Grid container spacing={{ xs: 1.75, sm: 2 }} sx={{ m: 0, width: 1 }}>
           {(Object.keys(socialConfig) as SocialCaseType[]).map((type) => (
             <Grid item xs={12} sm={6} lg={3} key={type}>
               <Card
                 sx={{
-                  p: 2.5,
+                  p: { xs: 2.25, sm: 2.5 },
                   borderRadius: 3,
-                  border: (theme) =>
-                    `1px solid ${alpha(theme.palette[socialConfig[type].color].main, activeType === type ? 0.35 : 0.12)}`,
-                  bgcolor: (theme) =>
+                  border: (muiTheme) =>
+                    `1px solid ${alpha(muiTheme.palette[socialConfig[type].color].main, activeType === type ? 0.35 : 0.12)}`,
+                  bgcolor: (muiTheme) =>
                     activeType === type
-                      ? alpha(theme.palette[socialConfig[type].color].main, 0.08)
-                      : theme.palette.background.paper,
+                      ? alpha(muiTheme.palette[socialConfig[type].color].main, 0.08)
+                      : muiTheme.palette.background.paper,
                   cursor: 'pointer',
                 }}
                 onClick={() => setActiveType(type)}
@@ -552,7 +563,7 @@ export function SocialView() {
           ))}
         </Grid>
 
-        <Card sx={{ borderRadius: 4, overflow: 'hidden' }}>
+        <Card sx={{ borderRadius: 4, overflow: 'hidden', width: 1 }}>
           <Tabs
             value={activeType}
             onChange={(_, value: SocialCaseType) => setActiveType(value)}
@@ -565,7 +576,7 @@ export function SocialView() {
             ))}
           </Tabs>
 
-          <Box sx={{ px: 3, py: 2.5 }}>
+          <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 2.5 } }}>
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               justifyContent="space-between"
@@ -602,7 +613,82 @@ export function SocialView() {
                 </Typography>
               </Card>
             ) : (
-              <Box sx={{ overflowX: 'auto' }}>
+              <>
+              {isMobile && (
+                <Stack spacing={1.5} sx={{ maxWidth: 330, mx: 'auto' }}>
+                  {filteredRows.map((row: any) => (
+                    <Card
+                      key={`card-${activeType}-${getRowId(activeType, row)}`}
+                      variant="outlined"
+                      sx={{ p: 2, borderRadius: 3, width: 1 }}
+                    >
+                      <Stack spacing={1.5}>
+                        <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="subtitle2" noWrap>
+                              {buildDeleteLabel(activeType, row) || currentConfig.label.slice(0, -1)}
+                            </Typography>
+                            <Chip
+                              size="small"
+                              color={currentConfig.color}
+                              label={currentConfig.label.slice(0, -1)}
+                              sx={{ mt: 0.75 }}
+                            />
+                          </Box>
+                          <Stack direction="row" spacing={0.75}>
+                            <Button
+                              size="small"
+                              color="primary"
+                              startIcon={<EditRoundedIcon />}
+                              onClick={() => openEditDialog(row)}
+                            >
+                              Modifier
+                            </Button>
+                          </Stack>
+                        </Stack>
+
+                        <Stack spacing={1}>
+                          {currentConfig.columns.map((column) => (
+                            <Stack
+                              key={column.key}
+                              direction="row"
+                              justifyContent="space-between"
+                              spacing={2}
+                              sx={{ py: 0.25 }}
+                            >
+                              <Typography variant="caption" color="text.secondary">
+                                {column.label}
+                              </Typography>
+                              <Typography variant="body2" sx={{ textAlign: 'right', maxWidth: '62%' }}>
+                                {column.key.toLowerCase().includes('date')
+                                  ? formatDisplayDate(row[column.key])
+                                  : row[column.key] || 'Non specifie'}
+                              </Typography>
+                            </Stack>
+                          ))}
+                        </Stack>
+
+                        <Button
+                          size="small"
+                          color="error"
+                          startIcon={<DeleteRoundedIcon />}
+                          onClick={() =>
+                            setDeleteTarget({
+                              id: getRowId(activeType, row),
+                              label: buildDeleteLabel(activeType, row),
+                            })
+                          }
+                          sx={{ alignSelf: 'flex-start' }}
+                        >
+                          Supprimer
+                        </Button>
+                      </Stack>
+                    </Card>
+                  ))}
+                </Stack>
+              )}
+
+              <Box sx={{ overflowX: 'auto', display: { xs: 'none', md: 'block' } }}>
                 <Table>
                   <TableHead>
                     <TableRow>
@@ -656,12 +742,13 @@ export function SocialView() {
                   </TableBody>
                 </Table>
               </Box>
+              </>
             )}
           </Box>
         </Card>
       </Stack>
 
-      <Dialog open={openDialog} onClose={closeDialog} maxWidth="md" fullWidth>
+      <Dialog open={openDialog} onClose={closeDialog} maxWidth="md" fullWidth fullScreen={isMobile}>
         <DialogTitle>
           {editingId ? 'Modifier' : 'Ajouter'} {currentConfig.label.slice(0, -1).toLowerCase()}
         </DialogTitle>
@@ -718,9 +805,9 @@ export function SocialView() {
             ))}
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialog}>Annuler</Button>
-          <Button variant="contained" onClick={handleSubmit} disabled={isSaving}>
+        <DialogActions sx={{ flexDirection: { xs: 'column-reverse', sm: 'row' }, gap: 1, p: 2 }}>
+          <Button onClick={closeDialog} fullWidth={isMobile}>Annuler</Button>
+          <Button variant="contained" onClick={handleSubmit} disabled={isSaving} fullWidth={isMobile}>
             Enregistrer
           </Button>
         </DialogActions>

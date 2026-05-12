@@ -1,6 +1,6 @@
 import type { Theme, SxProps, Breakpoint } from '@mui/material/styles';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 
 import Box from '@mui/material/Box';
@@ -84,11 +84,13 @@ export function NavMobile({
   onClose,
 }: NavContentProps & { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const previousPathname = useRef(pathname);
 
   useEffect(() => {
-    if (open) {
+    if (open && previousPathname.current !== pathname) {
       onClose();
     }
+    previousPathname.current = pathname;
   }, [onClose, open, pathname]);
 
   return (

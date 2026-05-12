@@ -8,6 +8,7 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import TableBody from '@mui/material/TableBody';
 import Typography from '@mui/material/Typography';
 import TableContainer from '@mui/material/TableContainer';
@@ -697,6 +698,15 @@ export function UserView() {
       : nameB?.localeCompare(nameA);
   }), [dataFiltered, table.order]);
 
+  const currentPageMembres = useMemo(
+    () =>
+      sortedData?.slice(
+        table.page * table.rowsPerPage,
+        table.page * table.rowsPerPage + table.rowsPerPage
+      ) || [],
+    [sortedData, table.page, table.rowsPerPage]
+  );
+
   const handleChange = useCallback((event: any) => {
     const { name, value } = event.target;
     let sanitizedValue = value;
@@ -794,13 +804,24 @@ export function UserView() {
 
   return (
     <DashboardContent>
-      <Box display="flex" alignItems="center" mb={5}>
+      <Box
+        display="flex"
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        flexDirection={{ xs: 'column', md: 'row' }}
+        gap={2}
+        mb={{ xs: 3, md: 5 }}
+      >
 
-        <Typography variant="h4" flexGrow={1}>
+        <Typography variant="h4" flexGrow={1} sx={{ fontSize: { xs: '1.45rem', md: '2rem' } }}>
           Liste des membres
         </Typography>
 
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.25}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          sx={{ width: { xs: '100%', md: 'auto' } }}
+        >
           <PrintEtatGlobal />
 
           <Button
@@ -809,6 +830,7 @@ export function UserView() {
             startIcon={<Iconify icon="solar:import-linear" />}
             onClick={() => navigate('/user/import')}
             disabled={loading}
+            fullWidth={isMobile}
           >
             Importer membre
           </Button>
@@ -819,6 +841,7 @@ export function UserView() {
             startIcon={<Iconify icon="solar:export-linear" />}
             onClick={handleExportMembres}
             disabled={loading || !exportableMembres.length}
+            fullWidth={isMobile}
           >
             Exporter les membres
           </Button>
@@ -829,6 +852,7 @@ export function UserView() {
             startIcon={<Iconify icon="mingcute:add-line" />}
             onClick={handleOpenDialog}
             disabled={loading}
+            fullWidth={isMobile}
           >
             {loading ? 'Chargement...' : 'Ajouter membre'}
           </Button>
@@ -847,7 +871,93 @@ export function UserView() {
           deleteLoading={deleteLoading}
         />
 
-        <Scrollbar>
+        {isMobile && (
+          <Stack spacing={1.5} sx={{ px: 2, pb: 2 }}>
+            {currentPageMembres.map((row: IMembre) => {
+              const photoUrl = row.photoMembre ? buildPhotoUrl(row.photoMembre) : '';
+              const isSelected = table.selected?.includes(row.idMembre?.toString());
+
+              return (
+                <Card key={row.idMembre} variant="outlined" sx={{ p: 1.75, borderRadius: 2, boxShadow: 'none' }}>
+                  <Stack spacing={1.5}>
+                    <Stack direction="row" spacing={1.25} alignItems="center">
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={() => table?.onSelectRow(row.idMembre?.toString())}
+                        sx={{ p: 0.25 }}
+                      />
+                      <Avatar
+                        src={photoUrl || undefined}
+                        alt={`${row.nomMembre || ''} ${row.prenomMembre || ''}`}
+                        sx={{ width: 46, height: 46 }}
+                      >
+                        {!photoUrl && `${row.nomMembre?.charAt(0) || ''}${row.prenomMembre?.charAt(0) || ''}`}
+                      </Avatar>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+                          {row.nomMembre} {row.prenomMembre}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
+                          {row.contactMembre || 'Contact non renseigne'}
+                        </Typography>
+                      </Box>
+                    </Stack>
+
+                    <Divider />
+
+                    <Grid container spacing={1.25}>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Residence</Typography>
+                        <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.residenceMembre || '-'}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Baptise(e)</Typography>
+                        <Typography variant="body2">{resolveChoiceLabel(dataBapteme, row.baptemeEauMembre) || '-'}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Fonction</Typography>
+                        <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.fonctionMembre || '-'}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Situation</Typography>
+                        <Typography variant="body2">{resolveChoiceLabel(dataSituationMembre, row.situationMatrimonialeMembre) || '-'}</Typography>
+                      </Grid>
+                    </Grid>
+
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      <IconButton size="small" onClick={() => navigate(`/details/${row.idMembre}`)}>
+                        <Iconify icon="solar:eye-bold" />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => handleEditMembre(row)}>
+                        <Iconify icon="solar:pen-bold" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        disabled={deleteLoading}
+                        onClick={() => handleDeleteMembre(row.idMembre)}
+                      >
+                        <Iconify icon="solar:trash-bin-trash-bold" />
+                      </IconButton>
+                    </Stack>
+                  </Stack>
+                </Card>
+              );
+            })}
+
+            {notFound && (
+              <Card variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 2, boxShadow: 'none' }}>
+                <Typography variant="subtitle2">Aucun resultat</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Aucun membre ne correspond a &quot;{filterName}&quot;.
+                </Typography>
+              </Card>
+            )}
+          </Stack>
+        )}
+
+        {!isMobile && (
+          <Scrollbar>
           <TableContainer sx={{ overflow: 'unset' }}>
             <Table sx={{ minWidth: 800 }}>
               <UserTableHead
@@ -875,12 +985,7 @@ export function UserView() {
                 ]}
               />
               <TableBody>
-                {sortedData
-                  ?.slice(
-                    table.page * table.rowsPerPage,
-                    table.page * table.rowsPerPage + table.rowsPerPage
-                  )
-                  ?.map((row) => (
+                {currentPageMembres?.map((row) => (
                     <UserTableRow
                       key={row.idMembre}
                       row={row}
@@ -897,7 +1002,8 @@ export function UserView() {
               </TableBody>
             </Table>
           </TableContainer>
-        </Scrollbar>
+          </Scrollbar>
+        )}
 
         <TablePagination
           component="div"

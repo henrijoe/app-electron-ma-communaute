@@ -473,7 +473,7 @@ export function ComptabiliteView() {
     <DashboardContent maxWidth="xl">
       <NotificationComponent />
 
-      <Stack spacing={3}>
+      <Stack spacing={3} sx={{ width: 1, maxWidth: 1180, mx: 'auto' }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }}>
           <Box>
             <Typography variant="h4">Comptabilite</Typography>
@@ -494,7 +494,7 @@ export function ComptabiliteView() {
           </Stack>
         </Stack>
 
-        <Grid container spacing={2}>
+        <Grid container spacing={2} justifyContent="center">
           {[
             {
               title: 'Entrees',
@@ -563,7 +563,101 @@ export function ComptabiliteView() {
           </Stack>
         </Card>
 
-        <Card sx={{ borderRadius: 4, overflow: 'hidden' }}>
+        {isMobile && (
+          <Stack spacing={1.5}>
+            {filteredItems.map((item: IComptabiliteItem) => {
+              const isEntree = item.typeComptabilite === 'entree';
+              const amount = isEntree ? item.entreeComptabilite : item.sortieComptabilite;
+
+              return (
+                <Card
+                  key={item.idComptabilite || `${item.nomComptabilite}-${item.dateComptabilite}`}
+                  sx={{
+                    p: 2,
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: alpha(isEntree ? theme.palette.success.main : theme.palette.error.main, 0.18),
+                  }}
+                >
+                  <Stack spacing={1.5}>
+                    <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
+                      <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            width: 42,
+                            height: 42,
+                            borderRadius: 2,
+                            display: 'grid',
+                            flexShrink: 0,
+                            placeItems: 'center',
+                            bgcolor: alpha(isEntree ? theme.palette.success.main : theme.palette.error.main, 0.12),
+                            color: isEntree ? 'success.main' : 'error.main',
+                          }}
+                        >
+                          <ReceiptLongRounded fontSize="small" />
+                        </Box>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="subtitle2" noWrap>
+                            {item.nomComptabilite}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {item.dateComptabilite || '--'}
+                          </Typography>
+                        </Box>
+                      </Stack>
+
+                      <Chip
+                        size="small"
+                        label={isEntree ? 'Entree' : 'Sortie'}
+                        color={isEntree ? 'success' : 'error'}
+                        variant="outlined"
+                      />
+                    </Stack>
+
+                    <Stack direction="row" justifyContent="space-between" spacing={2}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Montant
+                        </Typography>
+                        <Typography variant="h6">
+                          {currencyFormatter.format(amount || 0)}
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={0.5}>
+                        <IconButton onClick={() => openEditDialog(item)}>
+                          <EditRounded fontSize="small" />
+                        </IconButton>
+                        <IconButton color="error" onClick={() => askDelete(item)}>
+                          <DeleteRounded fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </Stack>
+
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Observation
+                      </Typography>
+                      <Typography variant="body2">
+                        {item.observationComptabilite || '--'}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Card>
+              );
+            })}
+
+            {!loadingComptabilite && filteredItems.length === 0 && (
+              <Card sx={{ p: 4, borderRadius: 3, textAlign: 'center' }}>
+                <Typography variant="h6">Aucune ecriture pour le moment</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                  Commence avec une recette, une depense ou une note de tresorerie.
+                </Typography>
+              </Card>
+            )}
+          </Stack>
+        )}
+
+        <Card sx={{ borderRadius: 4, overflow: 'hidden', display: { xs: 'none', md: 'block' } }}>
           <Box sx={{ overflowX: 'auto' }}>
             <Table sx={{ minWidth: 860 }}>
               <TableHead>
@@ -648,7 +742,74 @@ export function ComptabiliteView() {
                 </Typography>
               </Box>
 
-              <Box sx={{ overflowX: 'auto' }}>
+              {isMobile && (
+                <Stack spacing={1.5}>
+                  {deletedItems.map((item) => (
+                    <Card
+                      key={`deleted-card-${item.idComptabilite}`}
+                      variant="outlined"
+                      sx={{ p: 2, borderRadius: 3 }}
+                    >
+                      <Stack spacing={1.25}>
+                        <Stack direction="row" justifyContent="space-between" spacing={1.5}>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="subtitle2" noWrap>
+                              {item.nomComptabilite}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {item.dateComptabilite || '--'}
+                            </Typography>
+                          </Box>
+                          <Chip size="small" color={item.typeComptabilite === 'entree' ? 'success' : 'error'} label={item.typeComptabilite === 'entree' ? 'Entree' : 'Sortie'} />
+                        </Stack>
+
+                        <Stack direction="row" justifyContent="space-between" spacing={2}>
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">Montant</Typography>
+                            <Typography variant="subtitle1">{currencyFormatter.format(item.montantComptabilite || 0)}</Typography>
+                          </Box>
+                          <Stack direction="row">
+                            <IconButton
+                              color="primary"
+                              onClick={() => {
+                                setItemToRestore(item);
+                                setRestoreDialogOpen(true);
+                              }}
+                            >
+                              <RestoreRounded fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              color="error"
+                              onClick={() => {
+                                setItemToDeletePermanently(item);
+                                setPermanentDeleteDialogOpen(true);
+                              }}
+                            >
+                              <DeleteForeverRounded fontSize="small" />
+                            </IconButton>
+                          </Stack>
+                        </Stack>
+
+                        <Typography variant="body2" color="text.secondary">
+                          Supprime le {item.dateSuppressionComptabilite || '--'} par {item.nomUtilisateurSuppression || '--'}
+                        </Typography>
+                        <Typography variant="body2">{item.motifSuppressionComptabilite || '--'}</Typography>
+                      </Stack>
+                    </Card>
+                  ))}
+
+                  {!loadingDeletedComptabilite && deletedItems.length === 0 && (
+                    <Card variant="outlined" sx={{ p: 3, borderRadius: 3, textAlign: 'center' }}>
+                      <Typography variant="subtitle1">Aucune ecriture archivee</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                        Rien a controler pour le moment dans la corbeille comptable.
+                      </Typography>
+                    </Card>
+                  )}
+                </Stack>
+              )}
+
+              <Box sx={{ overflowX: 'auto', display: { xs: 'none', md: 'block' } }}>
                 <Table sx={{ minWidth: 980 }}>
                   <TableHead>
                     <TableRow>

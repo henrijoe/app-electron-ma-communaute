@@ -51,6 +51,16 @@ const initialForm: RegisterForm = {
   confirmPassword: '',
 };
 
+const registerTextFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 2,
+    bgcolor: (theme: any) =>
+      theme.palette.mode === 'dark'
+        ? 'rgba(255,255,255,0.06)'
+        : '#edf2ff',
+  },
+};
+
 const extractFirstItem = (data: any) => {
   if (Array.isArray(data)) return data[0] || null;
   return data || null;
@@ -167,11 +177,11 @@ export function SignUpView() {
 
   return (
     <>
-      <Box sx={{ mb: 5 }}>
+      <Box sx={{ mb: { xs: 4, md: 5 }, textAlign: { xs: 'center', md: 'left' } }}>
         <Typography variant="h2" sx={{ fontSize: { xs: 20, md: 25 }, mb: 1.5 }}>
           Inscription à Ma Communaute
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 460 }}>
+        <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 460, mx: { xs: 'auto', md: 0 } }}>
           Creez votre compte, votre eglise.
         </Typography>
       </Box>
@@ -200,7 +210,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
+              sx={registerTextFieldSx}
             />
           </Grid>
           <Grid item xs={12}>
@@ -218,7 +228,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
+              sx={registerTextFieldSx}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -236,7 +246,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
+              sx={registerTextFieldSx}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -254,7 +264,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
+              sx={registerTextFieldSx}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -272,7 +282,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
+              sx={registerTextFieldSx}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -290,7 +300,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
+              sx={registerTextFieldSx}
             />
           </Grid>
           <Grid item xs={12}>
@@ -309,7 +319,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
+              sx={registerTextFieldSx}
             />
           </Grid>
           <Grid item xs={12}>
@@ -328,7 +338,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
+              sx={registerTextFieldSx}
             />
           </Grid>
         </Grid>

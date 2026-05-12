@@ -100,6 +100,14 @@ const primaryActionButtonSx = {
   },
 };
 
+const themedPanelSx = {
+  bgcolor: 'background.paper',
+  color: 'text.primary',
+  border: '1px solid',
+  borderColor: 'divider',
+  boxShadow: 'none',
+};
+
 const emptyAgendaEvent: IAgendaEvent = {
   titreAgenda: '',
   typeAgenda: 'Rendez-vous',
@@ -486,7 +494,7 @@ export function AgendaView() {
 
           return (
             <Grid item xs key={dayKey}>
-              <Card onClick={() => setSelectedDate(dayKey)} sx={{ minHeight: 94, borderRadius: 3, p: 1, cursor: 'pointer', bgcolor: isSelected ? alpha('#0ea5e9', 0.10) : '#ffffff', border: '1px solid', borderColor: isSelected ? alpha('#0ea5e9', 0.55) : 'divider', color: isCurrentMonth ? 'text.primary' : 'text.disabled', boxShadow: 'none' }}>
+              <Card onClick={() => setSelectedDate(dayKey)} sx={{ minHeight: 94, borderRadius: 3, p: 1, cursor: 'pointer', bgcolor: isSelected ? alpha('#0ea5e9', 0.10) : 'background.paper', border: '1px solid', borderColor: isSelected ? alpha('#0ea5e9', 0.55) : 'divider', color: isCurrentMonth ? 'text.primary' : 'text.secondary', boxShadow: 'none' }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                   <Typography variant="subtitle2">{day.getDate()}</Typography>
                   <Stack direction="row" spacing={0.5} alignItems="center">
@@ -522,7 +530,7 @@ export function AgendaView() {
 
         return (
           <Grid item xs={12} md key={dayKey}>
-            <Card sx={{ p: 2, borderRadius: 3, minHeight: 220, bgcolor: '#ffffff', color: 'text.primary', border: '1px solid', borderColor: 'divider', boxShadow: 'none' }}>
+            <Card sx={{ p: 2, borderRadius: 3, minHeight: 220, ...themedPanelSx }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                 <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>{longDateFormatter.format(day)}</Typography>
                 {reminderLabel && <Chip size="small" color={reminderLabel === "Aujourd'hui" ? 'warning' : 'info'} label={reminderLabel} />}
@@ -539,7 +547,7 @@ export function AgendaView() {
   );
 
   const renderDayView = () => (
-    <Card sx={{ p: 3, borderRadius: 4, bgcolor: '#ffffff', color: 'text.primary', border: '1px solid', borderColor: 'divider', boxShadow: 'none' }}>
+    <Card sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 4, ...themedPanelSx }}>
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
         <Box>
           <Typography variant="h5" sx={{ textTransform: 'capitalize' }}>{selectedDateLabel}</Typography>
@@ -555,7 +563,7 @@ export function AgendaView() {
   );
 
   const renderListView = () => (
-    <Card sx={{ p: 3, borderRadius: 4, bgcolor: '#ffffff', color: 'text.primary', border: '1px solid', borderColor: 'divider', boxShadow: 'none' }}>
+    <Card sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 4, ...themedPanelSx }}>
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
         <Box>
           <Typography variant="h5">Vue liste</Typography>
@@ -573,13 +581,20 @@ export function AgendaView() {
   return (
     <DashboardContent maxWidth="xl">
       <NotificationComponent />
-      <Stack spacing={3}>
+      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 330, sm: 560, lg: 1180 }, mx: 'auto' }}>
         <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
           <Box>
             <Typography variant="h3" sx={{ mb: 0.5 }}>Agenda</Typography>
             <Typography color="text.secondary">Programme les cultes, rendez-vous et evenements importants de la communaute.</Typography>
           </Box>
-          <Stack direction="row" spacing={1.5} flexWrap="wrap" sx={{ width: { xs: '100%', md: 'auto' } }}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            sx={{
+              width: { xs: '100%', md: 'auto' },
+              '& > *': { width: { xs: '100%', sm: 'auto' } },
+            }}
+          >
             <PrintEtatAgenda events={monthEvents} identity={identity} monthLabel={selectedMonthLabel} />
             <Button fullWidth={isMobile} variant="contained" sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog()}>Ajouter un evenement</Button>
           </Stack>
@@ -595,17 +610,17 @@ export function AgendaView() {
           </Stack>
         )}
 
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 2, md: 3 }} sx={{ m: 0, width: 1 }}>
           <Grid item xs={12} lg={3}>
             <Stack spacing={3}>
-              <Card sx={{ p: 3, borderRadius: 4, bgcolor: '#ffffff', color: 'text.primary', border: '1px solid', borderColor: 'divider', boxShadow: 'none' }}>
+              <Card sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 4, ...themedPanelSx }}>
                 <Button fullWidth={isTablet} variant="contained" sx={{ ...primaryActionButtonSx, mb: 3, width: { xs: '100%', lg: 'fit-content' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter a cette date</Button>
                 <Typography variant="h6" sx={{ mb: 2 }}>Prochains rendez-vous</Typography>
                 <Stack spacing={2}>
                   {upcomingEvents.map((item: IAgendaEvent) => {
                     const itemColor = getAgendaTypeColor(item.typeAgenda, item.couleurAgenda);
                     return (
-                      <Card key={item.idAgenda} sx={{ p: 2, borderRadius: 3, bgcolor: '#ffffff', color: 'text.primary', border: '1px solid', borderColor: alpha(itemColor, 0.28), boxShadow: 'none' }}>
+                      <Card key={item.idAgenda} sx={{ p: 2, borderRadius: 3, ...themedPanelSx, borderColor: alpha(itemColor, 0.28) }}>
                         <Stack direction="row" justifyContent="space-between" spacing={1}>
                           <Box>
                             <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
@@ -624,7 +639,7 @@ export function AgendaView() {
                 </Stack>
               </Card>
 
-              <Card sx={{ p: 3, borderRadius: 4 }}>
+              <Card sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 4 }}>
                 <Typography variant="h6" sx={{ mb: 1 }}>Jour selectionne</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{selectedDateLabel}</Typography>
                 <Stack spacing={2}>
@@ -636,7 +651,7 @@ export function AgendaView() {
           </Grid>
 
           <Grid item xs={12} lg={9}>
-            <Card sx={{ p: 3, borderRadius: 4, bgcolor: '#ffffff', color: 'text.primary', border: '1px solid', borderColor: 'divider', boxShadow: 'none' }}>
+            <Card sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 4, ...themedPanelSx }}>
               <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={2} sx={{ mb: 3 }}>
                 <Stack spacing={1}>
                   <Typography variant="h4" sx={{ textTransform: 'capitalize' }}>{currentPeriodLabel}</Typography>

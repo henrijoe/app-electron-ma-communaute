@@ -6,7 +6,9 @@ import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import Dialog from '@mui/material/Dialog';
+import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
 import TableBody from '@mui/material/TableBody';
 import TextField from '@mui/material/TextField';
@@ -301,14 +303,24 @@ export function CelluleView() {
 
   const sortedData = useMemo(() => [...dataFiltered], [dataFiltered]);
   const notFound = !sortedData.length && (!!filterName || Object.values(advancedFilters).some(Boolean));
+  const currentPageCellules = useMemo(
+    () => sortedData.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage),
+    [sortedData, table.page, table.rowsPerPage]
+  );
 
   return (
     <DashboardContent>
-      <Box display="flex" alignItems="center" mb={5}>
+      <Box
+        display="flex"
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        flexDirection={{ xs: 'column', md: 'row' }}
+        gap={2}
+        mb={{ xs: 3, md: 5 }}
+      >
         <Typography variant="h4" flexGrow={1}>Liste des cellules</Typography>
-        <Box display="flex" gap={2}>
+        <Box display="flex" gap={1.25} flexDirection={{ xs: 'column', sm: 'row' }} sx={{ width: { xs: '100%', md: 'auto' } }}>
           <PrintEtatGlobal />
-          <Button variant="contained" color="inherit" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setOpenDialog(true)}>
+          <Button variant="contained" color="inherit" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setOpenDialog(true)} sx={{ width: { xs: '100%', sm: 'auto' } }}>
             Ajouter cellule
           </Button>
         </Box>
@@ -352,8 +364,63 @@ export function CelluleView() {
           }
         />
 
-        <Scrollbar>
-          <TableContainer sx={{ overflow: 'unset' }}>
+        <Box sx={{ display: { xs: 'block', md: 'none' }, px: 2, pb: 2 }}>
+          <Box display="flex" flexDirection="column" gap={1.5}>
+            {currentPageCellules.map((row) => (
+              <Card key={row.idCellule} variant="outlined" sx={{ p: 1.75, borderRadius: 2, boxShadow: 'none' }}>
+                <Box display="flex" gap={1.25} alignItems="flex-start">
+                  <Checkbox
+                    checked={table.selected.includes(String(row.idCellule))}
+                    onChange={() => table.onSelectRow(String(row.idCellule))}
+                    sx={{ p: 0.25 }}
+                  />
+                  <Box minWidth={0} flex={1}>
+                    <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>{row.nomCellule || 'Cellule sans nom'}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
+                      {row.lieuCellule || 'Lieu non renseigne'}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Divider sx={{ my: 1.25 }} />
+
+                <Grid container spacing={1.25}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Effectif</Typography>
+                    <Typography variant="body2">{row.nombreMembreCellule || '0'}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Responsable</Typography>
+                    <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.responsableCellule || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Contact responsable</Typography>
+                    <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{responsableContactByName.get(row.responsableCellule) || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Visite</Typography>
+                    <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.responsableVisiteCellule || '-'}</Typography>
+                  </Grid>
+                </Grid>
+
+                <Box display="flex" justifyContent="flex-end" gap={1} mt={1.5}>
+                  <Button size="small" onClick={() => handleEditCellule(row)}>Modifier</Button>
+                  <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteCellule(row.idCellule)}>Supprimer</Button>
+                </Box>
+              </Card>
+            ))}
+
+            {notFound && (
+              <Card variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 2, boxShadow: 'none' }}>
+                <Typography variant="subtitle2">Aucun resultat</Typography>
+                <Typography variant="body2" color="text.secondary">Aucune cellule ne correspond aux filtres.</Typography>
+              </Card>
+            )}
+          </Box>
+        </Box>
+
+        <Scrollbar sx={{ display: { xs: 'none', md: 'flex' } }}>
+          <TableContainer sx={{ overflowX: 'auto' }}>
             <Table sx={{ minWidth: 1100 }}>
               <CelluleTableHead
                 order={table.order}
@@ -374,7 +441,7 @@ export function CelluleView() {
                 ]}
               />
               <TableBody>
-                {sortedData.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage).map((row) => (
+                {currentPageCellules.map((row) => (
                   <CelluleTableRow
                     key={row.idCellule}
                     row={row}

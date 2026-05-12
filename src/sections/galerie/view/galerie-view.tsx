@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type InputHTMLAttributes } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   AddPhotoAlternateRounded,
@@ -101,6 +101,9 @@ const sortOptions: Array<{ label: string; value: EventSortOption }> = [
   { label: 'Titre A-Z', value: 'title-asc' },
 ];
 
+const IMAGE_UPLOAD_BATCH_COUNT = 8;
+const IMAGE_UPLOAD_BATCH_MAX_SIZE = 45 * 1024 * 1024;
+
 const primaryActionButtonSx = {
   minWidth: 'auto',
   px: 1.6,
@@ -132,6 +135,39 @@ const convertFileToBase64 = (file: File): Promise<string> =>
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+
+const isImageFile = (file: File): boolean =>
+  file.type.startsWith('image/') || /\.(bmp|gif|heic|heif|jpe?g|png|webp)$/i.test(file.name);
+
+const splitFilesIntoUploadBatches = (files: File[]): File[][] => {
+  const batches: File[][] = [];
+  let currentBatch: File[] = [];
+  let currentBatchSize = 0;
+
+  files.forEach((file) => {
+    const shouldStartNewBatch =
+      currentBatch.length > 0
+      && (
+        currentBatch.length >= IMAGE_UPLOAD_BATCH_COUNT
+        || currentBatchSize + file.size > IMAGE_UPLOAD_BATCH_MAX_SIZE
+      );
+
+    if (shouldStartNewBatch) {
+      batches.push(currentBatch);
+      currentBatch = [];
+      currentBatchSize = 0;
+    }
+
+    currentBatch.push(file);
+    currentBatchSize += file.size;
+  });
+
+  if (currentBatch.length > 0) {
+    batches.push(currentBatch);
+  }
+
+  return batches;
+};
 
 const toSortableDate = (value?: string | null): number => {
   if (!value) return 0;
@@ -273,27 +309,38 @@ export function GalerieView() {
       return;
     }
 
-    if (files.length === 0) return;
+    const imageFiles = files.filter(isImageFile);
+
+    if (imageFiles.length === 0) {
+      showNotificationRef.current('Aucune image valide trouvee dans la selection.', 'warning');
+      return;
+    }
 
     try {
       setUploadingImages(true);
-      const images = await Promise.all(
-        files.map(async (file) => ({
-          base64: await convertFileToBase64(file),
-          nomOriginal: file.name,
-          typeMime: file.type || 'image/jpeg',
-        }))
-      );
+      const batches = splitFilesIntoUploadBatches(imageFiles);
+      const uploadedCount = await batches.reduce<Promise<number>>(async (previousUpload, batch) => {
+        const previousCount = await previousUpload;
+        const images = await Promise.all(
+          batch.map(async (file) => ({
+            base64: await convertFileToBase64(file),
+            nomOriginal: file.name,
+            typeMime: file.type || 'image/jpeg',
+          }))
+        );
 
-      await apiClient.addGalerieImages({
-        idGalerie: selectedEvent.idGalerie,
-        idUtilisateur: currentUserId,
-        images,
-      });
+        await apiClient.addGalerieImages({
+          idGalerie: selectedEvent.idGalerie,
+          idUtilisateur: currentUserId,
+          images,
+        });
+
+        return previousCount + batch.length;
+      }, Promise.resolve(0));
 
       await loadImagesForEvent(selectedEvent);
       await loadGaleries();
-      showNotificationRef.current(`${files.length} image(s) ajoutee(s) a la galerie.`, 'success');
+      showNotificationRef.current(`${uploadedCount} image(s) ajoutee(s) a la galerie.`, 'success');
     } catch (error: any) {
       console.error('Erreur upload galerie:', error);
       showNotificationRef.current(error.message || "Impossible d'ajouter ces images", 'error');
@@ -302,6 +349,25 @@ export function GalerieView() {
       setIsDragOver(false);
     }
   }, [currentUserId, loadGaleries, loadImagesForEvent, selectedEvent]);
+
+  const handleImageInputChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    submitImageFiles(files);
+  }, [submitImageFiles]);
+
+  const folderInputProps: InputHTMLAttributes<HTMLInputElement> & {
+    directory?: string;
+    webkitdirectory?: string;
+  } = {
+    accept: 'image/*',
+    directory: '',
+    hidden: true,
+    multiple: true,
+    type: 'file',
+    webkitdirectory: '',
+    onChange: handleImageInputChange,
+  };
 
   const handleOpenCreateDialog = () => {
     setEventForm(emptyEventForm);
@@ -698,14 +764,18 @@ export function GalerieView() {
                       <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', md: 'center' }} flexWrap="wrap">
                         <Button fullWidth={isMobile} component="label" variant="contained" sx={{ ...primaryActionButtonSx, px: 1.4, width: { xs: '100%', md: 'auto' } }} startIcon={<AddPhotoAlternateRounded />} disabled={uploadingImages}>
                           {uploadingImages ? 'Ajout en cours...' : 'Ajouter des photos'}
-                          <input hidden accept="image/*" multiple type="file" onChange={(event) => submitImageFiles(Array.from(event.target.files || []))} />
+                          <input hidden accept="image/*" multiple type="file" onChange={handleImageInputChange} />
+                        </Button>
+                        <Button fullWidth={isMobile} component="label" variant="outlined" sx={{ ...secondaryActionButtonSx, width: { xs: '100%', md: 'auto' } }} startIcon={<FolderRounded />} disabled={uploadingImages}>
+                          Ajouter un dossier
+                          <input {...folderInputProps} />
                         </Button>
                         <Button fullWidth={isMobile} component="a" href={buildGalerieDownloadUrl(selectedEvent.idGalerie || 0, currentUserId)} variant="outlined" sx={{ ...secondaryActionButtonSx, width: { xs: '100%', md: 'auto' } }} startIcon={<DownloadRounded />}>
                           Telecharger le dossier
                         </Button>
                         <PrintEtatGalerie event={selectedEvent} images={galerieImages} />
                         <Typography variant="body2" color="text.secondary">
-                          Depose aussi tes images ici par glisser-deposer.
+                          Depose aussi tes images ici par glisser-deposer. Les gros lots sont envoyes progressivement.
                         </Typography>
                       </Stack>
                     </Box>

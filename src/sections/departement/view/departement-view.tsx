@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import TableBody from '@mui/material/TableBody';
 import Typography from '@mui/material/Typography';
 import TableContainer from '@mui/material/TableContainer';
@@ -326,6 +327,14 @@ export function DepartementView() {
   }),
     [dataFiltered, table.order]
   );
+  const currentPageDepartements = useMemo(
+    () =>
+      sortedData?.slice(
+        table.page * table.rowsPerPage,
+        table.page * table.rowsPerPage + table.rowsPerPage
+      ) || [],
+    [sortedData, table.page, table.rowsPerPage]
+  );
 
   // Fonction pour gérer les changements dans les champs
   const handleChange = useCallback((event: any) => {
@@ -408,12 +417,23 @@ export function DepartementView() {
 
   return (
     <DashboardContent>
-      <Box display="flex" alignItems="center" mb={5}>
+      <Box
+        display="flex"
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        flexDirection={{ xs: 'column', md: 'row' }}
+        gap={2}
+        mb={{ xs: 3, md: 5 }}
+      >
         <Typography variant="h4" flexGrow={1}>
           Liste des départements
         </Typography>
 
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.25}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          sx={{ width: { xs: '100%', md: 'auto' } }}
+        >
           <PrintEtatGlobal />
 
           <Button
@@ -422,6 +442,7 @@ export function DepartementView() {
             startIcon={<Iconify icon="mingcute:add-line" />}
             onClick={handleOpenDialog}
             disabled={loading}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             {loading ? 'Chargement...' : 'Ajouter département'}
           </Button>
@@ -440,8 +461,61 @@ export function DepartementView() {
           deleteLoading={deleteLoading}
         />
 
-        <Scrollbar>
-          <TableContainer sx={{ overflow: 'unset' }}>
+        <Box sx={{ display: { xs: 'block', md: 'none' }, px: 2, pb: 2 }}>
+          <Stack spacing={1.5}>
+            {currentPageDepartements.map((row: IDepartement) => (
+              <Card key={row.idDepartement} variant="outlined" sx={{ p: 1.75, borderRadius: 2, boxShadow: 'none' }}>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" spacing={1.25} alignItems="flex-start">
+                    <Checkbox
+                      checked={table.selected?.includes(row.idDepartement?.toString() || '')}
+                      onChange={() => table?.onSelectRow(row.idDepartement?.toString() || '')}
+                      sx={{ p: 0.25 }}
+                    />
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>{row.libelleLongDepartement || 'Departement sans nom'}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
+                        {row.libelleCourtDepartement || 'Sigle non renseigne'}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Divider />
+
+                  <Grid container spacing={1.25}>
+                    <Grid item xs={12}>
+                      <Typography variant="caption" color="text.secondary">Slogan</Typography>
+                      <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.sloganDepartement || '-'}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">Responsable</Typography>
+                      <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.responsableDepartement || '-'}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">Contact</Typography>
+                      <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{responsableContactByName.get(row.responsableDepartement) || '-'}</Typography>
+                    </Grid>
+                  </Grid>
+
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Button size="small" onClick={() => handleEditDepartement(row)}>Modifier</Button>
+                    <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteDepartement(row.idDepartement)}>Supprimer</Button>
+                  </Stack>
+                </Stack>
+              </Card>
+            ))}
+
+            {notFound && (
+              <Card variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 2, boxShadow: 'none' }}>
+                <Typography variant="subtitle2">Aucun resultat</Typography>
+                <Typography variant="body2" color="text.secondary">Aucun departement ne correspond aux filtres.</Typography>
+              </Card>
+            )}
+          </Stack>
+        </Box>
+
+        <Scrollbar sx={{ display: { xs: 'none', md: 'flex' } }}>
+          <TableContainer sx={{ overflowX: 'auto' }}>
             <Table sx={{ minWidth: 800 }}>
               <DepartementTableHead
                 order={table.order}
@@ -465,12 +539,7 @@ export function DepartementView() {
                 ]}
               />
                 <TableBody>
-                {sortedData
-                  ?.slice(
-                    table.page * table.rowsPerPage,
-                    table.page * table.rowsPerPage + table.rowsPerPage
-                  )
-                  ?.map((row) => (
+                {currentPageDepartements?.map((row) => (
                     <DepartementTableRow
                       key={row.idDepartement}
                       row={row}

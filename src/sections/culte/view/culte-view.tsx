@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import TableBody from '@mui/material/TableBody';
 import Typography from '@mui/material/Typography';
 import TableContainer from '@mui/material/TableContainer';
@@ -301,6 +302,14 @@ export function CulteView() {
   }),
     [dataFiltered, table.order]
   );
+  const currentPageCultes = useMemo(
+    () =>
+      sortedData?.slice(
+        table.page * table.rowsPerPage,
+        table.page * table.rowsPerPage + table.rowsPerPage
+      ) || [],
+    [sortedData, table.page, table.rowsPerPage]
+  );
 
 
   // Fonction pour gérer les changements dans les champs
@@ -385,12 +394,23 @@ export function CulteView() {
 
   return (
     <DashboardContent>
-      <Box display="flex" alignItems="center" mb={5}>
+      <Box
+        display="flex"
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        flexDirection={{ xs: 'column', md: 'row' }}
+        gap={2}
+        mb={{ xs: 3, md: 5 }}
+      >
         <Typography variant="h4" flexGrow={1}>
           Liste des cultes
         </Typography>
 
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.25}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          sx={{ width: { xs: '100%', md: 'auto' } }}
+        >
           <PrintEtatGlobal />
 
           <Button
@@ -399,6 +419,7 @@ export function CulteView() {
             startIcon={<Iconify icon="mingcute:add-line" />}
             onClick={handleOpenDialog}
             disabled={loading}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             {loading ? 'Chargement...' : 'Ajouter culte'}
           </Button>
@@ -451,8 +472,63 @@ export function CulteView() {
           }
         />
 
-        <Scrollbar>
-          <TableContainer sx={{ overflow: 'unset' }}>
+        <Box sx={{ display: { xs: 'block', md: 'none' }, px: 2, pb: 2 }}>
+          <Stack spacing={1.5}>
+            {currentPageCultes.map((row: ICulte) => (
+              <Card key={row.idCulte} variant="outlined" sx={{ p: 1.75, borderRadius: 2, boxShadow: 'none' }}>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" spacing={1.25} alignItems="flex-start">
+                    <Checkbox
+                      checked={table.selected?.includes(row.idCulte?.toString() || '')}
+                      onChange={() => table?.onSelectRow(row.idCulte?.toString() || '')}
+                      sx={{ p: 0.25 }}
+                    />
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+                        {typeCulteOptions.find((option) => String(option.value) === String(row.typeCulte))?.label || row.typeCulte || 'Culte'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
+                        {row.dateCulte || 'Date non renseignee'} - {row.dirigeant || 'Dirigeant non renseigne'}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Divider />
+
+                  <Grid container spacing={1.25}>
+                    <Grid item xs={12}>
+                      <Typography variant="caption" color="text.secondary">Theme</Typography>
+                      <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.themePredication || '-'}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">Passage</Typography>
+                      <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.passageBiblique || '-'}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">Offrandes</Typography>
+                      <Typography variant="body2">{row.offrandeCulte || '-'}</Typography>
+                    </Grid>
+                  </Grid>
+
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Button size="small" onClick={() => handleEditCulte(row)}>Modifier</Button>
+                    <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteCulte(row.idCulte)}>Supprimer</Button>
+                  </Stack>
+                </Stack>
+              </Card>
+            ))}
+
+            {notFound && (
+              <Card variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 2, boxShadow: 'none' }}>
+                <Typography variant="subtitle2">Aucun resultat</Typography>
+                <Typography variant="body2" color="text.secondary">Aucun culte ne correspond aux filtres.</Typography>
+              </Card>
+            )}
+          </Stack>
+        </Box>
+
+        <Scrollbar sx={{ display: { xs: 'none', md: 'flex' } }}>
+          <TableContainer sx={{ overflowX: 'auto' }}>
             <Table sx={{ minWidth: 800 }}>
               <CulteTableHead
                 order={table.order}
@@ -480,12 +556,7 @@ export function CulteView() {
                 ]}
               />
               <TableBody>
-                {sortedData
-                  ?.slice(
-                    table.page * table.rowsPerPage,
-                    table.page * table.rowsPerPage + table.rowsPerPage
-                  )
-                  ?.map((row, index) => {
+                {currentPageCultes?.map((row, index) => {
                     console.log(`🚀 ~ Ligne ${index}:`, row);
                     console.log(`🚀 ~ Ligne ${index} idCulte:`, row?.idCulte);
 

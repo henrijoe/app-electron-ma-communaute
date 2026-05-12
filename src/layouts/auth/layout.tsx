@@ -73,7 +73,8 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
       cssVars={{ '--layout-auth-content-width': '1380px' }}
       sx={{
         minHeight: '100vh',
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: 'auto',
         bgcolor: '#f5f7fb',
         '&::after': {
           content: "''",
@@ -92,7 +93,9 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
             width: 1,
             display: 'grid',
             overflow: 'hidden',
-            borderRadius: 3,
+            mx: 'auto',
+            maxWidth: { xs: 520, md: 'none' },
+            borderRadius: { xs: 2.5, md: 3 },
             bgcolor: 'background.paper',
             border: '1px solid rgba(148, 163, 184, 0.22)',
             boxShadow: '0 28px 80px rgba(15, 23, 42, 0.10)',
@@ -190,14 +193,14 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
 
           <Box
             sx={{
-              px: { xs: 3, sm: 5, md: 6 },
-              py: { xs: 4, sm: 5, md: 7 },
+              px: { xs: 2.5, sm: 5, md: 6 },
+              py: { xs: 3.5, sm: 5, md: 7 },
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Box sx={{ width: 1, maxWidth: 520 }}>{children}</Box>
+            <Box sx={{ width: 1, maxWidth: 520, mx: 'auto' }}>{children}</Box>
           </Box>
         </Box>
       </Main>

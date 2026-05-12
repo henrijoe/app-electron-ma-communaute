@@ -20,6 +20,8 @@ export function Main({ children, sx, ...other }: BoxProps) {
         flex: '1 1 auto',
         flexDirection: 'column',
         minHeight: '100vh',
+        minWidth: 0,
+        overflowX: 'hidden',
         bgcolor: 'var(--layout-content-bg)',
         color: 'text.primary',
         ...sx,
@@ -58,8 +60,22 @@ export function DashboardContent({
         flexDirection: 'column',
         pt: 'var(--layout-dashboard-content-pt)',
         pb: 'var(--layout-dashboard-content-pb)',
+        px: { xs: 2, sm: 3 },
         bgcolor: 'transparent',
         color: 'text.primary',
+        minWidth: 0,
+        overflowX: 'hidden',
+        '& > *': {
+          minWidth: 0,
+        },
+        '& .MuiCard-root': {
+          maxWidth: '100%',
+        },
+        '& .MuiTableContainer-root': {
+          maxWidth: '100%',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        },
         [theme.breakpoints.up(layoutQuery)]: {
           px: 'var(--layout-dashboard-content-px)',
         },
