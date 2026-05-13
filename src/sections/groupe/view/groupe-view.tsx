@@ -20,6 +20,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
 
 import { apiClient } from 'src/utils/apiClient';
+import { canManageModule } from 'src/utils/access-control';
 import { normalizeForSearch } from 'src/utils/text';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { Iconify } from 'src/components/iconify/iconify';
@@ -57,6 +58,7 @@ export function GroupeView() {
     Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
+  const canManageGroupe = canManageModule(appUserConnected || authUtilisateurData, 'groupe');
 
   const [loading, setLoading] = useState(true);
   const [membres, setMembres] = useState<IMembre[]>([]);
@@ -140,12 +142,16 @@ export function GroupeView() {
   );
 
   const handleEditGroupe = useCallback((groupeData: IGroupe) => {
+    if (!canManageGroupe) return;
+
     setData({ ...groupeData });
     setIsEditMode(true);
     setOpenDialog(true);
-  }, []);
+  }, [canManageGroupe]);
 
   const handleDeleteGroupe = useCallback(async (idGroupe: number) => {
+    if (!canManageGroupe) return;
+
     if (!currentUserId) {
       showNotification('Session expirée : reconnectez-vous', 'warning');
       return;
@@ -163,9 +169,11 @@ export function GroupeView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, dispatch, showNotification]);
+  }, [canManageGroupe, currentUserId, dispatch, showNotification]);
 
   const handleDeleteSelected = useCallback(async () => {
+    if (!canManageGroupe) return;
+
     if (!currentUserId || table.selected.length === 0) return;
 
     try {
@@ -211,9 +219,11 @@ export function GroupeView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, dispatch, fetchGroupes, showNotification, table]);
+  }, [canManageGroupe, currentUserId, dispatch, fetchGroupes, showNotification, table]);
 
   const handleSubmit = useCallback(async () => {
+    if (!canManageGroupe) return;
+
     if (!data.libelleGroupe?.trim()) {
       showNotification('Le libellé du groupe est requis', 'warning');
       return;
@@ -253,7 +263,7 @@ export function GroupeView() {
     } finally {
       setUpdateLoading(false);
     }
-  }, [currentUserId, data, dispatch, fetchGroupes, handleCloseDialog, isEditMode, showNotification]);
+  }, [canManageGroupe, currentUserId, data, dispatch, fetchGroupes, handleCloseDialog, isEditMode, showNotification]);
 
   const baseFilteredData = useMemo(() => applyFilter({
     inputData: Array.isArray(listGroupe) ? listGroupe : [],
@@ -302,9 +312,11 @@ export function GroupeView() {
         <Typography variant="h4" flexGrow={1}>Liste des groupes</Typography>
         <Box display="flex" gap={1.25} flexDirection={{ xs: 'column', sm: 'row' }} sx={{ width: { xs: '100%', md: 'auto' } }}>
           <PrintEtatGlobal />
-          <Button variant="contained" color="inherit" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setOpenDialog(true)} sx={{ width: { xs: '100%', sm: 'auto' } }}>
-            Ajouter groupe
-          </Button>
+          {canManageGroupe && (
+            <Button variant="contained" color="inherit" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setOpenDialog(true)} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+              Ajouter groupe
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -375,10 +387,12 @@ export function GroupeView() {
                   </Grid>
                 </Grid>
 
-                <Box display="flex" justifyContent="flex-end" gap={1} mt={1.5}>
-                  <Button size="small" onClick={() => handleEditGroupe(row)}>Modifier</Button>
-                  <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteGroupe(row.idGroupe)}>Supprimer</Button>
-                </Box>
+                {canManageGroupe && (
+                  <Box display="flex" justifyContent="flex-end" gap={1} mt={1.5}>
+                    <Button size="small" onClick={() => handleEditGroupe(row)}>Modifier</Button>
+                    <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteGroupe(row.idGroupe)}>Supprimer</Button>
+                  </Box>
+                )}
               </Card>
             ))}
 
@@ -419,6 +433,7 @@ export function GroupeView() {
                     onEdit={handleEditGroupe}
                     onDelete={handleDeleteGroupe}
                     isDeleting={deleteLoading}
+                    canManage={canManageGroupe}
                     responsableContact={responsableContactByName.get(row.responsableGroupe) || ''}
                   />
                 ))}

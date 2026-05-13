@@ -18,6 +18,7 @@ import {
   canUseDesktopPrint,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 
 import { ComptabiliteArchiveDocument } from './comptabilite-archive-document';
 import { ComptabiliteJournalDocument } from './comptabilite-journal-document';
@@ -177,6 +178,10 @@ export function PrintEtatComptabilite({
     }),
     []
   );
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   const getTargetRef = (target: PrintTarget) => {
     switch (target) {

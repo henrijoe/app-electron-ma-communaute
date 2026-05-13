@@ -1,10 +1,17 @@
 import { Typography, Box } from '@mui/material';
 import React, { useRef } from 'react';
 import ReactToPrint from 'react-to-print';
+
+import { isDesktopAppRuntime } from 'src/utils/access-control';
+
 import { FicheDecision } from './ficheDecision';
 
 function PrintFicheDecision() {
   const componentRef = useRef<HTMLDivElement>(null);
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   return (
     <Box>

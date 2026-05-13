@@ -24,6 +24,7 @@ type DepartementTableRowProps = {
   onEdit: (departement: IDepartement) => void;
   onDelete: (idDepartement: number) => void;
   isDeleting?: boolean;
+  canManage?: boolean;
   responsableContact?: string;
 };
 
@@ -34,6 +35,7 @@ export function DepartementTableRow({
   onEdit,
   onDelete,
   isDeleting,
+  canManage = true,
   responsableContact = '',
 }: DepartementTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
@@ -84,12 +86,14 @@ export function DepartementTableRow({
         sx={{ cursor: 'pointer' }}
       >
         <TableCell padding="checkbox">
-          <Checkbox
-            disableRipple
-            checked={selected}
-            onChange={onSelectRow}
-            onClick={(event) => event.stopPropagation()}
-          />
+          {canManage && (
+            <Checkbox
+              disableRipple
+              checked={selected}
+              onChange={onSelectRow}
+              onClick={(event) => event.stopPropagation()}
+            />
+          )}
         </TableCell>
 
         <TableCell>
@@ -172,28 +176,34 @@ export function DepartementTableRow({
             Detail
           </MenuItem>
 
-          <MenuItem onClick={handleEdit}>
-            <Iconify icon="solar:pen-bold" />
-            Modifier
-          </MenuItem>
+          {canManage && (
+            <MenuItem onClick={handleEdit}>
+              <Iconify icon="solar:pen-bold" />
+              Modifier
+            </MenuItem>
+          )}
 
-          <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }} disabled={isDeleting}>
-            <Iconify icon="solar:trash-bin-trash-bold" />
-            {isDeleting ? 'Suppression...' : 'Supprimer'}
-          </MenuItem>
+          {canManage && (
+            <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }} disabled={isDeleting}>
+              <Iconify icon="solar:trash-bin-trash-bold" />
+              {isDeleting ? 'Suppression...' : 'Supprimer'}
+            </MenuItem>
+          )}
         </MenuList>
       </Popover>
 
-      <ConfirmDialog
-        open={openConfirm}
-        title="Suppression du departement"
-        message={`Voulez-vous vraiment supprimer le departement "${row.libelleLongDepartement}" (${row.libelleCourtDepartement}) ?`}
-        confirmText="Supprimer"
-        cancelText="Annuler"
-        loading={isDeleting}
-        onConfirm={handleConfirmDelete}
-        onClose={() => setOpenConfirm(false)}
-      />
+      {canManage && (
+        <ConfirmDialog
+          open={openConfirm}
+          title="Suppression du departement"
+          message={`Voulez-vous vraiment supprimer le departement "${row.libelleLongDepartement}" (${row.libelleCourtDepartement}) ?`}
+          confirmText="Supprimer"
+          cancelText="Annuler"
+          loading={isDeleting}
+          onConfirm={handleConfirmDelete}
+          onClose={() => setOpenConfirm(false)}
+        />
+      )}
     </>
   );
 }

@@ -72,6 +72,12 @@ export const getEffectivePermissions = (user?: Partial<IUtilisateur> | null): Mo
 
 export const isReadOnlyUser = (user?: Partial<IUtilisateur> | null): boolean => getUserRole(user) === 'lecteur';
 
+export const isDesktopAppRuntime = (): boolean =>
+  typeof window !== 'undefined' && Boolean((window as any)?.desktopApp?.isDesktop);
+
+export const isDesktopReadOnlyModule = (permission: ModulePermissionKey): boolean =>
+  isDesktopAppRuntime() && permission !== 'settings';
+
 export const getScopeUserIdFromUser = (user?: Partial<IUtilisateur> | null): number | null => {
   const parentId = Number(user?.idUtilisateurParent || 0);
   const currentId = Number(user?.idUtilisateur || 0);
@@ -87,7 +93,7 @@ export const canAccessModule = (user: Partial<IUtilisateur> | null | undefined, 
   getEffectivePermissions(user).includes(permission);
 
 export const canManageModule = (user: Partial<IUtilisateur> | null | undefined, permission: ModulePermissionKey): boolean =>
-  canAccessModule(user, permission) && !isReadOnlyUser(user);
+  canAccessModule(user, permission) && !isReadOnlyUser(user) && !isDesktopReadOnlyModule(permission);
 
 export const getSessionUser = (state: IReduxState | any): Partial<IUtilisateur> | null => {
   const appUser = state?.application?.userConnected || null;

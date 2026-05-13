@@ -20,6 +20,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
 
 import { apiClient } from 'src/utils/apiClient';
+import { canManageModule } from 'src/utils/access-control';
 import { normalizeForSearch } from 'src/utils/text';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { Iconify } from 'src/components/iconify/iconify';
@@ -57,6 +58,7 @@ export function CelluleView() {
     Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
+  const canManageCellule = canManageModule(appUserConnected || authUtilisateurData, 'cellule');
 
   const [loading, setLoading] = useState(true);
   const [membres, setMembres] = useState<IMembre[]>([]);
@@ -149,13 +151,17 @@ export function CelluleView() {
   );
 
   const handleEditCellule = useCallback((celluleData: ICellule) => {
+    if (!canManageCellule) return;
+
     // On prepare le formulaire avec les donnees completes de la cellule selectionnee.
     setData({ ...celluleData });
     setIsEditMode(true);
     setOpenDialog(true);
-  }, []);
+  }, [canManageCellule]);
 
   const handleDeleteCellule = useCallback(async (idCellule: number) => {
+    if (!canManageCellule) return;
+
     if (!currentUserId) {
       showNotification('Session expirée : reconnectez-vous', 'warning');
       return;
@@ -173,9 +179,11 @@ export function CelluleView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, dispatch, showNotification]);
+  }, [canManageCellule, currentUserId, dispatch, showNotification]);
 
   const handleDeleteSelected = useCallback(async () => {
+    if (!canManageCellule) return;
+
     if (!currentUserId || table.selected.length === 0) return;
 
     try {
@@ -221,9 +229,11 @@ export function CelluleView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, dispatch, fetchCellules, showNotification, table]);
+  }, [canManageCellule, currentUserId, dispatch, fetchCellules, showNotification, table]);
 
   const handleSubmit = useCallback(async () => {
+    if (!canManageCellule) return;
+
     if (!data.nomCellule?.trim()) {
       showNotification('Le nom de la cellule est requis', 'warning');
       return;
@@ -264,7 +274,7 @@ export function CelluleView() {
     } finally {
       setUpdateLoading(false);
     }
-  }, [currentUserId, data, dispatch, fetchCellules, handleCloseDialog, isEditMode, showNotification]);
+  }, [canManageCellule, currentUserId, data, dispatch, fetchCellules, handleCloseDialog, isEditMode, showNotification]);
 
   const baseFilteredData = useMemo(() => applyFilter({
     inputData: Array.isArray(listCellule) ? listCellule : [],
@@ -320,9 +330,11 @@ export function CelluleView() {
         <Typography variant="h4" flexGrow={1}>Liste des cellules</Typography>
         <Box display="flex" gap={1.25} flexDirection={{ xs: 'column', sm: 'row' }} sx={{ width: { xs: '100%', md: 'auto' } }}>
           <PrintEtatGlobal />
-          <Button variant="contained" color="inherit" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setOpenDialog(true)} sx={{ width: { xs: '100%', sm: 'auto' } }}>
-            Ajouter cellule
-          </Button>
+          {canManageCellule && (
+            <Button variant="contained" color="inherit" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setOpenDialog(true)} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+              Ajouter cellule
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -403,10 +415,12 @@ export function CelluleView() {
                   </Grid>
                 </Grid>
 
-                <Box display="flex" justifyContent="flex-end" gap={1} mt={1.5}>
-                  <Button size="small" onClick={() => handleEditCellule(row)}>Modifier</Button>
-                  <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteCellule(row.idCellule)}>Supprimer</Button>
-                </Box>
+                {canManageCellule && (
+                  <Box display="flex" justifyContent="flex-end" gap={1} mt={1.5}>
+                    <Button size="small" onClick={() => handleEditCellule(row)}>Modifier</Button>
+                    <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteCellule(row.idCellule)}>Supprimer</Button>
+                  </Box>
+                )}
               </Card>
             ))}
 
@@ -450,6 +464,7 @@ export function CelluleView() {
                     onEdit={handleEditCellule}
                     onDelete={handleDeleteCellule}
                     isDeleting={deleteLoading}
+                    canManage={canManageCellule}
                     responsableContact={responsableContactByName.get(row.responsableCellule) || ''}
                     responsableVisiteContact={responsableContactByName.get(row.responsableVisiteCellule) || ''}
                   />

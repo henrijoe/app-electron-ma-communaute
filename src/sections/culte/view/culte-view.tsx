@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 
 import { apiClient } from 'src/utils/apiClient';
+import { canManageModule } from 'src/utils/access-control';
 import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
@@ -56,6 +57,7 @@ export function CulteView() {
     Number(appUserConnected?.idUtilisateur)
     || Number(authUtilisateurData?.idUtilisateur)
     || null;
+  const canManageCulte = canManageModule(appUserConnected || authUtilisateurData, 'culte');
 
   const [loading, setLoading] = useState(true);
   const table = useCulteTable();
@@ -90,7 +92,11 @@ export function CulteView() {
     setData({ ...culte });
   }, []);
 
-  const handleOpenDialog = useCallback(() => setOpenDialog(true), []);
+  const handleOpenDialog = useCallback(() => {
+    if (!canManageCulte) return;
+
+    setOpenDialog(true);
+  }, [canManageCulte]);
 
 
   const fetchCultes = useCallback(async () => {
@@ -113,6 +119,8 @@ export function CulteView() {
 
   // Fonction pour supprimer un culte
   const handleDeleteCulte = useCallback(async (idCulte: number) => {
+    if (!canManageCulte) return;
+
     if (!currentUserId) {
       showNotification('Session expiree: reconnectez-vous pour supprimer un culte', 'warning');
       return;
@@ -134,10 +142,12 @@ export function CulteView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, dispatch, showNotification]);
+  }, [canManageCulte, currentUserId, dispatch, showNotification]);
 
   // Fonction pour éditer un culte
   const handleEditCulte = useCallback((culteData: ICulte) => {
+    if (!canManageCulte) return;
+
     setIsEditMode(true);
 
     // Formatage des données pour le formulaire
@@ -151,7 +161,7 @@ export function CulteView() {
     console.log("Données pour édition:", formData);
     setData(formData);
     setOpenDialog(true);
-  }, []);
+  }, [canManageCulte]);
 
   // Fonction pour mettre à jour un culte
   const handleUpdateCulte = useCallback(async (formData: ICulte) => {
@@ -234,6 +244,8 @@ export function CulteView() {
 
   // Fonction pour gérer la soumission
   const onFormSubmit = useCallback((formData: ICulte) => {
+    if (!canManageCulte) return;
+
     // Validation
     if (!formData.typeCulte) {
       showNotification('Le type de culte est requis', 'warning');
@@ -251,7 +263,7 @@ export function CulteView() {
     };
 
     handleCreateOrUpdateCulte(culteData);
-  }, [isEditMode, data.idCulte, handleCreateOrUpdateCulte, showNotification]);
+  }, [canManageCulte, isEditMode, data.idCulte, handleCreateOrUpdateCulte, showNotification]);
 
   useEffect(() => {
     fetchCultes();
@@ -320,6 +332,8 @@ export function CulteView() {
 
   // Fonction pour supprimer plusieurs cultes
   const handleDeleteSelected = useCallback(async () => {
+    if (!canManageCulte) return;
+
     if (selected.length === 0) return;
     if (!currentUserId) {
       showNotification('Session expiree: reconnectez-vous pour supprimer des cultes', 'warning');
@@ -371,7 +385,7 @@ export function CulteView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, selected, onSelectAllRows, dispatch, showNotification, fetchCultes]);
+  }, [canManageCulte, currentUserId, selected, onSelectAllRows, dispatch, showNotification, fetchCultes]);
 
   useEffect(() => {
     if (!openDialog) {
@@ -413,6 +427,7 @@ export function CulteView() {
         >
           <PrintEtatGlobal />
 
+          {canManageCulte && (
           <Button
             variant="contained"
             color="inherit"
@@ -423,6 +438,7 @@ export function CulteView() {
           >
             {loading ? 'Chargement...' : 'Ajouter culte'}
           </Button>
+          )}
         </Stack>
       </Box>
 
@@ -510,10 +526,12 @@ export function CulteView() {
                     </Grid>
                   </Grid>
 
+                  {canManageCulte && (
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
                     <Button size="small" onClick={() => handleEditCulte(row)}>Modifier</Button>
                     <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteCulte(row.idCulte)}>Supprimer</Button>
                   </Stack>
+                  )}
                 </Stack>
               </Card>
             ))}
@@ -568,7 +586,8 @@ export function CulteView() {
                         onSelectRow={() => table?.onSelectRow(row.idCulte?.toString() || '')}
                         onEdit={handleEditCulte}
                         onDelete={handleDeleteCulte}
-                        isDeleting={deleteLoading}
+                      isDeleting={deleteLoading}
+                      canManage={canManageCulte}
                       />
                     )
                   })}

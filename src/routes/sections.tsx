@@ -5,7 +5,7 @@ import { Outlet, Navigate, useRoutes } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 
-import { getSessionUser, canAccessModule } from 'src/utils/access-control';
+import { getSessionUser, canAccessModule, canManageModule } from 'src/utils/access-control';
 
 import { varAlpha } from 'src/theme/styles';
 import { AuthLayout } from 'src/layouts/auth';
@@ -59,10 +59,22 @@ const renderFallback = (
   </Box>
 );
 
-function GuardedPage({ permission, element }: { permission: any; element: React.ReactNode }) {
+function GuardedPage({
+  permission,
+  element,
+  requireManage = false,
+}: {
+  permission: any;
+  element: React.ReactNode;
+  requireManage?: boolean;
+}) {
   const sessionUser = useSelector((state: any) => getSessionUser(state));
 
   if (!canAccessModule(sessionUser, permission)) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireManage && !canManageModule(sessionUser, permission)) {
     return <Navigate to="/" replace />;
   }
 
@@ -90,7 +102,7 @@ export function Router() {
         { element: <GuardedPage permission="dashboard" element={<HomePage />} />, index: true },
         { path: 'home', element: <GuardedPage permission="dashboard" element={<HomePage />} /> },
         { path: 'user', element: <GuardedPage permission="user" element={<UserPage />} /> },
-        { path: 'user/import', element: <GuardedPage permission="user" element={<UserImportPage />} /> },
+        { path: 'user/import', element: <GuardedPage permission="user" element={<UserImportPage />} requireManage /> },
         { path: 'culte', element: <GuardedPage permission="culte" element={<CultePage />} /> },
         { path: 'departement', element: <GuardedPage permission="departement" element={<DepartementPage />} /> },
         { path: 'cellule', element: <GuardedPage permission="cellule" element={<CellulePage />} /> },
@@ -108,7 +120,7 @@ export function Router() {
           children: [
             { index: true, element: <GuardedPage permission="user" element={<UserPage />} /> },
             { path: ':id', element: <GuardedPage permission="user" element={<UserDetail />} /> },
-            { path: 'edit/:id', element: <GuardedPage permission="user" element={<UserEdit />} /> },
+            { path: 'edit/:id', element: <GuardedPage permission="user" element={<UserEdit />} requireManage /> },
           ],
         },
         {
@@ -116,7 +128,7 @@ export function Router() {
           children: [
             { index: true, element: <GuardedPage permission="culte" element={<CultePage />} /> },
             { path: ':id', element: <GuardedPage permission="culte" element={<CulteDetail />} /> },
-            { path: 'edit/:id', element: <GuardedPage permission="culte" element={<CulteEdit />} /> },
+            { path: 'edit/:id', element: <GuardedPage permission="culte" element={<CulteEdit />} requireManage /> },
           ],
         },
         {
@@ -124,7 +136,7 @@ export function Router() {
           children: [
             { index: true, element: <GuardedPage permission="departement" element={<DepartementPage />} /> },
             { path: ':id', element: <GuardedPage permission="departement" element={<DepartementDetail />} /> },
-            { path: 'edit/:id', element: <GuardedPage permission="departement" element={<DepartementEdit />} /> },
+            { path: 'edit/:id', element: <GuardedPage permission="departement" element={<DepartementEdit />} requireManage /> },
           ],
         },
         {
@@ -132,7 +144,7 @@ export function Router() {
           children: [
             { index: true, element: <GuardedPage permission="cellule" element={<CellulePage />} /> },
             { path: ':id', element: <GuardedPage permission="cellule" element={<CelluleDetail />} /> },
-            { path: 'edit/:id', element: <GuardedPage permission="cellule" element={<CelluleEdit />} /> },
+            { path: 'edit/:id', element: <GuardedPage permission="cellule" element={<CelluleEdit />} requireManage /> },
           ],
         },
         {
@@ -140,7 +152,7 @@ export function Router() {
           children: [
             { index: true, element: <GuardedPage permission="groupe" element={<GroupePage />} /> },
             { path: ':id', element: <GuardedPage permission="groupe" element={<GroupeDetail />} /> },
-            { path: 'edit/:id', element: <GuardedPage permission="groupe" element={<GroupeEdit />} /> },
+            { path: 'edit/:id', element: <GuardedPage permission="groupe" element={<GroupeEdit />} requireManage /> },
           ],
         },
       ],

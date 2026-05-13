@@ -48,6 +48,7 @@ import {
   upsertAgenda,
 } from 'src/store/agendaSlice';
 import { apiClient } from 'src/utils/apiClient';
+import { canManageModule } from 'src/utils/access-control';
 
 type AgendaViewMode = 'month' | 'week' | 'day' | 'list';
 type ReminderLevel = 'today' | 'next-hour';
@@ -185,7 +186,8 @@ const buildEventDateTime = (event: IAgendaEvent) => {
 const sortAgendaItems = (items: IAgendaEvent[]) =>
   [...items].sort((a: IAgendaEvent, b: IAgendaEvent) => `${a.dateAgenda || ''} ${a.heureDebutAgenda || ''}`.localeCompare(`${b.dateAgenda || ''} ${b.heureDebutAgenda || ''}`));
 
-const EventCard = ({ event, compact = false, onDelete, onEdit }: {
+const EventCard = ({ event, compact = false, canManage = true, onDelete, onEdit }: {
+  canManage?: boolean;
   compact?: boolean;
   event: IAgendaEvent;
   onDelete: (event: IAgendaEvent) => void;
@@ -220,14 +222,16 @@ const EventCard = ({ event, compact = false, onDelete, onEdit }: {
             </Typography>
           )}
         </Box>
-        <Stack direction="row" spacing={0.5}>
-          <IconButton size="small" onClick={() => onEdit(event)}>
-            <EditRounded fontSize="small" />
-          </IconButton>
-          <IconButton size="small" color="error" onClick={() => onDelete(event)}>
-            <DeleteRounded fontSize="small" />
-          </IconButton>
-        </Stack>
+        {canManage && (
+          <Stack direction="row" spacing={0.5}>
+            <IconButton size="small" onClick={() => onEdit(event)}>
+              <EditRounded fontSize="small" />
+            </IconButton>
+            <IconButton size="small" color="error" onClick={() => onDelete(event)}>
+              <DeleteRounded fontSize="small" />
+            </IconButton>
+          </Stack>
+        )}
       </Stack>
     </Card>
   );
@@ -247,6 +251,7 @@ export function AgendaView() {
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
   const identity = appUserConnected || authUtilisateurData || {};
+  const canManageAgenda = canManageModule(identity, 'agenda');
   const notifiedReminderKeys = useRef<Set<string>>(new Set());
 
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
@@ -390,6 +395,8 @@ export function AgendaView() {
   }, [reminderEvents]);
 
   const openCreateDialog = (dateValue?: string) => {
+    if (!canManageAgenda) return;
+
     setAgendaForm({
       ...emptyAgendaEvent,
       dateAgenda: dateValue || selectedDate,
@@ -399,11 +406,15 @@ export function AgendaView() {
   };
 
   const openEditDialog = (item: IAgendaEvent) => {
+    if (!canManageAgenda) return;
+
     setAgendaForm({ ...item });
     setAgendaDialogOpen(true);
   };
 
   const handleSaveAgenda = async () => {
+    if (!canManageAgenda) return;
+
     if (!currentUserId) {
       showNotificationRef.current('Session indisponible. Reconnecte-toi.', 'warning');
       return;
@@ -438,6 +449,8 @@ export function AgendaView() {
   };
 
   const handleDeleteAgenda = async () => {
+    if (!canManageAgenda) return;
+
     if (!confirmDelete?.idAgenda || !currentUserId) return;
 
     try {
@@ -536,7 +549,7 @@ export function AgendaView() {
                 {reminderLabel && <Chip size="small" color={reminderLabel === "Aujourd'hui" ? 'warning' : 'info'} label={reminderLabel} />}
               </Stack>
               <Stack spacing={1.5}>
-                {dayEvents.map((event: IAgendaEvent) => <EventCard key={event.idAgenda} event={event} compact onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
+                {dayEvents.map((event: IAgendaEvent) => <EventCard key={event.idAgenda} event={event} compact canManage={canManageAgenda} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
                 {dayEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun evenement programme.</Typography>}
               </Stack>
             </Card>
@@ -553,10 +566,10 @@ export function AgendaView() {
           <Typography variant="h5" sx={{ textTransform: 'capitalize' }}>{selectedDateLabel}</Typography>
           <Typography variant="body2" color="text.secondary">{getReminderLabel(selectedDate) || 'Jour selectionne'}</Typography>
         </Box>
-        <Button variant="contained" sx={primaryActionButtonSx} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter ce jour</Button>
+        {canManageAgenda && <Button variant="contained" sx={primaryActionButtonSx} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter ce jour</Button>}
       </Stack>
       <Stack spacing={2}>
-        {selectedDateEvents.map((event: IAgendaEvent) => <EventCard key={event.idAgenda} event={event} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
+        {selectedDateEvents.map((event: IAgendaEvent) => <EventCard key={event.idAgenda} event={event} canManage={canManageAgenda} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
         {selectedDateEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun evenement programme pour cette journee.</Typography>}
       </Stack>
     </Card>
@@ -572,7 +585,7 @@ export function AgendaView() {
         <Chip label={`${listViewEvents.length} evenement(s)`} sx={{ bgcolor: alpha('#0f172a', 0.08), color: 'text.primary' }} />
       </Stack>
       <Stack spacing={2}>
-        {listViewEvents.map((event: IAgendaEvent) => <EventCard key={event.idAgenda} event={event} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
+        {listViewEvents.map((event: IAgendaEvent) => <EventCard key={event.idAgenda} event={event} canManage={canManageAgenda} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
         {listViewEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun evenement a afficher dans cette periode.</Typography>}
       </Stack>
     </Card>
@@ -596,7 +609,7 @@ export function AgendaView() {
             }}
           >
             <PrintEtatAgenda events={monthEvents} identity={identity} monthLabel={selectedMonthLabel} />
-            <Button fullWidth={isMobile} variant="contained" sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog()}>Ajouter un evenement</Button>
+            {canManageAgenda && <Button fullWidth={isMobile} variant="contained" sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog()}>Ajouter un evenement</Button>}
           </Stack>
         </Stack>
 
@@ -614,7 +627,7 @@ export function AgendaView() {
           <Grid item xs={12} lg={3}>
             <Stack spacing={3}>
               <Card sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 4, ...themedPanelSx }}>
-                <Button fullWidth={isTablet} variant="contained" sx={{ ...primaryActionButtonSx, mb: 3, width: { xs: '100%', lg: 'fit-content' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter a cette date</Button>
+                {canManageAgenda && <Button fullWidth={isTablet} variant="contained" sx={{ ...primaryActionButtonSx, mb: 3, width: { xs: '100%', lg: 'fit-content' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter a cette date</Button>}
                 <Typography variant="h6" sx={{ mb: 2 }}>Prochains rendez-vous</Typography>
                 <Stack spacing={2}>
                   {upcomingEvents.map((item: IAgendaEvent) => {
@@ -630,7 +643,7 @@ export function AgendaView() {
                             </Stack>
                             <Typography variant="caption" color="text.secondary">{item.dateAgenda} {item.heureDebutAgenda ? `- ${item.heureDebutAgenda}` : ''}</Typography>
                           </Box>
-                          <IconButton size="small" onClick={() => openEditDialog(item)}><EditRounded fontSize="small" /></IconButton>
+                          {canManageAgenda && <IconButton size="small" onClick={() => openEditDialog(item)}><EditRounded fontSize="small" /></IconButton>}
                         </Stack>
                       </Card>
                     );
@@ -643,7 +656,7 @@ export function AgendaView() {
                 <Typography variant="h6" sx={{ mb: 1 }}>Jour selectionne</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{selectedDateLabel}</Typography>
                 <Stack spacing={2}>
-                  {selectedDateEvents.map((item: IAgendaEvent) => <EventCard key={item.idAgenda} event={item} compact onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
+                  {selectedDateEvents.map((item: IAgendaEvent) => <EventCard key={item.idAgenda} event={item} compact canManage={canManageAgenda} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
                   {selectedDateEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun evenement a cette date.</Typography>}
                 </Stack>
               </Card>

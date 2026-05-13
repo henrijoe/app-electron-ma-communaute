@@ -24,10 +24,11 @@ type CulteTableRowProps = {
   onSelectRow: () => void;
   onEdit: (culte: ICulte) => void;
   onDelete: (idCulte: number) => void;
+  canManage?: boolean;
   isDeleting?: boolean;
 };
 
-export function CulteTableRow({ row, selected, onSelectRow, onEdit, onDelete, isDeleting }: CulteTableRowProps) {
+export function CulteTableRow({ row, selected, onSelectRow, onEdit, onDelete, canManage = true, isDeleting }: CulteTableRowProps) {
   // console.log("🚀 ~ CulteTableRow ~ row:", row)
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
   const [openConfirm, setOpenConfirm] = useState(false);
@@ -100,12 +101,14 @@ export function CulteTableRow({ row, selected, onSelectRow, onEdit, onDelete, is
         sx={{ cursor: 'pointer' }}
       >
         <TableCell padding="checkbox">
-          <Checkbox
-            disableRipple
-            checked={selected}
-            onChange={onSelectRow}
-            onClick={(event) => event.stopPropagation()}
-          />
+          {canManage && (
+            <Checkbox
+              disableRipple
+              checked={selected}
+              onChange={onSelectRow}
+              onClick={(event) => event.stopPropagation()}
+            />
+          )}
         </TableCell>
 
         {/* Type de culte */}
@@ -219,32 +222,38 @@ export function CulteTableRow({ row, selected, onSelectRow, onEdit, onDelete, is
             Détail
           </MenuItem>
 
-          <MenuItem onClick={handleEdit}>
-            <Iconify icon="solar:pen-bold" />
-            Modifier
-          </MenuItem>
+          {canManage && (
+            <MenuItem onClick={handleEdit}>
+              <Iconify icon="solar:pen-bold" />
+              Modifier
+            </MenuItem>
+          )}
 
-          <MenuItem
-            onClick={handleDelete}
-            sx={{ color: 'error.main' }}
-            disabled={isDeleting}
-          >
-            <Iconify icon="solar:trash-bin-trash-bold" />
-            {isDeleting ? 'Suppression...' : 'Supprimer'}
-          </MenuItem>
+          {canManage && (
+            <MenuItem
+              onClick={handleDelete}
+              sx={{ color: 'error.main' }}
+              disabled={isDeleting}
+            >
+              <Iconify icon="solar:trash-bin-trash-bold" />
+              {isDeleting ? 'Suppression...' : 'Supprimer'}
+            </MenuItem>
+          )}
         </MenuList>
       </Popover>
 
-      <ConfirmDialog
-        open={openConfirm}
-        title="Suppression du culte"
-        message={`Voulez-vous vraiment supprimer le culte du ${formatDate(row.dateCulte)} (${row.typeCulte}) ?`}
-        confirmText="Supprimer"
-        cancelText="Annuler"
-        loading={isDeleting}
-        onConfirm={handleConfirmDelete}
-        onClose={() => setOpenConfirm(false)}
-      />
+      {canManage && (
+        <ConfirmDialog
+          open={openConfirm}
+          title="Suppression du culte"
+          message={`Voulez-vous vraiment supprimer le culte du ${formatDate(row.dateCulte)} (${row.typeCulte}) ?`}
+          confirmText="Supprimer"
+          cancelText="Annuler"
+          loading={isDeleting}
+          onConfirm={handleConfirmDelete}
+          onClose={() => setOpenConfirm(false)}
+        />
+      )}
     </>
   );
 }

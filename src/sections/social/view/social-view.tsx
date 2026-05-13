@@ -46,6 +46,7 @@ import type { IMariage } from 'src/store/mariageSlice';
 import type { IMembre } from 'src/store/membreSlice';
 import type { INaissance } from 'src/store/naissanceSlice';
 import { apiClient } from 'src/utils/apiClient';
+import { canManageModule } from 'src/utils/access-control';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 
 type SocialCaseType = 'mariage' | 'naissance' | 'deces' | 'maladie';
@@ -262,6 +263,7 @@ export function SocialView() {
   const userConnected = useSelector((state: any) => state.application?.userConnected);
   const utilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
   const currentUserId = Number(userConnected?.idUtilisateur || utilisateurData?.idUtilisateur || 0);
+  const canManageSocial = canManageModule(userConnected || utilisateurData, 'social');
 
   const [activeType, setActiveType] = useState<SocialCaseType>('mariage');
   const [searchTerm, setSearchTerm] = useState('');
@@ -406,12 +408,16 @@ export function SocialView() {
   }, [currentConfig.columns, currentRows, searchTerm]);
 
   const openCreateDialog = () => {
+    if (!canManageSocial) return;
+
     setEditingId(null);
     setFormState((prev) => ({ ...prev, [activeType]: emptyFormState[activeType] as any }));
     setOpenDialog(true);
   };
 
   const openEditDialog = (row: any) => {
+    if (!canManageSocial) return;
+
     setEditingId(getRowId(activeType, row));
     setFormState((prev) => ({ ...prev, [activeType]: { ...row, idMembre: row?.idMembre ?? null } }));
     setOpenDialog(true);
@@ -447,6 +453,8 @@ export function SocialView() {
   };
 
   const handleSubmit = async () => {
+    if (!canManageSocial) return;
+
     if (!currentUserId) {
       showNotification('Utilisateur non reconnu. Reconnectez-vous pour continuer.', 'warning');
       return;
@@ -476,6 +484,8 @@ export function SocialView() {
   };
 
   const handleDelete = async () => {
+    if (!canManageSocial) return;
+
     if (!deleteTarget) return;
 
     try {
@@ -520,9 +530,11 @@ export function SocialView() {
             }}
           >
             <PrintEtatSociaux activeType={activeType} identity={utilisateurData} rows={currentRows} />
-            <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={openCreateDialog} fullWidth={isMobile}>
-              Ajouter
-            </Button>
+            {canManageSocial && (
+              <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={openCreateDialog} fullWidth={isMobile}>
+                Ajouter
+              </Button>
+            )}
           </Stack>
         </Stack>
 
@@ -635,16 +647,18 @@ export function SocialView() {
                               sx={{ mt: 0.75 }}
                             />
                           </Box>
-                          <Stack direction="row" spacing={0.75}>
-                            <Button
-                              size="small"
-                              color="primary"
-                              startIcon={<EditRoundedIcon />}
-                              onClick={() => openEditDialog(row)}
-                            >
-                              Modifier
-                            </Button>
-                          </Stack>
+                          {canManageSocial && (
+                            <Stack direction="row" spacing={0.75}>
+                              <Button
+                                size="small"
+                                color="primary"
+                                startIcon={<EditRoundedIcon />}
+                                onClick={() => openEditDialog(row)}
+                              >
+                                Modifier
+                              </Button>
+                            </Stack>
+                          )}
                         </Stack>
 
                         <Stack spacing={1}>
@@ -668,20 +682,22 @@ export function SocialView() {
                           ))}
                         </Stack>
 
-                        <Button
-                          size="small"
-                          color="error"
-                          startIcon={<DeleteRoundedIcon />}
-                          onClick={() =>
-                            setDeleteTarget({
-                              id: getRowId(activeType, row),
-                              label: buildDeleteLabel(activeType, row),
-                            })
-                          }
-                          sx={{ alignSelf: 'flex-start' }}
-                        >
-                          Supprimer
-                        </Button>
+                        {canManageSocial && (
+                          <Button
+                            size="small"
+                            color="error"
+                            startIcon={<DeleteRoundedIcon />}
+                            onClick={() =>
+                              setDeleteTarget({
+                                id: getRowId(activeType, row),
+                                label: buildDeleteLabel(activeType, row),
+                              })
+                            }
+                            sx={{ alignSelf: 'flex-start' }}
+                          >
+                            Supprimer
+                          </Button>
+                        )}
                       </Stack>
                     </Card>
                   ))}
@@ -697,9 +713,11 @@ export function SocialView() {
                           {column.label}
                         </TableCell>
                       ))}
-                      <TableCell align="right" sx={{ fontWeight: 700 }}>
-                        Actions
-                      </TableCell>
+                      {canManageSocial && (
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          Actions
+                        </TableCell>
+                      )}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -712,31 +730,33 @@ export function SocialView() {
                               : row[column.key] || 'Non specifie'}
                           </TableCell>
                         ))}
-                        <TableCell align="right">
-                          <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <Button
-                              size="small"
-                              color="primary"
-                              startIcon={<EditRoundedIcon />}
-                              onClick={() => openEditDialog(row)}
-                            >
-                              Modifier
-                            </Button>
-                            <Button
-                              size="small"
-                              color="error"
-                              startIcon={<DeleteRoundedIcon />}
-                              onClick={() =>
-                                setDeleteTarget({
-                                  id: getRowId(activeType, row),
-                                  label: buildDeleteLabel(activeType, row),
-                                })
-                              }
-                            >
-                              Supprimer
-                            </Button>
-                          </Stack>
-                        </TableCell>
+                        {canManageSocial && (
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <Button
+                                size="small"
+                                color="primary"
+                                startIcon={<EditRoundedIcon />}
+                                onClick={() => openEditDialog(row)}
+                              >
+                                Modifier
+                              </Button>
+                              <Button
+                                size="small"
+                                color="error"
+                                startIcon={<DeleteRoundedIcon />}
+                                onClick={() =>
+                                  setDeleteTarget({
+                                    id: getRowId(activeType, row),
+                                    label: buildDeleteLabel(activeType, row),
+                                  })
+                                }
+                              >
+                                Supprimer
+                              </Button>
+                            </Stack>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

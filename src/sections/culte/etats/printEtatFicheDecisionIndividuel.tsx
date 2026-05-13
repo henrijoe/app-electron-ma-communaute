@@ -3,8 +3,14 @@ import PrintIcon from '@mui/icons-material/Print';
 import { Typography, Box } from '@mui/material';
 import ReactToPrint from 'react-to-print';
 
+import { isDesktopAppRuntime } from 'src/utils/access-control';
+
 function PrintFicheIndividuelDecision() {
   const componentRef = useRef<HTMLDivElement>(null);
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   return (
     <Box>

@@ -23,6 +23,7 @@ type GroupeTableRowProps = {
   onEdit: (groupe: IGroupe) => void;
   onDelete: (idGroupe: number) => void;
   isDeleting?: boolean;
+  canManage?: boolean;
   responsableContact?: string;
 };
 
@@ -33,6 +34,7 @@ export function GroupeTableRow({
   onEdit,
   onDelete,
   isDeleting,
+  canManage = true,
   responsableContact = '',
 }: GroupeTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
@@ -72,7 +74,7 @@ export function GroupeTableRow({
     <>
       <TableRow hover tabIndex={-1} role="checkbox" selected={selected} onDoubleClick={handleViewDetail} sx={{ cursor: 'pointer' }}>
         <TableCell padding="checkbox">
-          <Checkbox disableRipple checked={selected} onChange={onSelectRow} onClick={(event) => event.stopPropagation()} />
+          {canManage && <Checkbox disableRipple checked={selected} onChange={onSelectRow} onClick={(event) => event.stopPropagation()} />}
         </TableCell>
 
         <TableCell>
@@ -105,21 +107,23 @@ export function GroupeTableRow({
       <Popover open={!!openPopover} anchorEl={openPopover} onClose={handleClosePopover} anchorOrigin={{ vertical: 'top', horizontal: 'left' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
         <MenuList disablePadding sx={{ p: 0.5, gap: 0.5, width: 140, display: 'flex', flexDirection: 'column', [`& .${menuItemClasses.root}`]: { px: 1, gap: 2, borderRadius: 0.75 } }}>
           <MenuItem onClick={handleViewDetail}><Iconify icon="solar:eye-bold" />Détail</MenuItem>
-          <MenuItem onClick={handleEdit}><Iconify icon="solar:pen-bold" />Modifier</MenuItem>
-          <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }} disabled={isDeleting}><Iconify icon="solar:trash-bin-trash-bold" />{isDeleting ? 'Suppression...' : 'Supprimer'}</MenuItem>
+          {canManage && <MenuItem onClick={handleEdit}><Iconify icon="solar:pen-bold" />Modifier</MenuItem>}
+          {canManage && <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }} disabled={isDeleting}><Iconify icon="solar:trash-bin-trash-bold" />{isDeleting ? 'Suppression...' : 'Supprimer'}</MenuItem>}
         </MenuList>
       </Popover>
 
-      <ConfirmDialog
-        open={openConfirm}
-        title="Suppression du groupe"
-        message={`Voulez-vous vraiment supprimer le groupe "${row.libelleGroupe}" ?`}
-        confirmText="Supprimer"
-        cancelText="Annuler"
-        loading={isDeleting}
-        onConfirm={handleConfirmDelete}
-        onClose={() => setOpenConfirm(false)}
-      />
+      {canManage && (
+        <ConfirmDialog
+          open={openConfirm}
+          title="Suppression du groupe"
+          message={`Voulez-vous vraiment supprimer le groupe "${row.libelleGroupe}" ?`}
+          confirmText="Supprimer"
+          cancelText="Annuler"
+          loading={isDeleting}
+          onConfirm={handleConfirmDelete}
+          onClose={() => setOpenConfirm(false)}
+        />
+      )}
     </>
   );
 }

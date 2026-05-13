@@ -61,6 +61,7 @@ import {
   type IGalerieImage,
 } from 'src/store/galerieSlice';
 import { apiClient, buildGalerieDownloadUrl, buildGalerieMediaUrl } from 'src/utils/apiClient';
+import { canManageModule, isDesktopAppRuntime } from 'src/utils/access-control';
 
 type EventFormState = {
   dateEvenement: string;
@@ -187,6 +188,8 @@ export function GalerieView() {
     Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
+  const canManageGalerie = canManageModule(appUserConnected || authUtilisateurData, 'galerie');
+  const isDesktopApp = isDesktopAppRuntime();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<EventSortOption>('date-desc');
@@ -304,6 +307,8 @@ export function GalerieView() {
   }, [galerieEvents, searchTerm, sortBy, typeFilter]);
 
   const submitImageFiles = useCallback(async (files: File[]) => {
+    if (!canManageGalerie) return;
+
     if (!currentUserId || !selectedEvent?.idGalerie) {
       showNotificationRef.current('Selectionne un evenement avant de charger des images.', 'warning');
       return;
@@ -348,13 +353,15 @@ export function GalerieView() {
       setUploadingImages(false);
       setIsDragOver(false);
     }
-  }, [currentUserId, loadGaleries, loadImagesForEvent, selectedEvent]);
+  }, [canManageGalerie, currentUserId, loadGaleries, loadImagesForEvent, selectedEvent]);
 
   const handleImageInputChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    if (!canManageGalerie) return;
+
     const files = Array.from(event.target.files || []);
     event.target.value = '';
     submitImageFiles(files);
-  }, [submitImageFiles]);
+  }, [canManageGalerie, submitImageFiles]);
 
   const folderInputProps: InputHTMLAttributes<HTMLInputElement> & {
     directory?: string;
@@ -370,11 +377,15 @@ export function GalerieView() {
   };
 
   const handleOpenCreateDialog = () => {
+    if (!canManageGalerie) return;
+
     setEventForm(emptyEventForm);
     setEventDialogOpen(true);
   };
 
   const handleOpenEditDialog = (event: IGalerieEvenement) => {
+    if (!canManageGalerie) return;
+
     setEventForm({
       idGalerie: event.idGalerie,
       titreGalerie: event.titreGalerie,
@@ -387,6 +398,8 @@ export function GalerieView() {
   };
 
   const handleSubmitEvent = async () => {
+    if (!canManageGalerie) return;
+
     if (!currentUserId) {
       showNotificationRef.current('Session indisponible. Reconnecte-toi.', 'warning');
       return;
@@ -441,6 +454,8 @@ export function GalerieView() {
   };
 
   const handleDeleteEvent = async () => {
+    if (!canManageGalerie) return;
+
     if (!confirmDeleteEvent?.idGalerie || !currentUserId) return;
 
     try {
@@ -459,6 +474,8 @@ export function GalerieView() {
   };
 
   const handleDeleteImage = async () => {
+    if (!canManageGalerie) return;
+
     if (!confirmDeleteImage?.idGalerieImage || !currentUserId || !selectedEvent) return;
 
     try {
@@ -477,11 +494,15 @@ export function GalerieView() {
   };
 
   const handleOpenCaptionDialog = (image: IGalerieImage) => {
+    if (!canManageGalerie) return;
+
     setCaptionDialogImage(image);
     setCaptionValue(image.legendeImage || '');
   };
 
   const handleSaveCaption = async () => {
+    if (!canManageGalerie) return;
+
     if (!captionDialogImage?.idGalerieImage || !currentUserId || !selectedEvent) return;
 
     try {
@@ -504,6 +525,8 @@ export function GalerieView() {
   };
 
   const handleSetCover = async (image: IGalerieImage) => {
+    if (!canManageGalerie) return;
+
     if (!selectedEvent?.idGalerie || !image.idGalerieImage || !currentUserId) return;
 
     try {
@@ -597,9 +620,11 @@ export function GalerieView() {
                 Retour aux dossiers
               </Button>
             )}
-            <Button fullWidth={isMobile} variant="contained" sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }} startIcon={<EventRounded />} onClick={handleOpenCreateDialog}>
-              Nouvel evenement
-            </Button>
+            {canManageGalerie && (
+              <Button fullWidth={isMobile} variant="contained" sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }} startIcon={<EventRounded />} onClick={handleOpenCreateDialog}>
+                Nouvel evenement
+              </Button>
+            )}
           </Stack>
         </Stack>
 
@@ -665,18 +690,20 @@ export function GalerieView() {
                               {coverUrl ? <Box component="img" src={coverUrl} alt={event.titreGalerie} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <FolderRounded sx={{ fontSize: 34 }} />}
                             </Avatar>
 
-                            <Stack direction="row" spacing={0.5}>
-                              <Tooltip title="Modifier">
-                                <IconButton size="small" sx={{ color: 'common.white' }} onClick={(clickEvent) => { clickEvent.stopPropagation(); handleOpenEditDialog(event); }}>
-                                  <EditRounded fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Supprimer">
-                                <IconButton size="small" sx={{ color: 'common.white' }} onClick={(clickEvent) => { clickEvent.stopPropagation(); setConfirmDeleteEvent(event); }}>
-                                  <DeleteRounded fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </Stack>
+                            {canManageGalerie && (
+                              <Stack direction="row" spacing={0.5}>
+                                <Tooltip title="Modifier">
+                                  <IconButton size="small" sx={{ color: 'common.white' }} onClick={(clickEvent) => { clickEvent.stopPropagation(); handleOpenEditDialog(event); }}>
+                                    <EditRounded fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Supprimer">
+                                  <IconButton size="small" sx={{ color: 'common.white' }} onClick={(clickEvent) => { clickEvent.stopPropagation(); setConfirmDeleteEvent(event); }}>
+                                    <DeleteRounded fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Stack>
+                            )}
                           </Stack>
                         </Box>
 
@@ -729,10 +756,12 @@ export function GalerieView() {
                         </Typography>
                       </Box>
 
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flexWrap="wrap" sx={{ width: { xs: '100%', md: 'auto' } }}>
-                        <Button fullWidth={isMobile} variant="outlined" sx={secondaryActionButtonSx} startIcon={<EditRounded />} onClick={() => handleOpenEditDialog(selectedEvent)}>Modifier</Button>
-                        <Button fullWidth={isMobile} color="error" variant="outlined" sx={secondaryActionButtonSx} startIcon={<DeleteRounded />} onClick={() => setConfirmDeleteEvent(selectedEvent)}>Supprimer</Button>
-                      </Stack>
+                      {canManageGalerie && (
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flexWrap="wrap" sx={{ width: { xs: '100%', md: 'auto' } }}>
+                          <Button fullWidth={isMobile} variant="outlined" sx={secondaryActionButtonSx} startIcon={<EditRounded />} onClick={() => handleOpenEditDialog(selectedEvent)}>Modifier</Button>
+                          <Button fullWidth={isMobile} color="error" variant="outlined" sx={secondaryActionButtonSx} startIcon={<DeleteRounded />} onClick={() => setConfirmDeleteEvent(selectedEvent)}>Supprimer</Button>
+                        </Stack>
+                      )}
                     </Stack>
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} flexWrap="wrap">
@@ -762,18 +791,26 @@ export function GalerieView() {
                       }}
                     >
                       <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', md: 'center' }} flexWrap="wrap">
-                        <Button fullWidth={isMobile} component="label" variant="contained" sx={{ ...primaryActionButtonSx, px: 1.4, width: { xs: '100%', md: 'auto' } }} startIcon={<AddPhotoAlternateRounded />} disabled={uploadingImages}>
-                          {uploadingImages ? 'Ajout en cours...' : 'Ajouter des photos'}
-                          <input hidden accept="image/*" multiple type="file" onChange={handleImageInputChange} />
-                        </Button>
-                        <Button fullWidth={isMobile} component="label" variant="outlined" sx={{ ...secondaryActionButtonSx, width: { xs: '100%', md: 'auto' } }} startIcon={<FolderRounded />} disabled={uploadingImages}>
-                          Ajouter un dossier
-                          <input {...folderInputProps} />
-                        </Button>
-                        <Button fullWidth={isMobile} component="a" href={buildGalerieDownloadUrl(selectedEvent.idGalerie || 0, currentUserId)} variant="outlined" sx={{ ...secondaryActionButtonSx, width: { xs: '100%', md: 'auto' } }} startIcon={<DownloadRounded />}>
-                          Telecharger le dossier
-                        </Button>
-                        <PrintEtatGalerie event={selectedEvent} images={galerieImages} />
+                        {canManageGalerie && (
+                          <>
+                            <Button fullWidth={isMobile} component="label" variant="contained" sx={{ ...primaryActionButtonSx, px: 1.4, width: { xs: '100%', md: 'auto' } }} startIcon={<AddPhotoAlternateRounded />} disabled={uploadingImages}>
+                              {uploadingImages ? 'Ajout en cours...' : 'Ajouter des photos'}
+                              <input hidden accept="image/*" multiple type="file" onChange={handleImageInputChange} />
+                            </Button>
+                            <Button fullWidth={isMobile} component="label" variant="outlined" sx={{ ...secondaryActionButtonSx, width: { xs: '100%', md: 'auto' } }} startIcon={<FolderRounded />} disabled={uploadingImages}>
+                              Ajouter un dossier
+                              <input {...folderInputProps} />
+                            </Button>
+                          </>
+                        )}
+                        {!isDesktopApp && (
+                          <>
+                            <Button fullWidth={isMobile} component="a" href={buildGalerieDownloadUrl(selectedEvent.idGalerie || 0, currentUserId)} variant="outlined" sx={{ ...secondaryActionButtonSx, width: { xs: '100%', md: 'auto' } }} startIcon={<DownloadRounded />}>
+                              Telecharger le dossier
+                            </Button>
+                            <PrintEtatGalerie event={selectedEvent} images={galerieImages} />
+                          </>
+                        )}
                         <Typography variant="body2" color="text.secondary">
                           Depose aussi tes images ici par glisser-deposer. Les gros lots sont envoyes progressivement.
                         </Typography>
@@ -818,25 +855,31 @@ export function GalerieView() {
                         </Box>
 
                         <Stack direction="row" spacing={0.5}>
-                          <Tooltip title={isCover ? 'Image de couverture' : 'Definir comme couverture'}>
-                            <span>
-                              <IconButton color={isCover ? 'warning' : 'default'} disabled={isCover} onClick={() => handleSetCover(image)}>
-                                <StarRounded fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
+                          {canManageGalerie && (
+                            <Tooltip title={isCover ? 'Image de couverture' : 'Definir comme couverture'}>
+                              <span>
+                                <IconButton color={isCover ? 'warning' : 'default'} disabled={isCover} onClick={() => handleSetCover(image)}>
+                                  <StarRounded fontSize="small" />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
                           <Tooltip title="Voir">
                             <IconButton onClick={() => setPreviewImage(image)}><VisibilityRounded fontSize="small" /></IconButton>
                           </Tooltip>
                           <Tooltip title="Slideshow plein ecran">
                             <IconButton onClick={() => openSlideshow(image)}><FullscreenRounded fontSize="small" /></IconButton>
                           </Tooltip>
-                          <Tooltip title="Modifier la legende">
-                            <IconButton onClick={() => handleOpenCaptionDialog(image)}><EditRounded fontSize="small" /></IconButton>
-                          </Tooltip>
-                          <Tooltip title="Supprimer">
-                            <IconButton color="error" onClick={() => setConfirmDeleteImage(image)}><DeleteRounded fontSize="small" /></IconButton>
-                          </Tooltip>
+                          {canManageGalerie && (
+                            <>
+                              <Tooltip title="Modifier la legende">
+                                <IconButton onClick={() => handleOpenCaptionDialog(image)}><EditRounded fontSize="small" /></IconButton>
+                              </Tooltip>
+                              <Tooltip title="Supprimer">
+                                <IconButton color="error" onClick={() => setConfirmDeleteImage(image)}><DeleteRounded fontSize="small" /></IconButton>
+                              </Tooltip>
+                            </>
+                          )}
                         </Stack>
                       </Stack>
                     </Card>

@@ -5,6 +5,8 @@ import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
 
+import { APP_VERSION_LABEL } from 'src/utils/app-version';
+
 import { SimpleLayout } from 'src/layouts/simple';
 
 // ----------------------------------------------------------------------
@@ -20,6 +22,10 @@ export function NotFoundView() {
         <Typography sx={{ color: 'text.secondary' }}>
           Sorry, we couldn’t find the page you’re looking for. Perhaps you’ve mistyped the URL Be
           sure to check your spelling.
+        </Typography>
+
+        <Typography variant="body2" sx={{ mt: 1, color: 'text.disabled' }}>
+          {APP_VERSION_LABEL}
         </Typography>
 
         <Box

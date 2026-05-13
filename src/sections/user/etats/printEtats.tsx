@@ -15,6 +15,7 @@ import {
   exportDesktopPdf,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 
 import CoursDeBaseForm from './ficheCoursDebase';
 import { FicheDecision } from './ficheDecision';
@@ -77,6 +78,10 @@ const PrintEtatGlobal = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const isDesktopPrint = canUseDesktopPrint();
   const open = Boolean(anchorEl);
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     // On memorise l'origine du clic pour positionner le menu d'impression.

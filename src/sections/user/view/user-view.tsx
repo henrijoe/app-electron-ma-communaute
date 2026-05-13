@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 
 import { ApiError, apiClient, buildPhotoUrl } from 'src/utils/apiClient';
+import { canManageModule, isDesktopAppRuntime } from 'src/utils/access-control';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
@@ -86,6 +87,8 @@ export function UserView() {
     Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
+  const canManageUsers = canManageModule(appUserConnected || authUtilisateurData, 'user');
+  const isDesktopApp = isDesktopAppRuntime();
   const departementOptions = useMemo(() => (
     Array.isArray(listDepartement) && listDepartement.length > 0
       ? listDepartement.map((item: any) => ({ value: item.idDepartement, label: item.libelleLongDepartement }))
@@ -141,7 +144,11 @@ export function UserView() {
   }, []);
 
 
-  const handleOpenDialog = useCallback(() => setOpenDialog(true), []);
+  const handleOpenDialog = useCallback(() => {
+    if (!canManageUsers) return;
+
+    setOpenDialog(true);
+  }, [canManageUsers]);
 
   const fetchMembres = useCallback(async () => {
     try {
@@ -346,6 +353,8 @@ export function UserView() {
   }, [openDialog]);
 
   const handleDeleteMembre = useCallback(async (idMembre: number) => {
+  if (!canManageUsers) return;
+
   const membreToDelete = Array.isArray(listMembre)
     ? listMembre.find((item: IMembre) => item.idMembre === idMembre)
     : null;
@@ -378,9 +387,11 @@ export function UserView() {
   } finally {
     setDeleteLoading(false);
   }
-}, [currentUserId, dispatch, listMembre, showNotification]);
+}, [canManageUsers, currentUserId, dispatch, listMembre, showNotification]);
 
   const handleEditMembre = useCallback((membreData: IMembre) => {
+    if (!canManageUsers) return;
+
     setIsEditMode(true);
 
     const formData: any = { ...membreData };
@@ -446,9 +457,11 @@ export function UserView() {
     }
 
     setOpenDialog(true);
-  }, []);
+  }, [canManageUsers]);
 
   const handleCreateOrUpdateMembre = useCallback(async (membreData: IMembre) => {
+    if (!canManageUsers) return;
+
     if (!currentUserId) {
       showNotification('Session expiree: reconnectez-vous', 'warning');
       return;
@@ -560,12 +573,18 @@ export function UserView() {
     dispatch,
     fetchMembres,
     handleCloseDialog,
+    canManageUsers,
     isEditMode,
     listMembre,
     showNotification,
   ]);
 
   const handleExportMembres = useCallback(() => {
+    if (isDesktopApp) {
+      showNotification("L'export des membres est disponible uniquement dans le navigateur.", 'warning');
+      return;
+    }
+
     if (!exportableMembres.length) {
       showNotification('Aucun membre a exporter', 'warning');
       return;
@@ -614,6 +633,7 @@ export function UserView() {
     departementOptions,
     exportableMembres,
     groupeOptions,
+    isDesktopApp,
     responsabiliteOptions,
     showNotification,
   ]);
@@ -720,6 +740,8 @@ export function UserView() {
   }, []);
 
   const handleDeleteSelected = useCallback(async () => {
+    if (!canManageUsers) return;
+
     if (selected.length === 0) return;
 
     try {
@@ -775,7 +797,7 @@ export function UserView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, selected, onSelectAllRows, dispatch, listMembre, showNotification, fetchMembres]);
+  }, [canManageUsers, currentUserId, selected, onSelectAllRows, dispatch, listMembre, showNotification, fetchMembres]);
 
 
   useEffect(() => {
@@ -822,46 +844,52 @@ export function UserView() {
           alignItems={{ xs: 'stretch', sm: 'center' }}
           sx={{ width: { xs: '100%', md: 'auto' } }}
         >
-          <PrintEtatGlobal />
+          {!isDesktopApp && <PrintEtatGlobal />}
 
-          <Button
-            variant="outlined"
-            color="inherit"
-            startIcon={<Iconify icon="solar:import-linear" />}
-            onClick={() => navigate('/user/import')}
-            disabled={loading}
-            fullWidth={isMobile}
-          >
-            Importer membre
-          </Button>
+          {canManageUsers && (
+            <Button
+              variant="outlined"
+              color="inherit"
+              startIcon={<Iconify icon="solar:import-linear" />}
+              onClick={() => navigate('/user/import')}
+              disabled={loading}
+              fullWidth={isMobile}
+            >
+              Importer membre
+            </Button>
+          )}
 
-          <Button
-            variant="outlined"
-            color="inherit"
-            startIcon={<Iconify icon="solar:export-linear" />}
-            onClick={handleExportMembres}
-            disabled={loading || !exportableMembres.length}
-            fullWidth={isMobile}
-          >
-            Exporter les membres
-          </Button>
+          {!isDesktopApp && (
+            <Button
+              variant="outlined"
+              color="inherit"
+              startIcon={<Iconify icon="solar:export-linear" />}
+              onClick={handleExportMembres}
+              disabled={loading || !exportableMembres.length}
+              fullWidth={isMobile}
+            >
+              Exporter les membres
+            </Button>
+          )}
 
-          <Button
-            variant="contained"
-            color="inherit"
-            startIcon={<Iconify icon="mingcute:add-line" />}
-            onClick={handleOpenDialog}
-            disabled={loading}
-            fullWidth={isMobile}
-          >
-            {loading ? 'Chargement...' : 'Ajouter membre'}
-          </Button>
+          {canManageUsers && (
+            <Button
+              variant="contained"
+              color="inherit"
+              startIcon={<Iconify icon="mingcute:add-line" />}
+              onClick={handleOpenDialog}
+              disabled={loading}
+              fullWidth={isMobile}
+            >
+              {loading ? 'Chargement...' : 'Ajouter membre'}
+            </Button>
+          )}
         </Stack>
       </Box>
 
       <Card>
         <UserTableToolbar
-          numSelected={selected.length} // Utilisez 'selected' au lieu de 'table.selected'
+          numSelected={canManageUsers ? selected.length : 0} // Utilisez 'selected' au lieu de 'table.selected'
           filterName={filterName}
           onFilterName={(event) => {
             setFilterName(event.target.value);
@@ -881,11 +909,13 @@ export function UserView() {
                 <Card key={row.idMembre} variant="outlined" sx={{ p: 1.75, borderRadius: 2, boxShadow: 'none' }}>
                   <Stack spacing={1.5}>
                     <Stack direction="row" spacing={1.25} alignItems="center">
-                      <Checkbox
-                        checked={isSelected}
-                        onChange={() => table?.onSelectRow(row.idMembre?.toString())}
-                        sx={{ p: 0.25 }}
-                      />
+                      {canManageUsers && (
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => table?.onSelectRow(row.idMembre?.toString())}
+                          sx={{ p: 0.25 }}
+                        />
+                      )}
                       <Avatar
                         src={photoUrl || undefined}
                         alt={`${row.nomMembre || ''} ${row.prenomMembre || ''}`}
@@ -928,17 +958,21 @@ export function UserView() {
                       <IconButton size="small" onClick={() => navigate(`/details/${row.idMembre}`)}>
                         <Iconify icon="solar:eye-bold" />
                       </IconButton>
-                      <IconButton size="small" onClick={() => handleEditMembre(row)}>
-                        <Iconify icon="solar:pen-bold" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        disabled={deleteLoading}
-                        onClick={() => handleDeleteMembre(row.idMembre)}
-                      >
-                        <Iconify icon="solar:trash-bin-trash-bold" />
-                      </IconButton>
+                      {canManageUsers && (
+                        <>
+                          <IconButton size="small" onClick={() => handleEditMembre(row)}>
+                            <Iconify icon="solar:pen-bold" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            disabled={deleteLoading}
+                            onClick={() => handleDeleteMembre(row.idMembre)}
+                          >
+                            <Iconify icon="solar:trash-bin-trash-bold" />
+                          </IconButton>
+                        </>
+                      )}
                     </Stack>
                   </Stack>
                 </Card>
@@ -964,13 +998,15 @@ export function UserView() {
                 order={table.order}
                 orderBy={table.orderBy}
                 rowCount={sortedData?.length}
-                numSelected={table.selected?.length}
+                numSelected={canManageUsers ? table.selected?.length : 0}
                 onSort={table?.onSort}
                 onSelectAllRows={(checked) =>
-                  table?.onSelectAllRows(
-                    checked,
-                    sortedData?.map((x) => x.idMembre?.toString())
-                  )
+                  canManageUsers
+                    ? table?.onSelectAllRows(
+                        checked,
+                        sortedData?.map((x) => x.idMembre?.toString())
+                      )
+                    : undefined
                 }
                 headLabel={[
                   { id: 'photoMembre', label: 'Photo' },
@@ -994,6 +1030,7 @@ export function UserView() {
                       onEdit={handleEditMembre}
                       onDelete={handleDeleteMembre}
                       isDeleting={deleteLoading}
+                      canManage={canManageUsers}
                     />
                   ))}
 

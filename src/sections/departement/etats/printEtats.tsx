@@ -15,6 +15,7 @@ import {
   exportDesktopPdf,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 
 import { ListeDesDepartements } from './listeDepartementPdf';
 
@@ -61,6 +62,10 @@ const PrintEtatGlobal = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const isDesktopPrint = canUseDesktopPrint();
   const open = Boolean(anchorEl);
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     // On memorise l'element qui a ouvert le menu pour l'aligner correctement.

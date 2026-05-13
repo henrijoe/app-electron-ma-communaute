@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 
 import { apiClient } from 'src/utils/apiClient';
+import { canManageModule } from 'src/utils/access-control';
 import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
@@ -54,6 +55,7 @@ export function DepartementView() {
     Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || 0;
+  const canManageDepartement = canManageModule(appUserConnected || authUtilisateurData, 'departement');
 
   const [loading, setLoading] = useState(true);
   const [membres, setMembres] = useState<IMembre[]>([]);
@@ -96,7 +98,11 @@ export function DepartementView() {
     reset({ ...departement });
   }, [reset]);
 
-  const handleOpenDialog = useCallback(() => setOpenDialog(true), []);
+  const handleOpenDialog = useCallback(() => {
+    if (!canManageDepartement) return;
+
+    setOpenDialog(true);
+  }, [canManageDepartement]);
 
   const fetchDepartements = useCallback(async () => {
     try {
@@ -132,6 +138,8 @@ export function DepartementView() {
 
   // Fonction pour supprimer un dÃ©partement
   const handleDeleteDepartement = useCallback(async (idDepartement: number) => {
+    if (!canManageDepartement) return;
+
     try {
       setDeleteLoading(true);
       if (!currentUserId) {
@@ -152,16 +160,18 @@ export function DepartementView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, dispatch, showNotification]);
+  }, [canManageDepartement, currentUserId, dispatch, showNotification]);
 
   // Fonction pour éditer un dÃ©partement
   const handleEditDepartement = useCallback((departementData: IDepartement) => {
+    if (!canManageDepartement) return;
+
     setIsEditMode(true);
     console.log('Donnees pour edition:', departementData);
     setData({ ...departementData });
     reset({ ...departementData });
     setOpenDialog(true);
-  }, [reset]);
+  }, [canManageDepartement, reset]);
 
   // Fonction pour mettre à jour un dÃ©partement
   const handleUpdateDepartement = useCallback(async (formData: IDepartement) => {
@@ -234,6 +244,8 @@ export function DepartementView() {
 
   // Fonction pour gérer la soumission
   const onFormSubmit = useCallback(() => {
+    if (!canManageDepartement) return;
+
     // Validation
     if (!data.libelleLongDepartement) {
       showNotification('Le libellé long est requis', 'warning');
@@ -251,7 +263,7 @@ export function DepartementView() {
     };
 
     handleCreateOrUpdateDepartement(departementData);
-  }, [data, isEditMode, handleCreateOrUpdateDepartement, showNotification]);
+  }, [canManageDepartement, data, isEditMode, handleCreateOrUpdateDepartement, showNotification]);
 
   useEffect(() => {
     fetchDepartements();
@@ -344,6 +356,8 @@ export function DepartementView() {
 
   // Fonction pour supprimer plusieurs départements
   const handleDeleteSelected = useCallback(async () => {
+    if (!canManageDepartement) return;
+
     if (selected.length === 0) return;
 
     try {
@@ -395,7 +409,7 @@ export function DepartementView() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [currentUserId, selected, onSelectAllRows, dispatch, showNotification, fetchDepartements]);
+  }, [canManageDepartement, currentUserId, selected, onSelectAllRows, dispatch, showNotification, fetchDepartements]);
 
   useEffect(() => {
     if (!openDialog) {
@@ -436,6 +450,7 @@ export function DepartementView() {
         >
           <PrintEtatGlobal />
 
+          {canManageDepartement && (
           <Button
             variant="contained"
             color="inherit"
@@ -446,6 +461,7 @@ export function DepartementView() {
           >
             {loading ? 'Chargement...' : 'Ajouter département'}
           </Button>
+          )}
         </Stack>
       </Box>
 
@@ -497,10 +513,12 @@ export function DepartementView() {
                     </Grid>
                   </Grid>
 
+                  {canManageDepartement && (
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
                     <Button size="small" onClick={() => handleEditDepartement(row)}>Modifier</Button>
                     <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteDepartement(row.idDepartement)}>Supprimer</Button>
                   </Stack>
+                  )}
                 </Stack>
               </Card>
             ))}
@@ -548,6 +566,7 @@ export function DepartementView() {
                       onEdit={handleEditDepartement}
                       onDelete={handleDeleteDepartement}
                       isDeleting={deleteLoading}
+                      canManage={canManageDepartement}
                       responsableContact={responsableContactByName.get(row.responsableDepartement) || ''}
                     />
                   ))}

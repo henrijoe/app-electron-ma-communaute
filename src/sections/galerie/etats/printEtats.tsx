@@ -10,6 +10,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { alpha, styled } from '@mui/material/styles';
 import ReactToPrint from 'react-to-print';
 
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 import { canUseDesktopPrint, exportDesktopPdf, openDesktopPrintPreview } from 'src/utils/desktop-print';
 import type { IGalerieEvenement, IGalerieImage } from 'src/store/galerieSlice';
 
@@ -54,6 +55,10 @@ export function PrintEtatGalerie({ event, images }: PrintEtatGalerieProps) {
   const isDesktopPrint = canUseDesktopPrint();
   const open = Boolean(anchorEl);
   const meta = useMemo(() => ({ title: `Galerie - ${event.titreGalerie}`, fileName: `galerie-${event.dossierGalerie || event.idGalerie}` }), [event]);
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   return (
     <>

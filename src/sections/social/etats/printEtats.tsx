@@ -10,6 +10,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { alpha, styled } from '@mui/material/styles';
 import ReactToPrint from 'react-to-print';
 
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 import { canUseDesktopPrint, exportDesktopPdf, openDesktopPrintPreview } from 'src/utils/desktop-print';
 import type { IDeces } from 'src/store/decesSlice';
 import type { IMariage } from 'src/store/mariageSlice';
@@ -74,6 +75,10 @@ export function PrintEtatSociaux({ activeType, identity, rows }: PrintEtatsProps
   const isDesktopPrint = canUseDesktopPrint();
   const open = Boolean(anchorEl);
   const meta = useMemo(() => labels[activeType], [activeType]);
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   return (
     <>

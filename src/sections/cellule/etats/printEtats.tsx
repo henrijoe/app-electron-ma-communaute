@@ -10,6 +10,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { alpha, styled } from '@mui/material/styles';
 import ReactToPrint from 'react-to-print';
 
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 import { canUseDesktopPrint, exportDesktopPdf, openDesktopPrintPreview } from 'src/utils/desktop-print';
 
 import { ListeDesCellules } from './listeCellulePdf';
@@ -35,6 +36,10 @@ export const PrintEtatGlobal = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const isDesktopPrint = canUseDesktopPrint();
   const open = Boolean(anchorEl);
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   return (
     <div>

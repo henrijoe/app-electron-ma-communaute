@@ -2,10 +2,17 @@ import React, { useRef } from 'react';
 import PrintIcon from '@mui/icons-material/Print';
 import { Box, Typography } from '@mui/material';
 import ReactToPrint from 'react-to-print';
+
+import { isDesktopAppRuntime } from 'src/utils/access-control';
+
 import CoursDeBaseForm from './ficheCoursDebase';
 
 function PrintFicheCoursDeBase() {
   const componentRef = useRef<HTMLDivElement>(null);
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   return (
     <Box>

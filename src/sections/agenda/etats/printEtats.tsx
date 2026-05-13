@@ -11,6 +11,7 @@ import { alpha, styled } from '@mui/material/styles';
 import ReactToPrint from 'react-to-print';
 
 import type { IAgendaEvent } from 'src/store/agendaSlice';
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 import { canUseDesktopPrint, exportDesktopPdf, openDesktopPrintPreview } from 'src/utils/desktop-print';
 
 import { AgendaPrintDocument } from './agenda-print-document';
@@ -64,6 +65,10 @@ export function PrintEtatAgenda({ events, identity, monthLabel }: PrintEtatAgend
   const isDesktopPrint = canUseDesktopPrint();
   const open = Boolean(anchorEl);
   const meta = useMemo(() => ({ title: `Agenda - ${monthLabel}`, fileName: `agenda-${monthLabel.replace(/\s+/g, '-').toLowerCase()}` }), [monthLabel]);
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   return (
     <>

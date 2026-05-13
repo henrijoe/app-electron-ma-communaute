@@ -38,6 +38,7 @@ import {
 } from '@mui/material';
 
 import { apiClient } from 'src/utils/apiClient';
+import { canManageModule } from 'src/utils/access-control';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 
 import { DashboardContent } from 'src/layouts/dashboard';
@@ -193,6 +194,7 @@ export function ComptabiliteView() {
     Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
+  const canManageComptabilite = canManageModule(appUserConnected || authUtilisateurData, 'comptabilite');
   const currentUsername = String(appUserConnected?.nomUtilisateur || authUtilisateurData?.nomUtilisateur || '');
 
   const {
@@ -349,11 +351,15 @@ export function ComptabiliteView() {
   }, [filteredItems]);
 
   const openCreateDialog = () => {
+    if (!canManageComptabilite) return;
+
     setCurrentItem({ ...emptyComptabilite, idUtilisateur: currentUserId });
     setDialogOpen(true);
   };
 
   const openEditDialog = (item: IComptabiliteItem) => {
+    if (!canManageComptabilite) return;
+
     setCurrentItem({ ...item });
     setDialogOpen(true);
   };
@@ -373,6 +379,8 @@ export function ComptabiliteView() {
   };
 
   const handleSubmit = async () => {
+    if (!canManageComptabilite) return;
+
     if (!currentUserId) {
       showNotificationRef.current('Utilisateur non trouve', 'warning');
       return;
@@ -413,11 +421,15 @@ export function ComptabiliteView() {
   };
 
   const askDelete = (item: IComptabiliteItem) => {
+    if (!canManageComptabilite) return;
+
     setItemToDelete(item);
     setDeleteDialogOpen(true);
   };
 
   const handleDelete = async () => {
+    if (!canManageComptabilite) return;
+
     if (!itemToDelete?.idComptabilite) return;
 
     try {
@@ -440,6 +452,8 @@ export function ComptabiliteView() {
   };
 
   const handleRestore = async () => {
+    if (!canManageComptabilite) return;
+
     if (!itemToRestore?.idComptabilite) return;
 
     try {
@@ -455,6 +469,8 @@ export function ComptabiliteView() {
   };
 
   const handlePermanentDelete = async () => {
+    if (!canManageComptabilite) return;
+
     if (!itemToDeletePermanently?.idComptabilite) return;
 
     try {
@@ -484,13 +500,15 @@ export function ComptabiliteView() {
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ width: { xs: '100%', md: 'auto' } }}>
             <PrintEtatComptabilite items={filteredItems} deletedItems={deletedItems} search={search} filterLabel={activeFilterLabel} isSuperAdmin={desktopSecurityIsSuperAdmin} />
-            <Button
-              startIcon={<AddRounded />}
-              onClick={openCreateDialog}
-              sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }}
-            >
-              Nouvelle ecriture
-            </Button>
+            {canManageComptabilite && (
+              <Button
+                startIcon={<AddRounded />}
+                onClick={openCreateDialog}
+                sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }}
+              >
+                Nouvelle ecriture
+              </Button>
+            )}
           </Stack>
         </Stack>
 
@@ -623,14 +641,16 @@ export function ComptabiliteView() {
                           {currencyFormatter.format(amount || 0)}
                         </Typography>
                       </Box>
-                      <Stack direction="row" spacing={0.5}>
-                        <IconButton onClick={() => openEditDialog(item)}>
-                          <EditRounded fontSize="small" />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => askDelete(item)}>
-                          <DeleteRounded fontSize="small" />
-                        </IconButton>
-                      </Stack>
+                      {canManageComptabilite && (
+                        <Stack direction="row" spacing={0.5}>
+                          <IconButton onClick={() => openEditDialog(item)}>
+                            <EditRounded fontSize="small" />
+                          </IconButton>
+                          <IconButton color="error" onClick={() => askDelete(item)}>
+                            <DeleteRounded fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      )}
                     </Stack>
 
                     <Box>
@@ -668,7 +688,7 @@ export function ComptabiliteView() {
                   <TableCell align="right">Entree</TableCell>
                   <TableCell align="right">Sortie</TableCell>
                   <TableCell>Observation</TableCell>
-                  <TableCell align="right">Actions</TableCell>
+                  {canManageComptabilite && <TableCell align="right">Actions</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -701,16 +721,18 @@ export function ComptabiliteView() {
                       <TableCell align="right">{item.entreeComptabilite > 0 ? currencyFormatter.format(item.entreeComptabilite) : '--'}</TableCell>
                       <TableCell align="right">{item.sortieComptabilite > 0 ? currencyFormatter.format(item.sortieComptabilite) : '--'}</TableCell>
                       <TableCell>{item.observationComptabilite || '--'}</TableCell>
-                      <TableCell align="right">
-                        <Stack direction="row" justifyContent="flex-end">
-                          <IconButton onClick={() => openEditDialog(item)}>
-                            <EditRounded fontSize="small" />
-                          </IconButton>
-                          <IconButton color="error" onClick={() => askDelete(item)}>
-                            <DeleteRounded fontSize="small" />
-                          </IconButton>
-                        </Stack>
-                      </TableCell>
+                      {canManageComptabilite && (
+                        <TableCell align="right">
+                          <Stack direction="row" justifyContent="flex-end">
+                            <IconButton onClick={() => openEditDialog(item)}>
+                              <EditRounded fontSize="small" />
+                            </IconButton>
+                            <IconButton color="error" onClick={() => askDelete(item)}>
+                              <DeleteRounded fontSize="small" />
+                            </IconButton>
+                          </Stack>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
@@ -768,26 +790,28 @@ export function ComptabiliteView() {
                             <Typography variant="caption" color="text.secondary">Montant</Typography>
                             <Typography variant="subtitle1">{currencyFormatter.format(item.montantComptabilite || 0)}</Typography>
                           </Box>
-                          <Stack direction="row">
-                            <IconButton
-                              color="primary"
-                              onClick={() => {
-                                setItemToRestore(item);
-                                setRestoreDialogOpen(true);
-                              }}
-                            >
-                              <RestoreRounded fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              color="error"
-                              onClick={() => {
-                                setItemToDeletePermanently(item);
-                                setPermanentDeleteDialogOpen(true);
-                              }}
-                            >
-                              <DeleteForeverRounded fontSize="small" />
-                            </IconButton>
-                          </Stack>
+                          {canManageComptabilite && (
+                            <Stack direction="row">
+                              <IconButton
+                                color="primary"
+                                onClick={() => {
+                                  setItemToRestore(item);
+                                  setRestoreDialogOpen(true);
+                                }}
+                              >
+                                <RestoreRounded fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                color="error"
+                                onClick={() => {
+                                  setItemToDeletePermanently(item);
+                                  setPermanentDeleteDialogOpen(true);
+                                }}
+                              >
+                                <DeleteForeverRounded fontSize="small" />
+                              </IconButton>
+                            </Stack>
+                          )}
                         </Stack>
 
                         <Typography variant="body2" color="text.secondary">
@@ -820,7 +844,7 @@ export function ComptabiliteView() {
                       <TableCell>Supprime le</TableCell>
                       <TableCell>Supprime par</TableCell>
                       <TableCell>Motif</TableCell>
-                      <TableCell align="right">Actions</TableCell>
+                      {canManageComptabilite && <TableCell align="right">Actions</TableCell>}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -835,34 +859,36 @@ export function ComptabiliteView() {
                         <TableCell>{item.dateSuppressionComptabilite || '--'}</TableCell>
                         <TableCell>{item.nomUtilisateurSuppression || '--'}</TableCell>
                         <TableCell>{item.motifSuppressionComptabilite || '--'}</TableCell>
-                        <TableCell align="right">
-                          <Stack direction="row" justifyContent="flex-end">
-                            <IconButton
-                              color="primary"
-                              onClick={() => {
-                                setItemToRestore(item);
-                                setRestoreDialogOpen(true);
-                              }}
-                            >
-                              <RestoreRounded fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              color="error"
-                              onClick={() => {
-                                setItemToDeletePermanently(item);
-                                setPermanentDeleteDialogOpen(true);
-                              }}
-                            >
-                              <DeleteForeverRounded fontSize="small" />
-                            </IconButton>
-                          </Stack>
-                        </TableCell>
+                        {canManageComptabilite && (
+                          <TableCell align="right">
+                            <Stack direction="row" justifyContent="flex-end">
+                              <IconButton
+                                color="primary"
+                                onClick={() => {
+                                  setItemToRestore(item);
+                                  setRestoreDialogOpen(true);
+                                }}
+                              >
+                                <RestoreRounded fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                color="error"
+                                onClick={() => {
+                                  setItemToDeletePermanently(item);
+                                  setPermanentDeleteDialogOpen(true);
+                                }}
+                              >
+                                <DeleteForeverRounded fontSize="small" />
+                              </IconButton>
+                            </Stack>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
 
                     {!loadingDeletedComptabilite && deletedItems.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8}>
+                        <TableCell colSpan={canManageComptabilite ? 8 : 7}>
                           <Stack spacing={1} alignItems="center" sx={{ py: 4 }}>
                             <Typography variant="subtitle1">Aucune ecriture archivee</Typography>
                             <Typography variant="body2" color="text.secondary">

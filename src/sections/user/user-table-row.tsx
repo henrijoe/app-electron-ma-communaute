@@ -37,10 +37,11 @@ type UserTableRowProps = {
   onSelectRow: () => void;
   onEdit: (membre: IMembre) => void;
   onDelete: (idMembre: number) => void;
+  canManage?: boolean;
   isDeleting?: boolean;
 };
 
-export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, isDeleting }: UserTableRowProps) {
+export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, canManage = true, isDeleting }: UserTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
   const [openConfirm, setOpenConfirm] = useState(false);
 
@@ -127,12 +128,14 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, isD
         sx={{ cursor: 'pointer' }}
       >
         <TableCell padding="checkbox">
-          <Checkbox
-            disableRipple
-            checked={selected}
-            onChange={onSelectRow}
-            onClick={(event) => event.stopPropagation()}
-          />
+          {canManage && (
+            <Checkbox
+              disableRipple
+              checked={selected}
+              onChange={onSelectRow}
+              onClick={(event) => event.stopPropagation()}
+            />
+          )}
         </TableCell>
 
         <TableCell component="th" scope="row">
@@ -200,32 +203,38 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, isD
             Detail
           </MenuItem>
 
-          <MenuItem onClick={handleEdit}>
-            <Iconify icon="solar:pen-bold" />
-            Modifier
-          </MenuItem>
+          {canManage && (
+            <>
+              <MenuItem onClick={handleEdit}>
+                <Iconify icon="solar:pen-bold" />
+                Modifier
+              </MenuItem>
 
-          <MenuItem
-            onClick={handleDelete}
-            sx={{ color: 'error.main' }}
-            disabled={isDeleting}
-          >
-            <Iconify icon="solar:trash-bin-trash-bold" />
-            {isDeleting ? 'Suppression...' : 'Supprimer'}
-          </MenuItem>
+              <MenuItem
+                onClick={handleDelete}
+                sx={{ color: 'error.main' }}
+                disabled={isDeleting}
+              >
+                <Iconify icon="solar:trash-bin-trash-bold" />
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
+              </MenuItem>
+            </>
+          )}
         </MenuList>
       </Popover>
 
-      <ConfirmDialog
-        open={openConfirm}
-        title="Suppression du membre"
-        message={`Voulez-vous vraiment supprimer ${row.nomMembre} ${row.prenomMembre} ?`}
-        confirmText="Supprimer"
-        cancelText="Annuler"
-        loading={isDeleting}
-        onConfirm={handleConfirmDelete}
-        onClose={() => setOpenConfirm(false)}
-      />
+      {canManage && (
+        <ConfirmDialog
+          open={openConfirm}
+          title="Suppression du membre"
+          message={`Voulez-vous vraiment supprimer ${row.nomMembre} ${row.prenomMembre} ?`}
+          confirmText="Supprimer"
+          cancelText="Annuler"
+          loading={isDeleting}
+          onConfirm={handleConfirmDelete}
+          onClose={() => setOpenConfirm(false)}
+        />
+      )}
     </>
   );
 }

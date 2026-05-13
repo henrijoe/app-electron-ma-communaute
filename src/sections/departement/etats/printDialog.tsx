@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button } from '@mui/material';
 
+import { isDesktopAppRuntime } from 'src/utils/access-control';
+
 const PrintDialog = (props:any) => {
     
  const { open, onClose, onPrint } = props
@@ -11,6 +13,10 @@ const PrintDialog = (props:any) => {
     onPrint(title);
     onClose();
   };
+
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onClose={onClose}>
