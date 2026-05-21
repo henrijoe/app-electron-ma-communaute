@@ -14,6 +14,7 @@ import { usePathname } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 import type { IReduxState } from 'src/store/store';
 import { canAccessModule, getSessionUser } from 'src/utils/access-control';
+import { APP_VERSION_LABEL } from 'src/utils/app-version';
 
 import { varAlpha } from 'src/theme/styles';
 
@@ -210,6 +211,20 @@ export function NavContent({
               );
             })}
           </Box>
+
+          {!collapsed && (
+            <Box
+              sx={{
+                mt: 1,
+                px: 2,
+                py: 0.75,
+                typography: 'caption',
+                color: 'text.disabled',
+              }}
+            >
+              {APP_VERSION_LABEL}
+            </Box>
+          )}
         </Box>
       </Scrollbar>
 

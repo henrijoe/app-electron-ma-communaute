@@ -3,6 +3,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import PrintIcon from '@mui/icons-material/Print';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Menu, { type MenuProps } from '@mui/material/Menu';
@@ -62,8 +63,16 @@ export function PrintEtatGalerie({ event, images }: PrintEtatGalerieProps) {
 
   return (
     <>
-      <Button variant="contained" onClick={(evt) => setAnchorEl(evt.currentTarget)} endIcon={<KeyboardArrowDownIcon />} sx={{ bgcolor: 'grey.900', color: 'common.white', '&:hover': { bgcolor: 'grey.800' } }}>
-        Imprimer
+      <Button
+        variant="contained"
+        onClick={(evt) => setAnchorEl(evt.currentTarget)}
+        startIcon={<PrintIcon sx={{ display: { xs: 'inline-flex', sm: 'none' } }} />}
+        endIcon={<KeyboardArrowDownIcon sx={{ display: { xs: 'none', sm: 'inline-flex' } }} />}
+        sx={{ minWidth: { xs: 44, sm: 'auto' }, px: { xs: 1.25, sm: 2 }, bgcolor: 'grey.900', color: 'common.white', '&:hover': { bgcolor: 'grey.800' } }}
+      >
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+          Imprimer
+        </Box>
       </Button>
       <StyledMenu anchorEl={anchorEl} open={open} onClose={() => setAnchorEl(null)}>
         {isDesktopPrint ? (

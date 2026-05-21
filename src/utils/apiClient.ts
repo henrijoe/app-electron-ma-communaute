@@ -3,11 +3,55 @@ import type { ModulePermissionKey } from 'src/store/userSlice';
 
 import { canManageModule } from './access-control';
 import { getConnectionMode, getCurrentSessionUser, getServerUrl } from './functions';
+import { sanitizeSensitiveData } from './sensitive-data';
 
 export const BASE_URL_DEV = 'http://localhost:49300/';
 export const BASE_URL_ONLINE = import.meta.env.VITE_API_URL || '';
+const DEFAULT_LOCAL_API_PORT = '49300';
 
 const normalizeBaseUrl = (url: string): string => (url.endsWith('/') ? url : `${url}/`);
+const getLocalApiPort = (): string => String(import.meta.env.VITE_LOCAL_API_PORT || DEFAULT_LOCAL_API_PORT);
+
+const isLoopbackHost = (hostname?: string): boolean =>
+  !hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]';
+
+const getBrowserLocalApiBaseUrl = (): string => {
+  if (typeof window === 'undefined') {
+    return BASE_URL_DEV;
+  }
+
+  const { protocol, hostname } = window.location;
+
+  if (isLoopbackHost(hostname)) {
+    return BASE_URL_DEV;
+  }
+
+  return `${protocol}//${hostname}:${getLocalApiPort()}/`;
+};
+
+const normalizeConfiguredApiUrl = (url: string): string => {
+  if (!url || typeof window === 'undefined') {
+    return url;
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    const currentHost = window.location.hostname;
+
+    const isKnownFrontendPort = parsedUrl.port === '3039' || parsedUrl.port === '5173';
+
+    if (getApiMode() === 'local' && parsedUrl.port && parsedUrl.port !== getLocalApiPort() && (
+      parsedUrl.hostname === currentHost || isKnownFrontendPort
+    )) {
+      parsedUrl.port = getLocalApiPort();
+      return parsedUrl.toString();
+    }
+  } catch (_error) {
+    return url;
+  }
+
+  return url;
+};
 
 export const getApiMode = (): 'local' | 'online' => getConnectionMode();
 
@@ -31,7 +75,7 @@ const assertCanManageModule = (permission: ModulePermissionKey, actionLabel?: st
 export const getBaseUrl = (): string => {
   // En developpement, utilise localhost:49300 (serveur Express local)
   if (import.meta.env.DEV) {
-    return BASE_URL_DEV;
+    return getBrowserLocalApiBaseUrl();
   }
 
   // En production, utilise soit:
@@ -42,14 +86,15 @@ export const getBaseUrl = (): string => {
 
   const serverUrl = getServerUrl();
   if (serverUrl) {
-    return serverUrl.endsWith('/') ? serverUrl : `${serverUrl}/`;
+    const apiServerUrl = normalizeConfiguredApiUrl(serverUrl);
+    return apiServerUrl.endsWith('/') ? apiServerUrl : `${apiServerUrl}/`;
   }
 
   // Fallback: variable d'environnement ou URL par defaut
   return import.meta.env.VITE_API_URL ||
-    (window.location.hostname === 'localhost'
+    (isLoopbackHost(window.location.hostname)
       ? BASE_URL_DEV
-      : 'http://localhost:49300/'
+      : getBrowserLocalApiBaseUrl()
       // : 'https://votre-backend-production.com/'
     );
 };
@@ -72,16 +117,16 @@ export const resolveApiBaseUrl = (): string => {
     }
   }
 
+  if (serverUrl) {
+    return normalizeBaseUrl(normalizeConfiguredApiUrl(serverUrl));
+  }
+
   if (import.meta.env.VITE_LOCAL_API_URL) {
     return normalizeBaseUrl(import.meta.env.VITE_LOCAL_API_URL);
   }
 
-  if (import.meta.env.DEV || window.location.hostname === 'localhost') {
-    return normalizeBaseUrl(BASE_URL_DEV);
-  }
-
-  if (serverUrl) {
-    return normalizeBaseUrl(serverUrl);
+  if (import.meta.env.DEV || getApiMode() === 'local') {
+    return normalizeBaseUrl(getBrowserLocalApiBaseUrl());
   }
 
   return normalizeBaseUrl(BASE_URL_ONLINE || BASE_URL_DEV);
@@ -113,6 +158,71 @@ export class ApiError extends Error {
     this.data = data;
   }
 }
+
+const isLikelyNetworkError = (error: unknown): boolean =>
+  error instanceof TypeError && /failed to fetch|networkerror|load failed|fetch/i.test(error.message);
+
+const getHttpStatusMessage = (status: number): string => {
+  switch (status) {
+    case 0:
+      return "Impossible de joindre le serveur. Verifiez votre connexion et l'adresse du serveur dans les parametres.";
+    case 400:
+      return 'La demande envoyee est incomplete ou incorrecte. Verifiez les informations saisies puis reessayez.';
+    case 401:
+      return 'Votre session a expire ou vos identifiants sont incorrects. Reconnectez-vous pour continuer.';
+    case 403:
+      return "Vous n'avez pas l'autorisation d'effectuer cette action.";
+    case 404:
+      return "Le service demande est introuvable. Verifiez que l'application utilise bien l'adresse du serveur local en port 49300.";
+    case 408:
+      return 'Le serveur met trop de temps a repondre. Verifiez le reseau puis reessayez.';
+    case 409:
+      return 'Cette action entre en conflit avec des donnees deja existantes. Verifiez les informations puis reessayez.';
+    case 413:
+      return 'Le fichier ou les donnees envoyees sont trop volumineux.';
+    case 422:
+      return 'Certaines informations saisies ne sont pas valides. Verifiez le formulaire puis reessayez.';
+    case 429:
+      return 'Trop de tentatives en peu de temps. Patientez un moment puis reessayez.';
+    case 500:
+      return 'Le serveur a rencontre une erreur interne. Reessayez, puis contactez le support si le probleme continue.';
+    case 502:
+    case 503:
+    case 504:
+      return "Le serveur est momentanement indisponible. Verifiez qu'il est demarre puis reessayez.";
+    default:
+      if (status >= 500) {
+        return 'Le serveur a rencontre une erreur. Reessayez dans quelques instants.';
+      }
+      if (status >= 400) {
+        return "La demande n'a pas pu etre traitee. Verifiez les informations puis reessayez.";
+      }
+      return 'Une erreur est survenue pendant la communication avec le serveur.';
+  }
+};
+
+const buildNetworkErrorMessage = (url: string): string => {
+  const port = getLocalApiPort();
+  const baseMessage = `Impossible de joindre le serveur local. Verifiez que le serveur est demarre et que le port ${port} est autorise par le pare-feu.`;
+
+  if (typeof window !== 'undefined' && !isLoopbackHost(window.location.hostname)) {
+    return `${baseMessage} Votre appareil doit etre sur le meme reseau Wi-Fi. Adresse utilisee: ${url}`;
+  }
+
+  return `${baseMessage} Adresse utilisee: ${url}`;
+};
+
+export const getApiErrorMessage = (error: unknown, fallback = 'Une erreur est survenue.'): string => {
+  if (error instanceof ApiError) {
+    return error.message || getHttpStatusMessage(error.status) || fallback;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 // Extrait un message exploitable depuis les differents formats d'erreur du backend.
 const buildErrorMessage = (data: any, fallback: string): string => {
@@ -225,13 +335,25 @@ export async function request<T>(
     const responseData = isJson ? await response.json() : await response.text();
 
     if (!response.ok) {
-      const message = buildErrorMessage(responseData, `HTTP error! status: ${response.status}`);
+      const message = buildErrorMessage(responseData, getHttpStatusMessage(response.status));
       throw new ApiError(message, response.status, responseData);
     }
 
-    return responseData as T;
+    return sanitizeSensitiveData(responseData) as T;
   } catch (error) {
     console.error(`Request failed for ${url}:`, error);
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    if (isLikelyNetworkError(error)) {
+      throw new ApiError(buildNetworkErrorMessage(url), 0, {
+        url,
+        originalMessage: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     throw error;
   }
 }
@@ -698,6 +820,24 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  requestPasswordReset: (data: { nomUtilisateur: string; email: string }) =>
+    request<IServerResponse>('communaute/demander-reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  resetPassword: (data: {
+    nomUtilisateur: string;
+    email: string;
+    code: string;
+    password: string;
+    confirmPassword: string;
+  }) =>
+    request<IServerResponse>('communaute/reinitialiser-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // Cree un compte utilisateur dans le backend principal.
   registerUtilisateur: (data: {
     logoUtilisateur?: string;
@@ -722,8 +862,8 @@ export const apiClient = {
     nombrePasteursEglise?: string;
     nombreAnciensEglise?: string;
     nombreDiacresEglise?: string;
-    password: string;
-    confirmPassword: string;
+    password?: string;
+    confirmPassword?: string;
     email?: string;
   }) =>
     request<IServerResponse>('communaute/ajouterutilisateur', {
@@ -756,8 +896,8 @@ export const apiClient = {
     nombrePasteursEglise?: string;
     nombreAnciensEglise?: string;
     nombreDiacresEglise?: string;
-    password: string;
-    confirmPassword: string;
+    password?: string;
+    confirmPassword?: string;
     email?: string;
   }) =>
     request<IServerResponse>('communaute/modifierutilisateur', {

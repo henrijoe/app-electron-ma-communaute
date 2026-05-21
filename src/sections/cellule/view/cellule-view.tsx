@@ -16,8 +16,10 @@ import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
+import IconButton from '@mui/material/IconButton';
 import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
+import Tooltip from '@mui/material/Tooltip';
 
 import { apiClient } from 'src/utils/apiClient';
 import { canManageModule } from 'src/utils/access-control';
@@ -28,6 +30,7 @@ import { Scrollbar } from 'src/components/scrollbar/scrollbar';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
+import { ContactPhoneLink } from 'src/components/contact-phone-link';
 import { buildResponsableMemberOptions, findResponsableContact } from 'src/utils/responsable-members';
 
 import { applyFilter, emptyRows, getComparator } from '../utils';
@@ -328,12 +331,27 @@ export function CelluleView() {
         mb={{ xs: 3, md: 5 }}
       >
         <Typography variant="h4" flexGrow={1}>Liste des cellules</Typography>
-        <Box display="flex" gap={1.25} flexDirection={{ xs: 'column', sm: 'row' }} sx={{ width: { xs: '100%', md: 'auto' } }}>
+        <Box display="flex" gap={1.25} alignItems="center" sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
           <PrintEtatGlobal />
           {canManageCellule && (
-            <Button variant="contained" color="inherit" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setOpenDialog(true)} sx={{ width: { xs: '100%', sm: 'auto' } }}>
-              Ajouter cellule
-            </Button>
+            <>
+              <Tooltip title="Ajouter cellule">
+                <IconButton
+                  color="primary"
+                  onClick={() => setOpenDialog(true)}
+                  sx={{
+                    display: { xs: 'inline-flex', sm: 'none' },
+                    bgcolor: 'action.selected',
+                    borderRadius: 1,
+                  }}
+                >
+                  <Iconify icon="mingcute:add-line" />
+                </IconButton>
+              </Tooltip>
+              <Button variant="contained" color="inherit" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setOpenDialog(true)} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
+                Ajouter cellule
+              </Button>
+            </>
           )}
         </Box>
       </Box>
@@ -407,18 +425,32 @@ export function CelluleView() {
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="caption" color="text.secondary">Contact responsable</Typography>
-                    <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{responsableContactByName.get(row.responsableCellule) || '-'}</Typography>
+                    <ContactPhoneLink fallback="-" value={responsableContactByName.get(row.responsableCellule)} />
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="caption" color="text.secondary">Visite</Typography>
                     <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.responsableVisiteCellule || '-'}</Typography>
                   </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Contact visite</Typography>
+                    <ContactPhoneLink fallback="-" value={responsableContactByName.get(row.responsableVisiteCellule)} />
+                  </Grid>
                 </Grid>
 
                 {canManageCellule && (
                   <Box display="flex" justifyContent="flex-end" gap={1} mt={1.5}>
-                    <Button size="small" onClick={() => handleEditCellule(row)}>Modifier</Button>
-                    <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteCellule(row.idCellule)}>Supprimer</Button>
+                    <Tooltip title="Modifier">
+                      <IconButton color="primary" size="small" onClick={() => handleEditCellule(row)}>
+                        <Iconify icon="solar:pen-bold" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={deleteLoading ? 'Suppression...' : 'Supprimer'}>
+                      <span>
+                        <IconButton size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteCellule(row.idCellule)}>
+                          <Iconify icon="solar:trash-bin-trash-bold" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
                   </Box>
                 )}
               </Card>
@@ -536,9 +568,21 @@ export function CelluleView() {
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Annuler</Button>
-          <Button onClick={handleSubmit} variant="contained" disabled={updateLoading}>Enregistrer</Button>
+        <DialogActions sx={{ flexDirection: 'row', justifyContent: { xs: 'space-between', sm: 'flex-end' }, gap: 1 }}>
+          <Tooltip title="Annuler">
+            <IconButton color="primary" onClick={handleCloseDialog} sx={{ display: { xs: 'inline-flex', sm: 'none' } }}>
+              <Iconify icon="solar:close-circle-bold" />
+            </IconButton>
+          </Tooltip>
+          <Button sx={{ display: { xs: 'none', sm: 'inline-flex' } }} onClick={handleCloseDialog}>Annuler</Button>
+          <Tooltip title={updateLoading ? 'Enregistrement...' : 'Enregistrer'}>
+            <span>
+              <IconButton color="primary" disabled={updateLoading} onClick={handleSubmit} sx={{ display: { xs: 'inline-flex', sm: 'none' } }}>
+                <Iconify icon="mingcute:check-line" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Button sx={{ display: { xs: 'none', sm: 'inline-flex' } }} onClick={handleSubmit} variant="contained" disabled={updateLoading}>Enregistrer</Button>
         </DialogActions>
       </Dialog>
 

@@ -56,6 +56,7 @@ import {
   parsePermissions,
   stringifyPermissions,
 } from 'src/utils/access-control';
+import { sanitizeSensitiveData } from 'src/utils/sensitive-data';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 
 type ConnectionMode = 'local' | 'online';
@@ -197,6 +198,13 @@ const isValidHttpUrl = (value: string): boolean => {
 const normalizeBrowserUrl = (value: string): string => value.trim().replace(/\/+$/, '');
 const buildBrowserUrlFromIp = (ipAddress: string, port = 49300): string => `http://${ipAddress}:${port}`;
 const getCurrentBrowserOrigin = (): string => normalizeBrowserUrl(window.location.origin);
+const buildLocalApiUrlFromCurrentHost = (): string => {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:49300';
+  }
+
+  return buildBrowserUrlFromIp(window.location.hostname);
+};
 
 const getDesktopCountdown = (expiresAt: string, now: number) => {
   const expirationTime = new Date(expiresAt).getTime();
@@ -468,7 +476,7 @@ export function SettingsView() {
     try {
       setLoadingSecondaryUsers(true);
       const response = await apiClient.get(`communaute/listeutilisateurparent/${currentAccountId}`);
-      setSecondaryUsers(Array.isArray(response?.data) ? response.data : []);
+      setSecondaryUsers(sanitizeSensitiveData(Array.isArray(response?.data) ? response.data : []));
     } catch (error: any) {
       showNotification(error?.message || 'Impossible de charger les utilisateurs secondaires.', 'error');
     } finally {
@@ -518,8 +526,9 @@ export function SettingsView() {
         const currentOrigin = getCurrentBrowserOrigin();
 
         if (isValidHttpUrl(currentOrigin)) {
-          setBrowserUrlInput(currentOrigin);
-          dispatch(setServerUrl(currentOrigin));
+          const localApiUrl = buildLocalApiUrlFromCurrentHost();
+          setBrowserUrlInput(localApiUrl);
+          dispatch(setServerUrl(localApiUrl));
           return;
         }
       }
@@ -875,25 +884,23 @@ export function SettingsView() {
       return;
     }
 
-    const nextPassword = profileForm.password.trim()
-      ? profileForm.password.trim()
-      : existingUser?.password || '';
-    const nextConfirmPassword = profileForm.password.trim()
-      ? profileForm.confirmPassword.trim() || profileForm.password.trim()
-      : existingUser?.confirmPassword || existingUser?.password || '';
-
     const payload = {
       ...existingUser,
       ...profileForm,
       idUtilisateur,
-      password: nextPassword,
-      confirmPassword: nextConfirmPassword,
     };
+
+    if (profileForm.password.trim()) {
+      Object.assign(payload, {
+        password: profileForm.password.trim(),
+        confirmPassword: profileForm.confirmPassword.trim() || profileForm.password.trim(),
+      });
+    }
 
     try {
       setIsSavingProfile(true);
       const response = await apiClient.updateUtilisateur(payload);
-      const savedUser = response?.data || payload;
+      const savedUser = sanitizeSensitiveData(response?.data || payload);
 
       dispatch(setUtilisateurData(savedUser));
       dispatch(setUserConnected(savedUser));
@@ -993,16 +1000,6 @@ export function SettingsView() {
       return;
     }
 
-    const existingSecondaryUser = secondaryUsers.find(
-      (item) => item.idUtilisateur === secondaryUserForm.idUtilisateur
-    );
-    const nextPassword = secondaryUserForm.password.trim()
-      ? secondaryUserForm.password.trim()
-      : existingSecondaryUser?.password || '';
-    const nextConfirmPassword = secondaryUserForm.password.trim()
-      ? secondaryUserForm.confirmPassword.trim() || secondaryUserForm.password.trim()
-      : existingSecondaryUser?.confirmPassword || existingSecondaryUser?.password || '';
-
     const sharedChurchData = {
       logoUtilisateur: '',
       logoEglise: sessionUser?.logoEglise || '',
@@ -1033,12 +1030,17 @@ export function SettingsView() {
       prenomUtilisateur: secondaryUserForm.prenomUtilisateur.trim(),
       telephoneUtilisateur: secondaryUserForm.telephoneUtilisateur.trim(),
       email: secondaryUserForm.email.trim(),
-      password: nextPassword,
-      confirmPassword: nextConfirmPassword,
       roleUtilisateur: secondaryUserForm.roleUtilisateur,
       permissionsUtilisateur: stringifyPermissions(normalizePermissions(secondaryUserForm.permissions)),
       actifUtilisateur: Number(secondaryUserForm.actifUtilisateur || 1),
     };
+
+    if (secondaryUserForm.password.trim()) {
+      Object.assign(payload, {
+        password: secondaryUserForm.password.trim(),
+        confirmPassword: secondaryUserForm.confirmPassword.trim() || secondaryUserForm.password.trim(),
+      });
+    }
 
     try {
       setIsSavingSecondaryUser(true);
@@ -1065,7 +1067,6 @@ export function SettingsView() {
     loadSecondaryUsers,
     secondaryUserCount,
     secondaryUserForm,
-    secondaryUsers,
     sessionUser,
     showNotification,
   ]);
@@ -1280,9 +1281,11 @@ export function SettingsView() {
                 />
                 <TextField
                   fullWidth
+                  type="email"
                   label="Email"
                   value={profileForm.email}
                   onChange={(event) => handleChangeProfileField('email', event.target.value)}
+                  helperText="Cet email servira a recuperer votre mot de passe en cas d'oubli."
                 />
               </Stack>
 
@@ -1592,9 +1595,11 @@ export function SettingsView() {
                       />
                       <TextField
                         fullWidth
+                        type="email"
                         label="Email"
                         value={secondaryUserForm.email}
                         onChange={(event) => handleChangeSecondaryUserField('email', event.target.value)}
+                        helperText="Utile si un flux de recuperation par email est active pour cet utilisateur."
                       />
                     </Stack>
 

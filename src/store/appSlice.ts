@@ -1,5 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 
+import { sanitizeSensitiveData } from 'src/utils/sensitive-data'
+
 export interface IAppState {
   userLoggedIn: boolean
   serverUrl: string
@@ -54,7 +56,7 @@ export const appSlice: any = createSlice({
     },
 
     setUserConnected: (state, action) => {
-      state.userConnected = action.payload
+      state.userConnected = sanitizeSensitiveData(action.payload)
     },
 
     setDesktopSecurityStatus: (state, action) => {

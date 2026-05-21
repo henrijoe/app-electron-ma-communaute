@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import { Box, Button, Menu, MenuItem, TextField, Typography } from '@mui/material';
+import { Box, Button, IconButton, Menu, MenuItem, TextField, Tooltip, Typography } from '@mui/material';
 
 import { IReduxState } from 'src/store/store';
 import { normalizeForSearch, normalizeText } from 'src/utils/text';
@@ -117,6 +117,24 @@ const FilterDropdown = () => {
 
   return (
     <div>
+      <Tooltip title="Filtrer">
+        <IconButton
+          aria-controls="filter-menu"
+          aria-haspopup="true"
+          color="inherit"
+          size="small"
+          onClick={(event) => setAnchorEl(event.currentTarget)}
+          sx={{
+            display: { xs: 'inline-flex', sm: 'none' },
+            border: 1,
+            borderColor: 'divider',
+            flex: '0 0 auto',
+          }}
+        >
+          <FilterAltIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+
       <Button
         aria-controls="filter-menu"
         variant="contained"
@@ -125,7 +143,7 @@ const FilterDropdown = () => {
         aria-haspopup="true"
         onClick={(event) => setAnchorEl(event.currentTarget)}
         endIcon={<FilterAltIcon />}
-        sx={{ justifyContent: 'center', textAlign: 'center', fontSize: '12px' }}
+        sx={{ display: { xs: 'none', sm: 'inline-flex' }, justifyContent: 'center', textAlign: 'center', fontSize: '12px' }}
       >
         Filtrer
       </Button>

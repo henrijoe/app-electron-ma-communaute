@@ -35,6 +35,7 @@ import {
   DialogTitle,
   DialogActions,
   DialogContent,
+  Tooltip,
 } from '@mui/material';
 
 import { apiClient } from 'src/utils/apiClient';
@@ -498,21 +499,33 @@ export function ComptabiliteView() {
             </Typography>
           </Box>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ width: { xs: '100%', md: 'auto' } }}>
+          <Stack direction="row" spacing={1.25} sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' }, flexWrap: 'wrap' }}>
             <PrintEtatComptabilite items={filteredItems} deletedItems={deletedItems} search={search} filterLabel={activeFilterLabel} isSuperAdmin={desktopSecurityIsSuperAdmin} />
             {canManageComptabilite && (
-              <Button
-                startIcon={<AddRounded />}
-                onClick={openCreateDialog}
-                sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }}
-              >
-                Nouvelle ecriture
-              </Button>
+              <>
+                <Tooltip title="Nouvelle ecriture">
+                  <IconButton onClick={openCreateDialog} sx={{ display: { xs: 'inline-flex', sm: 'none' }, ...primaryActionButtonSx }}>
+                    <AddRounded />
+                  </IconButton>
+                </Tooltip>
+                <Button
+                  startIcon={<AddRounded />}
+                  onClick={openCreateDialog}
+                  sx={{ ...primaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }}
+                >
+                  Nouvelle ecriture
+                </Button>
+              </>
             )}
           </Stack>
         </Stack>
 
-        <Grid container spacing={2} justifyContent="center">
+        <Grid
+          container
+          spacing={2}
+          justifyContent="center"
+          sx={{ width: '100%', m: 0 }}
+        >
           {[
             {
               title: 'Entrees',
@@ -533,8 +546,8 @@ export function ComptabiliteView() {
               color: theme.palette.primary.main,
             },
           ].map((item) => (
-            <Grid item xs={12} md={4} key={item.title}>
-              <Card sx={{ p: 3, borderRadius: 4 }}>
+            <Grid item xs={12} md={4} key={item.title} sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Card sx={{ width: '100%', maxWidth: { xs: 440, md: 'none' }, p: 3, borderRadius: 4 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Box>
                     <Typography variant="overline" sx={{ color: 'text.secondary' }}>{item.title}</Typography>
@@ -559,7 +572,7 @@ export function ComptabiliteView() {
           ))}
         </Grid>
 
-        <Card sx={{ p: 2, borderRadius: 4, background: (muiTheme) => `linear-gradient(135deg, ${alpha(muiTheme.palette.primary.main, 0.12)}, ${alpha(muiTheme.palette.info.main, 0.06)})` }}>
+        <Card sx={{ width: '100%', maxWidth: { xs: 440, md: 'none' }, mx: { xs: 'auto', md: 0 }, p: 2, borderRadius: 4, background: (muiTheme) => `linear-gradient(135deg, ${alpha(muiTheme.palette.primary.main, 0.12)}, ${alpha(muiTheme.palette.info.main, 0.06)})` }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
             <TextField
               fullWidth
@@ -582,7 +595,7 @@ export function ComptabiliteView() {
         </Card>
 
         {isMobile && (
-          <Stack spacing={1.5}>
+          <Stack spacing={1.5} alignItems="center">
             {filteredItems.map((item: IComptabiliteItem) => {
               const isEntree = item.typeComptabilite === 'entree';
               const amount = isEntree ? item.entreeComptabilite : item.sortieComptabilite;
@@ -591,6 +604,8 @@ export function ComptabiliteView() {
                 <Card
                   key={item.idComptabilite || `${item.nomComptabilite}-${item.dateComptabilite}`}
                   sx={{
+                    width: '100%',
+                    maxWidth: 440,
                     p: 2,
                     borderRadius: 3,
                     border: '1px solid',

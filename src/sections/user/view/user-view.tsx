@@ -16,7 +16,7 @@ import TablePagination from '@mui/material/TablePagination';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {
   Grid, Dialog, Divider, MenuItem, TextField, DialogTitle, DialogActions,
-  Avatar, IconButton, Stack, DialogContent
+  Avatar, IconButton, Stack, DialogContent, Tooltip
 
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -29,6 +29,8 @@ import {
 import { ApiError, apiClient, buildPhotoUrl } from 'src/utils/apiClient';
 import { canManageModule, isDesktopAppRuntime } from 'src/utils/access-control';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
+import { DUPLICATE_MEMBER_MESSAGE, findDuplicateMember } from 'src/utils/member-duplicates';
+import { ContactPhoneLink } from 'src/components/contact-phone-link';
 import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 
@@ -39,7 +41,7 @@ import { TableEmptyRows } from '../table-empty-rows';
 import { UserTableToolbar } from '../user-table-toolbar';
 import { DashboardContent } from '../../../layouts/dashboard';
 import { Iconify } from '../../../components/iconify/iconify';
-import { emptyRows, applyFilter, getComparator } from '../utils';
+import { emptyRows, applyFilter, getComparator, getPhotoUrl } from '../utils';
 import { Scrollbar } from '../../../components/scrollbar/scrollbar';
 import { membre, dataGenre, setDataModifiesMembre, deleteMembre, IMembre, IDataChoice, dataBapteme, dataNouvelAme, ensureMembreArrays, setFilterMembre, setListFilterMembre, setListMembre, setTitreDocument, visiteMembres, dataNiveauEtude, dataSituationMembre , dataCapaciteSpirituelle, dataCivilite, setListResponsabilite } from '../../../store/membreSlice';
 import { setListDepartement } from '../../../store/departementSlice';
@@ -51,10 +53,18 @@ import PrintEtatGlobal from '../etats/printEtats';
 
 const resolveChoiceLabel = (choices: IDataChoice[], value: unknown): string => {
   const rawValue = String(value ?? '').trim();
-  if (!rawValue) return '';
+  if (!rawValue || rawValue === '0') return '';
 
   const match = choices.find((choice) => String(choice.value) === rawValue);
   return match?.label || rawValue;
+};
+
+const resolveOptionalChoiceLabel = (choices: IDataChoice[], value: unknown): string => {
+  const rawValue = String(value ?? '').trim();
+  if (!rawValue || rawValue === '0') return 'Non renseigne';
+
+  const match = choices.find((choice) => String(choice.value) === rawValue);
+  return match?.label || 'Non renseigne';
 };
 
 const resolveReferenceLabel = (
@@ -498,6 +508,11 @@ export function UserView() {
           photoMembre: data.photoMembre || membreData.photoMembre || currentMembre?.photoMembre || '',
         };
 
+        if (findDuplicateMember(listMembre, cleanedData, data.idMembre)) {
+          showNotification(DUPLICATE_MEMBER_MESSAGE, 'warning');
+          return;
+        }
+
         console.log('Donnees preparees :', cleanedData);
 
         const response = await apiClient.updateMembre(cleanedData);
@@ -544,6 +559,11 @@ export function UserView() {
         prenomMembre: membreData.prenomMembre || '',
         idUtilisateur: currentUserId,
       };
+
+      if (findDuplicateMember(listMembre, cleanedData)) {
+        showNotification(DUPLICATE_MEMBER_MESSAGE, 'warning');
+        return;
+      }
 
       console.log('Donnees preparees :', cleanedData);
 
@@ -839,50 +859,92 @@ export function UserView() {
         </Typography>
 
         <Stack
-          direction={{ xs: 'column', sm: 'row' }}
+          direction="row"
           spacing={1.25}
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-          sx={{ width: { xs: '100%', md: 'auto' } }}
+          alignItems="center"
+          sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' }, flexWrap: 'wrap' }}
         >
           {!isDesktopApp && <PrintEtatGlobal />}
 
           {canManageUsers && (
-            <Button
-              variant="outlined"
-              color="inherit"
-              startIcon={<Iconify icon="solar:import-linear" />}
-              onClick={() => navigate('/user/import')}
-              disabled={loading}
-              fullWidth={isMobile}
-            >
-              Importer membre
-            </Button>
+            <>
+              <Tooltip title="Importer membre">
+                <span>
+                  <IconButton
+                    color="primary"
+                    onClick={() => navigate('/user/import')}
+                    disabled={loading}
+                    sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}
+                  >
+                    <Iconify icon="solar:import-linear" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Button
+                variant="outlined"
+                color="inherit"
+                startIcon={<Iconify icon="solar:import-linear" />}
+                onClick={() => navigate('/user/import')}
+                disabled={loading}
+                sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+              >
+                Importer membre
+              </Button>
+            </>
           )}
 
           {!isDesktopApp && (
-            <Button
-              variant="outlined"
-              color="inherit"
-              startIcon={<Iconify icon="solar:export-linear" />}
-              onClick={handleExportMembres}
-              disabled={loading || !exportableMembres.length}
-              fullWidth={isMobile}
-            >
-              Exporter les membres
-            </Button>
+            <>
+              <Tooltip title="Exporter les membres">
+                <span>
+                  <IconButton
+                    color="primary"
+                    onClick={handleExportMembres}
+                    disabled={loading || !exportableMembres.length}
+                    sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}
+                  >
+                    <Iconify icon="solar:export-linear" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Button
+                variant="outlined"
+                color="inherit"
+                startIcon={<Iconify icon="solar:export-linear" />}
+                onClick={handleExportMembres}
+                disabled={loading || !exportableMembres.length}
+                sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+              >
+                Exporter les membres
+              </Button>
+            </>
           )}
 
           {canManageUsers && (
-            <Button
-              variant="contained"
-              color="inherit"
-              startIcon={<Iconify icon="mingcute:add-line" />}
-              onClick={handleOpenDialog}
-              disabled={loading}
-              fullWidth={isMobile}
-            >
-              {loading ? 'Chargement...' : 'Ajouter membre'}
-            </Button>
+            <>
+              <Tooltip title={loading ? 'Chargement...' : 'Ajouter membre'}>
+                <span>
+                  <IconButton
+                    color="primary"
+                    onClick={handleOpenDialog}
+                    disabled={loading}
+                    sx={{ display: { xs: 'inline-flex', sm: 'none' }, bgcolor: 'action.selected', borderRadius: 1 }}
+                  >
+                    <Iconify icon="mingcute:add-line" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Button
+                variant="contained"
+                color="inherit"
+                startIcon={<Iconify icon="mingcute:add-line" />}
+                onClick={handleOpenDialog}
+                disabled={loading}
+                sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+              >
+                {loading ? 'Chargement...' : 'Ajouter membre'}
+              </Button>
+            </>
           )}
         </Stack>
       </Box>
@@ -902,7 +964,7 @@ export function UserView() {
         {isMobile && (
           <Stack spacing={1.5} sx={{ px: 2, pb: 2 }}>
             {currentPageMembres.map((row: IMembre) => {
-              const photoUrl = row.photoMembre ? buildPhotoUrl(row.photoMembre) : '';
+              const photoUrl = getPhotoUrl(row.photoMembre);
               const isSelected = table.selected?.includes(row.idMembre?.toString());
 
               return (
@@ -927,9 +989,7 @@ export function UserView() {
                         <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
                           {row.nomMembre} {row.prenomMembre}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
-                          {row.contactMembre || 'Contact non renseigne'}
-                        </Typography>
+                        <ContactPhoneLink fallback="Contact non renseigne" value={row.contactMembre} />
                       </Box>
                     </Stack>
 
@@ -950,7 +1010,7 @@ export function UserView() {
                       </Grid>
                       <Grid item xs={6}>
                         <Typography variant="caption" color="text.secondary">Situation</Typography>
-                        <Typography variant="body2">{resolveChoiceLabel(dataSituationMembre, row.situationMatrimonialeMembre) || '-'}</Typography>
+                        <Typography variant="body2">{resolveOptionalChoiceLabel(dataSituationMembre, row.situationMatrimonialeMembre)}</Typography>
                       </Grid>
                     </Grid>
 
@@ -1785,10 +1845,31 @@ export function UserView() {
               </Grid>
             </Grid>
             <Divider />
-            <DialogActions sx={{ flexDirection: { xs: 'column-reverse', sm: 'row' }, gap: 1, px: 0, pt: 2 }}>
-              <Button fullWidth={isMobile} onClick={handleCloseDialog} color="primary">Annuler</Button>
+            <DialogActions sx={{ flexDirection: 'row', justifyContent: { xs: 'space-between', sm: 'flex-end' }, gap: 1, px: 0, pt: 2 }}>
+              <Tooltip title="Annuler">
+                <IconButton
+                  color="primary"
+                  onClick={handleCloseDialog}
+                  sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
+                >
+                  <Iconify icon="solar:close-circle-bold" />
+                </IconButton>
+              </Tooltip>
+              <Button sx={{ display: { xs: 'none', sm: 'inline-flex' } }} onClick={handleCloseDialog} color="primary">Annuler</Button>
 
-              <Button fullWidth={isMobile} type="submit" color="primary" disabled={loading || updateLoading}>
+              <Tooltip title={(loading || updateLoading) ? 'Enregistrement...' : (isEditMode ? 'Modifier' : 'Enregistrer')}>
+                <span>
+                  <IconButton
+                    color="primary"
+                    type="submit"
+                    disabled={loading || updateLoading}
+                    sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
+                  >
+                    <Iconify icon={isEditMode ? 'solar:pen-bold' : 'mingcute:check-line'} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Button sx={{ display: { xs: 'none', sm: 'inline-flex' } }} type="submit" color="primary" disabled={loading || updateLoading}>
                 {(loading || updateLoading) ? 'Enregistrement...' : (isEditMode ? 'Modifier' : 'Enregistrer')}
               </Button>
 

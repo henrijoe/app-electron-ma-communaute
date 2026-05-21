@@ -29,6 +29,7 @@ import {
   MenuItem,
   Stack,
   TextField,
+  Tooltip,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
@@ -88,7 +89,18 @@ const typeColorMap: Record<string, string> = {
   Visite: '#6366f1',
   Autre: '#64748b',
 };
-const colorOptions = Object.values(typeColorMap);
+const colorOptions = [
+  { label: 'Bleu ciel', value: '#0ea5e9' },
+  { label: 'Violet', value: '#8b5cf6' },
+  { label: 'Rose', value: '#ec4899' },
+  { label: 'Vert', value: '#10b981' },
+  { label: 'Orange', value: '#f97316' },
+  { label: 'Jaune', value: '#eab308' },
+  { label: 'Indigo', value: '#6366f1' },
+  { label: 'Gris', value: '#64748b' },
+  { label: 'Rouge', value: '#ef4444' },
+  { label: 'Bleu fonce', value: '#2563eb' },
+];
 const primaryActionButtonSx = {
   minWidth: 'auto',
   px: 1.75,
@@ -143,6 +155,23 @@ const buildMonthDays = (currentMonth: Date) => {
 };
 
 const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
+
+const formatDisplayDate = (value?: string | null): string => {
+  if (!value) return '';
+
+  const [datePart] = String(value).split('T');
+  const parts = datePart.split('-');
+
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+
+    if (year.length === 4 && month && day) {
+      return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+    }
+  }
+
+  return String(value);
+};
 
 const buildWeekDays = (selectedDate: string) => {
   const base = new Date(selectedDate);
@@ -241,7 +270,6 @@ export function AgendaView() {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
 
   const { listAgenda, loadingAgenda } = useSelector((state: any) => state.agenda);
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
@@ -566,7 +594,16 @@ export function AgendaView() {
           <Typography variant="h5" sx={{ textTransform: 'capitalize' }}>{selectedDateLabel}</Typography>
           <Typography variant="body2" color="text.secondary">{getReminderLabel(selectedDate) || 'Jour selectionne'}</Typography>
         </Box>
-        {canManageAgenda && <Button variant="contained" sx={primaryActionButtonSx} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter ce jour</Button>}
+        {canManageAgenda && (
+          <>
+            <Tooltip title="Ajouter ce jour">
+              <IconButton onClick={() => openCreateDialog(selectedDate)} sx={{ display: { xs: 'inline-flex', sm: 'none' }, ...primaryActionButtonSx }}>
+                <AddRounded />
+              </IconButton>
+            </Tooltip>
+            <Button variant="contained" sx={{ ...primaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter ce jour</Button>
+          </>
+        )}
       </Stack>
       <Stack spacing={2}>
         {selectedDateEvents.map((event: IAgendaEvent) => <EventCard key={event.idAgenda} event={event} canManage={canManageAgenda} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
@@ -601,15 +638,25 @@ export function AgendaView() {
             <Typography color="text.secondary">Programme les cultes, rendez-vous et evenements importants de la communaute.</Typography>
           </Box>
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
+            direction="row"
             spacing={1.5}
             sx={{
               width: { xs: '100%', md: 'auto' },
-              '& > *': { width: { xs: '100%', sm: 'auto' } },
+              justifyContent: { xs: 'flex-start', md: 'flex-end' },
+              flexWrap: 'wrap',
             }}
           >
             <PrintEtatAgenda events={monthEvents} identity={identity} monthLabel={selectedMonthLabel} />
-            {canManageAgenda && <Button fullWidth={isMobile} variant="contained" sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog()}>Ajouter un evenement</Button>}
+            {canManageAgenda && (
+              <>
+                <Tooltip title="Ajouter un evenement">
+                  <IconButton onClick={() => openCreateDialog()} sx={{ display: { xs: 'inline-flex', sm: 'none' }, ...primaryActionButtonSx }}>
+                    <AddRounded />
+                  </IconButton>
+                </Tooltip>
+                <Button variant="contained" sx={{ ...primaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog()}>Ajouter un evenement</Button>
+              </>
+            )}
           </Stack>
         </Stack>
 
@@ -627,7 +674,16 @@ export function AgendaView() {
           <Grid item xs={12} lg={3}>
             <Stack spacing={3}>
               <Card sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 4, ...themedPanelSx }}>
-                {canManageAgenda && <Button fullWidth={isTablet} variant="contained" sx={{ ...primaryActionButtonSx, mb: 3, width: { xs: '100%', lg: 'fit-content' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter a cette date</Button>}
+                {canManageAgenda && (
+                  <>
+                    <Tooltip title="Ajouter a cette date">
+                      <IconButton onClick={() => openCreateDialog(selectedDate)} sx={{ display: { xs: 'inline-flex', sm: 'none' }, mb: 3, ...primaryActionButtonSx }}>
+                        <AddRounded />
+                      </IconButton>
+                    </Tooltip>
+                    <Button variant="contained" sx={{ ...primaryActionButtonSx, mb: 3, display: { xs: 'none', sm: 'inline-flex' }, width: { lg: 'fit-content' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter a cette date</Button>
+                  </>
+                )}
                 <Typography variant="h6" sx={{ mb: 2 }}>Prochains rendez-vous</Typography>
                 <Stack spacing={2}>
                   {upcomingEvents.map((item: IAgendaEvent) => {
@@ -641,7 +697,7 @@ export function AgendaView() {
                               {getReminderLabel(item.dateAgenda || '') && <Chip size="small" color={getReminderLabel(item.dateAgenda || '') === "Aujourd'hui" ? 'warning' : 'info'} label={getReminderLabel(item.dateAgenda || '')} />}
                               <Chip size="small" label={item.typeAgenda || 'Evenement'} sx={{ bgcolor: alpha(itemColor, 0.18), color: itemColor }} />
                             </Stack>
-                            <Typography variant="caption" color="text.secondary">{item.dateAgenda} {item.heureDebutAgenda ? `- ${item.heureDebutAgenda}` : ''}</Typography>
+                            <Typography variant="caption" color="text.secondary">{formatDisplayDate(item.dateAgenda)} {item.heureDebutAgenda ? `- ${item.heureDebutAgenda}` : ''}</Typography>
                           </Box>
                           {canManageAgenda && <IconButton size="small" onClick={() => openEditDialog(item)}><EditRounded fontSize="small" /></IconButton>}
                         </Stack>
@@ -711,7 +767,23 @@ export function AgendaView() {
               {eventStatus.map((option: string) => <MenuItem key={option} value={option}>{option}</MenuItem>)}
             </TextField>
             <TextField select label="Couleur" value={agendaForm.couleurAgenda} onChange={(event) => setAgendaForm((previous) => ({ ...previous, couleurAgenda: event.target.value }))} fullWidth>
-              {colorOptions.map((option: string) => <MenuItem key={option} value={option}>{option}</MenuItem>)}
+              {agendaForm.couleurAgenda
+                && !colorOptions.some((option) => option.value === agendaForm.couleurAgenda) && (
+                  <MenuItem value={agendaForm.couleurAgenda}>
+                    <Stack direction="row" spacing={1.25} alignItems="center">
+                      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: agendaForm.couleurAgenda, border: '1px solid', borderColor: 'divider' }} />
+                      <Typography variant="body2">Couleur actuelle</Typography>
+                    </Stack>
+                  </MenuItem>
+                )}
+              {colorOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  <Stack direction="row" spacing={1.25} alignItems="center">
+                    <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: option.value, border: '1px solid', borderColor: 'divider' }} />
+                    <Typography variant="body2">{option.label}</Typography>
+                  </Stack>
+                </MenuItem>
+              ))}
             </TextField>
             <TextField label="Description" value={agendaForm.descriptionAgenda} onChange={(event) => setAgendaForm((previous) => ({ ...previous, descriptionAgenda: event.target.value }))} fullWidth multiline minRows={3} />
           </Stack>

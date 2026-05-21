@@ -124,8 +124,25 @@ const secondaryActionButtonSx = {
   borderRadius: 2,
 };
 
+const formatDisplayDate = (value?: string | null): string => {
+  if (!value) return '';
+
+  const [datePart] = String(value).split('T');
+  const parts = datePart.split('-');
+
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+
+    if (year.length === 4 && month && day) {
+      return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+    }
+  }
+
+  return String(value);
+};
+
 const buildEventSubtitle = (event: IGalerieEvenement): string => {
-  const parts = [event.typeEvenement, event.dateEvenement, event.lieuEvenement].filter(Boolean);
+  const parts = [event.typeEvenement, formatDisplayDate(event.dateEvenement), event.lieuEvenement].filter(Boolean);
   return parts.join(' - ');
 };
 
@@ -676,13 +693,35 @@ export function GalerieView() {
               </Stack>
             </Card>
 
-            <Grid container spacing={3}>
+            <Grid
+              container
+              spacing={{ xs: 2.5, sm: 3 }}
+              justifyContent={{ xs: 'center', sm: 'flex-start' }}
+              sx={{ width: '100%', m: 0 }}
+            >
               {filteredEvents.map((event: IGalerieEvenement) => {
                 const coverUrl = event.couvertureGalerie ? buildGalerieMediaUrl(event.couvertureGalerie) : '';
 
                 return (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={event.idGalerie}>
-                    <Card sx={{ width: '100%', borderRadius: 4, overflow: 'hidden', bgcolor: 'var(--mui-palette-grey-900, #1f2940)', color: 'common.white' }}>
+                  <Grid
+                    item
+                    xs={12}
+                    sm={6}
+                    md={4}
+                    lg={3}
+                    key={event.idGalerie}
+                    sx={{ display: 'flex', justifyContent: 'center' }}
+                  >
+                    <Card
+                      sx={{
+                        width: '100%',
+                        maxWidth: { xs: 440, sm: 'none' },
+                        borderRadius: 4,
+                        overflow: 'hidden',
+                        bgcolor: 'var(--mui-palette-grey-900, #1f2940)',
+                        color: 'common.white',
+                      }}
+                    >
                       <CardActionArea onClick={() => loadImagesForEvent(event)}>
                         <Box sx={{ p: 2, pb: 1 }}>
                           <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -757,16 +796,26 @@ export function GalerieView() {
                       </Box>
 
                       {canManageGalerie && (
-                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flexWrap="wrap" sx={{ width: { xs: '100%', md: 'auto' } }}>
-                          <Button fullWidth={isMobile} variant="outlined" sx={secondaryActionButtonSx} startIcon={<EditRounded />} onClick={() => handleOpenEditDialog(selectedEvent)}>Modifier</Button>
-                          <Button fullWidth={isMobile} color="error" variant="outlined" sx={secondaryActionButtonSx} startIcon={<DeleteRounded />} onClick={() => setConfirmDeleteEvent(selectedEvent)}>Supprimer</Button>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ width: { xs: '100%', md: 'auto' } }}>
+                          <Tooltip title="Modifier">
+                            <IconButton color="primary" onClick={() => handleOpenEditDialog(selectedEvent)} sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                              <EditRounded />
+                            </IconButton>
+                          </Tooltip>
+                          <Button variant="outlined" sx={{ ...secondaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<EditRounded />} onClick={() => handleOpenEditDialog(selectedEvent)}>Modifier</Button>
+                          <Tooltip title="Supprimer">
+                            <IconButton color="error" onClick={() => setConfirmDeleteEvent(selectedEvent)} sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                              <DeleteRounded />
+                            </IconButton>
+                          </Tooltip>
+                          <Button color="error" variant="outlined" sx={{ ...secondaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<DeleteRounded />} onClick={() => setConfirmDeleteEvent(selectedEvent)}>Supprimer</Button>
                         </Stack>
                       )}
                     </Stack>
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} flexWrap="wrap">
                       <Chip icon={<ImageRounded />} label={`${galerieImages.length} image(s)`} />
-                      <Chip icon={<CalendarMonthRounded />} label={selectedEvent.dateEvenement || 'Date non precisee'} />
+                      <Chip icon={<CalendarMonthRounded />} label={formatDisplayDate(selectedEvent.dateEvenement) || 'Date non precisee'} />
                       <Chip icon={<LocationOnRounded />} label={selectedEvent.lieuEvenement || 'Lieu non precise'} />
                       <Chip icon={<MoreVertRounded />} label={selectedEvent.typeEvenement || 'Evenement'} />
                     </Stack>
@@ -790,14 +839,30 @@ export function GalerieView() {
                         bgcolor: isDragOver ? (muiTheme) => alpha(muiTheme.palette.primary.main, 0.08) : 'background.paper',
                       }}
                     >
-                      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', md: 'center' }} flexWrap="wrap">
+                      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
                         {canManageGalerie && (
                           <>
-                            <Button fullWidth={isMobile} component="label" variant="contained" sx={{ ...primaryActionButtonSx, px: 1.4, width: { xs: '100%', md: 'auto' } }} startIcon={<AddPhotoAlternateRounded />} disabled={uploadingImages}>
+                            <Tooltip title={uploadingImages ? 'Ajout en cours...' : 'Ajouter des photos'}>
+                              <span>
+                                <IconButton component="label" disabled={uploadingImages} sx={{ display: { xs: 'inline-flex', sm: 'none' }, ...primaryActionButtonSx }}>
+                                  <AddPhotoAlternateRounded />
+                                  <input hidden accept="image/*" multiple type="file" onChange={handleImageInputChange} />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Button component="label" variant="contained" sx={{ ...primaryActionButtonSx, px: 1.4, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<AddPhotoAlternateRounded />} disabled={uploadingImages}>
                               {uploadingImages ? 'Ajout en cours...' : 'Ajouter des photos'}
                               <input hidden accept="image/*" multiple type="file" onChange={handleImageInputChange} />
                             </Button>
-                            <Button fullWidth={isMobile} component="label" variant="outlined" sx={{ ...secondaryActionButtonSx, width: { xs: '100%', md: 'auto' } }} startIcon={<FolderRounded />} disabled={uploadingImages}>
+                            <Tooltip title="Ajouter un dossier">
+                              <span>
+                                <IconButton component="label" disabled={uploadingImages} sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                                  <FolderRounded />
+                                  <input {...folderInputProps} />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Button component="label" variant="outlined" sx={{ ...secondaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<FolderRounded />} disabled={uploadingImages}>
                               Ajouter un dossier
                               <input {...folderInputProps} />
                             </Button>
@@ -805,7 +870,12 @@ export function GalerieView() {
                         )}
                         {!isDesktopApp && (
                           <>
-                            <Button fullWidth={isMobile} component="a" href={buildGalerieDownloadUrl(selectedEvent.idGalerie || 0, currentUserId)} variant="outlined" sx={{ ...secondaryActionButtonSx, width: { xs: '100%', md: 'auto' } }} startIcon={<DownloadRounded />}>
+                            <Tooltip title="Telecharger le dossier">
+                              <IconButton component="a" href={buildGalerieDownloadUrl(selectedEvent.idGalerie || 0, currentUserId)} sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                                <DownloadRounded />
+                              </IconButton>
+                            </Tooltip>
+                            <Button component="a" href={buildGalerieDownloadUrl(selectedEvent.idGalerie || 0, currentUserId)} variant="outlined" sx={{ ...secondaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<DownloadRounded />}>
                               Telecharger le dossier
                             </Button>
                             <PrintEtatGalerie event={selectedEvent} images={galerieImages} />
@@ -840,12 +910,25 @@ export function GalerieView() {
               </Button>
             </Stack>
 
-            <Grid container spacing={2.5}>
+            <Grid
+              container
+              spacing={2.5}
+              justifyContent={{ xs: 'center', sm: 'flex-start' }}
+              sx={{ width: '100%', m: 0 }}
+            >
               {galerieImages.map((image: IGalerieImage) => {
                 const isCover = selectedEvent.couvertureGalerie === image.cheminImage;
                 return (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={image.idGalerieImage}>
-                    <Card sx={{ borderRadius: 4, overflow: 'hidden' }}>
+                  <Grid
+                    item
+                    xs={12}
+                    sm={6}
+                    md={4}
+                    lg={3}
+                    key={image.idGalerieImage}
+                    sx={{ display: 'flex', justifyContent: 'center' }}
+                  >
+                    <Card sx={{ width: '100%', maxWidth: { xs: 440, sm: 'none' }, borderRadius: 4, overflow: 'hidden' }}>
                       <Box component="img" src={buildGalerieMediaUrl(image.cheminImage)} alt={image.nomFichier} sx={{ width: '100%', height: 220, objectFit: 'cover', cursor: 'pointer' }} onClick={() => setPreviewImage(image)} />
 
                       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 2 }}>
@@ -1029,7 +1112,7 @@ export function GalerieView() {
                       {currentPreviewImage.legendeImage || currentPreviewImage.nomFichier}
                     </Typography>
                     <Typography variant="body2" sx={{ color: alpha('#ffffff', 0.68), textAlign: 'center' }}>
-                      {selectedEvent?.typeEvenement || 'Evenement'} - {selectedEvent?.dateEvenement || 'Date non precisee'} - {selectedEvent?.lieuEvenement || 'Lieu non precise'}
+                      {selectedEvent?.typeEvenement || 'Evenement'} - {formatDisplayDate(selectedEvent?.dateEvenement) || 'Date non precisee'} - {selectedEvent?.lieuEvenement || 'Lieu non precise'}
                     </Typography>
                   </Stack>
                 </>

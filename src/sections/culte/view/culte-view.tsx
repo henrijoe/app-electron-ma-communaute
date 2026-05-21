@@ -13,10 +13,10 @@ import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
 import {
   Grid, Dialog, Divider, MenuItem, TextField, DialogTitle, DialogActions,
-  Stack, DialogContent
+  Stack, DialogContent, IconButton, Tooltip
 } from '@mui/material';
 
-import { apiClient } from 'src/utils/apiClient';
+import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
 import { canManageModule } from 'src/utils/access-control';
 import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
@@ -110,11 +110,12 @@ export function CulteView() {
         dispatch(setListCulte(response.data));
       }
     } catch (error) {
-      console.error('Error fetching cellule:', error);
+      console.error('Error fetching culte:', error);
+      showNotification(getApiErrorMessage(error, 'Impossible de charger les cultes'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [currentUserId, dispatch]);
+  }, [currentUserId, dispatch, showNotification]);
 
 
   // Fonction pour supprimer un culte
@@ -138,7 +139,7 @@ export function CulteView() {
       }
     } catch (error: any) {
       console.error('Error deleting culte:', error);
-      showNotification(`Erreur: ${error.message || 'Erreur lors de la suppression'}`, 'error');
+      showNotification(getApiErrorMessage(error, 'Erreur lors de la suppression du culte'), 'error');
     } finally {
       setDeleteLoading(false);
     }
@@ -192,11 +193,11 @@ export function CulteView() {
         fetchCultes();
         showNotification('Culte modifié avec succès', 'success');
       } else {
-        showNotification('Erreur lors de la modification du culte', 'error');
+        showNotification(response.error?.message || 'Erreur lors de la modification du culte', 'error');
       }
     } catch (error) {
       console.error('Error updating culte:', error);
-      showNotification('Erreur lors de la modification', 'error');
+      showNotification(getApiErrorMessage(error, 'Erreur lors de la modification du culte'), 'error');
     } finally {
       setUpdateLoading(false);
     }
@@ -229,11 +230,11 @@ export function CulteView() {
           handleCloseDialog();
           showNotification('Culte créé avec succès', 'success');
         } else {
-          showNotification('Erreur lors de la création du culte', 'error');
+          showNotification(response.error?.message || 'Erreur lors de la creation du culte', 'error');
         }
       } catch (error) {
         console.error('Error creating culte:', error);
-        showNotification('Erreur lors de la création du culte', 'error');
+        showNotification(getApiErrorMessage(error, 'Erreur lors de la creation du culte'), 'error');
       } finally {
         setUpdateLoading(false);
       }
@@ -420,24 +421,42 @@ export function CulteView() {
         </Typography>
 
         <Stack
-          direction={{ xs: 'column', sm: 'row' }}
+          direction="row"
           spacing={1.25}
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-          sx={{ width: { xs: '100%', md: 'auto' } }}
+          alignItems="center"
+          sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}
         >
           <PrintEtatGlobal />
 
           {canManageCulte && (
-          <Button
-            variant="contained"
-            color="inherit"
-            startIcon={<Iconify icon="mingcute:add-line" />}
-            onClick={handleOpenDialog}
-            disabled={loading}
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
-          >
-            {loading ? 'Chargement...' : 'Ajouter culte'}
-          </Button>
+          <>
+            <Tooltip title={loading ? 'Chargement...' : 'Ajouter culte'}>
+              <span>
+                <IconButton
+                  color="primary"
+                  onClick={handleOpenDialog}
+                  disabled={loading}
+                  sx={{
+                    display: { xs: 'inline-flex', sm: 'none' },
+                    bgcolor: 'action.selected',
+                    borderRadius: 1,
+                  }}
+                >
+                  <Iconify icon="mingcute:add-line" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Button
+              variant="contained"
+              color="inherit"
+              startIcon={<Iconify icon="mingcute:add-line" />}
+              onClick={handleOpenDialog}
+              disabled={loading}
+              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+            >
+              {loading ? 'Chargement...' : 'Ajouter culte'}
+            </Button>
+          </>
           )}
         </Stack>
       </Box>
@@ -528,8 +547,18 @@ export function CulteView() {
 
                   {canManageCulte && (
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    <Button size="small" onClick={() => handleEditCulte(row)}>Modifier</Button>
-                    <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteCulte(row.idCulte)}>Supprimer</Button>
+                    <Tooltip title="Modifier">
+                      <IconButton color="primary" size="small" onClick={() => handleEditCulte(row)}>
+                        <Iconify icon="solar:pen-bold" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={deleteLoading ? 'Suppression...' : 'Supprimer'}>
+                      <span>
+                        <IconButton size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteCulte(row.idCulte)}>
+                          <Iconify icon="solar:trash-bin-trash-bold" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
                   </Stack>
                   )}
                 </Stack>
@@ -903,11 +932,24 @@ export function CulteView() {
 
             <Divider sx={{ my: 2 }} />
 
-            <DialogActions>
-              <Button onClick={handleCloseDialog} color="primary">
+            <DialogActions sx={{ flexDirection: 'row', justifyContent: { xs: 'space-between', sm: 'flex-end' }, gap: 1 }}>
+              <Tooltip title="Annuler">
+                <IconButton color="primary" onClick={handleCloseDialog} sx={{ display: { xs: 'inline-flex', sm: 'none' } }}>
+                  <Iconify icon="solar:close-circle-bold" />
+                </IconButton>
+              </Tooltip>
+              <Button sx={{ display: { xs: 'none', sm: 'inline-flex' } }} onClick={handleCloseDialog} color="primary">
                 Annuler
               </Button>
+              <Tooltip title={updateLoading ? 'Enregistrement...' : (isEditMode ? 'Modifier' : 'Enregistrer')}>
+                <span>
+                  <IconButton type="submit" color="primary" disabled={updateLoading} sx={{ display: { xs: 'inline-flex', sm: 'none' } }}>
+                    <Iconify icon={isEditMode ? 'solar:pen-bold' : 'mingcute:check-line'} />
+                  </IconButton>
+                </span>
+              </Tooltip>
               <Button
+                sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                 type="submit"
                 color="primary"
                 variant="contained"

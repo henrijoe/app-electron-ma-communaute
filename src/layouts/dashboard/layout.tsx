@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
+import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import { useTheme } from '@mui/material/styles';
 import { DarkModeRounded, LightModeRounded } from '@mui/icons-material';
@@ -37,6 +38,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
   const theme = useTheme();
   const dispatch = useDispatch();
   const themeMode = useSelector((state: IReduxState) => state.application.themeMode || 'light');
+  const nomTemple = useSelector((state: IReduxState) => state.authentification.utilisateurData?.nomTemple);
 
   const [navOpen, setNavOpen] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -75,6 +77,15 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
                   open={navOpen}
                   onClose={() => setNavOpen(false)}
                 />
+                {nomTemple && (
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={700}
+                    sx={{ color: 'text.primary', letterSpacing: 0.5, ml: 1 }}
+                  >
+                    {nomTemple}
+                  </Typography>
+                )}
               </>
             ),
             rightArea: (

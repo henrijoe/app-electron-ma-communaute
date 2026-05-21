@@ -3,6 +3,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import PrintIcon from '@mui/icons-material/Print';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Menu, { type MenuProps } from '@mui/material/Menu';
@@ -132,9 +133,13 @@ const PrintEtatGlobal = () => {
         variant="contained"
         color="inherit"
         onClick={handleClick}
-        endIcon={<KeyboardArrowDownIcon />}
+        startIcon={<PrintIcon sx={{ display: { xs: 'inline-flex', sm: 'none' } }} />}
+        endIcon={<KeyboardArrowDownIcon sx={{ display: { xs: 'none', sm: 'inline-flex' } }} />}
+        sx={{ minWidth: { xs: 44, sm: 'auto' }, px: { xs: 1.25, sm: 2 } }}
       >
-        Imprimer
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+          Imprimer
+        </Box>
       </Button>
 
       <StyledMenu

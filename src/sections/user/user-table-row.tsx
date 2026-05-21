@@ -78,7 +78,11 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, can
 
   const formattedRow = formatMembreForDisplay(row);
 
-  const getSituationMatrimonial = (value: string | number) => {
+  const getSituationMatrimonial = (value: string | number | null | undefined) => {
+    if (value === null || value === undefined || value === '' || value === 0 || value === '0') {
+      return 'Non renseigne';
+    }
+
     if (value === 1 || value === '1') return 'Celibataire';
     if (value === 2 || value === '2') return 'Celibataire sans enfant';
     if (value === 3 || value === '3') return 'Fiance(e)';
@@ -89,7 +93,7 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, can
     if (value === 8 || value === '8') return 'Veuf';
     if (value === 9 || value === '9') return 'Copain / Copine';
     if (value === 10 || value === '10') return 'Polygame';
-    return String(value || '');
+    return 'Non renseigne';
   };
 
   const photoUrl = getPhotoUrl(row.photoMembre);

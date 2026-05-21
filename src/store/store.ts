@@ -1,7 +1,9 @@
 import { combineReducers } from 'redux';
 import { configureStore } from '@reduxjs/toolkit';
-import { persistReducer } from 'redux-persist';
+import { createTransform, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
+
+import { sanitizeSensitiveData } from 'src/utils/sensitive-data';
 
 import AgendaReducer, { type IAgendaSlice } from './agendaSlice';
 import appReducer, { type IAppState } from './appSlice';
@@ -52,12 +54,18 @@ const reducers = combineReducers({
   culte: CulteReducer,
 });
 
+const sensitiveDataTransform = createTransform(
+  (inboundState) => sanitizeSensitiveData(inboundState),
+  (outboundState) => sanitizeSensitiveData(outboundState)
+);
+
 const persistConfig = {
   key: 'root',
   version: 1,
   storage,
   // On persiste aussi l'authentification pour conserver le profil et les infos d'eglise.
   whitelist: ['application', 'authentification', 'membre', 'cellule', 'departement', 'groupe', 'galerie', 'agenda', 'comptabilite', 'culte', 'mariage', 'naissance', 'deces'] ,
+  transforms: [sensitiveDataTransform],
   timeout: 1000,
 };
 

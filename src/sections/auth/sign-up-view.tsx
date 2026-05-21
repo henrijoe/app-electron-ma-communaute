@@ -22,7 +22,7 @@ import {
 import { RouterLink } from 'src/routes/components';
 import { useRouter } from 'src/routes/hooks';
 
-import { apiClient } from 'src/utils/apiClient';
+import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
 
 import { setUserLoggedIn, setUserConnected } from 'src/store/appSlice';
 import { setConnecter, setUtilisateurData } from 'src/store/userSlice';
@@ -169,7 +169,10 @@ export function SignUpView() {
       showNotification('Compte cree et connexion reussie', 'success');
       router.push('/');
     } catch (error: any) {
-      showNotification(error?.message || "Erreur lors de l'inscription", 'error');
+      showNotification(
+        getApiErrorMessage(error, "Inscription impossible. Verifiez les informations saisies puis reessayez."),
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -288,11 +291,13 @@ export function SignUpView() {
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Email"
+              type="email"
+              label="Email *"
               placeholder="Ex: contact@eglise.com"
               value={form.email}
               onChange={onChange('email')}
               InputLabelProps={{ shrink: true }}
+              helperText="Cet email servira a recuperer votre mot de passe en cas d'oubli."
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">

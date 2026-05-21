@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import Box from '@mui/material/Box';
 import Tooltip from '@mui/material/Tooltip';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -31,10 +32,11 @@ export function UserTableToolbar({
   return (
     <Toolbar
       sx={{
-        height: 96,
+        minHeight: 96,
         display: 'flex',
+        gap: 1.5,
         justifyContent: 'space-between',
-        p: (theme) => theme.spacing(0, 1, 0, 3),
+        p: (theme) => ({ xs: theme.spacing(2, 2), sm: theme.spacing(0, 1, 0, 3) }),
         ...(numSelected > 0 && {
           color: 'primary.main',
           bgcolor: 'primary.lighter',
@@ -46,18 +48,19 @@ export function UserTableToolbar({
           {numSelected} département(s) sélectionné(s)
         </Typography>
       ) : (
-        <OutlinedInput
-          fullWidth
-          value={filterName}
-          onChange={onFilterName}
-          placeholder="Rechercher un departement..."
-          startAdornment={
-            <InputAdornment position="start">
-              <Iconify width={20} icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
-            </InputAdornment>
-          }
-          sx={{ maxWidth: 320 }}
-        />
+        <Box sx={{ flex: '1 1 auto', minWidth: 0, maxWidth: { xs: 'none', sm: 320 } }}>
+          <OutlinedInput
+            fullWidth
+            value={filterName}
+            onChange={onFilterName}
+            placeholder="Rechercher un departement..."
+            startAdornment={
+              <InputAdornment position="start">
+                <Iconify width={20} icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+              </InputAdornment>
+            }
+          />
+        </Box>
       )}
 
       {numSelected > 0 ? (

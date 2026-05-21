@@ -27,6 +27,23 @@ type AgendaPrintDocumentProps = {
   monthLabel: string;
 };
 
+const formatDisplayDate = (value?: string | null): string => {
+  if (!value) return '';
+
+  const [datePart] = String(value).split('T');
+  const parts = datePart.split('-');
+
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+
+    if (year.length === 4 && month && day) {
+      return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+    }
+  }
+
+  return String(value);
+};
+
 export function AgendaPrintDocument({ events, identity, monthLabel }: AgendaPrintDocumentProps) {
   return (
     <PrintDocumentLayout
@@ -63,7 +80,7 @@ export function AgendaPrintDocument({ events, identity, monthLabel }: AgendaPrin
           <TableBody>
             {events.map((event) => (
               <TableRow key={event.idAgenda || `${event.dateAgenda}-${event.titreAgenda}`}>
-                <TableCell>{event.dateAgenda || '-'}</TableCell>
+                <TableCell>{formatDisplayDate(event.dateAgenda) || '-'}</TableCell>
                 <TableCell>{event.heureDebutAgenda || '--:--'}{event.heureFinAgenda ? ` - ${event.heureFinAgenda}` : ''}</TableCell>
                 <TableCell>{event.titreAgenda || '-'}</TableCell>
                 <TableCell>{event.typeAgenda || '-'}</TableCell>

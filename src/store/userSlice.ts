@@ -1,5 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
+import { sanitizeSensitiveData } from 'src/utils/sensitive-data'
+
 export type UserRole = 'admin' | 'gestionnaire' | 'lecteur'
 export type ModulePermissionKey =
   | 'dashboard'
@@ -123,16 +125,16 @@ export const userSlice = createSlice({
 
   reducers: {
     addUtilisateur: (state, action: PayloadAction<IUtilisateur>) => {
-      state.dataUtilisateur.unshift(action.payload)
+      state.dataUtilisateur.unshift(sanitizeSensitiveData(action.payload))
     },
     setListFilterUtilisateur: (state, action) => {
       state.dataFilterUtilisateur = action.payload
     },
     setListUtilisateur: (state, action) => {
-      state.listUtilisateur = action.payload
+      state.listUtilisateur = sanitizeSensitiveData(action.payload)
     },
     setUtilisateurData: (state, action: PayloadAction<IUtilisateur>) => {
-      state.utilisateurData = action.payload
+      state.utilisateurData = sanitizeSensitiveData(action.payload)
     },
     deleteUtilisateur: (state, action) => {
       state.dataUtilisateur = state.dataUtilisateur.filter(
@@ -149,20 +151,21 @@ export const userSlice = createSlice({
       state.connecter = action.payload
     },
     setUser: (state, action) => {
-      state.user = action.payload
+      state.user = sanitizeSensitiveData(action.payload)
     },
     setUtilisateur: (state, action) => {
-      state.utilisateurItem = action.payload
+      state.utilisateurItem = sanitizeSensitiveData(action.payload)
     },
     setDataModifiesUtilisateur: (state, action) => {
+      const updatedUtilisateur = sanitizeSensitiveData(action.payload)
       state.dataUtilisateur = state.dataUtilisateur.map((item: any) =>
-        item.idUtilisateur === action.payload.idUtilisateur ? action.payload : item
+        item.idUtilisateur === action.payload.idUtilisateur ? updatedUtilisateur : item
       )
       state.dataFilterUtilisateur = state.dataFilterUtilisateur.map((item: any) =>
-        item.idUtilisateur === action.payload.idUtilisateur ? action.payload : item
+        item.idUtilisateur === action.payload.idUtilisateur ? updatedUtilisateur : item
       )
       state.listUtilisateur = state.listUtilisateur.map((item: any) =>
-        item.idUtilisateur === action.payload.idUtilisateur ? action.payload : item
+        item.idUtilisateur === action.payload.idUtilisateur ? updatedUtilisateur : item
       )
     },
     setFilterUtilisateur: (state, action) => {

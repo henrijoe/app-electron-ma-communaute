@@ -1,6 +1,8 @@
 // src/sections/culte/utils.ts
 import type { ICulte } from '../../store/culteSlice';
 
+import { normalizeForSearch } from '../../utils/text';
+
 // ----------------------------------------------------------------------
 
 export const visuallyHidden = {
@@ -72,18 +74,19 @@ export function applyFilter({ inputData, comparator, filterName }: ApplyFilterPr
   inputData = stabilizedThis.map((el) => el[0]);
 
   if (filterName) {
-    const searchTerm = filterName?.toLowerCase();
+    const searchTerm = normalizeForSearch(filterName);
     
     inputData = inputData.filter((culte) => {
       // Créez une fonction utilitaire pour convertir en chaîne et vérifier
       const safeToString = (value: any): string => {
         if (value === null || value === undefined) return '';
-        return String(value)?.toLowerCase();
+        return normalizeForSearch(value);
       };
 
       // Vérifiez chaque champ de culte de manière sécurisée
       return (
         safeToString(culte.typeCulte)?.includes(searchTerm) ||
+        safeToString(getTypeCulteLabel(culte.typeCulte))?.includes(searchTerm) ||
         safeToString(culte.dateCulte)?.includes(searchTerm) ||
         safeToString(culte.dirigeant)?.includes(searchTerm) ||
         safeToString(culte.predication)?.includes(searchTerm) ||
@@ -91,11 +94,15 @@ export function applyFilter({ inputData, comparator, filterName }: ApplyFilterPr
         safeToString(culte.themePredication)?.includes(searchTerm) ||
         safeToString(culte.nombreHommeCulte)?.includes(searchTerm) ||
         safeToString(culte.nombreFemmeCulte)?.includes(searchTerm) ||
+        safeToString(culte.offrandeCulte)?.includes(searchTerm) ||
         safeToString(culte.ecodim)?.includes(searchTerm) ||
         safeToString(culte.filleEcodim)?.includes(searchTerm) ||
+        safeToString(culte.offrandeEcodim)?.includes(searchTerm) ||
         safeToString(culte.resumePredication)?.includes(searchTerm) ||
         // Chercher dans les valeurs formatées aussi
         safeToString(formatDateForDisplay(culte.dateCulte))?.includes(searchTerm) ||
+        safeToString(formatDateShort(culte.dateCulte))?.includes(searchTerm) ||
+        safeToString(getTotalParticipants(culte))?.includes(searchTerm) ||
         safeToString(getEcodimLabel(culte.ecodim))?.includes(searchTerm)
       );
     });
@@ -159,6 +166,11 @@ export const getTypeCulteLabel = (type: string): string => {
   if (!type) return '';
   
   const types: Record<string, string> = {
+    '1': 'Culte du dimanche',
+    '2': 'Reunion de mardi',
+    '3': 'Reunion de jeudi',
+    '4': 'Reunion de jeunesse',
+    '5': 'Culte special',
     Dimanche: 'Culte du dimanche',
     Mardi: 'Culte de mardi',
     Jeudi: 'Culte de jeudi',

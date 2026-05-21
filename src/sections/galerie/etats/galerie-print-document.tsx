@@ -17,6 +17,30 @@ const chunkImages = (items: IGalerieImage[], size: number) =>
     items.slice(index * size, index * size + size)
   );
 
+const formatDisplayDate = (value?: string | null): string => {
+  if (!value) return '';
+
+  const [datePart] = String(value).split('T');
+  const parts = datePart.split('-');
+
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+
+    if (year.length === 4 && month && day) {
+      return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+    }
+  }
+
+  return String(value);
+};
+
+const buildEventSubtitle = (event: IGalerieEvenement): string =>
+  [
+    event.typeEvenement || 'Evenement',
+    formatDisplayDate(event.dateEvenement) || 'Date non precisee',
+    event.lieuEvenement || 'Lieu non precise',
+  ].join(' - ');
+
 export function GaleriePrintDocument({ event, images }: GaleriePrintDocumentProps) {
   const identity = useSelector((state: IReduxState) => ({
     ...(state.authentification.utilisateurData || {}),
@@ -28,7 +52,7 @@ export function GaleriePrintDocument({ event, images }: GaleriePrintDocumentProp
       <PrintDocumentLayout
         identity={identity}
         title={`Galerie - ${event.titreGalerie}`}
-        subtitle={`${event.typeEvenement || 'Evenement'} - ${event.dateEvenement || 'Date non precisee'} - ${event.lieuEvenement || 'Lieu non precise'}`}
+        subtitle={buildEventSubtitle(event)}
         countLabel="Total images"
         countValue={0}
         variant="plain"
@@ -85,7 +109,7 @@ export function GaleriePrintDocument({ event, images }: GaleriePrintDocumentProp
           <PrintDocumentLayout
             identity={identity}
             title={`Galerie - ${event.titreGalerie}`}
-            subtitle={`${event.typeEvenement || 'Evenement'} - ${event.dateEvenement || 'Date non precisee'} - ${event.lieuEvenement || 'Lieu non precise'}`}
+            subtitle={buildEventSubtitle(event)}
             countLabel="Page"
             countValue={pageIndex + 1}
             variant="plain"

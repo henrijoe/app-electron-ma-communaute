@@ -40,6 +40,7 @@ Ce script :
 - build le backend serveur
 - copie le backend dans `electron/backend`
 - build le front web
+- copie le front web dans `electron/backend/views` pour que l'exe serve aussi l'application sur `http://IP_DU_PC:49300`
 - genere l'installeur Electron
 
 Cela permet de mettre en place le desktop sans casser le flux actuel du projet.

@@ -21,6 +21,7 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
+  IconButton,
   MenuItem,
   Stack,
   Tab,
@@ -31,6 +32,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
   alpha,
 } from '@mui/material';
@@ -39,6 +41,7 @@ import { useTheme } from '@mui/material/styles';
 
 import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+import { ContactPhoneLink } from 'src/components/contact-phone-link';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { PrintEtatSociaux } from 'src/sections/social/etats';
 import type { IDeces } from 'src/store/decesSlice';
@@ -256,6 +259,9 @@ const normalizeText = (value: unknown) =>
     .toLowerCase();
 
 const buildMembreLabel = (membre: IMembre) => `${membre.nomMembre || ''} ${membre.prenomMembre || ''}`.trim();
+
+const isContactColumn = (key: string) =>
+  key.toLowerCase().includes('contact') || key.toLowerCase().includes('telephone');
 
 export function SocialView() {
   const theme = useTheme();
@@ -505,7 +511,7 @@ export function SocialView() {
 
   return (
     <DashboardContent maxWidth="xl">
-      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 330, sm: 560, lg: 1180 }, mx: 'auto' }}>
+      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 320, sm: 560, lg: 1180 }, mx: 'auto' }}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
           justifyContent="space-between"
@@ -522,28 +528,43 @@ export function SocialView() {
           </Box>
 
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
+            direction="row"
             spacing={1.5}
             sx={{
               width: { xs: 1, md: 'auto' },
-              '& > *': { width: { xs: '100%', sm: 'auto' } },
+              justifyContent: { xs: 'flex-start', md: 'flex-end' },
+              flexWrap: 'wrap',
             }}
           >
             <PrintEtatSociaux activeType={activeType} identity={utilisateurData} rows={currentRows} />
             {canManageSocial && (
-              <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={openCreateDialog} fullWidth={isMobile}>
-                Ajouter
-              </Button>
+              <>
+                <Tooltip title="Ajouter">
+                  <IconButton color="primary" onClick={openCreateDialog} sx={{ display: { xs: 'inline-flex', sm: 'none' }, bgcolor: 'action.selected', borderRadius: 1 }}>
+                    <AddRoundedIcon />
+                  </IconButton>
+                </Tooltip>
+                <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={openCreateDialog} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
+                  Ajouter
+                </Button>
+              </>
             )}
           </Stack>
         </Stack>
 
-        <Grid container spacing={{ xs: 1.75, sm: 2 }} sx={{ m: 0, width: 1 }}>
+        <Grid
+          container
+          spacing={{ xs: 1.5, sm: 2 }}
+          justifyContent={{ xs: 'center', sm: 'flex-start' }}
+          sx={{ m: 0, width: 1 }}
+        >
           {(Object.keys(socialConfig) as SocialCaseType[]).map((type) => (
-            <Grid item xs={12} sm={6} lg={3} key={type}>
+            <Grid item xs={12} sm={6} lg={3} key={type} sx={{ display: 'flex', justifyContent: 'center' }}>
               <Card
                 sx={{
-                  p: { xs: 2.25, sm: 2.5 },
+                  width: 1,
+                  maxWidth: { xs: 300, sm: 'none' },
+                  p: { xs: 1.75, sm: 2.5 },
                   borderRadius: 3,
                   border: (muiTheme) =>
                     `1px solid ${alpha(muiTheme.palette[socialConfig[type].color].main, activeType === type ? 0.35 : 0.12)}`,
@@ -564,10 +585,10 @@ export function SocialView() {
                     variant={activeType === type ? 'filled' : 'outlined'}
                   />
                 </Stack>
-                <Typography variant="h6" sx={{ mt: 2, fontWeight: 700 }}>
+                <Typography variant="h6" sx={{ mt: { xs: 1.5, sm: 2 }, fontWeight: 700, fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
                   {socialConfig[type].label}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: { xs: '0.86rem', sm: '0.875rem' } }}>
                   {socialConfig[type].helperText}
                 </Typography>
               </Card>
@@ -673,11 +694,17 @@ export function SocialView() {
                               <Typography variant="caption" color="text.secondary">
                                 {column.label}
                               </Typography>
-                              <Typography variant="body2" sx={{ textAlign: 'right', maxWidth: '62%' }}>
-                                {column.key.toLowerCase().includes('date')
-                                  ? formatDisplayDate(row[column.key])
-                                  : row[column.key] || 'Non specifie'}
-                              </Typography>
+                              <Box sx={{ textAlign: 'right', maxWidth: '62%' }}>
+                                {isContactColumn(column.key) ? (
+                                  <ContactPhoneLink fallback="Non specifie" value={row[column.key]} />
+                                ) : (
+                                  <Typography variant="body2">
+                                    {column.key.toLowerCase().includes('date')
+                                      ? formatDisplayDate(row[column.key])
+                                      : row[column.key] || 'Non specifie'}
+                                  </Typography>
+                                )}
+                              </Box>
                             </Stack>
                           ))}
                         </Stack>

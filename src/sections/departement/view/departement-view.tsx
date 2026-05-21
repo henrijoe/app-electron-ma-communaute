@@ -13,7 +13,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
 import {
   Grid, Dialog, Divider, MenuItem, TextField, DialogTitle, DialogActions,
-  Stack, DialogContent
+  Stack, DialogContent, IconButton, Tooltip
 } from '@mui/material';
 
 import { apiClient } from 'src/utils/apiClient';
@@ -21,6 +21,7 @@ import { canManageModule } from 'src/utils/access-control';
 import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
+import { ContactPhoneLink } from 'src/components/contact-phone-link';
 import ConfirmDialog from 'src/components/alert/confirmDialog';
 
 import { TableNoData } from '../table-no-data';
@@ -443,24 +444,42 @@ export function DepartementView() {
         </Typography>
 
         <Stack
-          direction={{ xs: 'column', sm: 'row' }}
+          direction="row"
           spacing={1.25}
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-          sx={{ width: { xs: '100%', md: 'auto' } }}
+          alignItems="center"
+          sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}
         >
           <PrintEtatGlobal />
 
           {canManageDepartement && (
+          <>
+          <Tooltip title={loading ? 'Chargement...' : 'Ajouter departement'}>
+            <span>
+              <IconButton
+                color="primary"
+                onClick={handleOpenDialog}
+                disabled={loading}
+                sx={{
+                  display: { xs: 'inline-flex', sm: 'none' },
+                  bgcolor: 'action.selected',
+                  borderRadius: 1,
+                }}
+              >
+                <Iconify icon="mingcute:add-line" />
+              </IconButton>
+            </span>
+          </Tooltip>
           <Button
             variant="contained"
             color="inherit"
             startIcon={<Iconify icon="mingcute:add-line" />}
             onClick={handleOpenDialog}
             disabled={loading}
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
           >
             {loading ? 'Chargement...' : 'Ajouter département'}
           </Button>
+          </>
           )}
         </Stack>
       </Box>
@@ -509,14 +528,24 @@ export function DepartementView() {
                     </Grid>
                     <Grid item xs={6}>
                       <Typography variant="caption" color="text.secondary">Contact</Typography>
-                      <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{responsableContactByName.get(row.responsableDepartement) || '-'}</Typography>
+                      <ContactPhoneLink fallback="-" value={responsableContactByName.get(row.responsableDepartement)} />
                     </Grid>
                   </Grid>
 
                   {canManageDepartement && (
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    <Button size="small" onClick={() => handleEditDepartement(row)}>Modifier</Button>
-                    <Button size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteDepartement(row.idDepartement)}>Supprimer</Button>
+                    <Tooltip title="Modifier">
+                      <IconButton color="primary" size="small" onClick={() => handleEditDepartement(row)}>
+                        <Iconify icon="solar:pen-bold" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={deleteLoading ? 'Suppression...' : 'Supprimer'}>
+                      <span>
+                        <IconButton size="small" color="error" disabled={deleteLoading} onClick={() => handleDeleteDepartement(row.idDepartement)}>
+                          <Iconify icon="solar:trash-bin-trash-bold" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
                   </Stack>
                   )}
                 </Stack>
@@ -708,11 +737,24 @@ export function DepartementView() {
 
             <Divider sx={{ my: 2 }} />
 
-            <DialogActions>
-              <Button onClick={handleCloseDialog} color="primary">
+            <DialogActions sx={{ flexDirection: 'row', justifyContent: { xs: 'space-between', sm: 'flex-end' }, gap: 1 }}>
+              <Tooltip title="Annuler">
+                <IconButton color="primary" onClick={handleCloseDialog} sx={{ display: { xs: 'inline-flex', sm: 'none' } }}>
+                  <Iconify icon="solar:close-circle-bold" />
+                </IconButton>
+              </Tooltip>
+              <Button sx={{ display: { xs: 'none', sm: 'inline-flex' } }} onClick={handleCloseDialog} color="primary">
                 Annuler
               </Button>
+              <Tooltip title={updateLoading ? 'Enregistrement...' : (isEditMode ? 'Modifier' : 'Enregistrer')}>
+                <span>
+                  <IconButton type="submit" color="primary" disabled={updateLoading} sx={{ display: { xs: 'inline-flex', sm: 'none' } }}>
+                    <Iconify icon={isEditMode ? 'solar:pen-bold' : 'mingcute:check-line'} />
+                  </IconButton>
+                </span>
+              </Tooltip>
               <Button
+                sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                 type="submit"
                 color="primary"
                 variant="contained"

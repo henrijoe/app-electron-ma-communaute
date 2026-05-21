@@ -20,6 +20,7 @@ import SaveRounded from '@mui/icons-material/SaveRounded';
 
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { apiClient } from 'src/utils/apiClient';
+import { DUPLICATE_MEMBER_MESSAGE, getMemberDuplicateKey } from 'src/utils/member-duplicates';
 import {
   dataBapteme,
   dataCapaciteSpirituelle,
@@ -306,7 +307,17 @@ export function UserImportContent({
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
   const connectedUser = useSelector((state: IReduxState) => state.application.userConnected);
   const authenticatedUser = useSelector((state: IReduxState) => state.authentification.utilisateurData);
+  const existingMembres = useSelector((state: IReduxState) => state.membre.listMembre);
   const currentUserId = Number(connectedUser?.idUtilisateur || authenticatedUser?.idUtilisateur || 0) || null;
+  const existingDuplicateKeys = useMemo(
+    () =>
+      new Set(
+        (Array.isArray(existingMembres) ? existingMembres : [])
+          .map((item) => getMemberDuplicateKey(item))
+          .filter(Boolean)
+      ),
+    [existingMembres]
+  );
 
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [fileName, setFileName] = useState('');
@@ -459,6 +470,15 @@ export function UserImportContent({
       errors.push('Date de naissance invalide');
     }
 
+    const duplicateKey = getMemberDuplicateKey({
+      contactMembre,
+      dateNaissMembre,
+    } as IMembre);
+
+    if (duplicateKey && existingDuplicateKeys.has(duplicateKey)) {
+      errors.push(DUPLICATE_MEMBER_MESSAGE);
+    }
+
     if (normalizeText(rawDateMariage) && !dateMariageMembre) {
       errors.push('Date de mariage invalide');
     }
@@ -496,6 +516,7 @@ export function UserImportContent({
     civiliteResolver,
     currentUserId,
     departementResolver,
+    existingDuplicateKeys,
     groupeResolver,
     nouvelleAmeResolver,
     responsabiliteResolver,
@@ -519,7 +540,29 @@ export function UserImportContent({
       }
 
       setFileName(file.name);
-      setPreviewRows(rows.map((row, index) => buildPreviewRow(row, index + 1)));
+      const nextPreviewRows = rows.map((row, index) => buildPreviewRow(row, index + 1));
+      const keyCounts = new Map<string, number>();
+
+      nextPreviewRows.forEach((row) => {
+        if (!row.payload) return;
+        const key = getMemberDuplicateKey(row.payload);
+        if (!key) return;
+        keyCounts.set(key, (keyCounts.get(key) || 0) + 1);
+      });
+
+      setPreviewRows(
+        nextPreviewRows.map((row) => {
+          if (!row.payload) return row;
+          const key = getMemberDuplicateKey(row.payload);
+          if (!key || (keyCounts.get(key) || 0) <= 1) return row;
+
+          return {
+            ...row,
+            payload: null,
+            errors: [...row.errors, 'Doublon dans le fichier Excel'],
+          };
+        })
+      );
     } catch (error) {
       console.error('Erreur lecture Excel membres:', error);
       showNotification('Impossible de lire ce fichier Excel', 'error');

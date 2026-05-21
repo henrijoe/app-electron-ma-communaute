@@ -34,6 +34,7 @@ import {
 import { Iconify } from 'src/components/iconify';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { apiClient, buildPhotoUrl } from 'src/utils/apiClient';
+import { DUPLICATE_MEMBER_MESSAGE, findDuplicateMember } from 'src/utils/member-duplicates';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { 
   IMembre, 
@@ -314,6 +315,11 @@ export function UserEditView() {
         visiteMembre: Number(formData.visiteMembre) || null,
         capaciteSpirituelleMembre: Number(formData.capaciteSpirituelleMembre) || null,
       };
+
+      if (findDuplicateMember(listMembre, cleanedData, membre.idMembre)) {
+        showNotification(DUPLICATE_MEMBER_MESSAGE, 'warning');
+        return;
+      }
 
       console.log('Données à envoyer:', cleanedData);
 

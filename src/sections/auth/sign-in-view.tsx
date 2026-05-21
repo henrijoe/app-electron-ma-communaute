@@ -8,6 +8,10 @@ import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import LoadingButton from '@mui/lab/LoadingButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import {
@@ -18,7 +22,7 @@ import {
 import { RouterLink } from 'src/routes/components';
 import { useRouter } from 'src/routes/hooks';
 
-import { apiClient } from 'src/utils/apiClient';
+import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
 
 import { setUserLoggedIn, setUserConnected } from 'src/store/appSlice';
 import { setConnecter, setUtilisateurData } from 'src/store/userSlice';
@@ -37,8 +41,110 @@ export function SignInView() {
   const [password, setPassword] = useState('');
   const [unlockCode, setUnlockCode] = useState('');
   const [showUnlockCodeForm, setShowUnlockCodeForm] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState<'request' | 'reset'>('request');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotData, setForgotData] = useState({
+    nomUtilisateur: '',
+    email: '',
+    code: '',
+    password: '',
+    confirmPassword: '',
+  });
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
   const isDesktopApp = Boolean((window as any)?.desktopApp?.isDesktop);
+
+  const handleOpenForgotPassword = useCallback(() => {
+    setForgotStep('request');
+    setForgotData({
+      nomUtilisateur: nomUtilisateur.trim(),
+      email: '',
+      code: '',
+      password: '',
+      confirmPassword: '',
+    });
+    setForgotOpen(true);
+  }, [nomUtilisateur]);
+
+  const handleCloseForgotPassword = useCallback(() => {
+    if (!forgotLoading) {
+      setForgotOpen(false);
+    }
+  }, [forgotLoading]);
+
+  const handleForgotDataChange = useCallback((field: keyof typeof forgotData, value: string) => {
+    setForgotData((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleRequestPasswordReset = useCallback(async () => {
+    if (!forgotData.nomUtilisateur.trim() || !forgotData.email.trim()) {
+      showNotification("Renseignez le nom utilisateur et l'email du compte.", 'warning');
+      return;
+    }
+
+    try {
+      setForgotLoading(true);
+      const response = await apiClient.requestPasswordReset({
+        nomUtilisateur: forgotData.nomUtilisateur.trim(),
+        email: forgotData.email.trim(),
+      });
+
+      if (response.status !== 1) {
+        throw new Error(response.error?.message || response.message || 'Demande impossible.');
+      }
+
+      setForgotStep('reset');
+      showNotification(
+        response.data?.message || 'Si ce compte existe, un code a ete envoye par email.',
+        'success'
+      );
+    } catch (error) {
+      showNotification(getApiErrorMessage(error, 'Impossible de demander le code.'), 'error');
+    } finally {
+      setForgotLoading(false);
+    }
+  }, [forgotData.email, forgotData.nomUtilisateur, showNotification]);
+
+  const handleResetPassword = useCallback(async () => {
+    if (
+      !forgotData.nomUtilisateur.trim()
+      || !forgotData.email.trim()
+      || !forgotData.code.trim()
+      || !forgotData.password
+      || !forgotData.confirmPassword
+    ) {
+      showNotification('Tous les champs sont requis.', 'warning');
+      return;
+    }
+
+    if (forgotData.password !== forgotData.confirmPassword) {
+      showNotification('Les mots de passe ne correspondent pas.', 'warning');
+      return;
+    }
+
+    try {
+      setForgotLoading(true);
+      const response = await apiClient.resetPassword({
+        nomUtilisateur: forgotData.nomUtilisateur.trim(),
+        email: forgotData.email.trim(),
+        code: forgotData.code.trim(),
+        password: forgotData.password,
+        confirmPassword: forgotData.confirmPassword,
+      });
+
+      if (response.status !== 1) {
+        throw new Error(response.error?.message || response.message || 'Reinitialisation impossible.');
+      }
+
+      setPassword(forgotData.password);
+      setForgotOpen(false);
+      showNotification('Mot de passe modifie. Vous pouvez vous connecter.', 'success');
+    } catch (error) {
+      showNotification(getApiErrorMessage(error, 'Code invalide ou expire.'), 'error');
+    } finally {
+      setForgotLoading(false);
+    }
+  }, [forgotData, showNotification]);
 
   const handleSignIn = useCallback(async () => {
     if (loading) {
@@ -71,7 +177,10 @@ export function SignInView() {
       showNotification('Connexion reussie', 'success');
       router.push('/');
     } catch (error: any) {
-      const errorMessage = error?.message || 'Echec de la connexion';
+      const errorMessage = getApiErrorMessage(
+        error,
+        "Connexion impossible. Verifiez vos identifiants ou l'adresse du serveur."
+      );
       showNotification(errorMessage, 'error');
 
       if (isDesktopApp && /licence|bloqu/i.test(errorMessage)) {
@@ -112,7 +221,7 @@ export function SignInView() {
       setShowUnlockCodeForm(false);
       showNotification('Application debloquee. Tu peux maintenant te connecter.', 'success');
     } catch (error: any) {
-      showNotification(error?.message || 'Code de deblocage invalide.', 'error');
+      showNotification(getApiErrorMessage(error, 'Code de deblocage invalide.'), 'error');
     } finally {
       setUnlockLoading(false);
     }
@@ -155,7 +264,14 @@ export function SignInView() {
           sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
         />
 
-        <Link variant="body2" color="inherit" sx={{ alignSelf: 'flex-end', mt: -1 }}>
+        <Link
+          component="button"
+          type="button"
+          variant="body2"
+          color="inherit"
+          onClick={handleOpenForgotPassword}
+          sx={{ alignSelf: 'flex-end', mt: -1 }}
+        >
           Mot de passe oublie ?
         </Link>
 
@@ -255,6 +371,84 @@ export function SignInView() {
       </Typography>
 
       <NotificationComponent />
+
+      <Dialog open={forgotOpen} onClose={handleCloseForgotPassword} fullWidth maxWidth="xs">
+        <DialogTitle>
+          {forgotStep === 'request' ? 'Mot de passe oublie' : 'Nouveau mot de passe'}
+        </DialogTitle>
+
+        <DialogContent>
+          <Stack spacing={2.5} sx={{ pt: 1 }}>
+            {forgotStep === 'request' && (
+              <>
+                <Alert severity="info">
+                  Saisissez le nom utilisateur et l&apos;email du compte. Un code sera envoye par email.
+                </Alert>
+
+                <TextField
+                  fullWidth
+                  label="Nom utilisateur"
+                  value={forgotData.nomUtilisateur}
+                  onChange={(event) => handleForgotDataChange('nomUtilisateur', event.target.value)}
+                />
+
+                <TextField
+                  fullWidth
+                  type="email"
+                  label="Email du compte"
+                  value={forgotData.email}
+                  onChange={(event) => handleForgotDataChange('email', event.target.value)}
+                />
+              </>
+            )}
+
+            {forgotStep === 'reset' && (
+              <>
+                <Alert severity="info">
+                  Entrez le code recu par email puis choisissez un nouveau mot de passe.
+                </Alert>
+
+                <TextField
+                  fullWidth
+                  label="Code recu"
+                  value={forgotData.code}
+                  onChange={(event) => handleForgotDataChange('code', event.target.value)}
+                />
+
+                <TextField
+                  fullWidth
+                  type="password"
+                  label="Nouveau mot de passe"
+                  value={forgotData.password}
+                  onChange={(event) => handleForgotDataChange('password', event.target.value)}
+                />
+
+                <TextField
+                  fullWidth
+                  type="password"
+                  label="Confirmer le mot de passe"
+                  value={forgotData.confirmPassword}
+                  onChange={(event) => handleForgotDataChange('confirmPassword', event.target.value)}
+                />
+              </>
+            )}
+          </Stack>
+        </DialogContent>
+
+        <DialogActions>
+          <LoadingButton type="button" color="inherit" onClick={handleCloseForgotPassword}>
+            Annuler
+          </LoadingButton>
+          <LoadingButton
+            type="button"
+            variant="contained"
+            loading={forgotLoading}
+            onClick={forgotStep === 'request' ? handleRequestPasswordReset : handleResetPassword}
+          >
+            {forgotStep === 'request' ? 'Recevoir le code' : 'Modifier'}
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
