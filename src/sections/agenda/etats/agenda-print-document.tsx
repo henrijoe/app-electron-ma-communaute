@@ -54,16 +54,16 @@ export function AgendaPrintDocument({ events, identity, monthLabel }: AgendaPrin
     >
       <Box className="print-block-avoid-break" sx={{ mb: 3 }}>
         <Typography variant="body2" sx={{ color: '#304760', mb: 0.5 }}>
-          Vue mensuelle des rendez-vous, cultes et evenements programmes pour la communaute.
+          Vue mensuelle des rendez-vous, cultes et événements programmés pour la communauté.
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap">
           <Chip size="small" label={monthLabel} />
-          <Chip size="small" label={`${events.length} evenement(s)`} />
+          <Chip size="small" label={`${events.length} événement(s)`} />
         </Stack>
       </Box>
 
       {events.length === 0 ? (
-        <PrintEmptyState title="Aucun evenement" message="Aucun rendez-vous programme sur ce mois." />
+        <PrintEmptyState title="Aucun événement" message="Aucun rendez-vous programmé sur ce mois." />
       ) : (
         <PrintTable minWidth={720}>
           <TableHead>

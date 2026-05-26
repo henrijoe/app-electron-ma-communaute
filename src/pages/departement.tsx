@@ -10,7 +10,7 @@ export default function Page() {
   return (
     <>
       <Helmet>
-        <title> {`Departement - ${CONFIG.appName}`}</title>
+        <title> {`Département - ${CONFIG.appName}`}</title>
       </Helmet>
 
       <DepartementView/>

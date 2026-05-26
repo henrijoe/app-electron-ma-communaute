@@ -1,18 +1,21 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
+
 import { Box, Chip, Typography } from '@mui/material';
 
 import {
-  PrintDocumentLayout,
-  PrintEmptyState,
-  PrintTable,
+  TableRow,
   TableBody,
   TableCell,
   TableHead,
-  TableRow,
+  PrintTable,
+  PrintEmptyState,
+  PrintDocumentLayout,
 } from 'src/components/print/print-document';
+
+import { getEcodimLabel, formatDateShort, getTypeCulteLabel } from '../utils';
+
 import type { IReduxState } from '../../../store/store';
-import { formatDateShort, getEcodimLabel, getTypeCulteLabel } from '../utils';
 
 const formatCurrency = (amount: string) => {
   // On convertit les chaines numeriques pour garder un affichage monetaire stable.
@@ -65,7 +68,7 @@ export const ListeDesCultes = () => {
           <TableHead>
             <TableRow>
               <TableCell align="center" sx={{ width: 56 }}>
-                N°
+                No
               </TableCell>
               <TableCell sx={{ width: 110 }}>Date</TableCell>
               <TableCell sx={{ width: 160 }}>Type</TableCell>

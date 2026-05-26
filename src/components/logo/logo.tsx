@@ -1,12 +1,16 @@
 import type { BoxProps } from '@mui/material/Box';
 
-import { forwardRef, useId, useState } from 'react';
+import { forwardRef, useEffect, useId, useMemo, useState } from 'react';
+import { useSelector } from 'react-redux';
 
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 
 import { RouterLink } from 'src/routes/components';
+import type { IReduxState } from 'src/store/store';
+import { getSessionUser } from 'src/utils/access-control';
 import { resolveStaticAssetUrl } from 'src/utils/asset-url';
+import { buildChurchLogoUrl } from 'src/utils/apiClient';
 
 import { logoClasses } from './classes';
 
@@ -16,14 +20,32 @@ export type LogoProps = BoxProps & {
   disableLink?: boolean;
 };
 
+const getLogoImageUrl = (logoEglise?: string): string => {
+  if (!logoEglise) {
+    return resolveStaticAssetUrl('/assets/images/logoCom1.png');
+  }
+
+  if (/^(data:|https?:|blob:|file:)/i.test(logoEglise)) {
+    return logoEglise;
+  }
+
+  return buildChurchLogoUrl(logoEglise);
+};
+
 export const Logo = forwardRef<HTMLDivElement, LogoProps>(
   (
     { width, href = '/', height, isSingle = true, disableLink = false, className, sx, ...other },
     ref
   ) => {
     const theme = useTheme();
+    const sessionUser = useSelector((state: IReduxState) => getSessionUser(state));
     const [hasImageError, setHasImageError] = useState(false);
     const gradientId = useId();
+    const logoImageUrl = useMemo(() => getLogoImageUrl(sessionUser?.logoEglise), [sessionUser?.logoEglise]);
+
+    useEffect(() => {
+      setHasImageError(false);
+    }, [logoImageUrl]);
 
     const PRIMARY_LIGHT = theme.vars.palette.primary.light;
     const PRIMARY_MAIN = theme.vars.palette.primary.main;
@@ -34,7 +56,7 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
       <Box
         alt="Logo"
         component="img"
-        src={resolveStaticAssetUrl('/assets/images/logoCom1.png')}
+        src={logoImageUrl}
         width="100%"
         height="100%"
         onError={() => setHasImageError(true)}

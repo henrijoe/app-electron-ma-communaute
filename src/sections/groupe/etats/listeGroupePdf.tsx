@@ -27,12 +27,12 @@ export const ListeDesGroupes = () => {
       countValue={sortedGroupes.length}
     >
       {sortedGroupes.length === 0 ? (
-        <PrintEmptyState title="Aucun groupe trouvé" message="Aucun groupe n'est encore enregistré dans la base locale." />
+        <PrintEmptyState title="Aucun groupe trouvÃ©" message="Aucun groupe n'est encore enregistrÃ© dans la base locale." />
       ) : (
         <PrintTable minWidth={940}>
           <TableHead>
             <TableRow>
-              <TableCell align="center">N°</TableCell>
+              <TableCell align="center">No</TableCell>
               <TableCell>Groupe</TableCell>
               <TableCell>Description</TableCell>
               <TableCell>Responsable</TableCell>
@@ -42,9 +42,9 @@ export const ListeDesGroupes = () => {
             {sortedGroupes.map((item, index) => (
               <TableRow key={item.idGroupe || index}>
                 <TableCell align="center"><Typography fontWeight={700}>{index + 1}</Typography></TableCell>
-                <TableCell><Typography fontWeight={700}>{item.libelleGroupe || 'Non défini'}</Typography></TableCell>
-                <TableCell>{item.descriptionGroupe || 'Non définie'}</TableCell>
-                <TableCell>{item.responsableGroupe || 'Non défini'}</TableCell>
+                <TableCell><Typography fontWeight={700}>{item.libelleGroupe || 'Non dÃ©fini'}</Typography></TableCell>
+                <TableCell>{item.descriptionGroupe || 'Non dÃ©finie'}</TableCell>
+                <TableCell>{item.responsableGroupe || 'Non dÃ©fini'}</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -57,7 +57,7 @@ export const PrintEtatGlobal = () => {
       <StyledMenu anchorEl={anchorEl} open={open} onClose={() => setAnchorEl(null)}>
         {isDesktopPrint ? (
           <>
-            <MenuItem onClick={async () => { setAnchorEl(null); await openDesktopPrintPreview(groupeRef.current, { title: 'Aperçu - Liste des groupes', fileName: 'liste-groupes' }); }}><VisibilityIcon />Aperçu avant impression</MenuItem>
+            <MenuItem onClick={async () => { setAnchorEl(null); await openDesktopPrintPreview(groupeRef.current, { title: 'AperÃ§u - Liste des groupes', fileName: 'liste-groupes' }); }}><VisibilityIcon />AperÃ§u avant impression</MenuItem>
             <MenuItem onClick={async () => { setAnchorEl(null); await exportDesktopPdf(groupeRef.current, { title: 'Liste des groupes', fileName: 'liste-groupes' }); }}><PictureAsPdfIcon />Exporter en PDF</MenuItem>
           </>
         ) : (

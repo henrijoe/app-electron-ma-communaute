@@ -7,7 +7,7 @@ export default function ComptabilitePage() {
   return (
     <>
       <Helmet>
-        <title>{`Comptabilite - ${CONFIG.appName}`}</title>
+        <title>{`Comptabilité - ${CONFIG.appName}`}</title>
       </Helmet>
 
       <ComptabiliteView />

@@ -1,21 +1,28 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
+
 import { Box, Chip, Typography } from '@mui/material';
 
+import { findResponsableContact } from 'src/utils/responsable-members';
+
 import {
-  PrintDocumentLayout,
-  PrintEmptyState,
-  PrintTable,
+  TableRow,
   TableBody,
   TableCell,
   TableHead,
-  TableRow,
+  PrintTable,
+  PrintEmptyState,
+  PrintDocumentLayout,
 } from 'src/components/print/print-document';
+
 import type { IReduxState } from '../../../store/store';
+import type { IMembre } from '../../../store/membreSlice';
 
 export const ListeDesDepartements = () => {
   const listDepartement = useSelector((state: IReduxState) => state.departement.listDepartement);
+  const listMembre = useSelector((state: IReduxState) => state.membre.listMembre);
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
+  const membres = Array.isArray(listMembre) ? (listMembre as IMembre[]) : [];
 
   // On trie les departements par nom long pour obtenir un etat alphabetique facile a lire.
   const sortedDepartements = [...(listDepartement || [])].sort((a, b) =>
@@ -36,11 +43,11 @@ export const ListeDesDepartements = () => {
           message="Aucun departement n'est encore enregistre dans la base locale."
         />
       ) : (
-        <PrintTable minWidth={920}>
+        <PrintTable minWidth={1040}>
           <TableHead>
             <TableRow>
               <TableCell align="center" sx={{ width: 56 }}>
-                N°
+                No
               </TableCell>
               <TableCell>Departement</TableCell>
               <TableCell align="center" sx={{ width: 140 }}>
@@ -48,6 +55,7 @@ export const ListeDesDepartements = () => {
               </TableCell>
               <TableCell>Slogan</TableCell>
               <TableCell>Responsable</TableCell>
+              <TableCell>Numero responsable</TableCell>
             </TableRow>
           </TableHead>
 
@@ -86,6 +94,12 @@ export const ListeDesDepartements = () => {
                       {item.responsableDepartement || 'Non specifie'}
                     </Typography>
                   </Box>
+                </TableCell>
+
+                <TableCell>
+                  <Typography variant="body2" fontWeight={600}>
+                    {findResponsableContact(membres, item.responsableDepartement) || 'Non specifie'}
+                  </Typography>
                 </TableCell>
               </TableRow>
             ))}

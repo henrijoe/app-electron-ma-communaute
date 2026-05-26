@@ -2,8 +2,8 @@
 import type { ModulePermissionKey } from 'src/store/userSlice';
 
 import { canManageModule } from './access-control';
-import { getConnectionMode, getCurrentSessionUser, getServerUrl } from './functions';
 import { sanitizeSensitiveData } from './sensitive-data';
+import { getServerUrl, getConnectionMode, getCurrentSessionUser } from './functions';
 
 export const BASE_URL_DEV = 'http://localhost:49300/';
 export const BASE_URL_ONLINE = import.meta.env.VITE_API_URL || '';
@@ -15,6 +15,11 @@ const getLocalApiPort = (): string => String(import.meta.env.VITE_LOCAL_API_PORT
 const isLoopbackHost = (hostname?: string): boolean =>
   !hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]';
 
+const isTunnelHost = (hostname?: string): boolean => {
+  const normalizedHostname = String(hostname || '').toLowerCase();
+  return normalizedHostname.endsWith('.loca.lt');
+};
+
 const getBrowserLocalApiBaseUrl = (): string => {
   if (typeof window === 'undefined') {
     return BASE_URL_DEV;
@@ -24,6 +29,10 @@ const getBrowserLocalApiBaseUrl = (): string => {
 
   if (isLoopbackHost(hostname)) {
     return BASE_URL_DEV;
+  }
+
+  if (isTunnelHost(hostname)) {
+    return `${protocol}//${hostname}/`;
   }
 
   return `${protocol}//${hostname}:${getLocalApiPort()}/`;
@@ -39,6 +48,11 @@ const normalizeConfiguredApiUrl = (url: string): string => {
     const currentHost = window.location.hostname;
 
     const isKnownFrontendPort = parsedUrl.port === '3039' || parsedUrl.port === '5173';
+
+    if (isTunnelHost(parsedUrl.hostname)) {
+      parsedUrl.port = '';
+      return parsedUrl.toString();
+    }
 
     if (getApiMode() === 'local' && parsedUrl.port && parsedUrl.port !== getLocalApiPort() && (
       parsedUrl.hostname === currentHost || isKnownFrontendPort
@@ -364,6 +378,21 @@ export const apiClient = {
   getServerInfo: () =>
     request<IServerResponse>('communaute/server-info', { method: 'GET' }),
 
+  getTunnelStatus: () =>
+    request<IServerResponse>('communaute/tunnel/status', { method: 'GET' }),
+
+  startTunnel: (data: { contactEglise?: string; nomTemple?: string; ttlMinutes?: number }) =>
+    request<IServerResponse>('communaute/tunnel/start', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  stopTunnel: () =>
+    request<IServerResponse>('communaute/tunnel/stop', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+
   // Retourne l'etat courant du blocage desktop pour l'utilisateur cible.
   getDesktopSecurityStatus: (nomUtilisateur: string) =>
     request<IServerResponse>(
@@ -568,6 +597,28 @@ export const apiClient = {
     request<IServerResponse>('communaute/supprimergroupe', {
       method: 'POST',
       body: JSON.stringify({ idGroupe, idUtilisateur }),
+    }),
+
+  // familles de jeunesse
+  getFamillesJeunesseByUtilisateur: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupfamillejeunessebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
+
+  createFamilleJeunesse: (data: any) =>
+    request<IServerResponse>('communaute/insererfamillejeunesse', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateFamilleJeunesse: (data: any) =>
+    request<IServerResponse>('communaute/modifierfamillejeunesse', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteFamilleJeunesse: (idFamilleJeunesse: number, idUtilisateur?: number | null) =>
+    request<IServerResponse>('communaute/supprimerfamillejeunesse', {
+      method: 'POST',
+      body: JSON.stringify({ idFamilleJeunesse, idUtilisateur }),
     }),
 
   // responsabilites
@@ -843,6 +894,7 @@ export const apiClient = {
     logoUtilisateur?: string;
     logoEglise?: string;
     nomTemple: string;
+    nomEgliseCourt?: string;
     lieuEglise?: string;
     nomUtilisateur: string;
     prenomUtilisateur: string;
@@ -877,6 +929,7 @@ export const apiClient = {
     logoUtilisateur?: string;
     logoEglise?: string;
     nomTemple: string;
+    nomEgliseCourt?: string;
     lieuEglise?: string;
     nomUtilisateur: string;
     prenomUtilisateur: string;

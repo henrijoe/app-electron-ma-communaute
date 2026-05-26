@@ -24,6 +24,7 @@ export const SocialPage = lazy(() => import('src/pages/cas-sociaux'));
 export const GaleriePage = lazy(() => import('src/pages/galerie'));
 export const AgendaPage = lazy(() => import('src/pages/agenda'));
 export const ComptabilitePage = lazy(() => import('src/pages/comptabilite'));
+export const FamilleJeunessePage = lazy(() => import('src/pages/famille-jeunesse'));
 
 export const CultePage = lazy(() => import('src/pages/culte'));
 export const CulteDetail = lazy(() => import('src/sections/culte/view/culte-detail/culte-detail'));
@@ -107,6 +108,7 @@ export function Router() {
         { path: 'departement', element: <GuardedPage permission="departement" element={<DepartementPage />} /> },
         { path: 'cellule', element: <GuardedPage permission="cellule" element={<CellulePage />} /> },
         { path: 'groupe', element: <GuardedPage permission="groupe" element={<GroupePage />} /> },
+        { path: 'famille-jeunesse', element: <GuardedPage permission="familleJeunesse" element={<FamilleJeunessePage />} /> },
         { path: 'cas-sociaux', element: <GuardedPage permission="social" element={<SocialPage />} /> },
         { path: 'galerie', element: <GuardedPage permission="galerie" element={<GaleriePage />} /> },
         { path: 'agenda', element: <GuardedPage permission="agenda" element={<AgendaPage />} /> },

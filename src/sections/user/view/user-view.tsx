@@ -1001,7 +1001,7 @@ export function UserView() {
                         <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.residenceMembre || '-'}</Typography>
                       </Grid>
                       <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">Baptise(e)</Typography>
+                        <Typography variant="caption" color="text.secondary">Baptisé(e)</Typography>
                         <Typography variant="body2">{resolveChoiceLabel(dataBapteme, row.baptemeEauMembre) || '-'}</Typography>
                       </Grid>
                       <Grid item xs={6}>
@@ -1041,7 +1041,7 @@ export function UserView() {
 
             {notFound && (
               <Card variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 2, boxShadow: 'none' }}>
-                <Typography variant="subtitle2">Aucun resultat</Typography>
+                <Typography variant="subtitle2">Aucun résultat</Typography>
                 <Typography variant="body2" color="text.secondary">
                   Aucun membre ne correspond a &quot;{filterName}&quot;.
                 </Typography>
@@ -1070,9 +1070,9 @@ export function UserView() {
                 }
                 headLabel={[
                   { id: 'photoMembre', label: 'Photo' },
-                  { id: 'nomMembre', label: 'Nom et prenoms' },
+                  { id: 'nomMembre', label: 'Nom et prénoms' },
                   { id: 'residenceMembre', label: "Lieu d'habitation" },
-                  { id: 'baptemeEauMembre', label: 'Baptise(e)' },
+                  { id: 'baptemeEauMembre', label: 'Baptisé(e)' },
                   { id: 'lieuBaptemeEauMembre', label: 'Lieu du bapteme' },
                   { id: 'fonctionMembre', label: 'Fonction' },
                   { id: 'situationMatrimonialeMembre', label: 'Situation matrimoniale' },
@@ -1881,7 +1881,7 @@ export function UserView() {
       <ConfirmDialog
         open={confirmDeleteSelectedOpen}
         title="Supprimer les membres selectionnes"
-        message={`Voulez-vous vraiment supprimer ${selected.length} membre(s) selectionne(s) ?`}
+        message={`Voulez-vous vraiment supprimer ${selected.length} membre(s) selectionné(s) ?`}
         confirmText="Supprimer"
         loading={deleteLoading}
         onClose={() => setConfirmDeleteSelectedOpen(false)}

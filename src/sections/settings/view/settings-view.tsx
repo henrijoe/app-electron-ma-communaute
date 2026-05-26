@@ -5,12 +5,15 @@ import {
   AccountCircleRounded,
   AutorenewRounded,
   ChurchRounded,
+  ContentCopyRounded,
   DeleteRounded,
   EditRounded,
   FileDownloadRounded,
   GroupAddRounded,
   LanguageRounded,
   LaunchRounded,
+  LinkOffRounded,
+  LinkRounded,
   LockPersonRounded,
   LockResetRounded,
   SaveRounded,
@@ -61,10 +64,29 @@ import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 
 type ConnectionMode = 'local' | 'online';
 
+type TunnelStatus = {
+  active: boolean;
+  expiresAt: string | null;
+  localPort: number | null;
+  requestedSubdomain: string;
+  startedAt: string | null;
+  url: string;
+};
+
+const emptyTunnelStatus: TunnelStatus = {
+  active: false,
+  expiresAt: null,
+  localPort: null,
+  requestedSubdomain: '',
+  startedAt: null,
+  url: '',
+};
+
 type ProfileFormState = {
   logoUtilisateur: string;
   logoEglise: string;
   nomTemple: string;
+  nomEgliseCourt: string;
   lieuEglise: string;
   nomUtilisateur: string;
   prenomUtilisateur: string;
@@ -93,6 +115,7 @@ const emptyProfileForm: ProfileFormState = {
   logoUtilisateur: '',
   logoEglise: '',
   nomTemple: '',
+  nomEgliseCourt: '',
   lieuEglise: '',
   nomUtilisateur: '',
   prenomUtilisateur: '',
@@ -256,14 +279,14 @@ const sanitizeFileNamePart = (value: string): string =>
     .replace(/^-|-$/g, '') || 'eglise';
 
 const buildDesktopUnlockCodesText = (codes: DesktopUnlockCode[], churchName: string): string => [
-  'Codes de deblocage offline - Ma Communaute',
-  `Eglise: ${churchName || '-'}`,
-  `Genere le: ${new Date().toLocaleString('fr-FR')}`,
+  'Codes de déblocage offline - Ma Communauté',
+  `Église: ${churchName || '-'}`,
+  `Généré le : ${new Date().toLocaleString('fr-FR')}`,
   '',
   'Important:',
   '- Chaque code est a usage unique.',
-  '- Donne un seul code au client quand il faut renouveler son acces.',
-  '- Apres utilisation, le meme code ne pourra plus debloquer l\'application.',
+  '- Donne un seul code au client quand il faut renouveler son accès.',
+  "- Après utilisation, le même code ne pourra plus débloquer l'application.",
   '',
   ...codes.map((code, index) =>
     `${String(index + 1).padStart(2, '0')}. ${code.code} - ${code.label} - ${code.durationDays} jours`
@@ -324,6 +347,8 @@ export function SettingsView() {
   );
   const [isDetectingAddress, setIsDetectingAddress] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [tunnelStatus, setTunnelStatus] = useState<TunnelStatus>(emptyTunnelStatus);
+  const [isTunnelLoading, setIsTunnelLoading] = useState(false);
   const [extendDays, setExtendDays] = useState('30');
   const [unlockPassword, setUnlockPassword] = useState('');
   const [isExportingUnlockCodes, setIsExportingUnlockCodes] = useState(false);
@@ -347,7 +372,14 @@ export function SettingsView() {
   const isDesktopApp = Boolean((window as any)?.desktopApp?.isDesktop);
 
   const sessionUser = useMemo(() => ({ ...utilisateurData, ...userConnected }), [userConnected, utilisateurData]);
-  const desktopUnlockCodesChurchName = String(sessionUser?.nomTemple || profileForm.nomTemple || currentUsername || 'eglise');
+  const desktopUnlockCodesChurchName = String(
+    sessionUser?.nomEgliseCourt ||
+    profileForm.nomEgliseCourt ||
+    sessionUser?.nomTemple ||
+    profileForm.nomTemple ||
+    currentUsername ||
+    'eglise'
+  );
   const currentRole = useMemo(() => getUserRole(sessionUser), [sessionUser]);
   const currentSessionUserId = Number(sessionUser?.idUtilisateur || 0);
   const currentAccountId = getScopeUserIdFromUser(sessionUser) || 0;
@@ -355,6 +387,10 @@ export function SettingsView() {
   const canManageSecondaryUsers =
     currentRole === 'admin' && currentSessionUserId > 0 && !isSecondarySessionUser && currentAccountId > 0;
   const isUrlReady = useMemo(() => isValidHttpUrl(browserUrl), [browserUrl]);
+  const tunnelExpiresAtLabel = useMemo(
+    () => (tunnelStatus.expiresAt ? new Date(tunnelStatus.expiresAt).toLocaleString('fr-FR') : ''),
+    [tunnelStatus.expiresAt]
+  );
   const desktopLicenseExpiresAt = applicationState.desktopSecurityExpiresAt;
   const desktopSecurityMessage = applicationState.desktopSecurityMessage;
   const isDesktopBlocked = applicationState.desktopSecurityBlocked;
@@ -382,28 +418,28 @@ export function SettingsView() {
         severity: 'error',
         message:
           desktopSecurityMessage ||
-          "L'application desktop est actuellement bloquee. Contacte le developpeur pour renouveler l'acces.",
+          "L'application desktop est actuellement bloquée. Contacte le développeur pour renouveler l'accès.",
       } as const;
     }
 
     if (desktopDaysRemaining <= 1) {
       return {
         severity: 'warning',
-        message: `L'application sera bloquee dans ${desktopDaysRemaining || 1} jour. Veuillez contacter le developpeur.`,
+        message: `L'application sera bloquée dans ${desktopDaysRemaining || 1} jour. Veuillez contacter le developpeur.`,
       } as const;
     }
 
     if (desktopDaysRemaining <= 3) {
       return {
         severity: 'warning',
-        message: `L'application sera bloquee dans ${desktopDaysRemaining} jours. Veuillez contacter le developpeur.`,
+        message: `L'application sera bloquée dans ${desktopDaysRemaining} jours. Veuillez contacter le developpeur.`,
       } as const;
     }
 
     if (desktopDaysRemaining <= 7) {
       return {
         severity: 'info',
-        message: `L'application sera bloquee dans ${desktopDaysRemaining} jours. Pense a contacter le developpeur pour eviter une interruption.`,
+        message: `L'application sera bloquée dans ${desktopDaysRemaining} jours. Pense a contacter le developpeur pour eviter une interruption.`,
       } as const;
     }
 
@@ -427,6 +463,7 @@ export function SettingsView() {
       logoUtilisateur: source?.logoUtilisateur || '',
       logoEglise: source?.logoEglise || '',
       nomTemple: source?.nomTemple || '',
+      nomEgliseCourt: source?.nomEgliseCourt || '',
       lieuEglise: source?.lieuEglise || '',
       nomUtilisateur: source?.nomUtilisateur || '',
       prenomUtilisateur: source?.prenomUtilisateur || '',
@@ -561,10 +598,20 @@ export function SettingsView() {
     }
   }, [dispatch, isDesktopApp]);
 
+  const refreshTunnelStatus = useCallback(async () => {
+    try {
+      const response = await apiClient.getTunnelStatus();
+      setTunnelStatus(response?.data || emptyTunnelStatus);
+    } catch (error) {
+      setTunnelStatus(emptyTunnelStatus);
+    }
+  }, []);
+
   useEffect(() => {
     detectPreferredBrowserUrl();
     refreshDesktopSecurityStatus();
-  }, [detectPreferredBrowserUrl, refreshDesktopSecurityStatus]);
+    refreshTunnelStatus();
+  }, [detectPreferredBrowserUrl, refreshDesktopSecurityStatus, refreshTunnelStatus]);
 
   useEffect(() => {
     loadSecondaryUsers();
@@ -602,7 +649,7 @@ export function SettingsView() {
 
     dispatch(setServerUrl(normalizedUrl));
     dispatch(setConnectionMode(connectionMode));
-    showNotification('Parametres enregistres avec succes', 'success');
+    showNotification('Paramètres enregistrés avec succès', 'success');
   }, [browserUrl, connectionMode, dispatch, showNotification]);
 
   const handleOpenInBrowser = useCallback(async () => {
@@ -620,9 +667,67 @@ export function SettingsView() {
     }
   }, [browserUrl, showNotification]);
 
+  const handleStartTunnel = useCallback(async () => {
+    try {
+      setIsTunnelLoading(true);
+      const response = await apiClient.startTunnel({
+        contactEglise:
+          profileForm.telephoneSecretariatEglise ||
+          profileForm.telephoneUtilisateur ||
+          String(sessionUser?.telephoneSecretariatEglise || sessionUser?.telephoneUtilisateur || ''),
+        nomTemple:
+          profileForm.nomEgliseCourt ||
+          profileForm.nomTemple ||
+          String(sessionUser?.nomEgliseCourt || sessionUser?.nomTemple || ''),
+        ttlMinutes: 120,
+      });
+
+      setTunnelStatus(response?.data || emptyTunnelStatus);
+      showNotification('Tunnel actif. Le lien est prêt à être partagé.', 'success');
+    } catch (error: any) {
+      showNotification(error?.message || "Impossible d'activer le tunnel.", 'error');
+    } finally {
+      setIsTunnelLoading(false);
+    }
+  }, [
+    profileForm.nomTemple,
+    profileForm.nomEgliseCourt,
+    profileForm.telephoneSecretariatEglise,
+    profileForm.telephoneUtilisateur,
+    sessionUser,
+    showNotification,
+  ]);
+
+  const handleStopTunnel = useCallback(async () => {
+    try {
+      setIsTunnelLoading(true);
+      const response = await apiClient.stopTunnel();
+      setTunnelStatus(response?.data || emptyTunnelStatus);
+      showNotification('Tunnel désactivé.', 'success');
+    } catch (error: any) {
+      showNotification(error?.message || "Impossible de désactiver le tunnel.", 'error');
+    } finally {
+      setIsTunnelLoading(false);
+    }
+  }, [showNotification]);
+
+  const handleCopyTunnelLink = useCallback(async () => {
+    if (!tunnelStatus.url) {
+      showNotification('Aucun lien tunnel actif à copier.', 'warning');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(tunnelStatus.url);
+      showNotification('Lien tunnel copié.', 'success');
+    } catch (error) {
+      showNotification('Impossible de copier automatiquement le lien. Sélectionne-le manuellement.', 'warning');
+    }
+  }, [showNotification, tunnelStatus.url]);
+
   const handleUnlockDesktop = useCallback(async () => {
     if (!currentUsername || !isFixedDesktopSuperAdmin) {
-      showNotification("Seul le superadmin peut debloquer l'application", 'warning');
+      showNotification("Seul le superadmin peut débloquer l'application", 'warning');
       return;
     }
 
@@ -652,15 +757,15 @@ export function SettingsView() {
       );
 
       setUnlockPassword('');
-      showNotification('Application desktop debloquee avec succes', 'success');
+      showNotification('Application desktop débloquée avec succès', 'success');
     } catch (error: any) {
-      showNotification(error?.message || "Impossible de debloquer l'application", 'error');
+      showNotification(error?.message || "Impossible de débloquer l'application", 'error');
     }
   }, [currentUsername, dispatch, extendDays, isFixedDesktopSuperAdmin, showNotification, unlockPassword]);
 
   const handleRebindMachine = useCallback(async () => {
     if (!currentUsername || !isFixedDesktopSuperAdmin) {
-      showNotification("Seul le superadmin peut rattacher la licence a ce poste.", 'warning');
+      showNotification("Seul le superadmin peut rattacher la licence à ce poste.", 'warning');
       return;
     }
 
@@ -689,9 +794,9 @@ export function SettingsView() {
         })
       );
 
-      showNotification('Licence rattachee a ce poste avec succes.', 'success');
+      showNotification('Licence rattachée à ce poste avec succès.', 'success');
     } catch (error: any) {
-      showNotification(error?.message || "Impossible de rattacher la licence a ce poste.", 'error');
+      showNotification(error?.message || "Impossible de rattacher la licence à ce poste.", 'error');
     } finally {
       setIsRebindingMachine(false);
     }
@@ -699,7 +804,7 @@ export function SettingsView() {
 
   const handleExportInitialUnlockCodes = useCallback(async () => {
     if (!currentUsername || !isFixedDesktopSuperAdmin) {
-      showNotification("Seul le superadmin peut exporter les codes de deblocage.", 'warning');
+      showNotification("Seul le superadmin peut exporter les codes de déblocage.", 'warning');
       return;
     }
 
@@ -717,13 +822,13 @@ export function SettingsView() {
       const codes = (response?.data?.codes || []) as DesktopUnlockCode[];
 
       if (codes.length === 0) {
-        throw new Error('Aucun code a exporter.');
+        throw new Error('Aucun code à exporter.');
       }
 
       downloadDesktopUnlockCodesFile(codes, desktopUnlockCodesChurchName, 'initial');
-      showNotification(`${codes.length} code(s) de deblocage exporte(s).`, 'success');
+      showNotification(`${codes.length} code(s) de déblocage exporté(s).`, 'success');
     } catch (error: any) {
-      showNotification(error?.message || "Impossible d'exporter les codes de deblocage.", 'error');
+      showNotification(error?.message || "Impossible d'exporter les codes de déblocage.", 'error');
     } finally {
       setIsExportingUnlockCodes(false);
     }
@@ -737,7 +842,7 @@ export function SettingsView() {
 
   const handleGenerateUnlockCodes = useCallback(async () => {
     if (!currentUsername || !isFixedDesktopSuperAdmin) {
-      showNotification("Seul le superadmin peut generer les codes de deblocage.", 'warning');
+      showNotification("Seul le superadmin peut générer les codes de déblocage.", 'warning');
       return;
     }
 
@@ -755,13 +860,13 @@ export function SettingsView() {
       const codes = (response?.data?.codes || []) as DesktopUnlockCode[];
 
       if (codes.length === 0) {
-        throw new Error('Aucun code genere.');
+        throw new Error('Aucun code généré.');
       }
 
       downloadDesktopUnlockCodesFile(codes, desktopUnlockCodesChurchName, 'nouveau-pack');
-      showNotification(`${codes.length} nouveau(x) code(s) genere(s) et exporte(s).`, 'success');
+      showNotification(`${codes.length} nouveau(x) code(s) généré(s) et exporté(s).`, 'success');
     } catch (error: any) {
-      showNotification(error?.message || "Impossible de generer les codes de deblocage.", 'error');
+      showNotification(error?.message || "Impossible de générer les codes de déblocage.", 'error');
     } finally {
       setIsGeneratingUnlockCodes(false);
     }
@@ -799,7 +904,7 @@ export function SettingsView() {
 
       const confirmed = window.confirm(
         'Cette action va remplacer les bases SQLite locales par le contenu de la sauvegarde. '
-        + 'Une sauvegarde de securite sera creee avant la restauration. Continuer ?'
+        + 'Une sauvegarde de sécurité sera créée avant la restauration. Continuer ?'
       );
 
       if (!confirmed) {
@@ -816,7 +921,7 @@ export function SettingsView() {
         const restoredCount = Number(response?.data?.databaseCount || 0);
 
         showNotification(
-          `Restauration terminee : ${restoredCount} base(s) restauree(s). Redemarrez l'application pour recharger les donnees.`,
+          `Restauration terminée : ${restoredCount} base(s) restaurée(s). Redémarrez l'application pour recharger les données.`,
           'success'
         );
       } catch (error: any) {
@@ -846,7 +951,7 @@ export function SettingsView() {
     try {
       const base64 = await convertFileToBase64DataUrl(file);
       handleChangeProfileField('logoEglise', base64);
-      showNotification("Logo de l'eglise charge. Enregistre pour le conserver.", 'info');
+      showNotification("Logo de l'église chargé. Enregistre pour le conserver.", 'info');
     } catch (_error) {
       showNotification('Impossible de charger ce logo.', 'error');
     }
@@ -874,7 +979,7 @@ export function SettingsView() {
     }
 
     if (!profileForm.nomTemple.trim()) {
-      showNotification("Le nom de l'eglise est requis", 'warning');
+      showNotification("Le nom de l'église est requis", 'warning');
       return;
     }
 
@@ -910,9 +1015,9 @@ export function SettingsView() {
         password: '',
         confirmPassword: '',
       }));
-      showNotification("Informations de l'eglise enregistrees avec succes", 'success');
+      showNotification("Informations de l'église enregistrées avec succès", 'success');
     } catch (error: any) {
-      showNotification(error?.message || "Impossible d'enregistrer les informations de l'eglise", 'error');
+      showNotification(error?.message || "Impossible d'enregistrer les informations de l'église", 'error');
     } finally {
       setIsSavingProfile(false);
     }
@@ -970,7 +1075,7 @@ export function SettingsView() {
 
   const handleSaveSecondaryUser = useCallback(async () => {
     if (!canManageSecondaryUsers) {
-      showNotification("Cette action est reservee a l'administrateur principal.", 'warning');
+      showNotification("Cette action est réservée à l'administrateur principal.", 'warning');
       return;
     }
 
@@ -985,7 +1090,7 @@ export function SettingsView() {
     }
 
     if (!isEditingSecondaryUser && secondaryUserCount >= 5) {
-      showNotification('Le maximum de 5 utilisateurs secondaires a deja ete atteint.', 'warning');
+      showNotification('Le maximum de 5 utilisateurs secondaires a déjà été atteint.', 'warning');
       return;
     }
 
@@ -1004,6 +1109,7 @@ export function SettingsView() {
       logoUtilisateur: '',
       logoEglise: sessionUser?.logoEglise || '',
       nomTemple: sessionUser?.nomTemple || '',
+      nomEgliseCourt: sessionUser?.nomEgliseCourt || '',
       lieuEglise: sessionUser?.lieuEglise || '',
       telephoneSecretariatEglise: sessionUser?.telephoneSecretariatEglise || '',
       pasteurPrincipal: sessionUser?.pasteurPrincipal || '',
@@ -1046,10 +1152,10 @@ export function SettingsView() {
       setIsSavingSecondaryUser(true);
       if (isEditingSecondaryUser && secondaryUserForm.idUtilisateur) {
         await apiClient.post('communaute/modifierutilisateur', payload);
-        showNotification('Utilisateur secondaire mis a jour avec succes.', 'success');
+        showNotification('Utilisateur secondaire mis à jour avec succès.', 'success');
       } else {
         await apiClient.post('communaute/ajouterutilisateur', payload);
-        showNotification('Utilisateur secondaire cree avec succes.', 'success');
+        showNotification('Utilisateur secondaire créé avec succès.', 'success');
       }
 
       handleResetSecondaryUserForm();
@@ -1073,7 +1179,7 @@ export function SettingsView() {
 
   const handleResetSecondaryPassword = useCallback(async () => {
     if (!canManageSecondaryUsers) {
-      showNotification("Cette action est reservee a l'administrateur principal.", 'warning');
+      showNotification("Cette action est réservée à l'administrateur principal.", 'warning');
       return;
     }
 
@@ -1096,6 +1202,7 @@ export function SettingsView() {
       logoUtilisateur: '',
       logoEglise: sessionUser?.logoEglise || '',
       nomTemple: sessionUser?.nomTemple || '',
+      nomEgliseCourt: sessionUser?.nomEgliseCourt || '',
       lieuEglise: sessionUser?.lieuEglise || '',
       telephoneSecretariatEglise: sessionUser?.telephoneSecretariatEglise || '',
       pasteurPrincipal: sessionUser?.pasteurPrincipal || '',
@@ -1134,7 +1241,7 @@ export function SettingsView() {
     try {
       setIsResettingSecondaryPassword(true);
       await apiClient.post('communaute/modifierutilisateur', payload);
-      showNotification('Mot de passe reinitialise avec succes.', 'success');
+      showNotification('Mot de passe réinitialisé avec succès.', 'success');
       setResetPasswordUser(null);
       setResetPasswordForm(emptyResetSecondaryPasswordForm);
       await loadSecondaryUsers();
@@ -1166,7 +1273,7 @@ export function SettingsView() {
       if (secondaryUserForm.idUtilisateur === deletingSecondaryUser.idUtilisateur) {
         handleResetSecondaryUserForm();
       }
-      showNotification('Utilisateur secondaire supprime avec succes.', 'success');
+      showNotification('Utilisateur secondaire supprimé avec succès.', 'success');
       setDeletingSecondaryUser(null);
       await loadSecondaryUsers();
     } catch (error: any) {
@@ -1181,10 +1288,10 @@ export function SettingsView() {
       <Stack spacing={3}>
         <Box>
           <Typography variant="h4" sx={{ mb: 1 }}>
-            Parametres
+            Paramètres
           </Typography>
           <Typography color="text.secondary">
-            Gere ici les informations de ton compte, de ton eglise et les parametres techniques de l&apos;application.
+            Gère ici les informations de ton compte, de ton église et les paramètres techniques de l&apos;application.
           </Typography>
         </Box>
 
@@ -1251,7 +1358,7 @@ export function SettingsView() {
           <CardHeader
             avatar={<AccountCircleRounded color="primary" />}
             title="Informations utilisateur"
-            subheader="Ces donnees alimentent l&apos;espace compte et les documents generes dans l&apos;application."
+            subheader="Ces données alimentent l&apos;espace compte et les documents générés dans l&apos;application."
           />
           <CardContent>
             <Stack spacing={3}>
@@ -1275,7 +1382,7 @@ export function SettingsView() {
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField
                   fullWidth
-                  label="Telephone"
+                  label="Téléphone"
                   value={profileForm.telephoneUtilisateur}
                   onChange={(event) => handleChangeProfileField('telephoneUtilisateur', event.target.value)}
                 />
@@ -1338,8 +1445,8 @@ export function SettingsView() {
         <Card>
           <CardHeader
             avatar={<ChurchRounded color="primary" />}
-            title="Informations de l&apos;eglise"
-            subheader="Ces informations sont sauvegardees et pourront etre reutilisees dans tous les documents imprimables."
+            title="Informations de l&apos;église"
+            subheader="Ces informations sont sauvegardées et pourront être réutilisées dans tous les documents imprimables."
           />
           <CardContent>
             <Stack spacing={3}>
@@ -1361,7 +1468,7 @@ export function SettingsView() {
                     <Stack spacing={2.5} alignItems="center">
                       <Avatar
                         src={churchLogoPreviewUrl}
-                        alt={profileForm.nomTemple || 'Logo eglise'}
+                        alt={profileForm.nomTemple || 'Logo église'}
                         variant="rounded"
                         sx={{ width: 132, height: 132, borderRadius: 4, bgcolor: 'grey.100' }}
                       >
@@ -1370,7 +1477,7 @@ export function SettingsView() {
 
                       <Stack spacing={0.75} alignItems="center">
                         <Typography variant="subtitle1" fontWeight={700} textAlign="center">
-                          Logo de l&apos;eglise
+                          Logo de l&apos;église
                         </Typography>
                         <Typography variant="body2" color="text.secondary" textAlign="center">
                           Le logo est stocke localement et reutilise automatiquement dans les impressions.
@@ -1406,13 +1513,21 @@ export function SettingsView() {
                   <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                     <TextField
                       fullWidth
-                      label="Nom de l&apos;eglise / temple"
+                      label="Nom de l&apos;église / temple"
                       value={profileForm.nomTemple}
                       onChange={(event) => handleChangeProfileField('nomTemple', event.target.value)}
                     />
                     <TextField
                       fullWidth
-                      label="Lieu de l&apos;eglise"
+                      label="Nom abrégé de l&apos;église"
+                      placeholder="Ex: EEAD ANDOKOI PENIEL"
+                      value={profileForm.nomEgliseCourt}
+                      onChange={(event) => handleChangeProfileField('nomEgliseCourt', event.target.value)}
+                      // helperText="Ce nom court sera affiche dans l&apos;entete de l&apos;application."
+                    />
+                    <TextField
+                      fullWidth
+                      label="Lieu de l&apos;église"
                       value={profileForm.lieuEglise}
                       onChange={(event) => handleChangeProfileField('lieuEglise', event.target.value)}
                     />
@@ -1427,7 +1542,7 @@ export function SettingsView() {
                     />
                     <TextField
                       fullWidth
-                      label="Telephone pasteur principal"
+                      label="Téléphone pasteur principal"
                       value={profileForm.telephonePasteurPrincipal}
                       onChange={(event) => handleChangeProfileField('telephonePasteurPrincipal', event.target.value)}
                     />
@@ -1442,7 +1557,7 @@ export function SettingsView() {
                     />
                     <TextField
                       fullWidth
-                      label="Telephone pasteur secondaire"
+                      label="Téléphone pasteur secondaire"
                       value={profileForm.telephonePasteurSecondaire}
                       onChange={(event) => handleChangeProfileField('telephonePasteurSecondaire', event.target.value)}
                     />
@@ -1451,13 +1566,13 @@ export function SettingsView() {
                   <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                     <TextField
                       fullWidth
-                      label="3eme pasteur"
+                      label="3ème pasteur"
                       value={profileForm.pasteurTroisieme}
                       onChange={(event) => handleChangeProfileField('pasteurTroisieme', event.target.value)}
                     />
                     <TextField
                       fullWidth
-                      label="Telephone du 3eme pasteur"
+                      label="Téléphone du 3ème pasteur"
                       value={profileForm.telephonePasteurTroisieme}
                       onChange={(event) => handleChangeProfileField('telephonePasteurTroisieme', event.target.value)}
                     />
@@ -1466,13 +1581,13 @@ export function SettingsView() {
                   <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                     <TextField
                       fullWidth
-                      label="Telephone du secretariat"
+                      label="Téléphone du secrétariat"
                       value={profileForm.telephoneSecretariatEglise}
                       onChange={(event) => handleChangeProfileField('telephoneSecretariatEglise', event.target.value)}
                     />
                     <TextField
                       fullWidth
-                      label="Email de l&apos;eglise"
+                      label="Email de l&apos;église"
                       value={profileForm.emailEglise}
                       onChange={(event) => handleChangeProfileField('emailEglise', event.target.value)}
                     />
@@ -1539,7 +1654,7 @@ export function SettingsView() {
               </Stack>
 
               <Alert severity="info">
-                Les donnees enregistrees ici sont reutilisees par le tableau de bord, l&apos;espace compte et les etats imprimes. Tu peux les modifier a tout moment sans perdre les valeurs deja saisies.
+                Les données enregistrées ici sont réutilisées par le tableau de bord, l&apos;espace compte et les états imprimés. Tu peux les modifier à tout moment sans perdre les valeurs déjà saisies.
               </Alert>
 
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -1560,15 +1675,15 @@ export function SettingsView() {
           <Card>
             <CardHeader
               avatar={<GroupAddRounded color="primary" />}
-              title="Utilisateurs et droits d'acces"
-              subheader="Creer jusqu'a 5 utilisateurs secondaires relies a cette eglise. Les acces determinent les onglets visibles, et le role lecteur bloque les actions d'ecriture."
+              title="Utilisateurs et droits d'accès"
+              subheader="Créer jusqu'à 5 utilisateurs secondaires reliés à cette église. Les accès déterminent les onglets visibles, et le rôle lecteur bloque les actions d'écriture."
             />
             <CardContent>
               <Stack spacing={3}>
                 <Stack direction={{ xs: 'column', xl: 'row' }} spacing={3} alignItems="stretch">
                   <Stack spacing={2} sx={{ flex: 1, minWidth: 0 }}>
                     <Alert severity="info">
-                      Utilisateurs secondaires crees : {secondaryUserCount} / 5. Le dashboard reste toujours accessible pour eviter de bloquer une session apres connexion.
+                      Utilisateurs secondaires créés : {secondaryUserCount} / 5. Le dashboard reste toujours accessible pour éviter de bloquer une session après connexion.
                     </Alert>
 
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
@@ -1589,7 +1704,7 @@ export function SettingsView() {
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                       <TextField
                         fullWidth
-                        label="Telephone"
+                        label="Téléphone"
                         value={secondaryUserForm.telephoneUtilisateur}
                         onChange={(event) => handleChangeSecondaryUserField('telephoneUtilisateur', event.target.value)}
                       />
@@ -1650,7 +1765,7 @@ export function SettingsView() {
                     <Stack spacing={1}>
                       <Typography variant="subtitle2">Permissions par onglet</Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Le role <strong>gestionnaire</strong> peut agir dans les modules choisis. Le role <strong>lecteur</strong> peut seulement consulter les modules choisis.
+                        Le rôle <strong>gestionnaire</strong> peut agir dans les modules choisis. Le rôle <strong>lecteur</strong> peut seulement consulter les modules choisis.
                       </Typography>
                       <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                         {ALL_MODULE_PERMISSIONS.map((permission) => {
@@ -1682,8 +1797,8 @@ export function SettingsView() {
                         {isSavingSecondaryUser
                           ? 'Enregistrement...'
                           : isEditingSecondaryUser
-                            ? "Mettre a jour l'utilisateur"
-                            : "Creer l'utilisateur"}
+                            ? "Mettre à jour l'utilisateur"
+                            : "Créer l'utilisateur"}
                       </Button>
                       <Button variant="outlined" onClick={handleResetSecondaryUserForm} disabled={isSavingSecondaryUser}>
                         Reinitialiser
@@ -1698,7 +1813,7 @@ export function SettingsView() {
                     {loadingSecondaryUsers ? (
                       <Alert severity="info">Chargement des utilisateurs...</Alert>
                     ) : secondaryUsers.length === 0 ? (
-                      <Alert severity="info">Aucun utilisateur secondaire n&apos;a encore ete cree pour cette eglise.</Alert>
+                      <Alert severity="info">Aucun utilisateur secondaire n&apos;a encore été créé pour cette église.</Alert>
                     ) : (
                       secondaryUsers.map((user) => {
                         const permissions = normalizePermissions(parsePermissions(user.permissionsUtilisateur));
@@ -1712,10 +1827,10 @@ export function SettingsView() {
                                       {user.prenomUtilisateur || 'Utilisateur'} {user.nomUtilisateur}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                      {user.email || 'Email non renseigne'}
+                                      {user.email || 'Email non renseigné'}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary">
-                                      {user.telephoneUtilisateur || 'Telephone non renseigne'}
+                                      {user.telephoneUtilisateur || 'Téléphone non renseigné'}
                                     </Typography>
                                   </Box>
                                   <Chip
@@ -1783,7 +1898,7 @@ export function SettingsView() {
 
         {!canManageSecondaryUsers && !isFixedDesktopSuperAdmin && (
           <Alert severity="info">
-            La creation des utilisateurs secondaires est reservee a l&apos;administrateur principal de cette eglise.
+            La création des utilisateurs secondaires est réservée à l&apos;administrateur principal de cette église.
           </Alert>
         )}
 
@@ -1793,7 +1908,7 @@ export function SettingsView() {
           <CardHeader
             avatar={<StorageRounded color="primary" />}
             title="Connexion et URL navigateur"
-            subheader="Cette adresse pointe vers la vraie interface de l'application accessible depuis ton telephone."
+            subheader="Cette adresse pointe vers la vraie interface de l'application accessible depuis ton téléphone."
           />
           <CardContent>
             <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3} alignItems="stretch">
@@ -1816,7 +1931,7 @@ export function SettingsView() {
                   placeholder="http://192.168.1.25:49300"
                   value={browserUrl}
                   onChange={(event) => setBrowserUrlInput(event.target.value)}
-                  helperText="Adresse detectee automatiquement depuis la machine qui lance l&apos;application."
+                  helperText="Adresse détectée automatiquement depuis la machine qui lance l&apos;application."
                   disabled={isDetectingAddress}
                   InputProps={{
                     readOnly: Boolean((window as any)?.desktopNetwork?.getLocalAddress),
@@ -1827,7 +1942,7 @@ export function SettingsView() {
                 <Box>
                   <Chip
                     color={isUrlReady ? 'success' : 'default'}
-                    label={isUrlReady ? 'URL prete a etre ouverte' : 'URL a verifier'}
+                    label={isUrlReady ? 'URL prête à être ouverte' : 'URL à vérifier'}
                     variant={isUrlReady ? 'filled' : 'outlined'}
                   />
                 </Box>
@@ -1844,6 +1959,82 @@ export function SettingsView() {
                   <Button variant="outlined" startIcon={<LaunchRounded />} onClick={handleOpenInBrowser}>
                     Ouvrir dans le navigateur
                   </Button>
+
+                  {tunnelStatus.active ? (
+                    <Button
+                      color="error"
+                      variant="outlined"
+                      startIcon={<LinkOffRounded />}
+                      onClick={handleStopTunnel}
+                      disabled={isTunnelLoading}
+                    >
+                      Desactiver tunnel
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outlined"
+                      startIcon={<LinkRounded />}
+                      onClick={handleStartTunnel}
+                      disabled={isTunnelLoading}
+                    >
+                      Tunnel
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outlined"
+                    startIcon={<ContentCopyRounded />}
+                    onClick={handleCopyTunnelLink}
+                    disabled={!tunnelStatus.active || !tunnelStatus.url}
+                  >
+                    Copier
+                  </Button>
+                </Stack>
+
+                <Divider />
+
+                <Stack spacing={2}>
+                  <Stack
+                    direction={{ xs: 'column', md: 'row' }}
+                    spacing={2}
+                    alignItems={{ xs: 'stretch', md: 'center' }}
+                    justifyContent="space-between"
+                  >
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={700}>
+                        Tunnel par Internet
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Active un lien public temporaire pour tester cette application locale depuis Internet.
+                      </Typography>
+                    </Box>
+
+                    <Chip
+                      color={tunnelStatus.active ? 'success' : 'default'}
+                      label={tunnelStatus.active ? 'Tunnel actif' : 'Tunnel inactif'}
+                      variant={tunnelStatus.active ? 'filled' : 'outlined'}
+                    />
+                  </Stack>
+
+                  <Alert severity={tunnelStatus.active ? 'warning' : 'info'}>
+                    Le lien tunnel n&apos;est pas une sécurité. Partage-le uniquement avec une personne de confiance,
+                    garde la connexion obligatoire dans l&apos;application et désactive le tunnel après le test.
+                    {tunnelStatus.active && tunnelExpiresAtLabel
+                      ? ` Fermeture automatique prévue le ${tunnelExpiresAtLabel}.`
+                      : ' Une fermeture automatique est prévue après activation.'}
+                  </Alert>
+
+                  {tunnelStatus.active && tunnelStatus.url && (
+                    <TextField
+                      fullWidth
+                      label="Lien tunnel public"
+                      value={tunnelStatus.url}
+                      InputProps={{
+                        readOnly: true,
+                        endAdornment: <LinkRounded color="success" />,
+                      }}
+                    />
+                  )}
                 </Stack>
               </Stack>
             </Stack>
@@ -1876,8 +2067,8 @@ export function SettingsView() {
                 </Typography>
 
                 <Alert severity={isDesktopMachineCurrent ? 'info' : 'warning'}>
-                  Licence rattachee a : {desktopMachineDescription || 'poste non renseigne'}.
-                  Poste actuel : {desktopCurrentMachineDescription || 'poste non detecte'}.
+                  Licence rattachée à : {desktopMachineDescription || 'poste non renseigné'}.
+                  Poste actuel : {desktopCurrentMachineDescription || 'poste non détecté'}.
                 </Alert>
 
                 {desktopAlert && <Alert severity={desktopAlert.severity}>{desktopAlert.message}</Alert>}
@@ -1885,7 +2076,7 @@ export function SettingsView() {
                 {isFixedDesktopSuperAdmin ? (
                   <>
                     <Alert severity="info">
-                      Cette section de renouvellement est reservee au superadmin fixe de l&apos;application.
+                      Cette section de renouvellement est reservée au superadmin fixe de l&apos;application.
                     </Alert>
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -1914,7 +2105,7 @@ export function SettingsView() {
                         onClick={handleRebindMachine}
                         disabled={isRebindingMachine}
                       >
-                        {isRebindingMachine ? 'Association...' : 'Associer a ce poste'}
+                        {isRebindingMachine ? 'Association...' : 'Associer à ce poste'}
                       </Button>
                     </Stack>
 
@@ -1923,7 +2114,7 @@ export function SettingsView() {
                     <Stack spacing={2}>
                       <Box>
                         <Typography variant="h6">
-                          Codes de deblocage offline
+                          Codes de déblocage offline
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           Pack de 25 codes : 10 codes de 30 jours, 5 de 60 jours, 5 de 6 mois et 5 de 1 an.
@@ -1931,7 +2122,7 @@ export function SettingsView() {
                       </Box>
 
                       <Alert severity="warning">
-                        L&apos;export initial est disponible une seule fois. Generer un nouveau pack remplace les codes non utilises.
+                        L&apos;export initial est disponible une seule fois. Générer un nouveau pack remplace les codes non utilisés.
                       </Alert>
 
                       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -1951,7 +2142,7 @@ export function SettingsView() {
                           onClick={handleGenerateUnlockCodes}
                           disabled={isExportingUnlockCodes || isGeneratingUnlockCodes}
                         >
-                          {isGeneratingUnlockCodes ? 'Generation...' : 'Generer un nouveau pack'}
+                          {isGeneratingUnlockCodes ? 'Génération...' : 'Générer un nouveau pack'}
                         </Button>
                       </Stack>
                     </Stack>
@@ -1969,7 +2160,7 @@ export function SettingsView() {
                       </Box>
 
                       <Alert severity="warning">
-                        Avant la restauration, une sauvegarde de securite est creee automatiquement dans le dossier sauvegardes.
+                        Avant la restauration, une sauvegarde de sécurité est créée automatiquement dans le dossier sauvegardes.
                       </Alert>
 
                       <Box>
@@ -2004,7 +2195,7 @@ export function SettingsView() {
         <ConfirmDialog
           open={Boolean(deletingSecondaryUser)}
           title="Supprimer cet utilisateur secondaire"
-          message={`L'utilisateur ${deletingSecondaryUser?.nomUtilisateur || ''} sera retire de cette eglise.`}
+          message={`L'utilisateur ${deletingSecondaryUser?.nomUtilisateur || ''} sera retiré de cette église.`}
           confirmText="Supprimer"
           loading={isDeletingSecondaryUser}
           onConfirm={handleConfirmDeleteSecondaryUser}
@@ -2077,11 +2268,6 @@ export function SettingsView() {
     </DashboardContent>
   );
 }
-
-
-
-
-
 
 
 

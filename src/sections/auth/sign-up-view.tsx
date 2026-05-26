@@ -31,6 +31,7 @@ import { useNotificationSnackbar } from 'src/components/alert/notificationSnackb
 
 type RegisterForm = {
   nomTemple: string;
+  nomEgliseCourt: string;
   nomEglise: string;
   nomUtilisateur: string;
   prenomUtilisateur: string;
@@ -42,6 +43,7 @@ type RegisterForm = {
 
 const initialForm: RegisterForm = {
   nomTemple: '',
+  nomEgliseCourt: '',
   nomEglise: '',
   nomUtilisateur: '',
   prenomUtilisateur: '',
@@ -109,6 +111,7 @@ export function SignUpView() {
       const registerPayload = {
         logoUtilisateur: '',
         nomTemple: form.nomTemple.trim(),
+        nomEgliseCourt: form.nomEgliseCourt.trim(),
         nomUtilisateur: form.nomUtilisateur.trim(),
         prenomUtilisateur: form.prenomUtilisateur.trim(),
         telephoneUtilisateur: form.telephoneUtilisateur.trim(),
@@ -120,12 +123,12 @@ export function SignUpView() {
       const registerResponse = await apiClient.registerUtilisateur(registerPayload);
 
       if (registerResponse.status !== 1 || !registerResponse.data) {
-        throw new Error(registerResponse.error?.message || 'Creation du compte impossible');
+        throw new Error(registerResponse.error?.message || 'Création du compte impossible');
       }
 
       const createdUser = extractFirstItem(registerResponse.data);
       if (!createdUser?.idUtilisateur) {
-        throw new Error('Compte cree sans identifiant utilisateur');
+        throw new Error('Compte créé sans identifiant utilisateur');
       }
 
       const nomEglise = form.nomEglise.trim() || form.nomTemple.trim();
@@ -133,12 +136,12 @@ export function SignUpView() {
       try {
         await apiClient.createCommunauteDatabase({
           idUtilisateur: Number(createdUser.idUtilisateur),
-          nomTemple: form.nomTemple.trim(),
+          nomTemple: form.nomEgliseCourt.trim() || form.nomTemple.trim(),
           nomEglise,
           dossierBase: 'C:\\base-communaute',
         });
       } catch (databaseError) {
-        console.warn('Creation de la base SQLite non disponible ou en echec:', databaseError);
+        console.warn('Création de la base SQLite non disponible ou en échec:', databaseError);
       }
 
       const egliseResponse = await apiClient.createEglise({
@@ -147,7 +150,7 @@ export function SignUpView() {
       });
 
       if (egliseResponse.status !== 1) {
-        throw new Error(egliseResponse.error?.message || "Creation de l'eglise impossible");
+        throw new Error(egliseResponse.error?.message || "Création de l'église impossible");
       }
 
       const loginResponse = await apiClient.login({
@@ -166,7 +169,7 @@ export function SignUpView() {
       dispatch(setUserConnected(connectedUser));
       dispatch(setUserLoggedIn(true));
 
-      showNotification('Compte cree et connexion reussie', 'success');
+      showNotification('Compte créé et connexion réussie', 'success');
       router.push('/');
     } catch (error: any) {
       showNotification(
@@ -182,10 +185,10 @@ export function SignUpView() {
     <>
       <Box sx={{ mb: { xs: 4, md: 5 }, textAlign: { xs: 'center', md: 'left' } }}>
         <Typography variant="h2" sx={{ fontSize: { xs: 20, md: 25 }, mb: 1.5 }}>
-          Inscription à Ma Communaute
+          Inscription à Ma Communauté
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 460, mx: { xs: 'auto', md: 0 } }}>
-          Creez votre compte, votre eglise.
+          Créez votre compte, votre église.
         </Typography>
       </Box>
 
@@ -198,7 +201,7 @@ export function SignUpView() {
         spacing={3}
       >
         <Grid container spacing={2}>
-          <Grid item xs={12}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Nom du temple *"
@@ -216,11 +219,30 @@ export function SignUpView() {
               sx={registerTextFieldSx}
             />
           </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Nom abrege"
+              placeholder="Ex: EEAD ANDOKOI PENIEL"
+              value={form.nomEgliseCourt}
+              onChange={onChange('nomEgliseCourt')}
+              InputLabelProps={{ shrink: true }}
+              helperText="Affiché dans l'entête de l'application."
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <StorefrontRounded sx={{ color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={registerTextFieldSx}
+            />
+          </Grid>
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label="Nom de l'eglise"
-              placeholder="Ex: Communaute de la Grace"
+              label="Nom de l'église"
+              placeholder="Ex: Communauté de la Grâce"
               value={form.nomEglise}
               onChange={onChange('nomEglise')}
               InputLabelProps={{ shrink: true }}
@@ -273,7 +295,7 @@ export function SignUpView() {
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Telephone *"
+              label="Téléphone *"
               placeholder="Ex: 0102030405"
               value={form.telephoneUtilisateur}
               onChange={onChange('telephoneUtilisateur')}
@@ -297,7 +319,7 @@ export function SignUpView() {
               value={form.email}
               onChange={onChange('email')}
               InputLabelProps={{ shrink: true }}
-              helperText="Cet email servira a recuperer votre mot de passe en cas d'oubli."
+              helperText="Cet email servira à récupérer votre mot de passe en cas d'oubli."
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -369,7 +391,7 @@ export function SignUpView() {
       </Stack>
 
       <Typography variant="body2" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
-        Vous avez deja un compte ?
+        Vous avez déjà un compte ?
         <Link component={RouterLink} href="/sign-in" variant="subtitle2" sx={{ ml: 0.5 }}>
           Se connecter
         </Link>

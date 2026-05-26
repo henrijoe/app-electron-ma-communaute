@@ -8,6 +8,7 @@ export type ModulePermissionKey =
   | 'user'
   | 'culte'
   | 'departement'
+  | 'familleJeunesse'
   | 'cellule'
   | 'groupe'
   | 'social'
@@ -50,6 +51,7 @@ export interface IUtilisateur {
   logoUtilisateur: string;
   logoEglise: string;
   nomTemple: string;
+  nomEgliseCourt: string;
   lieuEglise: string;
   nomUtilisateur: string;
   prenomUtilisateur: string;
@@ -83,6 +85,7 @@ export const utilisateur: IUtilisateur = {
   logoUtilisateur: '',
   logoEglise: '',
   nomTemple: '',
+  nomEgliseCourt: '',
   lieuEglise: '',
   nomUtilisateur: '',
   prenomUtilisateur: '',

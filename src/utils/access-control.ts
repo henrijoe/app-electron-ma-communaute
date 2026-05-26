@@ -6,6 +6,7 @@ export const ALL_MODULE_PERMISSIONS: ModulePermissionKey[] = [
   'user',
   'culte',
   'departement',
+  'familleJeunesse',
   'cellule',
   'groupe',
   'social',
@@ -19,14 +20,15 @@ export const MODULE_PERMISSION_LABELS: Record<ModulePermissionKey, string> = {
   dashboard: 'Dashboard',
   user: 'Membres',
   culte: 'Cultes',
-  departement: 'Departements',
+  departement: 'Départements',
+  familleJeunesse: 'Famille de jeunesse',
   cellule: 'Cellules',
   groupe: 'Groupes',
   social: 'Cas sociaux',
   galerie: 'Galerie',
   agenda: 'Agenda',
-  comptabilite: 'Comptabilite',
-  settings: 'Parametres',
+  comptabilite: 'Comptabilité',
+  settings: 'Paramètres',
 };
 
 export const parsePermissions = (rawPermissions?: string | null): ModulePermissionKey[] => {

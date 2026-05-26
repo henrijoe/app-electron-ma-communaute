@@ -1,53 +1,58 @@
-import { useMemo } from 'react';
+import { useRef, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import ReactToPrint from 'react-to-print';
+import { useParams, useNavigate } from 'react-router-dom';
+
 import {
-  ArrowBack as ArrowBackIcon,
-  AutoAwesome as AutoAwesomeIcon,
-  CalendarToday as CalendarIcon,
-  Church as ChurchIcon,
-  Email as EmailIcon,
-  FamilyRestroom as FamilyIcon,
-  Favorite as FavoriteIcon,
-  Flag as FlagIcon,
-  Groups as GroupsIcon,
-  LocationOn as LocationIcon,
-  Person as PersonIcon,
-  Phone as PhoneIcon,
-  School as SchoolIcon,
-  WaterDrop as WaterIcon,
-  Work as WorkIcon,
-} from '@mui/icons-material';
-import {
-  Avatar,
   Box,
-  Button,
   Card,
   Chip,
-  Container,
-  Divider,
   Grid,
   Stack,
-  Typography,
   alpha,
+  Avatar,
+  Button,
+  Divider,
   useTheme,
+  Container,
+  Typography,
 } from '@mui/material';
+import {
+  Flag as FlagIcon,
+  Work as WorkIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  Print as PrintIcon,
+  Church as ChurchIcon,
+  Groups as GroupsIcon,
+  Person as PersonIcon,
+  School as SchoolIcon,
+  WaterDrop as WaterIcon,
+  Favorite as FavoriteIcon,
+  ArrowBack as ArrowBackIcon,
+  LocationOn as LocationIcon,
+  FamilyRestroom as FamilyIcon,
+  CalendarToday as CalendarIcon,
+  AutoAwesome as AutoAwesomeIcon,
+} from '@mui/icons-material';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
-import type { IMembre } from '../../../../store/membreSlice';
-import { dataResponsabilite } from '../../../../store/membreSlice';
 import { getPhotoUrl } from '../../utils';
+import { dataResponsabilite } from '../../../../store/membreSlice';
+import { MemberProfilePrint } from '../../etats/member-profile-print';
+
+import type { IMembre } from '../../../../store/membreSlice';
 
 type RootState = any;
 
-const DEFAULT_VALUE = 'Non specifie';
+const DEFAULT_VALUE = 'Non spécifié';
 
 const NIVEAU_ETUDE_LABELS: Record<number, string> = {
   1: 'Primaire',
-  2: 'College',
+  2: 'Collège',
   3: 'BEPC',
-  4: 'Lycee',
+  4: 'Lycée',
   5: 'BAC',
   6: 'Bac+1',
   7: 'Bac+2',
@@ -59,12 +64,12 @@ const NIVEAU_ETUDE_LABELS: Record<number, string> = {
 };
 
 const SITUATION_LABELS: Record<string, string> = {
-  '1': 'Celibataire',
-  '2': 'Celibataire sans enfant',
-  '3': 'Fiance(e)',
+  '1': 'Célibataire',
+  '2': 'Célibataire sans enfant',
+  '3': 'Fiancé(e)',
   '4': 'Concubinage',
-  '5': 'Marie(e)',
-  '6': 'Divorce(e)',
+  '5': 'Marié(e)',
+  '6': 'Divorcé(e)',
   '7': 'Veuve',
   '8': 'Veuf',
   '9': 'Copain/Copine',
@@ -80,7 +85,7 @@ const CIVILITE_LABELS: Record<string, string> = {
 const CAPACITE_SPIRITUELLE_LABELS: Record<string, string> = {
   '1': 'Bonne',
   '2': 'Moyenne',
-  '3': 'Nouvellement convertie',
+  '3': 'Nouvellement converti(e)',
 };
 
 function formatDate(dateString: string | null | undefined): string {
@@ -112,6 +117,7 @@ export function MembreDetailView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
+  const profilePrintRef = useRef<HTMLDivElement>(null);
 
   // Le detail se base sur les listes deja chargees dans le store.
   const { listMembre, listResponsabilite } = useSelector((state: RootState) => state.membre);
@@ -171,7 +177,7 @@ export function MembreDetailView() {
           </Button>
           <Card sx={{ p: 4 }}>
             <Typography variant="h5" color="text.secondary">
-              Membre non trouve
+              Membre non trouvé
             </Typography>
           </Card>
         </Container>
@@ -179,12 +185,46 @@ export function MembreDetailView() {
     );
   }
 
+  const printableLabels = {
+    civilite: CIVILITE_LABELS[membre.civiliteMembre] || DEFAULT_VALUE,
+    sexe: getSexeLabel(membre.sexeMembre),
+    situationMatrimoniale: SITUATION_LABELS[membre.situationMatrimonialeMembre] || DEFAULT_VALUE,
+    niveauEtude: getNiveauEtudeLabel(membre.idNiveauEtude),
+    departement: getDepartementLabel(membre.idDepartement),
+    cellule: getCelluleLabel(membre.idCellule),
+    groupe: getGroupeLabel(membre.idGroupe),
+    responsabilite: getResponsabiliteLabel(membre.idResponsabilite),
+    baptemeEau: getSimpleYesNo(membre.baptemeEauMembre),
+    baptemeSaintEsprit: getSimpleYesNo(membre.baptemeSaintEspritMembre),
+    nouvelleAme: getSimpleYesNo(membre.nouvelleAmeMembre),
+    visite: getSimpleYesNo(membre.visiteMembre),
+    capaciteSpirituelle: CAPACITE_SPIRITUELLE_LABELS[membre.capaciteSpirituelleMembre] || DEFAULT_VALUE,
+  };
+
   return (
     <DashboardContent>
       <Container maxWidth="xl">
-        <Button startIcon={<ArrowBackIcon />} sx={{ mb: 3 }} onClick={() => navigate('/user')}>
-          Retour
-        </Button>
+        <Stack
+          direction="row"
+          spacing={1.5}
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mb: 3 }}
+        >
+          <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/user')}>
+            Retour
+          </Button>
+
+          <ReactToPrint
+            documentTitle={`fiche-personnelle-${fullName.replace(/\s+/g, '-').toLowerCase()}`}
+            trigger={() => (
+              <Button variant="contained" startIcon={<PrintIcon />}>
+                Fiche imprimable
+              </Button>
+            )}
+            content={() => profilePrintRef.current}
+          />
+        </Stack>
 
         {/* Hero social avec couverture et avatar superpose. */}
         <Card
@@ -261,7 +301,7 @@ export function MembreDetailView() {
                     <Chip
                       color={membre.baptemeEauMembre === '1' ? 'success' : 'default'}
                       variant="outlined"
-                      label={`Baptise(e) : ${getSimpleYesNo(membre.baptemeEauMembre)}`}
+                      label={`Baptisé(e) : ${getSimpleYesNo(membre.baptemeEauMembre)}`}
                     />
                   </Stack>
 
@@ -272,7 +312,7 @@ export function MembreDetailView() {
                       accent={theme.palette.warning.main}
                     />
                     <TimelineStat
-                      label="Departement"
+                      label="Département"
                       value={getDepartementLabel(membre.idDepartement)}
                       accent={theme.palette.info.main}
                     />
@@ -293,12 +333,12 @@ export function MembreDetailView() {
             <Stack spacing={3}>
               <Card sx={{ p: 3, borderRadius: 3 }}>
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                  A propos
+                  À propos
                 </Typography>
                 <Stack spacing={2}>
                   <ProfileFact
                     icon={<PersonIcon color="primary" />}
-                    label="Identite"
+                    label="Identité"
                     value={`${CIVILITE_LABELS[membre.civiliteMembre] || DEFAULT_VALUE} • ${getSexeLabel(membre.sexeMembre)}`}
                   />
                   <ProfileFact
@@ -319,7 +359,7 @@ export function MembreDetailView() {
                   />
                   {/* <ProfileFact
                     icon={<SchoolIcon color="primary" />}
-                    label="Niveau d'etude"
+                    label="Niveau d’étude"
                     value={getNiveauEtudeLabel(membre.idNiveauEtude)}
                   /> */}
                 </Stack>
@@ -327,12 +367,12 @@ export function MembreDetailView() {
 
               <Card sx={{ p: 3, borderRadius: 3 }}>
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                  Coordonnees
+                  Coordonnées
                 </Typography>
                 <Stack spacing={2}>
                   <ProfileFact
                     icon={<PhoneIcon color="primary" />}
-                    label="Telephone"
+                    label="Téléphone"
                     value={resolveLabel(membre.contactMembre)}
                   />
                   <ProfileFact
@@ -342,7 +382,7 @@ export function MembreDetailView() {
                   />
                   <ProfileFact
                     icon={<LocationIcon color="primary" />}
-                    label="Residence"
+                    label="Résidence"
                     value={resolveLabel(membre.residenceMembre)}
                   />
                   <ProfileFact
@@ -368,9 +408,9 @@ export function MembreDetailView() {
                   {CAPACITE_SPIRITUELLE_LABELS[membre.capaciteSpirituelleMembre] || DEFAULT_VALUE}
                 </Typography>
                 <Stack spacing={1.5}>
-                  <QuickStatLine label="Decision" value={formatDate(membre.dateDecisionMembre)} />
+                  <QuickStatLine label="Décision" value={formatDate(membre.dateDecisionMembre)} />
                   <QuickStatLine label="Visite" value={getSimpleYesNo(membre.visiteMembre)} />
-                  <QuickStatLine label="Nouvelle ame" value={getSimpleYesNo(membre.nouvelleAmeMembre)} />
+                  <QuickStatLine label="Nouvelle âme" value={getSimpleYesNo(membre.nouvelleAmeMembre)} />
                 </Stack>
               </Card>
             </Stack>
@@ -402,7 +442,7 @@ export function MembreDetailView() {
                   <Grid item xs={12} md={6}>
                     <InfoBlock
                       icon={<SchoolIcon color="primary" />}
-                      title="Niveau d'etude"
+                      title="Niveau d’étude"
                       value={getNiveauEtudeLabel(membre.idNiveauEtude)}
                     />
                   </Grid>
@@ -410,7 +450,7 @@ export function MembreDetailView() {
                     <Grid item xs={12} md={6}>
                       <InfoBlock
                         icon={<PersonIcon color="primary" />}
-                        title="Fiance(e)"
+                        title="Fiancé(e)"
                         value={resolveLabel(membre.nomFiance)}
                       />
                     </Grid>
@@ -436,7 +476,7 @@ export function MembreDetailView() {
                   <Grid item xs={12} md={6}>
                     <InfoBlock
                       icon={<ChurchIcon color="primary" />}
-                      title="Eglise d'origine"
+                      title="Église d’origine"
                       value={resolveLabel(membre.egliseOrigineMembre)}
                     />
                   </Grid>
@@ -450,14 +490,14 @@ export function MembreDetailView() {
                   <Grid item xs={12} md={6}>
                     <InfoBlock
                       icon={<WaterIcon color="primary" />}
-                      title="Bapteme d'eau"
+                      title="Baptême d’eau"
                       value={getSimpleYesNo(membre.baptemeEauMembre)}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <InfoBlock
                       icon={<AutoAwesomeIcon color="primary" />}
-                      title="Bapteme du Saint-Esprit"
+                      title="Baptême du Saint-Esprit"
                       value={getSimpleYesNo(membre.baptemeSaintEspritMembre)}
                     />
                   </Grid>
@@ -466,14 +506,14 @@ export function MembreDetailView() {
                       <Grid item xs={12} md={6}>
                         <InfoBlock
                           icon={<CalendarIcon color="primary" />}
-                          title="Date du bapteme d'eau"
+                          title="Date du baptême d’eau"
                           value={formatDate(membre.dateBaptemeMembre)}
                         />
                       </Grid>
                       <Grid item xs={12} md={6}>
                         <InfoBlock
                           icon={<LocationIcon color="primary" />}
-                          title="Lieu du bapteme"
+                          title="Lieu du baptême"
                           value={resolveLabel(membre.lieuBaptemeEauMembre)}
                         />
                       </Grid>
@@ -483,7 +523,7 @@ export function MembreDetailView() {
                     <Grid item xs={12} md={6}>
                       <InfoBlock
                         icon={<CalendarIcon color="primary" />}
-                        title="Date bapteme Saint-Esprit"
+                        title="Date baptême Saint-Esprit"
                         value={formatDate(membre.dateBaptemeSaintEspritMembre)}
                       />
                     </Grid>
@@ -493,7 +533,7 @@ export function MembreDetailView() {
 
               <Card sx={{ p: 3, borderRadius: 3 }}>
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                  Vie d&apos;eglise
+                  Vie d&apos;église
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
                 <Grid container spacing={2.5}>
@@ -514,14 +554,14 @@ export function MembreDetailView() {
                   <Grid item xs={12} md={6}>
                     <InfoBlock
                       icon={<ChurchIcon color="primary" />}
-                      title="Departement"
+                      title="Département"
                       value={getDepartementLabel(membre.idDepartement)}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <InfoBlock
                       icon={<PersonIcon color="primary" />}
-                      title="Responsabilite"
+                      title="Responsabilité"
                       value={getResponsabiliteLabel(membre.idResponsabilite)}
                     />
                   </Grid>
@@ -537,7 +577,7 @@ export function MembreDetailView() {
                       <Grid item xs={12} md={6}>
                         <InfoBlock
                           icon={<CalendarIcon color="primary" />}
-                          title="Date de decision"
+                          title="Date de décision"
                           value={formatDate(membre.dateDecisionMembre)}
                         />
                       </Grid>
@@ -555,6 +595,19 @@ export function MembreDetailView() {
             </Stack>
           </Grid>
         </Grid>
+
+        <Box sx={{ display: 'none' }}>
+          <Box ref={profilePrintRef}>
+            <MemberProfilePrint
+              membre={membre}
+              fullName={fullName}
+              profilePhoto={profilePhoto}
+              labels={printableLabels}
+              formatDate={formatDate}
+              resolveLabel={resolveLabel}
+            />
+          </Box>
+        </Box>
       </Container>
     </DashboardContent>
   );

@@ -6,7 +6,7 @@ export default function ResponsabilitesPage() {
   return (
     <>
       <Helmet>
-        <title> Responsabilites | Ma Communaute </title>
+        <title> Responsabilités | Ma Communauté </title>
       </Helmet>
 
       <ResponsabilitesView />

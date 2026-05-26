@@ -71,7 +71,7 @@ export function ResponsabilitesView() {
       setResponsabilites(items);
       dispatch(setListMembreResponsabilite(items));
     } catch (error: any) {
-      showNotification(error?.message || 'Impossible de charger les responsabilites.', 'error');
+      showNotification(error?.message || 'Impossible de charger les responsabilités.', 'error');
     } finally {
       setLoadingResponsabilites(false);
     }
@@ -110,7 +110,7 @@ export function ResponsabilitesView() {
     }
 
     if (!responsabiliteForm.libelleResponsabilite.trim()) {
-      showNotification('Le libelle de la responsabilite est requis.', 'warning');
+      showNotification('Le libellé de la responsabilité est requis.', 'warning');
       return;
     }
 
@@ -125,16 +125,16 @@ export function ResponsabilitesView() {
       setIsSavingResponsabilite(true);
       if (responsabiliteForm.idResponsabilite) {
         await apiClient.updateResponsabilite(payload);
-        showNotification('Responsabilite mise a jour avec succes.', 'success');
+        showNotification('Responsabilité mise à jour avec succès.', 'success');
       } else {
         await apiClient.createResponsabilite(payload);
-        showNotification('Responsabilite creee avec succes.', 'success');
+        showNotification('Responsabilité créée avec succès.', 'success');
       }
 
       handleResetResponsabiliteForm();
       await loadResponsabilites();
     } catch (error: any) {
-      showNotification(error?.message || 'Impossible de sauvegarder cette responsabilite.', 'error');
+      showNotification(error?.message || 'Impossible de sauvegarder cette responsabilité.', 'error');
     } finally {
       setIsSavingResponsabilite(false);
     }
@@ -151,12 +151,12 @@ export function ResponsabilitesView() {
       if (responsabiliteForm.idResponsabilite === deletingResponsabilite.idResponsabilite) {
         handleResetResponsabiliteForm();
       }
-      showNotification('Responsabilite supprimee avec succes.', 'success');
+      showNotification('Responsabilité supprimée avec succès.', 'success');
       setDeletingResponsabilite(null);
       await loadResponsabilites();
     } catch (error: any) {
       showNotification(
-        error?.message || 'Impossible de supprimer cette responsabilite. Elle est peut-etre deja utilisee par un membre.',
+        error?.message || 'Impossible de supprimer cette responsabilité. Elle est peut-être déjà utilisée par un membre.',
         'error'
       );
     } finally {
@@ -175,18 +175,18 @@ export function ResponsabilitesView() {
       <Stack spacing={3}>
         <Box>
           <Typography variant="h4" sx={{ mb: 1 }}>
-            Responsabilites
+            Responsabilités
           </Typography>
           <Typography color="text.secondary">
-            Gere les responsabilites utilisees dans la fiche des membres.
+            Gère les responsabilités utilisées dans la fiche des membres.
           </Typography>
         </Box>
 
         <Card>
           <CardHeader
             avatar={<GroupAddRounded color="primary" />}
-            title="Responsabilites"
-            subheader="Ces responsabilites alimentent le select des membres et sont enregistrees dans la base de donnees."
+            title="Responsabilités"
+            subheader="Ces responsabilités alimentent le select des membres et sont enregistrées dans la base de données."
           />
           <CardContent>
             <Stack spacing={3}>
@@ -215,8 +215,8 @@ export function ResponsabilitesView() {
                   {isSavingResponsabilite
                     ? 'Enregistrement...'
                     : isEditingResponsabilite
-                      ? 'Modifier la responsabilite'
-                      : 'Ajouter la responsabilite'}
+                      ? 'Modifier la responsabilité'
+                      : 'Ajouter la responsabilité'}
                 </Button>
                 <Button variant="outlined" onClick={handleResetResponsabiliteForm} disabled={isSavingResponsabilite}>
                   Reinitialiser
@@ -224,9 +224,9 @@ export function ResponsabilitesView() {
               </Stack>
 
               {loadingResponsabilites ? (
-                <Alert severity="info">Chargement des responsabilites...</Alert>
+                <Alert severity="info">Chargement des responsabilités...</Alert>
               ) : responsabilites.length === 0 ? (
-                <Alert severity="info">Aucune responsabilite n&apos;a encore ete creee pour cette eglise.</Alert>
+                <Alert severity="info">Aucune responsabilité n&apos;a encore été créée pour cette église.</Alert>
               ) : (
                 <Stack spacing={1.5}>
                   {responsabilites.map((responsabilite) => (
@@ -272,8 +272,8 @@ export function ResponsabilitesView() {
 
         <ConfirmDialog
           open={Boolean(deletingResponsabilite)}
-          title="Supprimer cette responsabilite"
-          message={`La responsabilite ${deletingResponsabilite?.libelleResponsabilite || ''} sera supprimee si elle n'est pas utilisee.`}
+          title="Supprimer cette responsabilité"
+          message={`La responsabilité ${deletingResponsabilite?.libelleResponsabilite || ''} sera supprimée si elle n'est pas utilisée.`}
           confirmText="Supprimer"
           loading={isDeletingResponsabilite}
           onConfirm={handleConfirmDeleteResponsabilite}

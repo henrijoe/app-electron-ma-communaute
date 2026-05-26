@@ -95,7 +95,7 @@ export function SignInView() {
 
       setForgotStep('reset');
       showNotification(
-        response.data?.message || 'Si ce compte existe, un code a ete envoye par email.',
+        response.data?.message || 'Si ce compte existe, un code a été envoyé par email.',
         'success'
       );
     } catch (error) {
@@ -138,7 +138,7 @@ export function SignInView() {
 
       setPassword(forgotData.password);
       setForgotOpen(false);
-      showNotification('Mot de passe modifie. Vous pouvez vous connecter.', 'success');
+      showNotification('Mot de passe modifié. Vous pouvez vous connecter.', 'success');
     } catch (error) {
       showNotification(getApiErrorMessage(error, 'Code invalide ou expire.'), 'error');
     } finally {
@@ -174,7 +174,7 @@ export function SignInView() {
       dispatch(setUserConnected(utilisateurConnecte));
       dispatch(setUserLoggedIn(true));
 
-      showNotification('Connexion reussie', 'success');
+      showNotification('Connexion réussie', 'success');
       router.push('/');
     } catch (error: any) {
       const errorMessage = getApiErrorMessage(
@@ -202,7 +202,7 @@ export function SignInView() {
     }
 
     if (!unlockCode.trim()) {
-      showNotification('Le code de deblocage est requis.', 'warning');
+      showNotification('Le code de déblocage est requis.', 'warning');
       return;
     }
 
@@ -214,14 +214,14 @@ export function SignInView() {
       });
 
       if (response.status !== 1) {
-        throw new Error(response.error?.message || 'Code de deblocage invalide');
+        throw new Error(response.error?.message || 'Code de déblocage invalide');
       }
 
       setUnlockCode('');
       setShowUnlockCodeForm(false);
-      showNotification('Application debloquee. Tu peux maintenant te connecter.', 'success');
+      showNotification('Application débloquée. Tu peux maintenant te connecter.', 'success');
     } catch (error: any) {
-      showNotification(getApiErrorMessage(error, 'Code de deblocage invalide.'), 'error');
+      showNotification(getApiErrorMessage(error, 'Code de déblocage invalide.'), 'error');
     } finally {
       setUnlockLoading(false);
     }
@@ -231,7 +231,7 @@ export function SignInView() {
     <>
       <Box sx={{ mb: 5 }}>
         <Typography variant="h1" sx={{ fontSize: { xs: 20, md: 25 }, mb: 1.5 }}>
-          Connexion à Ma Communaute
+          Connexion à Ma Communauté
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 450 }}>
           Connectez-vous pour retrouver les membres, cultes, departements.
@@ -272,7 +272,7 @@ export function SignInView() {
           onClick={handleOpenForgotPassword}
           sx={{ alignSelf: 'flex-end', mt: -1 }}
         >
-          Mot de passe oublie ?
+          Mot de passe oublié ?
         </Link>
 
         <TextField
@@ -323,7 +323,7 @@ export function SignInView() {
             onClick={() => setShowUnlockCodeForm(true)}
             sx={{ alignSelf: 'center' }}
           >
-            J&apos;ai un code de deblocage
+            J&apos;ai un code de déblocage
           </Link>
         )}
 
@@ -339,12 +339,12 @@ export function SignInView() {
             }}
           >
             <Alert severity="info">
-              Saisis le code fourni par le developpeur pour debloquer cette installation.
+              Saisis le code fourni par le développeur pour débloquer cette installation.
             </Alert>
 
             <TextField
               fullWidth
-              label="Code de deblocage"
+              label="Code de déblocage"
               value={unlockCode}
               onChange={(event) => setUnlockCode(event.target.value.toUpperCase())}
               placeholder="MC-XXXX-XXXX-XXXX-XXXX"
@@ -366,7 +366,7 @@ export function SignInView() {
       <Typography variant="body2" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
         Vous n&apos;avez pas encore de compte ?
         <Link component={RouterLink} href="/sign-up" variant="subtitle2" sx={{ ml: 0.5 }}>
-          Creer une eglise
+          Créer une église
         </Link>
       </Typography>
 
@@ -374,7 +374,7 @@ export function SignInView() {
 
       <Dialog open={forgotOpen} onClose={handleCloseForgotPassword} fullWidth maxWidth="xs">
         <DialogTitle>
-          {forgotStep === 'request' ? 'Mot de passe oublie' : 'Nouveau mot de passe'}
+          {forgotStep === 'request' ? 'Mot de passe oublié' : 'Nouveau mot de passe'}
         </DialogTitle>
 
         <DialogContent>
@@ -382,7 +382,7 @@ export function SignInView() {
             {forgotStep === 'request' && (
               <>
                 <Alert severity="info">
-                  Saisissez le nom utilisateur et l&apos;email du compte. Un code sera envoye par email.
+                  Saisissez le nom utilisateur et l&apos;email du compte. Un code sera envoyé par email.
                 </Alert>
 
                 <TextField
@@ -405,7 +405,7 @@ export function SignInView() {
             {forgotStep === 'reset' && (
               <>
                 <Alert severity="info">
-                  Entrez le code recu par email puis choisissez un nouveau mot de passe.
+                  Entrez le code reçu par email puis choisissez un nouveau mot de passe.
                 </Alert>
 
                 <TextField

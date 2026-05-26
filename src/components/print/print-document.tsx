@@ -24,6 +24,7 @@ type PrintIdentity = {
   logoUtilisateur?: string;
   logoEglise?: string;
   nomTemple?: string;
+  nomEgliseCourt?: string;
   lieuEglise?: string;
   prenomUtilisateur?: string;
   nomUtilisateur?: string;
@@ -144,7 +145,7 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
       </Box>
 
       <Typography variant="h4" sx={{ fontWeight: 900, lineHeight: 1.05, color: '#0f274a' }}>
-        {identity.nomTemple || 'Communaute locale'}
+        {identity.nomEgliseCourt || identity.nomTemple || 'Communaute locale'}
       </Typography>
     </Box>
   );
@@ -168,7 +169,7 @@ function PrintFooter({ contactLine, showPagination }: PrintFooterProps) {
         </Typography>
         {showPagination ? (
           <Typography variant="caption" sx={{ color: 'inherit' }}>
-            Page <span className="print-page-current" />
+            Page 1
           </Typography>
         ) : (
           <Box />
@@ -235,9 +236,6 @@ export function PrintDocumentLayout({
               marginTop: 0,
               backgroundColor: '#ffffff',
             },
-            '.print-page-current::after': {
-              content: 'counter(page)',
-            },
           },
         }}
       />
@@ -248,6 +246,7 @@ export function PrintDocumentLayout({
         data-count-value={countValue}
         data-subtitle={subtitle || ''}
         sx={{
+          color: '#111827',
           width: '100%',
           maxWidth: 'none',
           mx: 'auto',
@@ -270,6 +269,7 @@ export function PrintDocumentLayout({
             position: 'relative',
             overflow: 'hidden',
             backgroundColor: isPlainVariant ? 'transparent' : 'common.white',
+            color: '#111827',
             borderRadius: isPlainVariant ? 0 : 6,
             p: isPlainVariant ? 0 : { xs: 3, md: 4 },
             boxShadow: isPlainVariant ? 'none' : '0 18px 40px rgba(15, 23, 42, 0.08)',

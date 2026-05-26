@@ -36,9 +36,9 @@ const formatDisplayDate = (value?: string | null): string => {
 
 const buildEventSubtitle = (event: IGalerieEvenement): string =>
   [
-    event.typeEvenement || 'Evenement',
-    formatDisplayDate(event.dateEvenement) || 'Date non precisee',
-    event.lieuEvenement || 'Lieu non precise',
+    event.typeEvenement || 'Événement',
+    formatDisplayDate(event.dateEvenement) || 'Date non précisée',
+    event.lieuEvenement || 'Lieu non précisé',
   ].join(' - ');
 
 export function GaleriePrintDocument({ event, images }: GaleriePrintDocumentProps) {
@@ -57,7 +57,7 @@ export function GaleriePrintDocument({ event, images }: GaleriePrintDocumentProp
         countValue={0}
         variant="plain"
       >
-        <PrintEmptyState title="Aucune image" message="Cette galerie ne contient encore aucune photo a imprimer." />
+        <PrintEmptyState title="Aucune image" message="Cette galerie ne contient encore aucune photo à imprimer." />
       </PrintDocumentLayout>
     );
   }

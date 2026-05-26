@@ -8,6 +8,7 @@ import {
   SettingsRounded,
   ApartmentRounded,
   DashboardRounded,
+  Diversity1Rounded,
   Diversity3Rounded,
   PhotoLibraryRounded,
   WarningAmberRounded,
@@ -44,7 +45,7 @@ export const navData: DashboardNavItem[] = [
     permissionKey: 'culte',
   },
   {
-    title: 'Departement',
+    title: 'Département',
     path: '/departement',
     icon: <ApartmentRounded />,
     permissionKey: 'departement',
@@ -60,6 +61,12 @@ export const navData: DashboardNavItem[] = [
     path: '/groupe',
     icon: <Diversity3Rounded />,
     permissionKey: 'groupe',
+  },
+  {
+    title: 'Famille de jeunesse',
+    path: '/famille-jeunesse',
+    icon: <Diversity1Rounded />,
+    permissionKey: 'familleJeunesse',
   },
   {
     title: 'Cas sociaux',
@@ -80,19 +87,19 @@ export const navData: DashboardNavItem[] = [
     permissionKey: 'agenda',
   },
   {
-    title: 'Comptabilite',
+    title: 'Comptabilité',
     path: '/comptabilite',
     icon: <AccountBalanceWalletRounded />,
     permissionKey: 'comptabilite',
   },
   {
-    title: 'Responsabilites',
+    title: 'Responsabilités',
     path: '/responsabilites',
     icon: <BadgeRounded />,
     permissionKey: 'settings',
   },
   {
-    title: 'Parametres',
+    title: 'Paramètres',
     path: '/settings',
     icon: <SettingsRounded />,
     permissionKey: 'settings',

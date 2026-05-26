@@ -38,7 +38,13 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
   const theme = useTheme();
   const dispatch = useDispatch();
   const themeMode = useSelector((state: IReduxState) => state.application.themeMode || 'light');
-  const nomTemple = useSelector((state: IReduxState) => state.authentification.utilisateurData?.nomTemple);
+  const nomEgliseAffiche = useSelector(
+    (state: IReduxState) =>
+      state.authentification.utilisateurData?.nomEgliseCourt ||
+      state.application.userConnected?.nomEgliseCourt ||
+      state.authentification.utilisateurData?.nomTemple ||
+      state.application.userConnected?.nomTemple
+  );
 
   const [navOpen, setNavOpen] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -77,13 +83,13 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
                   open={navOpen}
                   onClose={() => setNavOpen(false)}
                 />
-                {nomTemple && (
+                {nomEgliseAffiche && (
                   <Typography
                     variant="subtitle1"
                     fontWeight={700}
                     sx={{ color: 'text.primary', letterSpacing: 0.5, ml: 1 }}
                   >
-                    {nomTemple}
+                    {nomEgliseAffiche}
                   </Typography>
                 )}
               </>
@@ -144,4 +150,3 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
     </LayoutSection>
   );
 }
-

@@ -19,6 +19,13 @@ export const getMembreFullName = (membre: Partial<IMembre>): string =>
     .join(' ')
     .trim();
 
+const getMembreReverseFullName = (membre: Partial<IMembre>): string =>
+  [membre.nomMembre, membre.prenomMembre]
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
 const isResponsibleMember = (membre: IMembre, responsibilityIds?: number[]): boolean => {
   const idResponsabilite = Number(membre.idResponsabilite || 0);
 
@@ -69,10 +76,11 @@ export const findResponsableContact = (membres: IMembre[], responsableName?: str
     return '';
   }
 
-  const match = (Array.isArray(membres) ? membres : []).find(
-    (membre) => normalizeResponsibleName(getMembreFullName(membre)) === normalizedName
-  );
+  const match = (Array.isArray(membres) ? membres : []).find((membre) => {
+    const possibleNames = [getMembreFullName(membre), getMembreReverseFullName(membre)];
+
+    return possibleNames.some((name) => normalizeResponsibleName(name) === normalizedName);
+  });
 
   return match?.contactMembre || '';
 };
-

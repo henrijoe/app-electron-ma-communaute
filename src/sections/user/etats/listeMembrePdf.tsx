@@ -1,21 +1,25 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Avatar, Chip, Typography } from '@mui/material';
+
+import { Chip, Avatar, Typography } from '@mui/material';
+
 import { normalizeText } from 'src/utils/text';
 
 import {
-  PrintDocumentLayout,
-  PrintEmptyState,
-  PrintTable,
+  TableRow,
   TableBody,
   TableCell,
   TableHead,
-  TableRow,
+  PrintTable,
+  PrintEmptyState,
+  PrintDocumentLayout,
 } from 'src/components/print/print-document';
-import type { IReduxState } from '../../../store/store';
-import { dataResponsabilite } from '../../../store/membreSlice';
-import { formaterValueLabels } from '../view/filterbyIndice';
+
 import { getPhotoUrl } from '../utils';
+import { formaterValueLabels } from '../view/filterbyIndice';
+import { dataResponsabilite } from '../../../store/membreSlice';
+
+import type { IReduxState } from '../../../store/store';
 
 const formatContact = (contact: string) => {
   // On affiche une valeur neutre quand aucun contact n'est disponible.
@@ -107,7 +111,7 @@ export const ListeDesMembres = () => {
           <TableHead>
             <TableRow>
               <TableCell align="center" sx={{ width: 52 }}>
-                N°
+                No
               </TableCell>
               <TableCell align="center" sx={{ width: 86 }}>
                 Photo
@@ -115,7 +119,7 @@ export const ListeDesMembres = () => {
               <TableCell sx={{ width: 280 }}>Nom et prenoms</TableCell>
               <TableCell>Residence</TableCell>
               <TableCell>Responsabilite</TableCell>
-              <TableCell align="center">Baptise(e)</TableCell>
+              <TableCell align="center">Baptisé(e)</TableCell>
               <TableCell>Departement</TableCell>
               <TableCell>Cellule</TableCell>
               <TableCell>Contact</TableCell>

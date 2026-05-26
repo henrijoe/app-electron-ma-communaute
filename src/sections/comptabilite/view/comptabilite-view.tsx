@@ -288,35 +288,35 @@ export function ComptabiliteView() {
           return;
         }
         refreshActiveOnly();
-        showNotificationRef.current('Une nouvelle ecriture a ete synchronisee.', 'info');
+        showNotificationRef.current('Une nouvelle écriture a ete synchronisee.', 'info');
       }),
       subscribeToCommunauteEvent('modifierComptabilite', (payload) => {
         if (Number(payload?.idUtilisateur) !== currentUserId) {
           return;
         }
         refreshActiveOnly();
-        showNotificationRef.current('Une ecriture comptable a ete mise a jour.', 'info');
+        showNotificationRef.current('Une écriture comptable a ete mise a jour.', 'info');
       }),
       subscribeToCommunauteEvent('supprimerComptabilite', (payload) => {
         if (Number(payload?.idUtilisateur) !== currentUserId) {
           return;
         }
         refreshAll();
-        showNotificationRef.current('Une ecriture a ete archivee.', 'info');
+        showNotificationRef.current('Une écriture a ete archivee.', 'info');
       }),
       subscribeToCommunauteEvent('restaurerComptabilite', (payload) => {
         if (Number(payload?.idUtilisateur) !== currentUserId) {
           return;
         }
         refreshAll();
-        showNotificationRef.current('Une ecriture archivee a ete restauree.', 'info');
+        showNotificationRef.current('Une écriture archivee a ete restauree.', 'info');
       }),
       subscribeToCommunauteEvent('supprimerComptabiliteDefinitivement', (payload) => {
         if (Number(payload?.idUtilisateur) !== currentUserId) {
           return;
         }
         refreshAll();
-        showNotificationRef.current('Une ecriture archivee a ete supprimee definitivement.', 'info');
+        showNotificationRef.current('Une écriture archivee a ete supprimee definitivement.', 'info');
       }),
     ];
 
@@ -415,7 +415,7 @@ export function ComptabiliteView() {
       handleCloseDialog();
       fetchComptabilite();
     } catch (error: any) {
-      showNotificationRef.current(error?.message || 'Impossible d\'enregistrer cette ecriture', 'error');
+      showNotificationRef.current(error?.message || 'Impossible d\'enregistrer cette écriture', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -448,7 +448,7 @@ export function ComptabiliteView() {
         fetchDeletedComptabilite();
       }
     } catch (error: any) {
-      showNotificationRef.current(error?.message || 'Impossible d\'archiver cette ecriture', 'error');
+      showNotificationRef.current(error?.message || 'Impossible d\'archiver cette écriture', 'error');
     }
   };
 
@@ -465,7 +465,7 @@ export function ComptabiliteView() {
       fetchComptabilite();
       fetchDeletedComptabilite();
     } catch (error: any) {
-      showNotificationRef.current(error?.message || 'Impossible de restaurer cette ecriture', 'error');
+      showNotificationRef.current(error?.message || 'Impossible de restaurer cette écriture', 'error');
     }
   };
 
@@ -482,7 +482,7 @@ export function ComptabiliteView() {
       fetchDeletedComptabilite();
       fetchComptabilite();
     } catch (error: any) {
-      showNotificationRef.current(error?.message || 'Impossible de supprimer definitivement cette ecriture', 'error');
+      showNotificationRef.current(error?.message || 'Impossible de supprimer définitivement cette écriture', 'error');
     }
   };
 
@@ -490,12 +490,12 @@ export function ComptabiliteView() {
     <DashboardContent maxWidth="xl">
       <NotificationComponent />
 
-      <Stack spacing={3} sx={{ width: 1, maxWidth: 1180, mx: 'auto' }}>
+      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 440, md: 1400 }, mx: 'auto' }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }}>
           <Box>
-            <Typography variant="h4">Comptabilite</Typography>
+            <Typography variant="h4">Comptabilité</Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-              Suis les recettes, les depenses et le solde de l&apos;eglise dans un espace simple a exploiter.
+              Suivre les recettes, les dépenses et le solde de l&apos;église dans un espace simple à exploiter.
             </Typography>
           </Box>
 
@@ -503,7 +503,7 @@ export function ComptabiliteView() {
             <PrintEtatComptabilite items={filteredItems} deletedItems={deletedItems} search={search} filterLabel={activeFilterLabel} isSuperAdmin={desktopSecurityIsSuperAdmin} />
             {canManageComptabilite && (
               <>
-                <Tooltip title="Nouvelle ecriture">
+                <Tooltip title="Nouvelle écriture">
                   <IconButton onClick={openCreateDialog} sx={{ display: { xs: 'inline-flex', sm: 'none' }, ...primaryActionButtonSx }}>
                     <AddRounded />
                   </IconButton>
@@ -513,7 +513,7 @@ export function ComptabiliteView() {
                   onClick={openCreateDialog}
                   sx={{ ...primaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }}
                 >
-                  Nouvelle ecriture
+                  Nouvelle écriture
                 </Button>
               </>
             )}
@@ -587,8 +587,8 @@ export function ComptabiliteView() {
               onChange={(event) => setFilterType(event.target.value as 'all' | ComptabiliteType)}
               sx={{ minWidth: { xs: '100%', md: 220 } }}
             >
-              <MenuItem value="all">Toutes les ecritures</MenuItem>
-              <MenuItem value="entree">Entrees seulement</MenuItem>
+              <MenuItem value="all">Toutes les écritures</MenuItem>
+              <MenuItem value="entree">Entrées seulement</MenuItem>
               <MenuItem value="sortie">Sorties seulement</MenuItem>
             </TextField>
           </Stack>
@@ -683,7 +683,7 @@ export function ComptabiliteView() {
 
             {!loadingComptabilite && filteredItems.length === 0 && (
               <Card sx={{ p: 4, borderRadius: 3, textAlign: 'center' }}>
-                <Typography variant="h6">Aucune ecriture pour le moment</Typography>
+                <Typography variant="h6">Aucune écriture pour le moment</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
                   Commence avec une recette, une depense ou une note de tresorerie.
                 </Typography>
@@ -700,7 +700,7 @@ export function ComptabiliteView() {
                   <TableCell>Date</TableCell>
                   <TableCell>Libelle</TableCell>
                   <TableCell>Type</TableCell>
-                  <TableCell align="right">Entree</TableCell>
+                  <TableCell align="right">Entrée</TableCell>
                   <TableCell align="right">Sortie</TableCell>
                   <TableCell>Observation</TableCell>
                   {canManageComptabilite && <TableCell align="right">Actions</TableCell>}
@@ -756,9 +756,9 @@ export function ComptabiliteView() {
                   <TableRow>
                     <TableCell colSpan={7}>
                       <Stack spacing={1} alignItems="center" sx={{ py: 6 }}>
-                        <Typography variant="h6">Aucune ecriture pour le moment</Typography>
+                        <Typography variant="h6">Aucune écriture pour le moment</Typography>
                         <Typography variant="body2" color="text.secondary">
-                          Commence avec une recette, une depense ou une note de tresorerie.
+                          Commence avec une recette, une dépense ou une note de tresorerie.
                         </Typography>
                       </Stack>
                     </TableCell>
@@ -775,7 +775,7 @@ export function ComptabiliteView() {
               <Box>
                 <Typography variant="h6">Ecritures supprimees</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Archive comptable reservee au superadmin. Les lignes supprimees restent consultables ici avec leur trace.
+                  Archive comptable reservee au superadmin. Les lignes supprimées restent consultables ici avec leur trace.
                 </Typography>
               </Box>
 
@@ -839,9 +839,9 @@ export function ComptabiliteView() {
 
                   {!loadingDeletedComptabilite && deletedItems.length === 0 && (
                     <Card variant="outlined" sx={{ p: 3, borderRadius: 3, textAlign: 'center' }}>
-                      <Typography variant="subtitle1">Aucune ecriture archivee</Typography>
+                      <Typography variant="subtitle1">Aucune écriture archivee</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                        Rien a controler pour le moment dans la corbeille comptable.
+                        Rien à controler pour le moment dans la corbeille comptable.
                       </Typography>
                     </Card>
                   )}
@@ -857,7 +857,7 @@ export function ComptabiliteView() {
                       <TableCell>Type</TableCell>
                       <TableCell align="right">Montant</TableCell>
                       <TableCell>Supprime le</TableCell>
-                      <TableCell>Supprime par</TableCell>
+                      <TableCell>Supprimé par</TableCell>
                       <TableCell>Motif</TableCell>
                       {canManageComptabilite && <TableCell align="right">Actions</TableCell>}
                     </TableRow>
@@ -905,9 +905,9 @@ export function ComptabiliteView() {
                       <TableRow>
                         <TableCell colSpan={canManageComptabilite ? 8 : 7}>
                           <Stack spacing={1} alignItems="center" sx={{ py: 4 }}>
-                            <Typography variant="subtitle1">Aucune ecriture archivee</Typography>
+                            <Typography variant="subtitle1">Aucune écriture archivée</Typography>
                             <Typography variant="body2" color="text.secondary">
-                              Rien a controler pour le moment dans la corbeille comptable.
+                              Rien à controler pour le moment dans la corbeille comptable.
                             </Typography>
                           </Stack>
                         </TableCell>
@@ -922,7 +922,7 @@ export function ComptabiliteView() {
       </Stack>
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} fullScreen={isMobile} fullWidth maxWidth="md">
-        <DialogTitle>{currentItem.idComptabilite ? 'Modifier une ecriture' : 'Nouvelle ecriture'}</DialogTitle>
+        <DialogTitle>{currentItem.idComptabilite ? 'Modifier une écriture' : 'Nouvelle écriture'}</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} sx={{ pt: 0.5 }}>
             <Grid item xs={12} md={6}>
@@ -988,8 +988,8 @@ export function ComptabiliteView() {
           setItemToDelete(null);
         }}
         onConfirm={handleDelete}
-        title="Archiver cette ecriture"
-        message="Cette ecriture disparaitra de la liste active, mais restera conservee dans l'archive comptable visible par le superadmin."
+        title="Archiver cette écriture"
+        message="Cette écriture disparaitra de la liste active, mais restera conservée pour superadmin."
         confirmText="Archiver"
       />
 
@@ -1000,8 +1000,8 @@ export function ComptabiliteView() {
           setItemToRestore(null);
         }}
         onConfirm={handleRestore}
-        title="Restaurer cette ecriture"
-        message="Cette ecriture va revenir dans la liste active de la comptabilite."
+        title="Restaurer cette écriture"
+        message="Cette écriture va revenir dans la liste active de la comptabilite."
         confirmText="Restaurer"
       />
 
@@ -1012,8 +1012,8 @@ export function ComptabiliteView() {
           setItemToDeletePermanently(null);
         }}
         onConfirm={handlePermanentDelete}
-        title="Supprimer definitivement cette ecriture"
-        message="Cette suppression est irreversible. L'ecriture sera retiree meme de l'archive comptable."
+        title="Supprimer definitivement cette écriture"
+        message="Cette suppression est irréversible. L'écriture sera retirée même de l'archive comptable."
         confirmText="Supprimer definitivement"
       />
     </DashboardContent>

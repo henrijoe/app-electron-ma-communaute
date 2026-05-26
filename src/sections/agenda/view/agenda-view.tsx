@@ -79,6 +79,18 @@ const shortDateWithYearFormatter = new Intl.DateTimeFormat('fr-FR', {
 
 const eventTypes = ['Culte', 'Rendez-vous', 'Mariage', 'Bapteme', 'Seminaire', 'Repetition', 'Visite', 'Autre'];
 const eventStatus = ['Programme', 'Confirme', 'Reporte', 'Annule'];
+const eventTypeLabels: Record<string, string> = {
+  Bapteme: 'Baptême',
+  Seminaire: 'Séminaire',
+  Repetition: 'Répétition',
+  Evenement: 'Événement',
+};
+const eventStatusLabels: Record<string, string> = {
+  Programme: 'Programmé',
+  Confirme: 'Confirmé',
+  Reporte: 'Reporté',
+  Annule: 'Annulé',
+};
 const typeColorMap: Record<string, string> = {
   Culte: '#0ea5e9',
   'Rendez-vous': '#8b5cf6',
@@ -89,6 +101,10 @@ const typeColorMap: Record<string, string> = {
   Visite: '#6366f1',
   Autre: '#64748b',
 };
+const getEventTypeLabel = (value?: string | null): string =>
+  eventTypeLabels[String(value || '')] || value || 'Événement';
+const getEventStatusLabel = (value?: string | null): string =>
+  eventStatusLabels[String(value || '')] || value || 'Programmé';
 const colorOptions = [
   { label: 'Bleu ciel', value: '#0ea5e9' },
   { label: 'Violet', value: '#8b5cf6' },
@@ -228,22 +244,22 @@ const EventCard = ({ event, compact = false, canManage = true, onDelete, onEdit 
   return (
     <Card
       sx={{
-        p: compact ? 1.5 : 2,
+        p: compact ? 2 : 2.25,
         borderRadius: 3,
         borderLeft: `4px solid ${eventColor}`,
       }}
     >
       <Stack direction="row" justifyContent="space-between" spacing={1}>
-        <Box>
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Stack direction="row" spacing={1} rowGap={0.75} alignItems="center" flexWrap="wrap">
             <Typography variant="subtitle2">{event.titreAgenda}</Typography>
             {reminderLabel && <Chip size="small" color={reminderLabel === "Aujourd'hui" ? 'warning' : 'info'} label={reminderLabel} />}
-            <Chip size="small" label={event.typeAgenda || 'Evenement'} sx={{ bgcolor: alpha(eventColor, 0.14), color: eventColor }} />
+            <Chip size="small" label={getEventTypeLabel(event.typeAgenda)} sx={{ bgcolor: alpha(eventColor, 0.14), color: eventColor }} />
           </Stack>
-          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
+          <Stack direction="row" spacing={1} rowGap={0.75} flexWrap="wrap" sx={{ mt: 1.25 }}>
             <Chip size="small" icon={<ScheduleRounded />} label={`${event.heureDebutAgenda || '--:--'}${event.heureFinAgenda ? ` - ${event.heureFinAgenda}` : ''}`} />
-            <Chip size="small" icon={<PlaceRounded />} label={event.lieuAgenda || 'Lieu non precise'} />
-            <Chip size="small" label={event.statutAgenda || 'Programme'} />
+            <Chip size="small" icon={<PlaceRounded />} label={event.lieuAgenda || 'Lieu non précisé'} />
+            <Chip size="small" label={getEventStatusLabel(event.statutAgenda)} />
           </Stack>
           {!compact && event.descriptionAgenda && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
@@ -403,7 +419,7 @@ export function AgendaView() {
 
     const reminderMessage = nextReminder.level === 'next-hour'
       ? `${nextReminder.event.titreAgenda} commence dans moins d'une heure.`
-      : `${nextReminder.event.titreAgenda} est programme aujourd'hui.`;
+      : `${nextReminder.event.titreAgenda} est programmé aujourd'hui.`;
 
     showNotificationRef.current(reminderMessage, nextReminder.level === 'next-hour' ? 'warning' : 'info');
 
@@ -464,13 +480,13 @@ export function AgendaView() {
 
       if (response.status === 1) {
         dispatch(upsertAgenda(response.data));
-        showNotificationRef.current(agendaForm.idAgenda ? 'Evenement mis a jour.' : 'Evenement programme avec succes.', 'success');
+        showNotificationRef.current(agendaForm.idAgenda ? 'Événement mis à jour.' : 'Événement programmé avec succès.', 'success');
         setAgendaDialogOpen(false);
         await fetchAgenda();
       }
     } catch (error: any) {
       console.error('Erreur sauvegarde agenda:', error);
-      showNotificationRef.current(error.message || "Impossible d'enregistrer cet evenement", 'error');
+      showNotificationRef.current(error.message || "Impossible d'enregistrer cet événement", 'error');
     } finally {
       setSubmitting(false);
     }
@@ -484,11 +500,11 @@ export function AgendaView() {
     try {
       await apiClient.deleteAgenda(confirmDelete.idAgenda, currentUserId);
       dispatch(removeAgenda(confirmDelete.idAgenda));
-      showNotificationRef.current('Evenement supprime.', 'success');
+      showNotificationRef.current('Événement supprimé.', 'success');
       await fetchAgenda();
     } catch (error: any) {
       console.error('Erreur suppression agenda:', error);
-      showNotificationRef.current(error.message || "Impossible de supprimer cet evenement", 'error');
+      showNotificationRef.current(error.message || "Impossible de supprimer cet événement", 'error');
     } finally {
       setConfirmDelete(null);
     }
@@ -535,7 +551,7 @@ export function AgendaView() {
 
           return (
             <Grid item xs key={dayKey}>
-              <Card onClick={() => setSelectedDate(dayKey)} sx={{ minHeight: 94, borderRadius: 3, p: 1, cursor: 'pointer', bgcolor: isSelected ? alpha('#0ea5e9', 0.10) : 'background.paper', border: '1px solid', borderColor: isSelected ? alpha('#0ea5e9', 0.55) : 'divider', color: isCurrentMonth ? 'text.primary' : 'text.secondary', boxShadow: 'none' }}>
+              <Card onClick={() => setSelectedDate(dayKey)} sx={{ minHeight: 104, borderRadius: 3, p: 1.15, cursor: 'pointer', bgcolor: isSelected ? alpha('#0ea5e9', 0.10) : 'background.paper', border: '1px solid', borderColor: isSelected ? alpha('#0ea5e9', 0.55) : 'divider', color: isCurrentMonth ? 'text.primary' : 'text.secondary', boxShadow: 'none' }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                   <Typography variant="subtitle2">{day.getDate()}</Typography>
                   <Stack direction="row" spacing={0.5} alignItems="center">
@@ -547,7 +563,7 @@ export function AgendaView() {
                   {dayEvents.slice(0, 2).map((event: IAgendaEvent) => {
                     const eventColor = getAgendaTypeColor(event.typeAgenda, event.couleurAgenda);
                     return (
-                      <Box key={event.idAgenda} sx={{ px: 0.85, py: 0.45, borderRadius: 1.5, bgcolor: alpha(eventColor, 0.14), color: eventColor, overflow: 'hidden' }}>
+                      <Box key={event.idAgenda} sx={{ px: 1, py: 0.55, borderRadius: 1.5, bgcolor: alpha(eventColor, 0.14), color: eventColor, overflow: 'hidden' }}>
                         <Typography variant="caption" noWrap>{event.titreAgenda}</Typography>
                       </Box>
                     );
@@ -578,7 +594,7 @@ export function AgendaView() {
               </Stack>
               <Stack spacing={1.5}>
                 {dayEvents.map((event: IAgendaEvent) => <EventCard key={event.idAgenda} event={event} compact canManage={canManageAgenda} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
-                {dayEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun evenement programme.</Typography>}
+                {dayEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun événement programmé.</Typography>}
               </Stack>
             </Card>
           </Grid>
@@ -592,7 +608,7 @@ export function AgendaView() {
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
         <Box>
           <Typography variant="h5" sx={{ textTransform: 'capitalize' }}>{selectedDateLabel}</Typography>
-          <Typography variant="body2" color="text.secondary">{getReminderLabel(selectedDate) || 'Jour selectionne'}</Typography>
+          <Typography variant="body2" color="text.secondary">{getReminderLabel(selectedDate) || 'Jour sélectionné'}</Typography>
         </Box>
         {canManageAgenda && (
           <>
@@ -607,7 +623,7 @@ export function AgendaView() {
       </Stack>
       <Stack spacing={2}>
         {selectedDateEvents.map((event: IAgendaEvent) => <EventCard key={event.idAgenda} event={event} canManage={canManageAgenda} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
-        {selectedDateEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun evenement programme pour cette journee.</Typography>}
+        {selectedDateEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun événement programmé pour cette journée.</Typography>}
       </Stack>
     </Card>
   );
@@ -617,13 +633,13 @@ export function AgendaView() {
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
         <Box>
           <Typography variant="h5">Vue liste</Typography>
-          <Typography variant="body2" color="text.secondary">Tous les evenements de la periode selectionnee, classes par ordre chronologique.</Typography>
+          <Typography variant="body2" color="text.secondary">Tous les événements de la période sélectionnée, classés par ordre chronologique.</Typography>
         </Box>
-        <Chip label={`${listViewEvents.length} evenement(s)`} sx={{ bgcolor: alpha('#0f172a', 0.08), color: 'text.primary' }} />
+        <Chip label={`${listViewEvents.length} événement(s)`} sx={{ bgcolor: alpha('#0f172a', 0.08), color: 'text.primary' }} />
       </Stack>
       <Stack spacing={2}>
         {listViewEvents.map((event: IAgendaEvent) => <EventCard key={event.idAgenda} event={event} canManage={canManageAgenda} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
-        {listViewEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun evenement a afficher dans cette periode.</Typography>}
+        {listViewEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun événement à afficher dans cette période.</Typography>}
       </Stack>
     </Card>
   );
@@ -631,11 +647,11 @@ export function AgendaView() {
   return (
     <DashboardContent maxWidth="xl">
       <NotificationComponent />
-      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 330, sm: 560, lg: 1180 }, mx: 'auto' }}>
+      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 330, sm: 560, lg: 1400 }, mx: 'auto' }}>
         <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
           <Box>
             <Typography variant="h3" sx={{ mb: 0.5 }}>Agenda</Typography>
-            <Typography color="text.secondary">Programme les cultes, rendez-vous et evenements importants de la communaute.</Typography>
+            <Typography color="text.secondary">Programme les cultes, rendez-vous et événements importants de la communauté.</Typography>
           </Box>
           <Stack
             direction="row"
@@ -649,12 +665,12 @@ export function AgendaView() {
             <PrintEtatAgenda events={monthEvents} identity={identity} monthLabel={selectedMonthLabel} />
             {canManageAgenda && (
               <>
-                <Tooltip title="Ajouter un evenement">
+                <Tooltip title="Ajouter un événement">
                   <IconButton onClick={() => openCreateDialog()} sx={{ display: { xs: 'inline-flex', sm: 'none' }, ...primaryActionButtonSx }}>
                     <AddRounded />
                   </IconButton>
                 </Tooltip>
-                <Button variant="contained" sx={{ ...primaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog()}>Ajouter un evenement</Button>
+                <Button variant="contained" sx={{ ...primaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog()}>Ajouter un événement</Button>
               </>
             )}
           </Stack>
@@ -664,7 +680,7 @@ export function AgendaView() {
           <Stack spacing={1.5}>
             {reminderEvents.slice(0, 3).map(({ event, level }) => (
               <Alert key={`${level}-${event.idAgenda || event.titreAgenda}`} severity={level === 'next-hour' ? 'warning' : 'info'} sx={{ borderRadius: 3 }}>
-                {level === 'next-hour' ? `${event.titreAgenda} commence dans moins d'une heure.` : `${event.titreAgenda} est programme aujourd'hui.`}
+                {level === 'next-hour' ? `${event.titreAgenda} commence dans moins d'une heure.` : `${event.titreAgenda} est programmé aujourd'hui.`}
               </Alert>
             ))}
           </Stack>
@@ -676,12 +692,12 @@ export function AgendaView() {
               <Card sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 4, ...themedPanelSx }}>
                 {canManageAgenda && (
                   <>
-                    <Tooltip title="Ajouter a cette date">
+                    <Tooltip title="Ajouter à cette date">
                       <IconButton onClick={() => openCreateDialog(selectedDate)} sx={{ display: { xs: 'inline-flex', sm: 'none' }, mb: 3, ...primaryActionButtonSx }}>
                         <AddRounded />
                       </IconButton>
                     </Tooltip>
-                    <Button variant="contained" sx={{ ...primaryActionButtonSx, mb: 3, display: { xs: 'none', sm: 'inline-flex' }, width: { lg: 'fit-content' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter a cette date</Button>
+                    <Button variant="contained" sx={{ ...primaryActionButtonSx, mb: 3, display: { xs: 'none', sm: 'inline-flex' }, width: { lg: 'fit-content' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog(selectedDate)}>Ajouter à cette date</Button>
                   </>
                 )}
                 <Typography variant="h6" sx={{ mb: 2 }}>Prochains rendez-vous</Typography>
@@ -689,31 +705,33 @@ export function AgendaView() {
                   {upcomingEvents.map((item: IAgendaEvent) => {
                     const itemColor = getAgendaTypeColor(item.typeAgenda, item.couleurAgenda);
                     return (
-                      <Card key={item.idAgenda} sx={{ p: 2, borderRadius: 3, ...themedPanelSx, borderColor: alpha(itemColor, 0.28) }}>
+                      <Card key={item.idAgenda} sx={{ p: 2.25, minHeight: 116, borderRadius: 3, ...themedPanelSx, borderColor: alpha(itemColor, 0.28) }}>
                         <Stack direction="row" justifyContent="space-between" spacing={1}>
-                          <Box>
-                            <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Stack direction="row" spacing={0.75} rowGap={0.75} alignItems="center" flexWrap="wrap">
                               <Typography variant="subtitle2">{item.titreAgenda}</Typography>
                               {getReminderLabel(item.dateAgenda || '') && <Chip size="small" color={getReminderLabel(item.dateAgenda || '') === "Aujourd'hui" ? 'warning' : 'info'} label={getReminderLabel(item.dateAgenda || '')} />}
-                              <Chip size="small" label={item.typeAgenda || 'Evenement'} sx={{ bgcolor: alpha(itemColor, 0.18), color: itemColor }} />
+                              <Chip size="small" label={getEventTypeLabel(item.typeAgenda)} sx={{ bgcolor: alpha(itemColor, 0.18), color: itemColor }} />
                             </Stack>
-                            <Typography variant="caption" color="text.secondary">{formatDisplayDate(item.dateAgenda)} {item.heureDebutAgenda ? `- ${item.heureDebutAgenda}` : ''}</Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                              {formatDisplayDate(item.dateAgenda)} {item.heureDebutAgenda ? `- ${item.heureDebutAgenda}` : ''}
+                            </Typography>
                           </Box>
                           {canManageAgenda && <IconButton size="small" onClick={() => openEditDialog(item)}><EditRounded fontSize="small" /></IconButton>}
                         </Stack>
                       </Card>
                     );
                   })}
-                  {upcomingEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun evenement programme pour le moment.</Typography>}
+                  {upcomingEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun événement programmé pour le moment.</Typography>}
                 </Stack>
               </Card>
 
               <Card sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 4 }}>
-                <Typography variant="h6" sx={{ mb: 1 }}>Jour selectionne</Typography>
+                <Typography variant="h6" sx={{ mb: 1 }}>Jour sélectionné</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{selectedDateLabel}</Typography>
                 <Stack spacing={2}>
                   {selectedDateEvents.map((item: IAgendaEvent) => <EventCard key={item.idAgenda} event={item} compact canManage={canManageAgenda} onEdit={openEditDialog} onDelete={setConfirmDelete} />)}
-                  {selectedDateEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun evenement a cette date.</Typography>}
+                  {selectedDateEvents.length === 0 && <Typography variant="body2" color="text.secondary">Aucun événement à cette date.</Typography>}
                 </Stack>
               </Card>
             </Stack>
@@ -750,21 +768,21 @@ export function AgendaView() {
       </Stack>
 
       <Dialog open={agendaDialogOpen} onClose={() => setAgendaDialogOpen(false)} fullScreen={isMobile} fullWidth maxWidth="sm" PaperProps={{ sx: { m: { xs: 0, sm: 2 }, borderRadius: { xs: 0, sm: 3 } } }}> 
-        <DialogTitle>{agendaForm.idAgenda ? 'Modifier un evenement' : 'Programmer un evenement'}</DialogTitle>
+        <DialogTitle>{agendaForm.idAgenda ? 'Modifier un événement' : 'Programmer un événement'}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 1 }}>
             <TextField label="Titre" value={agendaForm.titreAgenda} onChange={(event) => setAgendaForm((previous) => ({ ...previous, titreAgenda: event.target.value }))} fullWidth />
             <TextField select label="Type" value={agendaForm.typeAgenda} onChange={(event) => setAgendaForm((previous) => ({ ...previous, typeAgenda: event.target.value, couleurAgenda: getAgendaTypeColor(event.target.value) }))} fullWidth>
-              {eventTypes.map((option: string) => <MenuItem key={option} value={option}>{option}</MenuItem>)}
+              {eventTypes.map((option: string) => <MenuItem key={option} value={option}>{getEventTypeLabel(option)}</MenuItem>)}
             </TextField>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField label="Date" type="date" value={agendaForm.dateAgenda || ''} onChange={(event) => setAgendaForm((previous) => ({ ...previous, dateAgenda: event.target.value }))} fullWidth InputLabelProps={{ shrink: true }} />
-              <TextField label="Heure debut" type="time" value={agendaForm.heureDebutAgenda} onChange={(event) => setAgendaForm((previous) => ({ ...previous, heureDebutAgenda: event.target.value }))} fullWidth InputLabelProps={{ shrink: true }} />
+              <TextField label="Heure début" type="time" value={agendaForm.heureDebutAgenda} onChange={(event) => setAgendaForm((previous) => ({ ...previous, heureDebutAgenda: event.target.value }))} fullWidth InputLabelProps={{ shrink: true }} />
               <TextField label="Heure fin" type="time" value={agendaForm.heureFinAgenda} onChange={(event) => setAgendaForm((previous) => ({ ...previous, heureFinAgenda: event.target.value }))} fullWidth InputLabelProps={{ shrink: true }} />
             </Stack>
             <TextField label="Lieu" value={agendaForm.lieuAgenda} onChange={(event) => setAgendaForm((previous) => ({ ...previous, lieuAgenda: event.target.value }))} fullWidth />
             <TextField select label="Statut" value={agendaForm.statutAgenda} onChange={(event) => setAgendaForm((previous) => ({ ...previous, statutAgenda: event.target.value }))} fullWidth>
-              {eventStatus.map((option: string) => <MenuItem key={option} value={option}>{option}</MenuItem>)}
+              {eventStatus.map((option: string) => <MenuItem key={option} value={option}>{getEventStatusLabel(option)}</MenuItem>)}
             </TextField>
             <TextField select label="Couleur" value={agendaForm.couleurAgenda} onChange={(event) => setAgendaForm((previous) => ({ ...previous, couleurAgenda: event.target.value }))} fullWidth>
               {agendaForm.couleurAgenda
@@ -794,7 +812,7 @@ export function AgendaView() {
         </DialogActions>
       </Dialog>
 
-      <ConfirmDialog open={Boolean(confirmDelete)} title="Supprimer cet evenement" message={`L'evenement "${confirmDelete?.titreAgenda || ''}" sera retire de l'agenda.`} confirmText="Supprimer" onConfirm={handleDeleteAgenda} onClose={() => setConfirmDelete(null)} />
+      <ConfirmDialog open={Boolean(confirmDelete)} title="Supprimer cet événement" message={`L'événement "${confirmDelete?.titreAgenda || ''}" sera retiré de l'agenda.`} confirmText="Supprimer" onConfirm={handleDeleteAgenda} onClose={() => setConfirmDelete(null)} />
     </DashboardContent>
   );
 }

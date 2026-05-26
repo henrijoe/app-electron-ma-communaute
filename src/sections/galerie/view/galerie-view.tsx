@@ -86,6 +86,17 @@ const eventTypeOptions = [
   'Anniversaire',
 ];
 
+const eventTypeLabels: Record<string, string> = {
+  'Action de grace': 'Action de grâce',
+  Bapteme: 'Baptême',
+  Seminaire: 'Séminaire',
+  'Culte special': 'Culte spécial',
+  Evenement: 'Événement',
+};
+
+const getEventTypeLabel = (value?: string | null): string =>
+  eventTypeLabels[String(value || '')] || value || 'Événement';
+
 const emptyEventForm: EventFormState = {
   dateEvenement: '',
   descriptionGalerie: '',
@@ -95,7 +106,7 @@ const emptyEventForm: EventFormState = {
 };
 
 const sortOptions: Array<{ label: string; value: EventSortOption }> = [
-  { label: 'Date recente', value: 'date-desc' },
+  { label: 'Date récente', value: 'date-desc' },
   { label: 'Date ancienne', value: 'date-asc' },
   { label: 'Type A-Z', value: 'type-asc' },
   { label: 'Type Z-A', value: 'type-desc' },
@@ -142,7 +153,7 @@ const formatDisplayDate = (value?: string | null): string => {
 };
 
 const buildEventSubtitle = (event: IGalerieEvenement): string => {
-  const parts = [event.typeEvenement, formatDisplayDate(event.dateEvenement), event.lieuEvenement].filter(Boolean);
+  const parts = [getEventTypeLabel(event.typeEvenement), formatDisplayDate(event.dateEvenement), event.lieuEvenement].filter(Boolean);
   return parts.join(' - ');
 };
 
@@ -327,14 +338,14 @@ export function GalerieView() {
     if (!canManageGalerie) return;
 
     if (!currentUserId || !selectedEvent?.idGalerie) {
-      showNotificationRef.current('Selectionne un evenement avant de charger des images.', 'warning');
+      showNotificationRef.current('Sélectionne un événement avant de charger des images.', 'warning');
       return;
     }
 
     const imageFiles = files.filter(isImageFile);
 
     if (imageFiles.length === 0) {
-      showNotificationRef.current('Aucune image valide trouvee dans la selection.', 'warning');
+      showNotificationRef.current('Aucune image valide trouvée dans la sélection.', 'warning');
       return;
     }
 
@@ -362,7 +373,7 @@ export function GalerieView() {
 
       await loadImagesForEvent(selectedEvent);
       await loadGaleries();
-      showNotificationRef.current(`${uploadedCount} image(s) ajoutee(s) a la galerie.`, 'success');
+      showNotificationRef.current(`${uploadedCount} image(s) ajoutée(s) à la galerie.`, 'success');
     } catch (error: any) {
       console.error('Erreur upload galerie:', error);
       showNotificationRef.current(error.message || "Impossible d'ajouter ces images", 'error');
@@ -423,7 +434,7 @@ export function GalerieView() {
     }
 
     if (!eventForm.titreGalerie.trim()) {
-      showNotificationRef.current("Le titre de l'evenement est requis.", 'warning');
+      showNotificationRef.current("Le titre de l'événement est requis.", 'warning');
       return;
     }
 
@@ -452,10 +463,10 @@ export function GalerieView() {
           if (selectedEvent?.idGalerie === eventForm.idGalerie) {
             setSelectedEvent(refreshed);
           }
-          showNotificationRef.current('Evenement mis a jour avec succes.', 'success');
+          showNotificationRef.current('Événement mis à jour avec succès.', 'success');
         } else {
           dispatch(upsertGalerie(response.data));
-          showNotificationRef.current('Evenement ajoute avec succes.', 'success');
+          showNotificationRef.current('Événement ajouté avec succès.', 'success');
         }
 
         setEventDialogOpen(false);
@@ -463,8 +474,8 @@ export function GalerieView() {
         await loadGaleries();
       }
     } catch (error: any) {
-      console.error('Erreur sauvegarde evenement galerie:', error);
-      showNotificationRef.current(error.message || 'Impossible de sauvegarder cet evenement', 'error');
+      console.error('Erreur sauvegarde événement galerie:', error);
+      showNotificationRef.current(error.message || 'Impossible de sauvegarder cet événement', 'error');
     } finally {
       setSubmittingEvent(false);
     }
@@ -481,10 +492,10 @@ export function GalerieView() {
       if (selectedEvent?.idGalerie === confirmDeleteEvent.idGalerie) {
         setSelectedEvent(null);
       }
-      showNotificationRef.current('Evenement supprime avec succes.', 'success');
+      showNotificationRef.current('Événement supprimé avec succès.', 'success');
     } catch (error: any) {
-      console.error('Erreur suppression evenement galerie:', error);
-      showNotificationRef.current(error.message || "Impossible de supprimer cet evenement", 'error');
+      console.error('Erreur suppression événement galerie:', error);
+      showNotificationRef.current(error.message || "Impossible de supprimer cet événement", 'error');
     } finally {
       setConfirmDeleteEvent(null);
     }
@@ -499,7 +510,7 @@ export function GalerieView() {
       await apiClient.deleteGalerieImage(confirmDeleteImage.idGalerieImage, currentUserId);
       await loadImagesForEvent(selectedEvent);
       await loadGaleries();
-      showNotificationRef.current('Image supprimee avec succes.', 'success');
+      showNotificationRef.current('Image supprimée avec succès.', 'success');
       setPreviewImage(null);
       setSlideshowOpen(false);
     } catch (error: any) {
@@ -530,7 +541,7 @@ export function GalerieView() {
         idUtilisateur: currentUserId,
       });
       await loadImagesForEvent(selectedEvent);
-      showNotificationRef.current('Legende mise a jour avec succes.', 'success');
+      showNotificationRef.current('Légende mise à jour avec succès.', 'success');
       setCaptionDialogImage(null);
       setCaptionValue('');
     } catch (error: any) {
@@ -556,7 +567,7 @@ export function GalerieView() {
       setSelectedEvent(nextEvent);
       dispatch(upsertGalerie(nextEvent));
       await loadGaleries();
-      showNotificationRef.current('Couverture mise a jour avec succes.', 'success');
+      showNotificationRef.current('Couverture mise à jour avec succès.', 'success');
     } catch (error: any) {
       console.error('Erreur definition couverture galerie:', error);
       showNotificationRef.current(error.message || 'Impossible de definir cette image comme couverture', 'error');
@@ -624,10 +635,10 @@ export function GalerieView() {
         <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'flex-start', md: 'center' }} justifyContent="space-between" spacing={2}>
           <Box>
             <Typography variant="h3" sx={{ mb: 0.5 }}>
-              Galerie des evenements
+              Galerie des événements
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Organise les photos par evenement avec dossier, date, lieu et navigation type explorateur.
+              Organise les photos par événement avec dossier, date, lieu et navigation type explorateur.
             </Typography>
           </Box>
 
@@ -639,7 +650,7 @@ export function GalerieView() {
             )}
             {canManageGalerie && (
               <Button fullWidth={isMobile} variant="contained" sx={{ ...primaryActionButtonSx, width: { xs: '100%', sm: 'auto' } }} startIcon={<EventRounded />} onClick={handleOpenCreateDialog}>
-                Nouvel evenement
+                Nouvel événement
               </Button>
             )}
           </Stack>
@@ -651,7 +662,7 @@ export function GalerieView() {
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
                 <TextField
                   fullWidth
-                  placeholder="Rechercher un evenement, un lieu ou une date..."
+                  placeholder="Rechercher un événement, un lieu ou une date..."
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   InputProps={{
@@ -749,10 +760,10 @@ export function GalerieView() {
                         <CardContent sx={{ pt: 0 }}>
                           <Typography variant="h6" sx={{ mb: 0.75, fontSize: '1.05rem' }}>{event.titreGalerie}</Typography>
                           <Typography variant="body2" sx={{ color: alpha('#ffffff', 0.7), minHeight: 34, fontSize: '0.88rem' }}>
-                            {buildEventSubtitle(event) || 'Evenement sans details complementaires.'}
+                            {buildEventSubtitle(event) || 'Événement sans détails complémentaires.'}
                           </Typography>
                           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1.5 }}>
-                            <Chip size="small" label={event.typeEvenement || 'Evenement'} sx={{ bgcolor: alpha('#ffffff', 0.12), color: 'common.white' }} />
+                            <Chip size="small" label={getEventTypeLabel(event.typeEvenement)} sx={{ bgcolor: alpha('#ffffff', 0.12), color: 'common.white' }} />
                             <Typography variant="caption" sx={{ color: alpha('#ffffff', 0.64) }}>{event.nombreImages || 0} image(s)</Typography>
                           </Stack>
                         </CardContent>
@@ -766,8 +777,8 @@ export function GalerieView() {
             {!loadingGalerie && filteredEvents.length === 0 && (
               <Card sx={{ p: 6, borderRadius: 4, textAlign: 'center' }}>
                 <PhotoLibraryRounded sx={{ fontSize: 56, color: 'text.disabled', mb: 1 }} />
-                <Typography variant="h5" sx={{ mb: 1 }}>Aucun evenement trouve</Typography>
-                <Typography color="text.secondary">Cree un premier dossier evenement pour commencer a archiver tes photos.</Typography>
+                <Typography variant="h5" sx={{ mb: 1 }}>Aucun événement trouvé</Typography>
+                <Typography color="text.secondary">Crée un premier dossier événement pour commencer à archiver tes photos.</Typography>
               </Card>
             )}
           </>
@@ -791,7 +802,7 @@ export function GalerieView() {
                       <Box>
                         <Typography variant="h4">{selectedEvent.titreGalerie}</Typography>
                         <Typography variant="body1" color="text.secondary" sx={{ mt: 0.75 }}>
-                          {selectedEvent.descriptionGalerie || 'Album evenementiel de la communaute.'}
+                          {selectedEvent.descriptionGalerie || 'Album événementiel de la communauté.'}
                         </Typography>
                       </Box>
 
@@ -815,9 +826,9 @@ export function GalerieView() {
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} flexWrap="wrap">
                       <Chip icon={<ImageRounded />} label={`${galerieImages.length} image(s)`} />
-                      <Chip icon={<CalendarMonthRounded />} label={formatDisplayDate(selectedEvent.dateEvenement) || 'Date non precisee'} />
-                      <Chip icon={<LocationOnRounded />} label={selectedEvent.lieuEvenement || 'Lieu non precise'} />
-                      <Chip icon={<MoreVertRounded />} label={selectedEvent.typeEvenement || 'Evenement'} />
+                      <Chip icon={<CalendarMonthRounded />} label={formatDisplayDate(selectedEvent.dateEvenement) || 'Date non précisée'} />
+                      <Chip icon={<LocationOnRounded />} label={selectedEvent.lieuEvenement || 'Lieu non précisé'} />
+                      <Chip icon={<MoreVertRounded />} label={getEventTypeLabel(selectedEvent.typeEvenement)} />
                     </Stack>
 
                     <Box
@@ -893,7 +904,7 @@ export function GalerieView() {
 
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1.5}>
               <Box>
-                <Typography variant="h5">Photos de l&apos;evenement</Typography>
+                <Typography variant="h5">Photos de l&apos;événement</Typography>
                 <Typography variant="body2" color="text.secondary">
                   Ouvre une image pour lancer le slideshow plein ecran et naviguer rapidement.
                 </Typography>
@@ -975,7 +986,7 @@ export function GalerieView() {
               <Card sx={{ p: 6, borderRadius: 4, textAlign: 'center' }}>
                 <ImageRounded sx={{ fontSize: 56, color: 'text.disabled', mb: 1 }} />
                 <Typography variant="h5" sx={{ mb: 1 }}>Ce dossier ne contient pas encore d&apos;image</Typography>
-                <Typography color="text.secondary">Ajoute les photos de cet evenement pour commencer la galerie.</Typography>
+                <Typography color="text.secondary">Ajoute les photos de cet événement pour commencer la galerie.</Typography>
               </Card>
             )}
           </Stack>
@@ -983,13 +994,13 @@ export function GalerieView() {
       </Stack>
 
       <Dialog open={eventDialogOpen} onClose={() => setEventDialogOpen(false)} fullScreen={isMobile} fullWidth maxWidth="sm" PaperProps={{ sx: { m: { xs: 0, sm: 2 }, borderRadius: { xs: 0, sm: 3 } } }}>
-        <DialogTitle>{eventForm.idGalerie ? "Modifier l'evenement" : 'Nouvel evenement'}</DialogTitle>
+        <DialogTitle>{eventForm.idGalerie ? "Modifier l'événement" : 'Nouvel événement'}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField label="Type d'evenement" value={eventForm.typeEvenement} onChange={(event) => setEventForm((previous) => ({ ...previous, typeEvenement: event.target.value }))} select fullWidth>
-              {eventTypeOptions.map((option) => <MenuItem key={option} value={option}>{option}</MenuItem>)}
+            <TextField label="Type d'événement" value={eventForm.typeEvenement} onChange={(event) => setEventForm((previous) => ({ ...previous, typeEvenement: event.target.value }))} select fullWidth>
+              {eventTypeOptions.map((option) => <MenuItem key={option} value={option}>{getEventTypeLabel(option)}</MenuItem>)}
             </TextField>
-            <TextField label="Titre de l'evenement" value={eventForm.titreGalerie} onChange={(event) => setEventForm((previous) => ({ ...previous, titreGalerie: event.target.value }))} fullWidth />
+            <TextField label="Titre de l'événement" value={eventForm.titreGalerie} onChange={(event) => setEventForm((previous) => ({ ...previous, titreGalerie: event.target.value }))} fullWidth />
             <TextField label="Date" type="date" value={eventForm.dateEvenement} onChange={(event) => setEventForm((previous) => ({ ...previous, dateEvenement: event.target.value }))} fullWidth InputLabelProps={{ shrink: true }} />
             <TextField label="Lieu" value={eventForm.lieuEvenement} onChange={(event) => setEventForm((previous) => ({ ...previous, lieuEvenement: event.target.value }))} fullWidth />
             <TextField label="Description" value={eventForm.descriptionGalerie} onChange={(event) => setEventForm((previous) => ({ ...previous, descriptionGalerie: event.target.value }))} fullWidth minRows={3} multiline />
@@ -1112,7 +1123,7 @@ export function GalerieView() {
                       {currentPreviewImage.legendeImage || currentPreviewImage.nomFichier}
                     </Typography>
                     <Typography variant="body2" sx={{ color: alpha('#ffffff', 0.68), textAlign: 'center' }}>
-                      {selectedEvent?.typeEvenement || 'Evenement'} - {formatDisplayDate(selectedEvent?.dateEvenement) || 'Date non precisee'} - {selectedEvent?.lieuEvenement || 'Lieu non precise'}
+                      {getEventTypeLabel(selectedEvent?.typeEvenement)} - {formatDisplayDate(selectedEvent?.dateEvenement) || 'Date non précisée'} - {selectedEvent?.lieuEvenement || 'Lieu non précisé'}
                     </Typography>
                   </Stack>
                 </>
@@ -1137,8 +1148,8 @@ export function GalerieView() {
         </Box>
       </Dialog>
 
-      <ConfirmDialog open={Boolean(confirmDeleteEvent)} title="Supprimer cet evenement" message={`Les photos du dossier "${confirmDeleteEvent?.titreGalerie || ''}" seront aussi supprimees.`} confirmText="Supprimer" onConfirm={handleDeleteEvent} onClose={() => setConfirmDeleteEvent(null)} />
-      <ConfirmDialog open={Boolean(confirmDeleteImage)} title="Supprimer cette image" message="Cette image sera retiree du dossier evenement." confirmText="Supprimer" onConfirm={handleDeleteImage} onClose={() => setConfirmDeleteImage(null)} />
+      <ConfirmDialog open={Boolean(confirmDeleteEvent)} title="Supprimer cet événement" message={`Les photos du dossier "${confirmDeleteEvent?.titreGalerie || ''}" seront aussi supprimées.`} confirmText="Supprimer" onConfirm={handleDeleteEvent} onClose={() => setConfirmDeleteEvent(null)} />
+      <ConfirmDialog open={Boolean(confirmDeleteImage)} title="Supprimer cette image" message="Cette image sera retirée du dossier événement." confirmText="Supprimer" onConfirm={handleDeleteImage} onClose={() => setConfirmDeleteImage(null)} />
     </DashboardContent>
   );
 }

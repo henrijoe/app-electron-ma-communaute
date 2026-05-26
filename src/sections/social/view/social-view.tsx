@@ -511,7 +511,7 @@ export function SocialView() {
 
   return (
     <DashboardContent maxWidth="xl">
-      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 320, sm: 560, lg: 1180 }, mx: 'auto' }}>
+      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 320, sm: 560, lg: 1400 }, mx: 'auto' }}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
           justifyContent="space-between"

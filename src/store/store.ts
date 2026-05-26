@@ -12,6 +12,7 @@ import CelluleReducer, { type ICelluleSlice } from './celluleSlice';
 import CulteReducer, { type ICulteSlice } from './culteSlice';
 import DecesReducer, { type IDecesSlice } from './decesSlice';
 import DepartementReducer, { type IDepartementSlice } from './departementSlice';
+import FamilleJeunesseReducer, { type IFamilleJeunesseSlice } from './familleJeunesseSlice';
 import GalerieReducer, { type IGalerieSlice } from './galerieSlice';
 import GroupeReducer, { type IGroupeSlice } from './groupeSlice';
 import MariageReducer, { type IMariageSlice } from './mariageSlice';
@@ -24,6 +25,7 @@ export interface IReduxState {
   membre: IMembreSlice;
   cellule: ICelluleSlice;
   departement: IDepartementSlice;
+  familleJeunesse: IFamilleJeunesseSlice;
   groupe: IGroupeSlice;
   galerie: IGalerieSlice;
   agenda: IAgendaSlice;
@@ -41,6 +43,7 @@ const reducers = combineReducers({
   membre: MembreReducer,
   cellule: CelluleReducer,
   departement: DepartementReducer,
+  familleJeunesse: FamilleJeunesseReducer,
   groupe: GroupeReducer,
   galerie: GalerieReducer,
   agenda: AgendaReducer,
@@ -64,7 +67,7 @@ const persistConfig = {
   version: 1,
   storage,
   // On persiste aussi l'authentification pour conserver le profil et les infos d'eglise.
-  whitelist: ['application', 'authentification', 'membre', 'cellule', 'departement', 'groupe', 'galerie', 'agenda', 'comptabilite', 'culte', 'mariage', 'naissance', 'deces'] ,
+  whitelist: ['application', 'authentification', 'membre', 'cellule', 'departement', 'familleJeunesse', 'groupe', 'galerie', 'agenda', 'comptabilite', 'culte', 'mariage', 'naissance', 'deces'] ,
   transforms: [sensitiveDataTransform],
   timeout: 1000,
 };
