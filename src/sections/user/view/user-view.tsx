@@ -88,6 +88,7 @@ export function UserView() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const { listMembre, filterMembre, titreDocument, listResponsabilite } = useSelector((state: any) => state.membre);
+  console.log("🚀 ~ UserView ~ listMembre:", listMembre)
   const listDepartement = useSelector((state: any) => state.departement.listDepartement);
   const listCellule = useSelector((state: any) => state.cellule.listCellule);
   const listGroupe = useSelector((state: any) => state.groupe.listGroupe);
@@ -866,7 +867,7 @@ export function UserView() {
         >
           {!isDesktopApp && <PrintEtatGlobal />}
 
-          {canManageUsers && (
+          {!isDesktopApp && canManageUsers && (
             <>
               <Tooltip title="Importer membre">
                 <span>
@@ -920,9 +921,9 @@ export function UserView() {
             </>
           )}
 
-          {canManageUsers && (
+          {!isDesktopApp && canManageUsers && (
             <>
-              <Tooltip title={loading ? 'Chargement...' : 'Ajouter membre'}>
+              <Tooltip title="Ajouter membre">
                 <span>
                   <IconButton
                     color="primary"
@@ -942,7 +943,7 @@ export function UserView() {
                 disabled={loading}
                 sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
               >
-                {loading ? 'Chargement...' : 'Ajouter membre'}
+                Ajouter membre
               </Button>
             </>
           )}

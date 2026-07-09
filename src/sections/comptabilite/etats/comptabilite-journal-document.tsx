@@ -36,38 +36,25 @@ export function ComptabiliteJournalDocument({ items, search, filterLabel }: Comp
   return (
     <PrintDocumentLayout
       title="Journal de caisse"
-      subtitle={metaLabel}
-      countLabel="Total ecritures"
-      countValue={items.length}
       variant="plain"
       showDocumentMeta={false}
     >
-      <ComptabilitePrintHero
-        title="Journal general des ecritures"
-        description="Ce document presente toutes les ecritures comptables visibles selon les filtres courants, avec les recettes, les depenses et la situation nette de tresorerie."
-        chips={[
-          `${items.length} ecriture(s)`,
-          filterLabel,
-          search.trim() ? 'Recherche active' : 'Sans recherche textuelle',
-        ]}
-        variant="plain"
-      />
 
       <ComptabiliteSummaryCards totals={totals} variant="plain" />
 
       {items.length === 0 ? (
         <PrintEmptyState
           title="Aucune ecriture"
-          message="Aucune ecriture comptable ne correspond aux criteres actuels."
+          message="Aucune écriture comptable ne correspond aux critères actuels."
         />
       ) : (
         <PrintTable minWidth={900}>
           <TableHead>
             <TableRow>
               <TableCell sx={{ width: 110 }}>Date</TableCell>
-              <TableCell sx={{ width: 170 }}>Libelle</TableCell>
+              <TableCell sx={{ width: 170 }}>Libellé</TableCell>
               <TableCell sx={{ width: 90 }}>Type</TableCell>
-              <TableCell sx={{ width: 120 }} align="right">Entree</TableCell>
+              <TableCell sx={{ width: 120 }} align="right">Entrée</TableCell>
               <TableCell sx={{ width: 120 }} align="right">Sortie</TableCell>
               <TableCell sx={{ width: 130 }} align="right">Impact net</TableCell>
               <TableCell sx={{ width: 240 }}>Observation</TableCell>
@@ -106,11 +93,7 @@ export function ComptabiliteJournalDocument({ items, search, filterLabel }: Comp
         </PrintTable>
       )}
 
-      <Box className="print-block-avoid-break" sx={{ mt: 2.5 }}>
-        <Typography variant="caption" sx={{ color: '#5c6f82' }}>
-          Le journal de caisse reprend automatiquement les informations de l&apos;eglise configurees dans les parametres et les donnees comptables actuellement visibles dans l&apos;application.
-        </Typography>
-      </Box>
+
     </PrintDocumentLayout>
   );
 }

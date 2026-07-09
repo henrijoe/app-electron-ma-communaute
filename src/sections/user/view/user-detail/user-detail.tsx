@@ -37,6 +37,7 @@ import {
 } from '@mui/icons-material';
 
 import { DashboardContent } from 'src/layouts/dashboard';
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 
 import { getPhotoUrl } from '../../utils';
 import { dataResponsabilite } from '../../../../store/membreSlice';
@@ -117,6 +118,7 @@ export function MembreDetailView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
+  const isDesktopApp = isDesktopAppRuntime();
   const profilePrintRef = useRef<HTMLDivElement>(null);
 
   // Le detail se base sur les listes deja chargees dans le store.
@@ -215,15 +217,17 @@ export function MembreDetailView() {
             Retour
           </Button>
 
-          <ReactToPrint
-            documentTitle={`fiche-personnelle-${fullName.replace(/\s+/g, '-').toLowerCase()}`}
-            trigger={() => (
-              <Button variant="contained" startIcon={<PrintIcon />}>
-                Fiche imprimable
-              </Button>
-            )}
-            content={() => profilePrintRef.current}
-          />
+          {!isDesktopApp && (
+            <ReactToPrint
+              documentTitle={`fiche-personnelle-${fullName.replace(/\s+/g, '-').toLowerCase()}`}
+              trigger={() => (
+                <Button variant="contained" startIcon={<PrintIcon />}>
+                  Fiche imprimable
+                </Button>
+              )}
+              content={() => profilePrintRef.current}
+            />
+          )}
         </Stack>
 
         {/* Hero social avec couverture et avatar superpose. */}
@@ -397,8 +401,6 @@ export function MembreDetailView() {
                 sx={{
                   p: 3,
                   borderRadius: 3,
-                  color: theme.palette.primary.darker,
-                  bgcolor: alpha(theme.palette.info.main, 0.08),
                 }}
               >
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 1.5 }}>

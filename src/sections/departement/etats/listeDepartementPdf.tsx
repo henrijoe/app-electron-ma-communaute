@@ -33,9 +33,6 @@ export const ListeDesDepartements = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       title="Liste des departements"
-      subtitle="Etat imprimable des departements de la communaute avec leurs sigles, slogans et responsables actuels."
-      countLabel="Total departements"
-      countValue={sortedDepartements.length}
     >
       {sortedDepartements.length === 0 ? (
         <PrintEmptyState

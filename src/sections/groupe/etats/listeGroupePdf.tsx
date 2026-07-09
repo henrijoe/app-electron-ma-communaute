@@ -22,9 +22,6 @@ export const ListeDesGroupes = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       title="Liste des groupes"
-      subtitle="Etat imprimable des groupes avec leurs descriptions et responsables." 
-      countLabel="Total groupes"
-      countValue={sortedGroupes.length}
     >
       {sortedGroupes.length === 0 ? (
         <PrintEmptyState title="Aucun groupe trouvé" message="Aucun groupe n'est encore enregistré dans la base locale." />

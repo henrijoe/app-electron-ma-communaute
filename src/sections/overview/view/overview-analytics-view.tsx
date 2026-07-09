@@ -3,15 +3,23 @@ import { useSelector } from 'react-redux';
 
 import Grid from '@mui/material/Unstable_Grid2';
 import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import {
   ApartmentRounded,
   ChurchRounded,
   Diversity3Rounded,
+  FormatQuoteRounded,
   GroupsRounded,
   HomeRounded,
 } from '@mui/icons-material';
 
+import {
+  getDailyVerse,
+  normalizeDashboardVerseMode,
+  type DashboardVerse,
+} from 'src/data/daily-verses';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { apiClient } from 'src/utils/apiClient';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
@@ -38,6 +46,15 @@ const StatIcon = ({ children }: { children: React.ReactNode }) => (
   </Box>
 );
 
+const formatDashboardDate = (date: Date) => {
+  const dayName = new Intl.DateTimeFormat('fr-FR', { weekday: 'long' }).format(date);
+  const monthName = new Intl.DateTimeFormat('fr-FR', { month: 'long' }).format(date);
+  const day = String(date.getDate()).padStart(2, '0');
+  const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+
+  return `${capitalize(dayName)} le ${day} ${capitalize(monthName)} ${date.getFullYear()}`;
+};
+
 export function OverviewAnalyticsView() {
   const [totals, setTotals] = useState({
     membres: 0,
@@ -54,10 +71,39 @@ export function OverviewAnalyticsView() {
   const listGroupe = useSelector((state: any) => state.groupe?.listGroupe || []);
   const appUserConnected = useSelector((state: any) => state.application?.userConnected);
   const authUtilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
+  const sessionUser = useMemo(
+    () => ({ ...authUtilisateurData, ...appUserConnected }),
+    [appUserConnected, authUtilisateurData]
+  );
   const currentUserId =
     Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
+  const dashboardDateLabel = useMemo(() => formatDashboardDate(new Date()), []);
+  const dashboardVerse = useMemo<DashboardVerse | null>(() => {
+    const mode = normalizeDashboardVerseMode(sessionUser?.modeVersetDashboard);
+
+    if (mode === 'disabled') {
+      return null;
+    }
+
+    if (mode === 'custom') {
+      const text = String(sessionUser?.versetDashboardTexte || '').trim();
+      const reference = String(sessionUser?.versetDashboardReference || '').trim();
+
+      if (!text) {
+        return null;
+      }
+
+      return { text, reference };
+    }
+
+    return getDailyVerse();
+  }, [
+    sessionUser?.modeVersetDashboard,
+    sessionUser?.versetDashboardReference,
+    sessionUser?.versetDashboardTexte,
+  ]);
 
   const loadStats = useCallback(async () => {
       try {
@@ -152,11 +198,83 @@ export function OverviewAnalyticsView() {
         Tableau de bord communautaire
       </Typography>
 
-      <Typography sx={{ color: 'text.secondary', mb: { xs: 3, md: 5 } }}>
-        Vue synthetique des membres, de la vie d&apos;eglise et de la structure interne.
-      </Typography>
+
 
       <Grid container spacing={3}>
+         {/* Cette carte affiche le verset du jour ou le verset personnalise, selon la configuration de l'utilisateur. */}
+
+        {dashboardVerse && (
+          <Grid xs={12}>
+            <Card
+              sx={{
+                borderRadius: 2,
+                overflow: 'hidden',
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #111827 0%, #172554 100%)'
+                    : 'linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%)',
+              }}
+            >
+              <CardContent
+                sx={{
+                  display: 'flex',
+                  gap: 2,
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  p: { xs: 2.5, md: 3 },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    display: 'grid',
+                    flexShrink: 0,
+                    placeItems: 'center',
+                    color: 'primary.main',
+                    bgcolor: 'background.paper',
+                  }}
+                >
+                  <FormatQuoteRounded />
+                </Box>
+
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      mb: 0.5,
+                      width: '100%',
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontStyle: 'italic', textAlign: 'right' }}
+                    >
+                      {dashboardDateLabel}
+                    </Typography>
+                  </Box>
+                  <Typography variant="overline" color="text.secondary">
+                    Verset du jour
+                  </Typography>
+                  <Typography variant="h6" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>
+                    {dashboardVerse.text}
+                  </Typography>
+                  {dashboardVerse.reference && (
+                    <Typography variant="subtitle2" color="primary.main" sx={{ mt: 1 }}>
+                      {dashboardVerse.reference}
+                    </Typography>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
+
+
         {/* Ces cartes resument les volumes principaux de la communaute. */}
         <Grid xs={12} sm={6} md={4} lg={2.4}>
           <AnalyticsWidgetSummary

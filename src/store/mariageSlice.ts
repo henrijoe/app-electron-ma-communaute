@@ -12,6 +12,8 @@ export interface IMariageSlice {
   export interface IMariage {
     idMariage: number;
     idUtilisateur: number;
+    idFrereMembre?: number | null;
+    idSoeurMembre?: number | null;
     nomFrereMariage: string;
     nomSoeurMariage: string;
     dateMariage: string|null;
@@ -26,6 +28,8 @@ export interface IMariageSlice {
 export const Mariage:any = {
   idMariage:null,
   idUtilisateur:null,
+  idFrereMembre:null,
+  idSoeurMembre:null,
   nomFrereMariage:"",
   nomSoeurMariage: "",
   dateMariage: null,

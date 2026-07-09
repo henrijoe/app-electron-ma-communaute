@@ -54,16 +54,8 @@ export const ListeDesCultes = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       title="Liste des cultes"
-      subtitle="Etat imprimable des cultes celebres, avec les informations de date, de direction, de participation et de collecte."
-      countLabel="Total cultes"
-      countValue={sortedCultes.length}
     >
-      {sortedCultes.length === 0 ? (
-        <PrintEmptyState
-          title="Aucun culte trouve"
-          message="Aucun culte n'est actuellement enregistre dans la base locale."
-        />
-      ) : (
+
         <PrintTable minWidth={1080}>
           <TableHead>
             <TableRow>
@@ -158,7 +150,6 @@ export const ListeDesCultes = () => {
             ))}
           </TableBody>
         </PrintTable>
-      )}
     </PrintDocumentLayout>
   );
 };

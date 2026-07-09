@@ -82,7 +82,7 @@ export interface IMembreSlice {
   titreDocument: string;
 }
 
-// DonnÃ©es statiques
+// Données statiques
 export const dataBapteme: IDataChoice[] = [
   { value: 1, label: 'Oui' },
   { value: 2, label: 'Non' },

@@ -22,7 +22,7 @@ import TablePagination from '@mui/material/TablePagination';
 import Tooltip from '@mui/material/Tooltip';
 
 import { apiClient } from 'src/utils/apiClient';
-import { canManageModule } from 'src/utils/access-control';
+import { canManageModule, isDesktopAppRuntime } from 'src/utils/access-control';
 import { normalizeForSearch } from 'src/utils/text';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { Iconify } from 'src/components/iconify/iconify';
@@ -62,6 +62,7 @@ export function CelluleView() {
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
   const canManageCellule = canManageModule(appUserConnected || authUtilisateurData, 'cellule');
+  const isDesktopApp = isDesktopAppRuntime();
 
   const [loading, setLoading] = useState(true);
   const [membres, setMembres] = useState<IMembre[]>([]);
@@ -242,6 +243,11 @@ export function CelluleView() {
       return;
     }
 
+    if (!data.lieuCellule?.trim()) {
+      showNotification('Le lieu de la cellule est requis', 'warning');
+      return;
+    }
+
     if (!currentUserId) {
       showNotification('Session expirée : reconnectez-vous', 'warning');
       return;
@@ -250,15 +256,22 @@ export function CelluleView() {
     try {
       setUpdateLoading(true);
       const payload = {
-        ...data,
-        idUtilisateur: currentUserId,
+        nomCellule: data.nomCellule?.trim() || '',
+        lieuCellule: data.lieuCellule?.trim() || '',
         nombreMembreCellule: String(data.nombreMembreCellule || '0'),
+        responsableCellule: data.responsableCellule || '',
+        responsableVisiteCellule: data.responsableVisiteCellule || '',
+        idUtilisateur: currentUserId,
       };
 
       if (isEditMode && data.idCellule) {
-        const response = await apiClient.updateCellule(payload);
+        const updatedPayload = {
+          ...payload,
+          idCellule: data.idCellule,
+        };
+        const response = await apiClient.updateCellule(updatedPayload);
         if (response.status === 1) {
-          dispatch(setDataModifiesCellule(payload));
+          dispatch(setDataModifiesCellule(updatedPayload));
           showNotification('Cellule modifiée avec succés', 'success');
         }
       } else {
@@ -332,8 +345,8 @@ export function CelluleView() {
       >
         <Typography variant="h4" flexGrow={1}>Liste des cellules</Typography>
         <Box display="flex" gap={1.25} alignItems="center" sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-          <PrintEtatGlobal />
-          {canManageCellule && (
+          {!isDesktopApp && <PrintEtatGlobal />}
+          {!isDesktopApp && canManageCellule && (
             <>
               <Tooltip title="Ajouter cellule">
                 <IconButton

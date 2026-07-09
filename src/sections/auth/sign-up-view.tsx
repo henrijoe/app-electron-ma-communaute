@@ -1,33 +1,49 @@
 import { useDispatch } from 'react-redux';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import {
-  AlternateEmailRounded,
+  LockOutlined,
   ChurchRounded,
   HomeWorkOutlined,
-  LockOutlined,
-  PersonOutlineRounded,
-  PhoneIphoneRounded,
   StorefrontRounded,
+  PhoneIphoneRounded,
+  PersonOutlineRounded,
+  AlternateEmailRounded,
 } from '@mui/icons-material';
 
-import { RouterLink } from 'src/routes/components';
 import { useRouter } from 'src/routes/hooks';
+import { RouterLink } from 'src/routes/components';
 
-import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
+import { apiClient, getApiErrorMessage, saveLocalAuthToken } from 'src/utils/apiClient';
+import {
+  type LinkedBrowserContext,
+  captureLinkedBrowserContextFromCurrentUrl,
+} from 'src/utils/browser-link';
 
 import { setUserLoggedIn, setUserConnected } from 'src/store/appSlice';
 import { setConnecter, setUtilisateurData } from 'src/store/userSlice';
 
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+
+import {
+  authLinkSx,
+  authTitleSx,
+  authBodyTextSx,
+  authMutedTextSx,
+  authTextFieldSx,
+  authWarningAlertSx,
+  authPrimaryButtonSx,
+} from './auth-view-shared';
 
 type RegisterForm = {
   nomTemple: string;
@@ -53,16 +69,6 @@ const initialForm: RegisterForm = {
   confirmPassword: '',
 };
 
-const registerTextFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 2,
-    bgcolor: (theme: any) =>
-      theme.palette.mode === 'dark'
-        ? 'rgba(255,255,255,0.06)'
-        : '#edf2ff',
-  },
-};
-
 const extractFirstItem = (data: any) => {
   if (Array.isArray(data)) return data[0] || null;
   return data || null;
@@ -74,7 +80,14 @@ export function SignUpView() {
 
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<RegisterForm>(initialForm);
+  const [linkedBrowserContext, setLinkedBrowserContext] = useState<LinkedBrowserContext | null>(
+    null
+  );
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
+
+  useEffect(() => {
+    setLinkedBrowserContext(captureLinkedBrowserContextFromCurrentUrl());
+  }, []);
 
   const onChange = useCallback(
     (field: keyof RegisterForm) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,6 +98,14 @@ export function SignUpView() {
 
   const handleRegister = useCallback(async () => {
     if (loading) return;
+
+    if (linkedBrowserContext) {
+      showNotification(
+        'Ce navigateur est deja lie a une base existante. Connecte-toi avec le compte principal ou fais creer un utilisateur secondaire depuis Parametres.',
+        'warning'
+      );
+      return;
+    }
 
     const requiredValues = [
       form.nomTemple,
@@ -165,6 +186,7 @@ export function SignUpView() {
       const connectedUser = extractFirstItem(loginResponse.data);
 
       dispatch(setUtilisateurData(connectedUser));
+      saveLocalAuthToken(connectedUser?.token);
       dispatch(setConnecter(true));
       dispatch(setUserConnected(connectedUser));
       dispatch(setUserLoggedIn(true));
@@ -173,21 +195,64 @@ export function SignUpView() {
       router.push('/');
     } catch (error: any) {
       showNotification(
-        getApiErrorMessage(error, "Inscription impossible. Verifiez les informations saisies puis reessayez."),
+        getApiErrorMessage(
+          error,
+          'Inscription impossible. Verifiez les informations saisies puis reessayez.'
+        ),
         'error'
       );
     } finally {
       setLoading(false);
     }
-  }, [dispatch, form, loading, router, showNotification]);
+  }, [dispatch, form, linkedBrowserContext, loading, router, showNotification]);
+
+  if (linkedBrowserContext) {
+    return (
+      <>
+        <Box sx={{ mb: { xs: 4, md: 5 }, textAlign: { xs: 'center', md: 'left' } }}>
+          <Typography variant="h2" sx={authTitleSx}>
+            Cette base existe déjà
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{ ...authBodyTextSx, maxWidth: 560, mx: { xs: 'auto', md: 0 } }}
+          >
+            Ce navigateur est deja lie a {linkedBrowserContext.churchName || 'une eglise existante'}
+            .
+          </Typography>
+        </Box>
+
+        <Stack spacing={3}>
+          <Alert severity="warning" sx={authWarningAlertSx}>
+            Pour eviter de creer plusieurs eglises differentes pour les memes donnees, cette page
+            d&apos;inscription est bloquee sur ce navigateur. Connecte-toi avec{' '}
+            {linkedBrowserContext.username || 'le compte principal'} ou demande la creation
+            d&apos;un utilisateur secondaire dans Parametres.
+          </Alert>
+
+          <Button
+            component={RouterLink}
+            href="/sign-in"
+            variant="contained"
+            color="inherit"
+            sx={authPrimaryButtonSx}
+          >
+            Aller a la connexion
+          </Button>
+        </Stack>
+
+        <NotificationComponent />
+      </>
+    );
+  }
 
   return (
     <>
       <Box sx={{ mb: { xs: 4, md: 5 }, textAlign: { xs: 'center', md: 'left' } }}>
-        <Typography variant="h2" sx={{ fontSize: { xs: 20, md: 25 }, mb: 1.5 }}>
+        <Typography variant="h2" sx={authTitleSx}>
           Inscription à Ma Communauté
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 460, mx: { xs: 'auto', md: 0 } }}>
+        <Typography variant="body1" sx={{ ...authBodyTextSx, mx: { xs: 'auto', md: 0 } }}>
           Créez votre compte, votre église.
         </Typography>
       </Box>
@@ -216,7 +281,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={registerTextFieldSx}
+              sx={authTextFieldSx}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -235,7 +300,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={registerTextFieldSx}
+              sx={authTextFieldSx}
             />
           </Grid>
           <Grid item xs={12}>
@@ -253,7 +318,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={registerTextFieldSx}
+              sx={authTextFieldSx}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -271,7 +336,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={registerTextFieldSx}
+              sx={authTextFieldSx}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -289,7 +354,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={registerTextFieldSx}
+              sx={authTextFieldSx}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -307,7 +372,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={registerTextFieldSx}
+              sx={authTextFieldSx}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -327,7 +392,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={registerTextFieldSx}
+              sx={authTextFieldSx}
             />
           </Grid>
           <Grid item xs={12}>
@@ -346,7 +411,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={registerTextFieldSx}
+              sx={authTextFieldSx}
             />
           </Grid>
           <Grid item xs={12}>
@@ -365,7 +430,7 @@ export function SignUpView() {
                   </InputAdornment>
                 ),
               }}
-              sx={registerTextFieldSx}
+              sx={authTextFieldSx}
             />
           </Grid>
         </Grid>
@@ -377,22 +442,20 @@ export function SignUpView() {
           color="inherit"
           variant="contained"
           loading={loading}
-          sx={{
-            mt: 1,
-            py: 1.7,
-            borderRadius: 2,
-            bgcolor: '#4361ee',
-            color: 'common.white',
-            '&:hover': { bgcolor: '#3451cc' },
-          }}
+          sx={authPrimaryButtonSx}
         >
           Creer un compte
         </LoadingButton>
       </Stack>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
+      <Typography variant="body2" sx={{ mt: 4, textAlign: 'center', ...authMutedTextSx }}>
         Vous avez déjà un compte ?
-        <Link component={RouterLink} href="/sign-in" variant="subtitle2" sx={{ ml: 0.5 }}>
+        <Link
+          component={RouterLink}
+          href="/sign-in"
+          variant="subtitle2"
+          sx={{ ml: 0.5, ...authLinkSx }}
+        >
           Se connecter
         </Link>
       </Typography>

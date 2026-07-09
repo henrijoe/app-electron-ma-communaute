@@ -37,7 +37,6 @@ function prepareBackendBundle() {
   const serverTemplatesPath = path.join(serverRoot, "templates");
   const serverViewsPath = path.join(serverRoot, "views");
   const serverPublicPath = path.join(serverRoot, "public");
-  const serverAlbumsPath = path.join(serverRoot, "albums");
   const serverNodeModulesPath = path.join(serverRoot, "node_modules");
   const serverEnvPath = path.join(serverRoot, ".env");
   const serverPackageJsonPath = path.join(serverRoot, "package.json");
@@ -62,7 +61,6 @@ function prepareBackendBundle() {
   // Ces dossiers restent utiles si le backend continue d'exposer des vues ou assets.
   copyDirectoryIfExists(serverViewsPath, path.join(backendTargetRoot, "views"));
   copyDirectoryIfExists(serverPublicPath, path.join(backendTargetRoot, "public"));
-  copyDirectoryIfExists(serverAlbumsPath, path.join(backendTargetRoot, "albums"));
   copyFileIfExists(serverPackageJsonPath, path.join(backendTargetRoot, "package.json"));
 
   // On garde aussi une copie du .env si present pour faciliter les reglages desktop.

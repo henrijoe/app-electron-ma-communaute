@@ -1,34 +1,55 @@
 import { useDispatch } from 'react-redux';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
+import Dialog from '@mui/material/Dialog';
+import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import Dialog from '@mui/material/Dialog';
+import LoadingButton from '@mui/lab/LoadingButton';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import LoadingButton from '@mui/lab/LoadingButton';
 import InputAdornment from '@mui/material/InputAdornment';
-import {
-  LockOutlined,
-  PersonOutlineRounded,
-} from '@mui/icons-material';
+import { PersonOutlineRounded } from '@mui/icons-material';
 
-import { RouterLink } from 'src/routes/components';
 import { useRouter } from 'src/routes/hooks';
+import { RouterLink } from 'src/routes/components';
 
-import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
+import { getScopeUserIdFromUser } from 'src/utils/access-control';
+import { apiClient, getApiErrorMessage, saveLocalAuthToken } from 'src/utils/apiClient';
+import {
+  saveLinkedBrowserContext,
+  type LinkedBrowserContext,
+  captureLinkedBrowserContextFromCurrentUrl,
+} from 'src/utils/browser-link';
 
 import { setUserLoggedIn, setUserConnected } from 'src/store/appSlice';
 import { setConnecter, setUtilisateurData } from 'src/store/userSlice';
 
 import { Iconify } from 'src/components/iconify';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+
+import {
+  authLinkSx,
+  authTitleSx,
+  authBodyTextSx,
+  authInfoAlertSx,
+  authMutedTextSx,
+  authTextFieldSx,
+  authPrimaryButtonSx,
+} from './auth-view-shared';
+
+const extractFirstItem = (data: any) => {
+  if (Array.isArray(data)) {
+    return data[0] || null;
+  }
+
+  return data || null;
+};
 
 export function SignInView() {
   const dispatch = useDispatch();
@@ -44,6 +65,9 @@ export function SignInView() {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotStep, setForgotStep] = useState<'request' | 'reset'>('request');
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [linkedBrowserContext, setLinkedBrowserContext] = useState<LinkedBrowserContext | null>(
+    null
+  );
   const [forgotData, setForgotData] = useState({
     nomUtilisateur: '',
     email: '',
@@ -53,6 +77,16 @@ export function SignInView() {
   });
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
   const isDesktopApp = Boolean((window as any)?.desktopApp?.isDesktop);
+
+  useEffect(() => {
+    setLinkedBrowserContext(captureLinkedBrowserContextFromCurrentUrl());
+  }, []);
+
+  useEffect(() => {
+    if (linkedBrowserContext?.username && !nomUtilisateur.trim()) {
+      setNomUtilisateur(linkedBrowserContext.username);
+    }
+  }, [linkedBrowserContext, nomUtilisateur]);
 
   const handleOpenForgotPassword = useCallback(() => {
     setForgotStep('request');
@@ -107,11 +141,11 @@ export function SignInView() {
 
   const handleResetPassword = useCallback(async () => {
     if (
-      !forgotData.nomUtilisateur.trim()
-      || !forgotData.email.trim()
-      || !forgotData.code.trim()
-      || !forgotData.password
-      || !forgotData.confirmPassword
+      !forgotData.nomUtilisateur.trim() ||
+      !forgotData.email.trim() ||
+      !forgotData.code.trim() ||
+      !forgotData.password ||
+      !forgotData.confirmPassword
     ) {
       showNotification('Tous les champs sont requis.', 'warning');
       return;
@@ -133,14 +167,16 @@ export function SignInView() {
       });
 
       if (response.status !== 1) {
-        throw new Error(response.error?.message || response.message || 'Reinitialisation impossible.');
+        throw new Error(
+          response.error?.message || response.message || 'Réinitialisation impossible.'
+        );
       }
 
       setPassword(forgotData.password);
       setForgotOpen(false);
       showNotification('Mot de passe modifié. Vous pouvez vous connecter.', 'success');
     } catch (error) {
-      showNotification(getApiErrorMessage(error, 'Code invalide ou expire.'), 'error');
+      showNotification(getApiErrorMessage(error, 'Code invalide ou expiré.'), 'error');
     } finally {
       setForgotLoading(false);
     }
@@ -167,19 +203,40 @@ export function SignInView() {
         throw new Error(response.error?.message || 'Identifiants invalides');
       }
 
-      const utilisateurConnecte = response.data;
+      const utilisateurConnecte = extractFirstItem(response.data);
+      const expectedAccountId = Number(linkedBrowserContext?.accountId || 0);
+      const connectedAccountId = getScopeUserIdFromUser(utilisateurConnecte);
+
+      if (expectedAccountId > 0 && connectedAccountId !== expectedAccountId) {
+        throw new Error(
+          "Ce navigateur est déjà lié à une autre église. Connecte-toi avec l'utilisateur du desktop ou avec un utilisateur secondaire créé depuis Paramètres."
+        );
+      }
 
       dispatch(setUtilisateurData(utilisateurConnecte));
+      saveLocalAuthToken(utilisateurConnecte?.token);
       dispatch(setConnecter(true));
       dispatch(setUserConnected(utilisateurConnecte));
       dispatch(setUserLoggedIn(true));
+
+      if (linkedBrowserContext) {
+        saveLinkedBrowserContext({
+          ...linkedBrowserContext,
+          username: utilisateurConnecte?.nomUtilisateur || linkedBrowserContext.username,
+          accountId: connectedAccountId,
+          churchName:
+            utilisateurConnecte?.nomEgliseCourt ||
+            utilisateurConnecte?.nomTemple ||
+            linkedBrowserContext.churchName,
+        });
+      }
 
       showNotification('Connexion réussie', 'success');
       router.push('/');
     } catch (error: any) {
       const errorMessage = getApiErrorMessage(
         error,
-        "Connexion impossible. Verifiez vos identifiants ou l'adresse du serveur."
+        "Connexion impossible. Vérifiez vos identifiants ou l'adresse du serveur."
       );
       showNotification(errorMessage, 'error');
 
@@ -189,7 +246,16 @@ export function SignInView() {
     } finally {
       setLoading(false);
     }
-  }, [dispatch, isDesktopApp, loading, nomUtilisateur, password, router, showNotification]);
+  }, [
+    dispatch,
+    isDesktopApp,
+    linkedBrowserContext,
+    loading,
+    nomUtilisateur,
+    password,
+    router,
+    showNotification,
+  ]);
 
   const handleUnlockWithCode = useCallback(async () => {
     if (unlockLoading) {
@@ -230,13 +296,22 @@ export function SignInView() {
   return (
     <>
       <Box sx={{ mb: 5 }}>
-        <Typography variant="h1" sx={{ fontSize: { xs: 20, md: 25 }, mb: 1.5 }}>
+        <Typography variant="h1" sx={authTitleSx}>
           Connexion à Ma Communauté
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 450 }}>
-          Connectez-vous pour retrouver les membres, cultes, departements.
+        <Typography variant="body1" sx={authBodyTextSx}>
+          Connectez-vous pour retrouver les membres, cultes, départements.
         </Typography>
       </Box>
+
+      {linkedBrowserContext && (
+        <Alert severity="info" sx={{ mb: 3, ...authInfoAlertSx }}>
+          Ce navigateur est lié à{' '}
+          {linkedBrowserContext.churchName || 'la base ouverte depuis le desktop'}. Connecte-toi
+          avec {linkedBrowserContext.username || 'le compte principal'} ou avec un utilisateur
+          secondaire créé depuis Paramètres.
+        </Alert>
+      )}
 
       <Stack
         component="form"
@@ -261,7 +336,7 @@ export function SignInView() {
               </InputAdornment>
             ),
           }}
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
+          sx={authTextFieldSx}
         />
 
         <Link
@@ -270,7 +345,7 @@ export function SignInView() {
           variant="body2"
           color="inherit"
           onClick={handleOpenForgotPassword}
-          sx={{ alignSelf: 'flex-end', mt: -1 }}
+          sx={{ alignSelf: 'flex-end', mt: -1, ...authLinkSx }}
         >
           Mot de passe oublié ?
         </Link>
@@ -293,7 +368,7 @@ export function SignInView() {
               </InputAdornment>
             ),
           }}
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#edf2ff' } }}
+          sx={authTextFieldSx}
         />
 
         <LoadingButton
@@ -303,13 +378,7 @@ export function SignInView() {
           color="inherit"
           variant="contained"
           loading={loading}
-          sx={{
-            py: 1.7,
-            borderRadius: 2,
-            bgcolor: '#4361ee',
-            color: 'common.white',
-            '&:hover': { bgcolor: '#3451cc' },
-          }}
+          sx={authPrimaryButtonSx}
         >
           Se connecter
         </LoadingButton>
@@ -321,7 +390,7 @@ export function SignInView() {
             variant="body2"
             color="inherit"
             onClick={() => setShowUnlockCodeForm(true)}
-            sx={{ alignSelf: 'center' }}
+            sx={{ alignSelf: 'center', ...authLinkSx }}
           >
             J&apos;ai un code de déblocage
           </Link>
@@ -338,7 +407,7 @@ export function SignInView() {
               bgcolor: 'background.neutral',
             }}
           >
-            <Alert severity="info">
+            <Alert severity="info" sx={authInfoAlertSx}>
               Saisis le code fourni par le développeur pour débloquer cette installation.
             </Alert>
 
@@ -348,6 +417,7 @@ export function SignInView() {
               value={unlockCode}
               onChange={(event) => setUnlockCode(event.target.value.toUpperCase())}
               placeholder="MC-XXXX-XXXX-XXXX-XXXX"
+              sx={authTextFieldSx}
             />
 
             <LoadingButton
@@ -357,18 +427,32 @@ export function SignInView() {
               loading={unlockLoading}
               onClick={handleUnlockWithCode}
             >
-              Debloquer avec ce code
+              Débloquer avec ce code
             </LoadingButton>
           </Stack>
         )}
       </Stack>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
-        Vous n&apos;avez pas encore de compte ?
-        <Link component={RouterLink} href="/sign-up" variant="subtitle2" sx={{ ml: 0.5 }}>
-          Créer une église
-        </Link>
-      </Typography>
+      {linkedBrowserContext && (
+        <Typography variant="body2" sx={{ mt: 4, textAlign: 'center', ...authMutedTextSx }}>
+          Pour ajouter un nouvel accès à cette base, utilise le compte principal puis la section
+          Paramètres &gt; Utilisateurs secondaires.
+        </Typography>
+      )}
+
+      {!linkedBrowserContext && (
+        <Typography variant="body2" sx={{ mt: 4, textAlign: 'center', ...authMutedTextSx }}>
+          Vous n&apos;avez pas encore de compte ?
+          <Link
+            component={RouterLink}
+            href="/sign-up"
+            variant="subtitle2"
+            sx={{ ml: 0.5, ...authLinkSx }}
+          >
+            Créer une église
+          </Link>
+        </Typography>
+      )}
 
       <NotificationComponent />
 
@@ -410,7 +494,7 @@ export function SignInView() {
 
                 <TextField
                   fullWidth
-                  label="Code recu"
+                  label="Code reçu"
                   value={forgotData.code}
                   onChange={(event) => handleForgotDataChange('code', event.target.value)}
                 />
@@ -428,7 +512,9 @@ export function SignInView() {
                   type="password"
                   label="Confirmer le mot de passe"
                   value={forgotData.confirmPassword}
-                  onChange={(event) => handleForgotDataChange('confirmPassword', event.target.value)}
+                  onChange={(event) =>
+                    handleForgotDataChange('confirmPassword', event.target.value)
+                  }
                 />
               </>
             )}

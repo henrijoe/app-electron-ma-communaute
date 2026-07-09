@@ -39,9 +39,9 @@ const titles: Record<SocialCaseType, { empty: string; fileTitle: string }> = {
 };
 
 const formatDate = (value?: string | null) => {
-  if (!value) return 'Non specifie';
+  if (!value) return 'Non specifié';
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'Non specifie';
+  if (Number.isNaN(parsed.getTime())) return 'Non specifié';
   return parsed.toLocaleDateString('fr-FR');
 };
 
@@ -53,8 +53,6 @@ export function SocialPrintDocument({ identity, rows, type }: SocialPrintDocumen
     <PrintDocumentLayout
       identity={identity}
       title={config.fileTitle}
-      countLabel="Total"
-      countValue={normalizedRows.length}
     >
       {normalizedRows.length === 0 ? (
         <PrintEmptyState
@@ -74,8 +72,8 @@ function RenderTable({ rows, type }: { rows: any[]; type: SocialCaseType }) {
       <PrintTable minWidth={980}>
         <TableHead>
           <TableRow>
-            <TableCell align="center">N�</TableCell>
-            <TableCell>Frere</TableCell>
+            <TableCell align="center">N°</TableCell>
+            <TableCell>Frère</TableCell>
             <TableCell>Soeur</TableCell>
             <TableCell>Date</TableCell>
             <TableCell>Lieu</TableCell>
@@ -89,14 +87,14 @@ function RenderTable({ rows, type }: { rows: any[]; type: SocialCaseType }) {
           {rows.map((item: IMariage, index) => (
             <TableRow key={item.idMariage || index}>
               <TableCell align="center"><Typography fontWeight={700}>{index + 1}</Typography></TableCell>
-              <TableCell><Typography fontWeight={700}>{item.nomFrereMariage || 'Non specifie'}</Typography></TableCell>
-              <TableCell>{item.nomSoeurMariage || 'Non specifie'}</TableCell>
+              <TableCell><Typography fontWeight={700}>{item.nomFrereMariage || 'Non specifié'}</Typography></TableCell>
+              <TableCell>{item.nomSoeurMariage || 'Non specifié'}</TableCell>
               <TableCell>{formatDate(item.dateMariage)}</TableCell>
-              <TableCell>{item.lieuMariage || 'Non specifie'}</TableCell>
-              <TableCell>{item.culteMariage || 'Non specifie'}</TableCell>
-              <TableCell>{[item.temoin1Mariage, item.temoin2Mariage].filter(Boolean).join(' / ') || 'Non specifie'}</TableCell>
-              <TableCell>{item.lieuReception || 'Non specifie'}</TableCell>
-              <TableCell>{item.contactMariage || 'Non specifie'}</TableCell>
+              <TableCell>{item.lieuMariage || 'Non specifié'}</TableCell>
+              <TableCell>{item.culteMariage || 'Non specifié'}</TableCell>
+              <TableCell>{[item.temoin1Mariage, item.temoin2Mariage].filter(Boolean).join(' / ') || 'Non specifié'}</TableCell>
+              <TableCell>{item.lieuReception || 'Non specifié'}</TableCell>
+              <TableCell>{item.contactMariage || 'Non specifié'}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -109,7 +107,7 @@ function RenderTable({ rows, type }: { rows: any[]; type: SocialCaseType }) {
       <PrintTable minWidth={920}>
         <TableHead>
           <TableRow>
-            <TableCell align="center">N�</TableCell>
+            <TableCell align="center">N°</TableCell>
             <TableCell>Parents</TableCell>
             <TableCell>Enfant</TableCell>
             <TableCell>Date naissance</TableCell>
@@ -121,10 +119,10 @@ function RenderTable({ rows, type }: { rows: any[]; type: SocialCaseType }) {
           {rows.map((item: INaissance, index) => (
             <TableRow key={item.idNaissance || index}>
               <TableCell align="center"><Typography fontWeight={700}>{index + 1}</Typography></TableCell>
-              <TableCell><Typography fontWeight={700}>{item.nomCoupleNaissance || 'Non specifie'}</Typography></TableCell>
-              <TableCell>{item.nomEnfantNaissance || 'Non specifie'}</TableCell>
+              <TableCell><Typography fontWeight={700}>{item.nomCoupleNaissance || 'Non specifié'}</Typography></TableCell>
+              <TableCell>{item.nomEnfantNaissance || 'Non specifié'}</TableCell>
               <TableCell>{formatDate(item.dateNaissance)}</TableCell>
-              <TableCell>{item.lieuNaissance || 'Non specifie'}</TableCell>
+              <TableCell>{item.lieuNaissance || 'Non specifié'}</TableCell>
               <TableCell>{formatDate(item.datePresentationNaissance)}</TableCell>
             </TableRow>
           ))}
@@ -138,7 +136,7 @@ function RenderTable({ rows, type }: { rows: any[]; type: SocialCaseType }) {
       <PrintTable minWidth={900}>
         <TableHead>
           <TableRow>
-            <TableCell align="center">N�</TableCell>
+            <TableCell align="center">N°</TableCell>
             <TableCell>Membre</TableCell>
             <TableCell>Date</TableCell>
             <TableCell>Lieu</TableCell>
@@ -149,10 +147,10 @@ function RenderTable({ rows, type }: { rows: any[]; type: SocialCaseType }) {
           {rows.map((item: IDeces, index) => (
             <TableRow key={item.idDeces || index}>
               <TableCell align="center"><Typography fontWeight={700}>{index + 1}</Typography></TableCell>
-              <TableCell><Typography fontWeight={700}>{item.nomMembreDeces || 'Non specifie'}</Typography></TableCell>
+              <TableCell><Typography fontWeight={700}>{item.nomMembreDeces || 'Non specifié'}</Typography></TableCell>
               <TableCell>{formatDate(item.dateDeces)}</TableCell>
-              <TableCell>{item.lieuDeces || 'Non specifie'}</TableCell>
-              <TableCell>{item.causeDeces || 'Non specifiee'}</TableCell>
+              <TableCell>{item.lieuDeces || 'Non specifié'}</TableCell>
+              <TableCell>{item.causeDeces || 'Non specifiée'}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -164,7 +162,7 @@ function RenderTable({ rows, type }: { rows: any[]; type: SocialCaseType }) {
     <PrintTable minWidth={940}>
       <TableHead>
         <TableRow>
-          <TableCell align="center">N�</TableCell>
+          <TableCell align="center">N°</TableCell>
           <TableCell>Membre</TableCell>
           <TableCell>Type</TableCell>
           <TableCell>Date</TableCell>
@@ -176,11 +174,11 @@ function RenderTable({ rows, type }: { rows: any[]; type: SocialCaseType }) {
         {rows.map((item: IMaladieDraft, index) => (
           <TableRow key={item.idMaladie || index}>
             <TableCell align="center"><Typography fontWeight={700}>{index + 1}</Typography></TableCell>
-            <TableCell><Typography fontWeight={700}>{item.nomMembreMaladie || 'Non specifie'}</Typography></TableCell>
-            <TableCell>{item.typeMaladie || 'Non specifie'}</TableCell>
+            <TableCell><Typography fontWeight={700}>{item.nomMembreMaladie || 'Non specifié'}</Typography></TableCell>
+            <TableCell>{item.typeMaladie || 'Non specifié'}</TableCell>
             <TableCell>{formatDate(item.dateMaladie)}</TableCell>
-            <TableCell>{item.lieuHospitalisation || 'Non specifie'}</TableCell>
-            <TableCell>{item.observationMaladie || 'Non specifiee'}</TableCell>
+            <TableCell>{item.lieuHospitalisation || 'Non specifié'}</TableCell>
+            <TableCell>{item.observationMaladie || 'Non specifiée'}</TableCell>
           </TableRow>
         ))}
       </TableBody>

@@ -30,22 +30,10 @@ export function ComptabiliteSummaryDocument({ items, search, filterLabel }: Comp
   return (
     <PrintDocumentLayout
       title="Situation de tresorerie"
-      subtitle={buildComptabiliteMetaLabel(search, filterLabel)}
-      countLabel="Base de calcul"
-      countValue={items.length}
       variant="plain"
       showDocumentMeta={false}
     >
-      <ComptabilitePrintHero
-        title="Synthese de la caisse"
-        description="Cette synthese donne une lecture rapide de la tresorerie visible dans l'application: recettes, depenses, solde disponible et dernier mouvement enregistre."
-        chips={[
-          `${items.length} ecriture(s) retenue(s)`,
-          `${nombreEntrees} entree(s)`,
-          `${nombreSorties} sortie(s)`,
-        ]}
-        variant="plain"
-      />
+
 
       {items.length === 0 ? (
         <PrintEmptyState

@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 
 import { apiClient } from 'src/utils/apiClient';
-import { canManageModule } from 'src/utils/access-control';
+import { canManageModule, isDesktopAppRuntime } from 'src/utils/access-control';
 import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
@@ -57,12 +57,13 @@ export function DepartementView() {
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || 0;
   const canManageDepartement = canManageModule(appUserConnected || authUtilisateurData, 'departement');
+  const isDesktopApp = isDesktopAppRuntime();
 
   const [loading, setLoading] = useState(true);
   const [membres, setMembres] = useState<IMembre[]>([]);
   const table = useDepartementTable();
 
-  // Destructurer les valeurs nÃ©cessaires de useDepartementTable
+  // Destructurer les valeurs necessaires de useDepartementTable
   const { selected, onSelectAllRows } = table;
 
   const [filterName, setFilterName] = useState('');
@@ -137,7 +138,7 @@ export function DepartementView() {
     }
   }, [currentUserId]);
 
-  // Fonction pour supprimer un dÃ©partement
+  // Fonction pour supprimer un département
   const handleDeleteDepartement = useCallback(async (idDepartement: number) => {
     if (!canManageDepartement) return;
 
@@ -163,7 +164,7 @@ export function DepartementView() {
     }
   }, [canManageDepartement, currentUserId, dispatch, showNotification]);
 
-  // Fonction pour éditer un dÃ©partement
+  // Fonction pour éditer un departement
   const handleEditDepartement = useCallback((departementData: IDepartement) => {
     if (!canManageDepartement) return;
 
@@ -174,7 +175,7 @@ export function DepartementView() {
     setOpenDialog(true);
   }, [canManageDepartement, reset]);
 
-  // Fonction pour mettre à jour un dÃ©partement
+  // Fonction pour mettre à jour un departement
   const handleUpdateDepartement = useCallback(async (formData: IDepartement) => {
     try {
       setUpdateLoading(true);
@@ -192,7 +193,6 @@ export function DepartementView() {
         idUtilisateur: currentUserId || currentDepartement?.idUtilisateur || null,
       };
 
-      console.log('Données envoyÃ©es à l\'API:', mergedData);
 
       const response = await apiClient.updateDepartement(cleanedData);
       if (response.status === 1) {
@@ -211,7 +211,7 @@ export function DepartementView() {
     }
   }, [currentUserId, data.idDepartement, listDepartement, dispatch, handleCloseDialog, showNotification, fetchDepartements]);
 
-  // Fonction pour créer un dÃ©partement
+  // Fonction pour créer un département
   const handleCreateOrUpdateDepartement = useCallback(async (departementData: IDepartement) => {
     if (isEditMode) {
       await handleUpdateDepartement(departementData)
@@ -449,11 +449,11 @@ export function DepartementView() {
           alignItems="center"
           sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}
         >
-          <PrintEtatGlobal />
+          {!isDesktopApp && <PrintEtatGlobal />}
 
-          {canManageDepartement && (
+          {!isDesktopApp && canManageDepartement && (
           <>
-          <Tooltip title={loading ? 'Chargement...' : 'Ajouter departement'}>
+          <Tooltip title="Ajouter departement">
             <span>
               <IconButton
                 color="primary"
@@ -477,7 +477,7 @@ export function DepartementView() {
             disabled={loading}
             sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
           >
-            {loading ? 'Chargement...' : 'Ajouter département'}
+            Ajouter département
           </Button>
           </>
           )}

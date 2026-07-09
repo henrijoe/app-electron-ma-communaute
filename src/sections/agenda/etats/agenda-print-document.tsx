@@ -49,8 +49,6 @@ export function AgendaPrintDocument({ events, identity, monthLabel }: AgendaPrin
     <PrintDocumentLayout
       identity={identity}
       title={`Agenda mensuel - ${monthLabel}`}
-      countLabel="Total rendez-vous"
-      countValue={events.length}
     >
       <Box className="print-block-avoid-break" sx={{ mb: 3 }}>
         <Typography variant="body2" sx={{ color: '#304760', mb: 0.5 }}>

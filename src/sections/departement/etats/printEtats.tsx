@@ -1,24 +1,26 @@
-import React, { forwardRef, useRef, useState } from 'react';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import PrintIcon from '@mui/icons-material/Print';
-import VisibilityIcon from '@mui/icons-material/Visibility';
+import ReactToPrint from 'react-to-print';
+import React, { useRef, useState, forwardRef } from 'react';
+
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
-import Menu, { type MenuProps } from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import PrintIcon from '@mui/icons-material/Print';
 import { alpha, styled } from '@mui/material/styles';
-import ReactToPrint from 'react-to-print';
+import Menu, { type MenuProps } from '@mui/material/Menu';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 import {
-  canUseDesktopPrint,
   exportDesktopPdf,
+  canUseDesktopPrint,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
-import { isDesktopAppRuntime } from 'src/utils/access-control';
 
 import { ListeDesDepartements } from './listeDepartementPdf';
+import { FicheDepartementVierge } from './ficheDepartementVierge';
 
 const StyledMenu = styled((props: MenuProps) => (
   <Menu
@@ -58,8 +60,15 @@ const ComponentToPrintDepartements = forwardRef<HTMLDivElement>((_, ref) => (
   </div>
 ));
 
+const ComponentToPrintFicheDepartement = forwardRef<HTMLDivElement>((_, ref) => (
+  <div ref={ref}>
+    <FicheDepartementVierge />
+  </div>
+));
+
 const PrintEtatGlobal = () => {
   const departementRef = useRef<HTMLDivElement>(null);
+  const ficheDepartementRef = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const isDesktopPrint = canUseDesktopPrint();
   const open = Boolean(anchorEl);
@@ -82,7 +91,7 @@ const PrintEtatGlobal = () => {
     // On ferme d'abord le menu pour ne pas perturber l'aperçu desktop.
     handleClose();
     await openDesktopPrintPreview(departementRef.current, {
-      title: 'Apercu - Liste des departements',
+      title: 'Aperçu - Liste des départements',
       fileName: 'liste-departements',
     });
   };
@@ -91,8 +100,24 @@ const PrintEtatGlobal = () => {
     // On ferme d'abord le menu pour garder une seule action visible a l'ecran.
     handleClose();
     await exportDesktopPdf(departementRef.current, {
-      title: 'Liste des departements',
+      title: 'Liste des départements',
       fileName: 'liste-departements',
+    });
+  };
+
+  const handleOpenBlankPreview = async () => {
+    handleClose();
+    await openDesktopPrintPreview(ficheDepartementRef.current, {
+      title: 'Aperçu - Fiche de renseignement département',
+      fileName: 'fiche-renseignement-departement',
+    });
+  };
+
+  const handleExportBlankPdf = async () => {
+    handleClose();
+    await exportDesktopPdf(ficheDepartementRef.current, {
+      title: 'Fiche de renseignement département',
+      fileName: 'fiche-renseignement-departement',
     });
   };
 
@@ -124,9 +149,21 @@ const PrintEtatGlobal = () => {
       >
         {isDesktopPrint ? (
           <>
+            <MenuItem onClick={handleOpenBlankPreview}>
+              <VisibilityIcon />
+              Aperçu fiche de renseignement
+            </MenuItem>
+
+            <MenuItem onClick={handleExportBlankPdf}>
+              <PictureAsPdfIcon />
+              Exporter fiche de renseignement
+            </MenuItem>
+
+            <Divider sx={{ my: 0.5 }} />
+
             <MenuItem onClick={handleOpenPreview}>
               <VisibilityIcon />
-              Apercu avant impression
+              Aperçu avant impression
             </MenuItem>
 
             <MenuItem onClick={handleExportPdf}>
@@ -135,13 +172,22 @@ const PrintEtatGlobal = () => {
             </MenuItem>
           </>
         ) : (
-          <MenuItem onClick={handleClose}>
-            <PrintIcon />
-            <ReactToPrint
-              trigger={() => <div>Liste des departements</div>}
-              content={() => departementRef.current}
-            />
-          </MenuItem>
+          <>
+            <MenuItem onClick={handleClose}>
+              <PrintIcon />
+              <ReactToPrint
+                trigger={() => <div>Fiche de renseignement département</div>}
+                content={() => ficheDepartementRef.current}
+              />
+            </MenuItem>
+            <MenuItem onClick={handleClose}>
+              <PrintIcon />
+              <ReactToPrint
+                trigger={() => <div>Liste des départements</div>}
+                content={() => departementRef.current}
+              />
+            </MenuItem>
+          </>
         )}
 
         <Divider sx={{ my: 0.5 }} />
@@ -149,6 +195,7 @@ const PrintEtatGlobal = () => {
 
       <div style={{ display: 'none' }}>
         <ComponentToPrintDepartements ref={departementRef} />
+        <ComponentToPrintFicheDepartement ref={ficheDepartementRef} />
       </div>
     </div>
   );

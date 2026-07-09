@@ -1,6 +1,7 @@
 // apiClient.ts
 import type { ModulePermissionKey } from 'src/store/userSlice';
 
+import { normalizeText } from './text';
 import { canManageModule } from './access-control';
 import { sanitizeSensitiveData } from './sensitive-data';
 import { getServerUrl, getConnectionMode, getCurrentSessionUser } from './functions';
@@ -8,6 +9,8 @@ import { getServerUrl, getConnectionMode, getCurrentSessionUser } from './functi
 export const BASE_URL_DEV = 'http://localhost:49300/';
 export const BASE_URL_ONLINE = import.meta.env.VITE_API_URL || '';
 const DEFAULT_LOCAL_API_PORT = '49300';
+const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
+const LOCAL_AUTH_TOKEN_KEY = 'ma-communaute-local-auth-token';
 
 const normalizeBaseUrl = (url: string): string => (url.endsWith('/') ? url : `${url}/`);
 const getLocalApiPort = (): string => String(import.meta.env.VITE_LOCAL_API_PORT || DEFAULT_LOCAL_API_PORT);
@@ -68,6 +71,36 @@ const normalizeConfiguredApiUrl = (url: string): string => {
 };
 
 export const getApiMode = (): 'local' | 'online' => getConnectionMode();
+
+const canUseLocalStorage = (): boolean =>
+  typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+export const saveLocalAuthToken = (token?: string | null): void => {
+  if (!canUseLocalStorage()) {
+    return;
+  }
+
+  const normalizedToken = String(token || '').trim();
+
+  if (normalizedToken) {
+    window.localStorage.setItem(LOCAL_AUTH_TOKEN_KEY, normalizedToken);
+    return;
+  }
+
+  window.localStorage.removeItem(LOCAL_AUTH_TOKEN_KEY);
+};
+
+export const getLocalAuthToken = (): string => {
+  if (!canUseLocalStorage()) {
+    return '';
+  }
+
+  return window.localStorage.getItem(LOCAL_AUTH_TOKEN_KEY) || '';
+};
+
+export const clearLocalAuthToken = (): void => {
+  saveLocalAuthToken('');
+};
 
 const assertCanManageModule = (permission: ModulePermissionKey, actionLabel?: string): void => {
   const currentUser = getCurrentSessionUser();
@@ -179,11 +212,11 @@ const isLikelyNetworkError = (error: unknown): boolean =>
 const getHttpStatusMessage = (status: number): string => {
   switch (status) {
     case 0:
-      return "Impossible de joindre le serveur. Verifiez votre connexion et l'adresse du serveur dans les parametres.";
+      return "Impossible de joindre le serveur. Verifiez votre connexion et l'adresse du serveur dans les paramètres.";
     case 400:
-      return 'La demande envoyee est incomplete ou incorrecte. Verifiez les informations saisies puis reessayez.';
+      return 'La demande envoyée est incomplete ou incorrecte. Verifiez les informations saisies puis reéssayez.';
     case 401:
-      return 'Votre session a expire ou vos identifiants sont incorrects. Reconnectez-vous pour continuer.';
+      return 'Votre session a expiré ou vos identifiants sont incorrects. Reconnectez-vous pour continuer.';
     case 403:
       return "Vous n'avez pas l'autorisation d'effectuer cette action.";
     case 404:
@@ -191,9 +224,9 @@ const getHttpStatusMessage = (status: number): string => {
     case 408:
       return 'Le serveur met trop de temps a repondre. Verifiez le reseau puis reessayez.';
     case 409:
-      return 'Cette action entre en conflit avec des donnees deja existantes. Verifiez les informations puis reessayez.';
+      return 'Cette action entre en conflit avec des données déjà existantes. Verifiez les informations puis reessayez.';
     case 413:
-      return 'Le fichier ou les donnees envoyees sont trop volumineux.';
+      return 'Le fichier ou les données envoyees sont trop volumineux.';
     case 422:
       return 'Certaines informations saisies ne sont pas valides. Verifiez le formulaire puis reessayez.';
     case 429:
@@ -206,10 +239,10 @@ const getHttpStatusMessage = (status: number): string => {
       return "Le serveur est momentanement indisponible. Verifiez qu'il est demarre puis reessayez.";
     default:
       if (status >= 500) {
-        return 'Le serveur a rencontre une erreur. Reessayez dans quelques instants.';
+        return 'Le serveur a rencontré une erreur. Reéssayez dans quelques instants.';
       }
       if (status >= 400) {
-        return "La demande n'a pas pu etre traitee. Verifiez les informations puis reessayez.";
+        return "La demande n'a pas pu être traitée. Verifiez les informations puis reéssayez.";
       }
       return 'Une erreur est survenue pendant la communication avec le serveur.';
   }
@@ -217,25 +250,25 @@ const getHttpStatusMessage = (status: number): string => {
 
 const buildNetworkErrorMessage = (url: string): string => {
   const port = getLocalApiPort();
-  const baseMessage = `Impossible de joindre le serveur local. Verifiez que le serveur est demarre et que le port ${port} est autorise par le pare-feu.`;
+  const baseMessage = `Impossible de joindre le serveur local. Verifiez que le serveur est demarre et que le port ${port} est autorisé par le pare-feu.`;
 
   if (typeof window !== 'undefined' && !isLoopbackHost(window.location.hostname)) {
-    return `${baseMessage} Votre appareil doit etre sur le meme reseau Wi-Fi. Adresse utilisee: ${url}`;
+    return `${baseMessage} Votre appareil doit etre sur le même reseau Wi-Fi. Adresse utilisee: ${url}`;
   }
 
-  return `${baseMessage} Adresse utilisee: ${url}`;
+  return `${baseMessage} Adresse utilisée: ${url}`;
 };
 
 export const getApiErrorMessage = (error: unknown, fallback = 'Une erreur est survenue.'): string => {
   if (error instanceof ApiError) {
-    return error.message || getHttpStatusMessage(error.status) || fallback;
+    return normalizeText(error.message || getHttpStatusMessage(error.status) || fallback);
   }
 
   if (error instanceof Error && error.message) {
-    return error.message;
+    return normalizeText(error.message);
   }
 
-  return fallback;
+  return normalizeText(fallback);
 };
 
 // Extrait un message exploitable depuis les differents formats d'erreur du backend.
@@ -292,9 +325,12 @@ const normalizeChurchLogoName = (logoName: string): string => {
     .join('/');
 };
 
-export const buildChurchLogoUrl = (logoName: string): string => {
+export const buildChurchLogoUrl = (logoName: string, cacheKey?: string | number): string => {
   const normalized = normalizeChurchLogoName(logoName);
-  return cleanUrl(resolveApiBaseUrl(), normalized ? `church-logos/${normalized}` : 'church-logos');
+  const url = cleanUrl(resolveApiBaseUrl(), normalized ? `church-logos/${normalized}` : 'church-logos');
+  const normalizedCacheKey = cacheKey ? encodeURIComponent(String(cacheKey)) : '';
+
+  return normalizedCacheKey ? `${url}?v=${normalizedCacheKey}` : url;
 };
 
 const normalizeGaleriePath = (filePath: string): string => {
@@ -335,14 +371,21 @@ export async function request<T>(
 
     const isFormDataBody = typeof FormData !== 'undefined' && config?.body instanceof FormData;
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), DEFAULT_REQUEST_TIMEOUT_MS);
+
     const response = await fetch(url, {
       ...config,
+      signal: config?.signal || controller.signal,
       headers: {
         'Accept': 'application/json',
         ...(isFormDataBody ? {} : { 'Content-Type': 'application/json' }),
+        ...(getLocalAuthToken() ? { Authorization: `Bearer ${getLocalAuthToken()}` } : {}),
         ...config?.headers,
       },
     });
+
+    window.clearTimeout(timeoutId);
 
     const contentType = response.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
@@ -358,7 +401,19 @@ export async function request<T>(
     console.error(`Request failed for ${url}:`, error);
 
     if (error instanceof ApiError) {
+      if (error.status === 401) {
+        clearLocalAuthToken();
+      }
+
       throw error;
+    }
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new ApiError(
+        "Le serveur local ne repond pas. Verifiez que l'application desktop est ouverte et que le backend local a bien demarre.",
+        408,
+        { url }
+      );
     }
 
     if (isLikelyNetworkError(error)) {
@@ -914,6 +969,9 @@ export const apiClient = {
     nombrePasteursEglise?: string;
     nombreAnciensEglise?: string;
     nombreDiacresEglise?: string;
+    modeVersetDashboard?: string;
+    versetDashboardReference?: string;
+    versetDashboardTexte?: string;
     password?: string;
     confirmPassword?: string;
     email?: string;
@@ -949,6 +1007,9 @@ export const apiClient = {
     nombrePasteursEglise?: string;
     nombreAnciensEglise?: string;
     nombreDiacresEglise?: string;
+    modeVersetDashboard?: string;
+    versetDashboardReference?: string;
+    versetDashboardTexte?: string;
     password?: string;
     confirmPassword?: string;
     email?: string;

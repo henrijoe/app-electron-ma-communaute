@@ -1,23 +1,26 @@
+import type { IReduxState } from 'src/store/store';
 import type { IconButtonProps } from '@mui/material/IconButton';
 
-import { useCallback, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
+import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
-import MenuList from '@mui/material/MenuList';
 import Popover from '@mui/material/Popover';
+import MenuList from '@mui/material/MenuList';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
+
+import { useRouter, usePathname } from 'src/routes/hooks';
+
+import { clearLocalAuthToken } from 'src/utils/apiClient';
 
 import { _myAccount } from 'src/_mock';
-import { usePathname, useRouter } from 'src/routes/hooks';
-import { setUserConnected, setUserLoggedIn } from 'src/store/appSlice';
-import type { IReduxState } from 'src/store/store';
-import { setConnecter, setUtilisateurData, utilisateur } from 'src/store/userSlice';
+import { setUserLoggedIn, setUserConnected } from 'src/store/appSlice';
+import { utilisateur, setConnecter, setUtilisateurData } from 'src/store/userSlice';
 
 export type AccountPopoverProps = IconButtonProps & {
   data?: {
@@ -74,6 +77,7 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
 
   const handleLogout = useCallback(() => {
     handleClosePopover();
+    clearLocalAuthToken();
     dispatch(setConnecter(false));
     dispatch(setUtilisateurData(utilisateur));
     dispatch(setUserConnected({}));

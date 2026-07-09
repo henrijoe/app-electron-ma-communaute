@@ -96,9 +96,7 @@ export const ListeDesMembres = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       title="Liste des membres"
-      subtitle="Etat imprimable complet des membres avec photo, rattachement, responsabilite et contact principal."
-      countLabel="Total membres"
-      countValue={listMembre?.length || 0}
+      showCountMeta={false}
       variant="plain"
     >
       {!listMembre?.length ? (
@@ -107,22 +105,24 @@ export const ListeDesMembres = () => {
           message="Aucun membre n'est actuellement enregistre dans la base locale."
         />
       ) : (
-        <PrintTable minWidth={1120}>
+        <PrintTable minWidth={980}>
           <TableHead>
             <TableRow>
-              <TableCell align="center" sx={{ width: 52 }}>
+              <TableCell align="center" sx={{ width: 42 }}>
                 No
               </TableCell>
-              <TableCell align="center" sx={{ width: 86 }}>
+              <TableCell align="center" sx={{ width: 66 }}>
                 Photo
               </TableCell>
-              <TableCell sx={{ width: 280 }}>Nom et prenoms</TableCell>
-              <TableCell>Residence</TableCell>
-              <TableCell>Responsabilite</TableCell>
-              <TableCell align="center">Baptisé(e)</TableCell>
-              <TableCell>Departement</TableCell>
-              <TableCell>Cellule</TableCell>
-              <TableCell>Contact</TableCell>
+              <TableCell sx={{ width: 160 }}>Nom et prenoms</TableCell>
+              <TableCell sx={{ width: 105 }}>Residence</TableCell>
+              <TableCell sx={{ width: 118 }}>Responsabilite</TableCell>
+              <TableCell align="center" sx={{ width: 82 }}>
+                Baptisé(e)
+              </TableCell>
+              <TableCell sx={{ width: 110 }}>Departement</TableCell>
+              <TableCell sx={{ width: 110 }}>Cellule</TableCell>
+              <TableCell sx={{ width: 118 }}>Contact</TableCell>
             </TableRow>
           </TableHead>
 
@@ -145,8 +145,8 @@ export const ListeDesMembres = () => {
                       src={photoUrl || undefined}
                       alt={`${item.nomMembre || ''} ${item.prenomMembre || ''}`}
                       sx={{
-                        width: 48,
-                        height: 48,
+                        width: 40,
+                        height: 40,
                         mx: 'auto',
                         border: '2px solid rgba(25, 118, 210, 0.22)',
                       }}
@@ -157,10 +157,14 @@ export const ListeDesMembres = () => {
                   </TableCell>
 
                   <TableCell>
-                    <Typography variant="subtitle2" fontWeight={700}>
+                    <Typography variant="subtitle2" fontWeight={700} sx={{ lineHeight: 1.2 }}>
                       {normalizeText(`${item.nomMembre || ''} ${item.prenomMembre || ''}`.trim()) || 'Non specifie'}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', lineHeight: 1.15, wordBreak: 'break-all' }}
+                    >
                       {normalizeText(item.emailMembre) || 'Email non specifie'}
                     </Typography>
                   </TableCell>
@@ -175,7 +179,15 @@ export const ListeDesMembres = () => {
                       size="small"
                       color="primary"
                       variant="outlined"
-                      sx={{ fontWeight: 700 }}
+                      sx={{
+                        maxWidth: '100%',
+                        fontWeight: 700,
+                        '& .MuiChip-label': {
+                          display: 'block',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        },
+                      }}
                     />
                   </TableCell>
 
@@ -184,7 +196,7 @@ export const ListeDesMembres = () => {
                       label={baptemeDisplay.label}
                       size="small"
                       color={baptemeDisplay.color}
-                      sx={{ fontWeight: 700, minWidth: 64 }}
+                      sx={{ fontWeight: 700, minWidth: 56 }}
                     />
                   </TableCell>
 
@@ -198,7 +210,15 @@ export const ListeDesMembres = () => {
                       size="small"
                       color="secondary"
                       variant="outlined"
-                      sx={{ fontWeight: 700 }}
+                      sx={{
+                        maxWidth: '100%',
+                        fontWeight: 700,
+                        '& .MuiChip-label': {
+                          display: 'block',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        },
+                      }}
                     />
                   </TableCell>
 

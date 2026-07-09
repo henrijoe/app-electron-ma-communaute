@@ -20,7 +20,7 @@ export type LogoProps = BoxProps & {
   disableLink?: boolean;
 };
 
-const getLogoImageUrl = (logoEglise?: string): string => {
+const getLogoImageUrl = (logoEglise?: string, cacheKey?: string | number): string => {
   if (!logoEglise) {
     return resolveStaticAssetUrl('/assets/images/logoCom1.png');
   }
@@ -29,7 +29,7 @@ const getLogoImageUrl = (logoEglise?: string): string => {
     return logoEglise;
   }
 
-  return buildChurchLogoUrl(logoEglise);
+  return buildChurchLogoUrl(logoEglise, cacheKey);
 };
 
 export const Logo = forwardRef<HTMLDivElement, LogoProps>(
@@ -41,7 +41,10 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
     const sessionUser = useSelector((state: IReduxState) => getSessionUser(state));
     const [hasImageError, setHasImageError] = useState(false);
     const gradientId = useId();
-    const logoImageUrl = useMemo(() => getLogoImageUrl(sessionUser?.logoEglise), [sessionUser?.logoEglise]);
+    const logoImageUrl = useMemo(
+      () => getLogoImageUrl(sessionUser?.logoEglise, sessionUser?.__syncAt),
+      [sessionUser?.__syncAt, sessionUser?.logoEglise]
+    );
 
     useEffect(() => {
       setHasImageError(false);

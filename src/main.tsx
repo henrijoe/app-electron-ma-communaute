@@ -14,6 +14,10 @@ import store from './store/store';
 // Initialisez le store global pour les utilitaires
 setGlobalStore(store);
 
+document.documentElement.lang = 'fr';
+document.documentElement.setAttribute('translate', 'no');
+document.body.setAttribute('translate', 'no');
+
 const persistor = persistStore(store);
 const AppRouter = (window as any)?.desktopApp?.isDesktop ? HashRouter : BrowserRouter;
 

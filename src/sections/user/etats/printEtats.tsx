@@ -1,26 +1,28 @@
-import React, { forwardRef, useRef, useState } from 'react';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import PrintIcon from '@mui/icons-material/Print';
-import VisibilityIcon from '@mui/icons-material/Visibility';
+import ReactToPrint from 'react-to-print';
+import React, { useRef, useState, forwardRef } from 'react';
+
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
-import Menu, { type MenuProps } from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import PrintIcon from '@mui/icons-material/Print';
 import { alpha, styled } from '@mui/material/styles';
-import ReactToPrint from 'react-to-print';
+import Menu, { type MenuProps } from '@mui/material/Menu';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 import {
-  canUseDesktopPrint,
   exportDesktopPdf,
+  canUseDesktopPrint,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
-import { isDesktopAppRuntime } from 'src/utils/access-control';
 
-import CoursDeBaseForm from './ficheCoursDebase';
 import { FicheDecision } from './ficheDecision';
+import CoursDeBaseForm from './ficheCoursDebase';
 import { ListeDesMembres } from './listeMembrePdf';
+import { FicheInscriptionMembre } from './ficheInscriptionMembre';
 
 const StyledMenu = styled((props: MenuProps) => (
   <Menu
@@ -72,10 +74,17 @@ const ComponentToPrintCoursDeBase = forwardRef<HTMLDivElement>((_, ref) => (
   </div>
 ));
 
+const ComponentToPrintFicheInscription = forwardRef<HTMLDivElement>((_, ref) => (
+  <div ref={ref}>
+    <FicheInscriptionMembre />
+  </div>
+));
+
 const PrintEtatGlobal = () => {
   const membreRef = useRef<HTMLDivElement>(null);
   const ficheDecisionRef = useRef<HTMLDivElement>(null);
   const coursDeBaseRef = useRef<HTMLDivElement>(null);
+  const ficheInscriptionRef = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const isDesktopPrint = canUseDesktopPrint();
   const open = Boolean(anchorEl);
@@ -102,7 +111,7 @@ const PrintEtatGlobal = () => {
     preview: async () => {
       // On ferme le menu avant d'ouvrir l'aperçu natif du desktop.
       handleClose();
-      await openDesktopPrintPreview(ref.current, { title: `Apercu - ${title}`, fileName });
+      await openDesktopPrintPreview(ref.current, { title: `Aperçu - ${title}`, fileName });
     },
     pdf: async () => {
       // On ferme le menu avant d'exporter le document cible au format PDF.
@@ -121,6 +130,11 @@ const PrintEtatGlobal = () => {
     coursDeBaseRef,
     'Fiche de cours de base',
     'fiche-cours-de-base'
+  );
+  const inscriptionHandlers = buildDesktopHandlers(
+    ficheInscriptionRef,
+    "Fiche d'inscription membre",
+    'fiche-inscription-membre'
   );
 
   return (
@@ -151,9 +165,18 @@ const PrintEtatGlobal = () => {
       >
         {isDesktopPrint ? (
           [
+            <MenuItem key="inscription-preview" onClick={inscriptionHandlers.preview}>
+              <VisibilityIcon />
+              Aperçu fiche inscription
+            </MenuItem>,
+            <MenuItem key="inscription-pdf" onClick={inscriptionHandlers.pdf}>
+              <PictureAsPdfIcon />
+              PDF fiche inscription
+            </MenuItem>,
+            <Divider key="inscription-divider" sx={{ my: 0.5 }} />,
             <MenuItem key="members-preview" onClick={membersHandlers.preview}>
               <VisibilityIcon />
-              Apercu membres
+              Aperçu membres
             </MenuItem>,
             <MenuItem key="members-pdf" onClick={membersHandlers.pdf}>
               <PictureAsPdfIcon />
@@ -162,16 +185,16 @@ const PrintEtatGlobal = () => {
             <Divider key="members-divider" sx={{ my: 0.5 }} />,
             <MenuItem key="fiche-preview" onClick={ficheHandlers.preview}>
               <VisibilityIcon />
-              Apercu fiche de decision
+              Aperçu fiche de décision
             </MenuItem>,
             <MenuItem key="fiche-pdf" onClick={ficheHandlers.pdf}>
               <PictureAsPdfIcon />
-              PDF fiche de decision
+              PDF fiche de décision
             </MenuItem>,
             <Divider key="fiche-divider" sx={{ my: 0.5 }} />,
             <MenuItem key="cours-preview" onClick={coursHandlers.preview}>
               <VisibilityIcon />
-              Apercu cours de base
+              Aperçu cours de base
             </MenuItem>,
             <MenuItem key="cours-pdf" onClick={coursHandlers.pdf}>
               <PictureAsPdfIcon />
@@ -180,6 +203,14 @@ const PrintEtatGlobal = () => {
           ]
         ) : (
           [
+            <MenuItem key="print-inscription" onClick={handleClose}>
+              <PrintIcon />
+              <ReactToPrint
+                trigger={() => <div>Fiche d&apos;inscription membre</div>}
+                content={() => ficheInscriptionRef.current}
+              />
+            </MenuItem>,
+
             <MenuItem key="print-members" onClick={handleClose}>
               <PrintIcon />
               <ReactToPrint
@@ -187,6 +218,7 @@ const PrintEtatGlobal = () => {
                 content={() => membreRef.current}
               />
             </MenuItem>,
+            
             <MenuItem key="print-fiche" onClick={handleClose}>
               <PrintIcon />
               <ReactToPrint
@@ -201,6 +233,7 @@ const PrintEtatGlobal = () => {
                 content={() => coursDeBaseRef.current}
               />
             </MenuItem>,
+
           ]
         )}
       </StyledMenu>
@@ -209,6 +242,7 @@ const PrintEtatGlobal = () => {
         <ComponentToPrintMembres ref={membreRef} />
         <ComponentToPrintFicheDecision ref={ficheDecisionRef} />
         <ComponentToPrintCoursDeBase ref={coursDeBaseRef} />
+        <ComponentToPrintFicheInscription ref={ficheInscriptionRef} />
       </div>
     </div>
   );

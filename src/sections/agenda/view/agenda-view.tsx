@@ -651,7 +651,7 @@ export function AgendaView() {
         <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
           <Box>
             <Typography variant="h3" sx={{ mb: 0.5 }}>Agenda</Typography>
-            <Typography color="text.secondary">Programme les cultes, rendez-vous et événements importants de la communauté.</Typography>
+            <Typography color="text.secondary">Programme les cultes, rendez-vous et événements importants de l&apos;église.</Typography>
           </Box>
           <Stack
             direction="row"

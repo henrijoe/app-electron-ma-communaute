@@ -49,22 +49,10 @@ export function ComptabiliteMovementDocument({
   return (
     <PrintDocumentLayout
       title={title}
-      subtitle={buildComptabiliteMetaLabel(search, filterLabel)}
-      countLabel={`Total ${getComptabiliteTypeLabel(type).toLowerCase()}s`}
-      countValue={typedItems.length}
       variant="plain"
       showDocumentMeta={false}
     >
-      <ComptabilitePrintHero
-        title={title}
-        description={description}
-        chips={[
-          `${typedItems.length} ligne(s)`,
-          getComptabiliteTypeLabel(type),
-          search.trim() ? 'Recherche appliquee' : 'Sans recherche textuelle',
-        ]}
-        variant="plain"
-      />
+
 
       <ComptabiliteSummaryCards
         totals={totals}

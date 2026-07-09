@@ -17,9 +17,6 @@ export const FicheDecisionPDf = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       title="Fiche de decision"
-      subtitle="Formulaire papier a remettre au nouveau contacte afin de preparer son suivi spirituel et pastoral."
-      countLabel="Document"
-      countValue={1}
     >
       <Stack spacing={2.25}>
         <PrintFormSection title="Identite du decide">

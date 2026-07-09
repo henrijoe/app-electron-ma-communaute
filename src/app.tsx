@@ -8,6 +8,7 @@ import { useScrollToTop } from 'src/hooks/use-scroll-to-top';
 
 import { ThemeProvider } from 'src/theme/theme-provider';
 
+import { AppRuntimeBootstrap } from 'src/components/desktop/app-runtime-bootstrap';
 import { DesktopSecurityBootstrap } from 'src/components/desktop/desktop-security-bootstrap';
 import { Iconify } from 'src/components/iconify';
 
@@ -38,6 +39,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
+      <AppRuntimeBootstrap />
       <DesktopSecurityBootstrap />
       <Router />
       {/* {githubButton} */}

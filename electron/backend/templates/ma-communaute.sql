@@ -40,15 +40,6 @@ CREATE TABLE `cellule` (
 -- Contenu de la table `cellule`
 --
 
-INSERT INTO `cellule` (`idCellule`, `nomCellule`, `lieuCellule`, `nombreMembreCellule`, `responsableCellule`, `responsableVisiteCellule`, `idUtilisateur`) VALUES
-(1, 'El kana', 'ANDOKOI D.BAZ', 25, 'Obrou Samuel', NULL, 1),
-(2, 'Morijah', 'ANDOKOI MARCHE', 23, NULL, NULL, 1),
-(3, 'Aser A', 'Andokoi Zompleu', 16, 'Dah Iyorka rose', NULL, 1),
-(4, 'Siloe', 'Zone Eglise', 20, NULL, NULL, 1),
-(5, 'Carmel', 'Andokoi Derriere Marche', 12, NULL, NULL, 1),
-(6, 'El Kaboth', 'Andokopi Cheveaux', 22, NULL, NULL, 1),
-(8, 'Reoboth', 'Cite Ado', 10, 'DIOKRI HENRI JOEL', 'Henri joel', 1);
-
 -- --------------------------------------------------------
 
 --
@@ -68,14 +59,6 @@ CREATE TABLE `comptabilite` (
 --
 -- Contenu de la table `comptabilite`
 --
-
-INSERT INTO `comptabilite` (`idComptabilite`, `nomComptabilite`, `entreeComptabilite`, `sortieComptabilite`, `dateComptabilite`, `observationComptabilite`, `idUtilisateur`) VALUES
-(1, 'Kouame', 100000, 500, '2023-07-19', 'Offrande', 1),
-(2, 'Marie Ange', 1500, 800, '2023-07-20', 'Transaction 2', 1),
-(3, 'Kouame', 20000, 300, '2023-07-21', 'Offrande et dime', 1),
-(5, 'Kouame', 100000, 500, '2023-07-19', 'Offrande', 1),
-(6, 'Kouame', 100000, 500, '2023-07-19', 'Offrande', 1),
-(7, 'Kouame', 100000, 500, '2023-07-19', 'Offrande', 1);
 
 -- --------------------------------------------------------
 
@@ -105,12 +88,6 @@ CREATE TABLE `culte` (
 -- Contenu de la table `culte`
 --
 
-INSERT INTO `culte` (`idCulte`, `typeCulte`, `dateCulte`, `dirigeant`, `predication`, `passageBiblique`, `themePredication`, `nombreHommeCulte`, `nombreFemmeCulte`, `offrandeCulte`, `ecodim`, `filleEcodim`, `offrandeEcodim`, `resumePredication`, `idUtilisateur`) VALUES
-(1, '3', '2026-01-17', 'Respo komoe', 'Past Honore', 'jean 6v6', 'La Patience', '41', '23', '120000', '53', '48', '25000', 'jbhghjijibbbbbbbbbbbbbb k k nk', NULL),
-(2, '4', '2026-02-01', 'Respo Assi', 'Pasteur Troh', 'Romains 8 v 22', 'Sois un modele de consecration', '55', '45', NULL, '100', '', NULL, 'JHJGHBEHFEBFHRBGRNGNRJGNTNTJN', NULL),
-(3, '4', '2026-02-18', 'Respo komoe', 'Ancien ZOE', 'Ephesien 6 v 10', 'La FOI', '45', '29', '15000', '', '', '', '', NULL),
-(4, '5', '2026-02-20', 'Respo komoe', 'Ancien ZOE', 'Romains 8 v 22', 'L\'AMOUR', '145', '250', '10000', '45', '62', '14000', '', NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -131,9 +108,6 @@ CREATE TABLE `deces` (
 -- Contenu de la table `deces`
 --
 
-INSERT INTO `deces` (`idDeces`, `idMembre`, `nomMembreDeces`, `dateDeces`, `lieuDeces`, `causeDeces`, `idUtilisateur`) VALUES
-(1, NULL, 'N\'dri narcisse', '2024-06-12', 'CHU', 'Arret cardiaque automatique', 1);
-
 -- --------------------------------------------------------
 
 --
@@ -152,14 +126,6 @@ CREATE TABLE `departement` (
 --
 -- Contenu de la table `departement`
 --
-
-INSERT INTO `departement` (`idDepartement`, `libelleLongDepartement`, `libelleCourtDepartement`, `sloganDepartement`, `responsableDepartement`, `idUtilisateur`) VALUES
-(1, 'Action des Ouvriere du Christ', 'AOC', 'AOC TOUJOURS FORT,AOC TOUJOURS CONQUERANTE', 'Moni kouka', 1),
-(6, 'Jeunesse des Assemblees de Dieu de Cote d\'Ivoire', 'JADCI', 'Christ est merveilleux, alleluiaaa ', 'Jean Francois', 1),
-(9, 'Departement Enfant des Assemblees de Dieu', 'DEEADCI', 'L\'enfant, l\'eglise de demain', 'Diokri henri joel', 1),
-(10, 'Hommes ACTIFS POUR CHRIST', 'HACH', 'Hommes pour Jesus', 'ARNAUD', 1),
-(11, 'ACCUEIL', 'AC', 'Bien recevoir', 'Togon serge', 1),
-(12, 'TEMOIN ET CONSEILLER', 'TC', 'Accompagner jusqu\'au bapteme', 'Respo kouka', 1);
 
 -- --------------------------------------------------------
 
@@ -202,10 +168,6 @@ CREATE TABLE `eglise` (
 -- Contenu de la table `eglise`
 --
 
-INSERT INTO `eglise` (`idEglise`, `nomEglise`, `idComptabilite`, `idUtilisateur`) VALUES
-(1, 'Assemblee de Dieu Andokoi Peniel', 1, 1),
-(2, 'Catholique', 2, 1);
-
 -- --------------------------------------------------------
 
 --
@@ -224,14 +186,6 @@ CREATE TABLE `groupe` (
 -- Contenu de la table `groupe`
 --
 
-INSERT INTO `groupe` (`idGroupe`, `libelleGroupe`, `descriptionGroupe`, `responsableGroupe`, `idUtilisateur`) VALUES
-(1, 'BAOULE', 'GROUPE BAOULE', 'Tanella Tryphene', 1),
-(2, 'BETE', 'GROUPE BETE', NULL, 1),
-(3, 'DIDA', 'GROUPE DIDA', NULL, 1),
-(4, 'BAOULE', 'GROUPE BAOULE', NULL, 1),
-(5, 'AVICKAM', 'GROUPE AVICKAME', 'Offo Aya Benedicte', 1),
-(7, 'ATTIE', 'GROUPE ATTIE', 'DIOKRI HENRI JOEL', NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -240,6 +194,7 @@ INSERT INTO `groupe` (`idGroupe`, `libelleGroupe`, `descriptionGroupe`, `respons
 
 CREATE TABLE `maladie` (
   `idMaladie` int(11) NOT NULL,
+  `idMembre` int(11) DEFAULT NULL,
   `nomMembreMaladie` varchar(100) DEFAULT NULL,
   `typeMaladie` varchar(255) DEFAULT NULL,
   `dateMaladie` varchar(255) DEFAULT NULL,
@@ -252,8 +207,6 @@ CREATE TABLE `maladie` (
 -- Contenu de la table `maladie`
 --
 
-INSERT INTO `maladie` (`idMaladie`, `nomMembreMaladie`, `typeMaladie`, `dateMaladie`, `lieuHospitalisation`, `observationMaladie`, `idUtilisateur`) VALUES
-(1, 'Membre exemple', 'Hospitalisation', '2026-03-01', 'CHU', 'Suivi pastoral en cours', 1);
 -- --------------------------------------------------------
 
 --
@@ -262,6 +215,8 @@ INSERT INTO `maladie` (`idMaladie`, `nomMembreMaladie`, `typeMaladie`, `dateMala
 
 CREATE TABLE `mariage` (
   `idMariage` int(11) NOT NULL,
+  `idFrereMembre` int(11) DEFAULT NULL,
+  `idSoeurMembre` int(11) DEFAULT NULL,
   `nomFrereMariage` varchar(225) DEFAULT NULL,
   `nomSoeurMariage` varchar(225) DEFAULT NULL,
   `dateMariage` varchar(225) DEFAULT NULL,
@@ -277,9 +232,6 @@ CREATE TABLE `mariage` (
 --
 -- Contenu de la table `mariage`
 --
-
-INSERT INTO `mariage` (`idMariage`, `nomFrereMariage`, `nomSoeurMariage`, `dateMariage`, `lieuMariage`, `culteMariage`, `temoin1Mariage`, `temoin2Mariage`, `lieuReception`, `contactMariage`, `idUtilisateur`) VALUES
-(1, 'Kouame franck', 'Konan juliette', '11-05-2024', 'Cocody', 'andokoi', 'Maman kanga', 'Diacre koffi', 'Franciscains', '010302546', 1);
 
 -- --------------------------------------------------------
 
@@ -335,9 +287,6 @@ CREATE TABLE `membre` (
 -- Contenu de la table `membre`
 --
 
-INSERT INTO `membre` (`idMembre`, `nomMembre`, `prenomMembre`, `dateNaissMembre`, `lieuNaissMembre`, `sexeMembre`, `emailMembre`, `nationaliteMembre`, `fonctionMembre`, `contactMembre`, `ethnieMembre`, `residenceMembre`, `civiliteMembre`, `nouvelleAmeMembre`, `dateConversionMembre`, `baptemeEauMembre`, `dateBaptemeMembre`, `dateMariageMembre`, `capaciteSpirituelleMembre`, `situationMatrimonialeMembre`, `nomFiance`, `photoMembre`, `lieuBaptemeEauMembre`, `baptemeSaintEspritMembre`, `dateBaptemeSaintEspritMembre`, `egliseOrigineMembre`, `nomAmiEglise`, `visiteMembre`, `raisonNonVisiteMembre`, `heureVisiteMembre`, `dateDecisionMembre`, `lieuTravailMembre`, `idNiveauEtude`, `idEglise`, `idCellule`, `idDepartement`, `idGroupe`, `idResponsabilite`, `estDecede`, `dateDecesMembre`, `idUtilisateur`) VALUES
-(19, 'Seri', 'Ange', '1990-05-11', 'Divo', '1', 'seriange@gmail.com', 'IVOIRIENNE', 'Infographe', '0564178820', 'BETE', 'Micao', '', '1', '2026-02-04', NULL, NULL, NULL, NULL, '1', '', 'membre_19.jpg', '', NULL, NULL, 'AD ', 'kouame', '1', 'Mes parents ne veulent pas', '03:13', NULL, 'Bouafle', 2, NULL, 1, 6, 2, NULL, 0, NULL, 1);
-
 -- --------------------------------------------------------
 
 --
@@ -357,9 +306,6 @@ CREATE TABLE `naissance` (
 --
 -- Contenu de la table `naissance`
 --
-
-INSERT INTO `naissance` (`idNaissance`, `nomCoupleNaissance`, `dateNaissance`, `lieuNaissance`, `nomEnfantNaissance`, `datePresentationNaissance`, `idUtilisateur`) VALUES
-(1, 'Kouame', '2024-06-04', 'AGEFORMA', 'KOUAME ANGE NOEL', '2024-06-01', 1);
 
 -- --------------------------------------------------------
 
@@ -408,12 +354,6 @@ CREATE TABLE `questions` (
 --
 -- Contenu de la table `questions`
 --
-
-INSERT INTO `questions` (`idQuestion`, `question`, `options`, `correctOption`, `niveau`, `idEglise`) VALUES
-(1, 'Donner la signification de EEADCI', '["Eglise des Evangiles des Assemblees de Dieu de Dieu de Cote d\'Ivoire", "Eglise Evangelique des Assemblees de Dieu de Cote d\'Ivoire", "Eglise Evangeliste Assemblees de Dieu de Cote d\'Ivoire"]', 'Eglise Evangelique des Assemblees de Dieu de Cote d\'Ivoire', 'facile', 1),
-(2, 'Donner la signification de EEADCI', '["Eglise des Evangiles des Assemblees de Dieu de Dieu de Cote d\'Ivoire", "Eglise Evangelique des Assemblees de Dieu de Cote d\'Ivoire", "Eglise Evangeliste Assemblees de Dieu de Cote d\'Ivoire"]', 'Eglise Evangelique des Assemblees de Dieu de Cote d\'Ivoire', 'facile', 1),
-(3, 'Donner la signification de EEADCI', '["Eglise des Evangiles des Assemblees de Dieu de Dieu de Cote d\'Ivoire", "Eglise Evangelique des Assemblees de Dieu de Cote d\'Ivoire", "Eglise Evangeliste Assemblees de Dieu de Cote d\'Ivoire"]', 'Eglise Evangelique des Assemblees de Dieu de Cote d\'Ivoire', 'facile', 1),
-(4, 'Donner la signification de EEADCI', '["Eglise des Evangiles des Assemblees de Dieu de Dieu de Cote d\'Ivoire", "Eglise Evangelique des Assemblees de Dieu de Cote d\'Ivoire", "Eglise Evangeliste Assemblees de Dieu de Cote d\'Ivoire"]', 'Eglise Evangelique des Assemblees de Dieu de Cote d\'Ivoire', 'facile', 1);
 
 -- --------------------------------------------------------
 
@@ -515,6 +455,9 @@ CREATE TABLE `utilisateur` (
   `nombrePasteursEglise` varchar(50) DEFAULT NULL,
   `nombreAnciensEglise` varchar(50) DEFAULT NULL,
   `nombreDiacresEglise` varchar(50) DEFAULT NULL,
+  `modeVersetDashboard` varchar(30) NOT NULL DEFAULT 'daily',
+  `versetDashboardReference` varchar(255) DEFAULT NULL,
+  `versetDashboardTexte` text,
   `password` varchar(255) NOT NULL,
   `confirmPassword` varchar(255) NOT NULL,
   `email` varchar(255) DEFAULT NULL
@@ -523,11 +466,6 @@ CREATE TABLE `utilisateur` (
 --
 -- Contenu de la table `utilisateur`
 --
-
-INSERT INTO `utilisateur` (`idUtilisateur`, `logoUtilisateur`, `logoEglise`, `nomTemple`, `lieuEglise`, `nomUtilisateur`, `prenomUtilisateur`, `telephoneUtilisateur`, `telephoneSecretariatEglise`, `pasteurPrincipal`, `pasteurSecondaire`, `pasteurTroisieme`, `telephonePasteurPrincipal`, `telephonePasteurSecondaire`, `telephonePasteurTroisieme`, `capaciteAccueilEglise`, `nombreCultesDimanche`, `emailEglise`, `boitePostaleEglise`, `dateCreationEglise`, `nombrePasteursEglise`, `nombreAnciensEglise`, `nombreDiacresEglise`, `password`, `confirmPassword`, `email`) VALUES
-(1, '', '', 'EEAD YABAYO', '', 'Henri', 'Joel', '0102030405', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'aa', '$2b$20$JWgvBof.ocjQS3Bwfr0cB.ZjnP1iKMjXQkB0r93RC9kiuEOeuxQ7u', 'joel@gmail.com'),
-(11, NULL, NULL, 'EGLISE EVANGELIQUE DES ASSEMBLEES DE DIEU ANDOKOI PENIEL', NULL, 'Tanella', 'Tryphene', '0102034566', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'cc', '$2b$20$YW4LCaajyaANWa9YtRVvQOH7kXCaz848MSHks.TuKQwOkaQmdqaBm', 'tryphe@gmail.com'),
-(12, NULL, NULL, 'EGLISE EVANGELIQUE DES ASSEMBLEES DE DIEU ANDOKOI PENIEL', NULL, 'KOUAME', 'ANGE', '0102030617', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '0102030617', '$2b$20$KeDF4JJHSODI2LAQ0fDy.eccT07yyXdR6RO0s4Kj9Lv9i4iqSkKYu', 'kouame@gmail.com');
 
 --
 -- Index pour les tables exportees
@@ -677,27 +615,27 @@ ALTER TABLE `utilisateur`
 -- AUTO_INCREMENT pour la table `cellule`
 --
 ALTER TABLE `cellule`
-  MODIFY `idCellule` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `idCellule` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `comptabilite`
 --
 ALTER TABLE `comptabilite`
-  MODIFY `idComptabilite` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `idComptabilite` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `culte`
 --
 ALTER TABLE `culte`
-  MODIFY `idCulte` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `idCulte` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `deces`
 --
 ALTER TABLE `deces`
-  MODIFY `idDeces` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `idDeces` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `departement`
 --
 ALTER TABLE `departement`
-  MODIFY `idDepartement` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `idDepartement` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `domaine_activite`
 --
@@ -707,27 +645,27 @@ ALTER TABLE `domaine_activite`
 -- AUTO_INCREMENT pour la table `eglise`
 --
 ALTER TABLE `eglise`
-  MODIFY `idEglise` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `idEglise` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `groupe`
 --
 ALTER TABLE `groupe`
-  MODIFY `idGroupe` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `idGroupe` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `mariage`
 --
 ALTER TABLE `mariage`
-  MODIFY `idMariage` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `idMariage` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `membre`
 --
 ALTER TABLE `membre`
-  MODIFY `idMembre` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `idMembre` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `naissance`
 --
 ALTER TABLE `naissance`
-  MODIFY `idNaissance` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `idNaissance` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `niveau_etude`
 --
@@ -737,7 +675,7 @@ ALTER TABLE `niveau_etude`
 -- AUTO_INCREMENT pour la table `questions`
 --
 ALTER TABLE `questions`
-  MODIFY `idQuestion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `idQuestion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `responsabilite`
 --
@@ -747,7 +685,7 @@ ALTER TABLE `responsabilite`
 -- AUTO_INCREMENT pour la table `utilisateur`
 --
 ALTER TABLE `utilisateur`
-  MODIFY `idUtilisateur` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `idUtilisateur` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- Contraintes pour les tables exportees
 --

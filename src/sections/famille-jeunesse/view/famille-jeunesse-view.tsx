@@ -62,6 +62,8 @@ import { ContactPhoneLink } from 'src/components/contact-phone-link';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { PrintTable, PrintEmptyState, PrintDocumentLayout } from 'src/components/print/print-document';
 
+import { FicheFamilleJeunesseRenseignement } from '../ficheFamilleJeunesseRenseignement';
+
 type MemberOption = {
   id: number;
   label: string;
@@ -118,6 +120,7 @@ export function FamilleJeunesseView() {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const ficheRenseignementRef = useRef<HTMLDivElement>(null);
   const printListRef = useRef<HTMLDivElement>(null);
   const printDetailRef = useRef<HTMLDivElement>(null);
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
@@ -394,10 +397,8 @@ export function FamilleJeunesseView() {
       <Stack spacing={3}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between">
           <Box>
-            <Typography variant="h3">Famille de jeunesse</Typography>
-            <Typography color="text.secondary">
-              Organise les responsables de la jeunesse à partir des membres déjà enregistrés.
-            </Typography>
+            <Typography variant="h4" flexGrow={1}>Famille de jeunesse</Typography>
+
           </Box>
 
           <Stack
@@ -411,6 +412,20 @@ export function FamilleJeunesseView() {
             }}
           >
             <ReactToPrint
+              documentTitle="fiche-renseignement-famille-jeunesse"
+              trigger={() => (
+                <Tooltip title="Fiche de renseignement">
+                  <IconButton
+                    color="primary"
+                    sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}
+                  >
+                    <PrintRounded />
+                  </IconButton>
+                </Tooltip>
+              )}
+              content={() => ficheRenseignementRef.current}
+            />
+            <ReactToPrint
               documentTitle="familles-de-jeunesse"
               trigger={() => (
                 <Tooltip title="Imprimer">
@@ -423,6 +438,20 @@ export function FamilleJeunesseView() {
                 </Tooltip>
               )}
               content={() => printListRef.current}
+            />
+            <ReactToPrint
+              documentTitle="fiche-renseignement-famille-jeunesse"
+              trigger={() => (
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  startIcon={<PrintRounded />}
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                >
+                  Fiche de renseignement
+                </Button>
+              )}
+              content={() => ficheRenseignementRef.current}
             />
             <ReactToPrint
               documentTitle="familles-de-jeunesse"
@@ -633,27 +662,27 @@ export function FamilleJeunesseView() {
                         </Stack>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.45 }}>
+                        <Typography variant="body2" sx={{ lineHeight: 1.45 }}>
                           {formatMemberWithContact(item.conseillerFamille)}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.45 }}>
+                        <Typography variant="body2" sx={{lineHeight: 1.45 }}>
                           {formatMemberWithContact(item.nomAnimateur)}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.45 }}>
+                        <Typography variant="body2" sx={{ lineHeight: 1.45 }}>
                           {formatMemberWithContact(item.nomViceAnimateur)}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.45 }}>
+                        <Typography variant="body2" sx={{lineHeight: 1.45 }}>
                           {formatMemberWithContact(item.nomSecretaire)}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.45 }}>
+                        <Typography variant="body2" sx={{ lineHeight: 1.45 }}>
                           {formatMemberWithContact(item.nomTresorier)}
                         </Typography>
                       </TableCell>
@@ -702,9 +731,6 @@ export function FamilleJeunesseView() {
           </Card>
         )}
 
-        {!loading && filteredData.length === 0 && (
-          <Alert severity="info">Aucune famille de jeunesse trouvée.</Alert>
-        )}
       </Stack>
 
       <Dialog open={openDialog} onClose={closeDialog} fullScreen={isMobile} fullWidth maxWidth="md">
@@ -830,6 +856,9 @@ export function FamilleJeunesseView() {
             variant="list"
           />
         </Box>
+        <Box ref={ficheRenseignementRef}>
+          <FicheFamilleJeunesseRenseignement />
+        </Box>
       </Box>
 
       <ConfirmDialog
@@ -866,9 +895,6 @@ function PrintableFamilleJeunesse({
   return (
     <PrintDocumentLayout
       title={title}
-      subtitle={variant === 'list' ? 'Organisation des familles de jeunesse.' : 'Fiche détaillée de la famille de jeunesse.'}
-      countLabel={variant === 'list' ? 'Familles' : 'Fiche'}
-      countValue={items.length}
       showPagination
     >
       {!items.length && (

@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 
 import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
-import { canManageModule } from 'src/utils/access-control';
+import { canManageModule, isDesktopAppRuntime } from 'src/utils/access-control';
 import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
@@ -58,6 +58,7 @@ export function CulteView() {
     || Number(authUtilisateurData?.idUtilisateur)
     || null;
   const canManageCulte = canManageModule(appUserConnected || authUtilisateurData, 'culte');
+  const isDesktopApp = isDesktopAppRuntime();
 
   const [loading, setLoading] = useState(true);
   const table = useCulteTable();
@@ -111,11 +112,10 @@ export function CulteView() {
       }
     } catch (error) {
       console.error('Error fetching culte:', error);
-      showNotification(getApiErrorMessage(error, 'Impossible de charger les cultes'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [currentUserId, dispatch, showNotification]);
+  }, [currentUserId, dispatch]);
 
 
   // Fonction pour supprimer un culte
@@ -426,11 +426,11 @@ export function CulteView() {
           alignItems="center"
           sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}
         >
-          <PrintEtatGlobal />
+          {!isDesktopApp && <PrintEtatGlobal />}
 
-          {canManageCulte && (
+          {!isDesktopApp && canManageCulte && (
           <>
-            <Tooltip title={loading ? 'Chargement...' : 'Ajouter culte'}>
+            <Tooltip title="Ajouter culte">
               <span>
                 <IconButton
                   color="primary"
@@ -454,7 +454,7 @@ export function CulteView() {
               disabled={loading}
               sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
             >
-              {loading ? 'Chargement...' : 'Ajouter culte'}
+              Ajouter culte
             </Button>
           </>
           )}

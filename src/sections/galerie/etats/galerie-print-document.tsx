@@ -52,9 +52,6 @@ export function GaleriePrintDocument({ event, images }: GaleriePrintDocumentProp
       <PrintDocumentLayout
         identity={identity}
         title={`Galerie - ${event.titreGalerie}`}
-        subtitle={buildEventSubtitle(event)}
-        countLabel="Total images"
-        countValue={0}
         variant="plain"
       >
         <PrintEmptyState title="Aucune image" message="Cette galerie ne contient encore aucune photo à imprimer." />
@@ -109,9 +106,6 @@ export function GaleriePrintDocument({ event, images }: GaleriePrintDocumentProp
           <PrintDocumentLayout
             identity={identity}
             title={`Galerie - ${event.titreGalerie}`}
-            subtitle={buildEventSubtitle(event)}
-            countLabel="Page"
-            countValue={pageIndex + 1}
             variant="plain"
           >
             <Box

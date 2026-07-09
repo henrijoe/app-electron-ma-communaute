@@ -24,9 +24,6 @@ export const FicheDecisionIndividuelPDf = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       title="Fiche de decision individuelle"
-      subtitle="Etat individuel d'un membre pour le suivi pastoral, la visitation et l'accompagnement spirituel."
-      countLabel="Document"
-      countValue={1}
     >
       <Stack spacing={2.25}>
         <PrintFormSection title="Identite du membre">

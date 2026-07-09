@@ -43,6 +43,8 @@ export interface IUser {
 }
 
 export interface IUtilisateur {
+  token?: string;
+  __syncAt?: number;
   idUtilisateur: number;
   idUtilisateurParent: number | null;
   roleUtilisateur: UserRole;
@@ -71,6 +73,9 @@ export interface IUtilisateur {
   nombrePasteursEglise: string;
   nombreAnciensEglise: string;
   nombreDiacresEglise: string;
+  modeVersetDashboard: string;
+  versetDashboardReference: string;
+  versetDashboardTexte: string;
   password: string;
   confirmPassword: string;
   email: string;
@@ -105,6 +110,9 @@ export const utilisateur: IUtilisateur = {
   nombrePasteursEglise: '',
   nombreAnciensEglise: '',
   nombreDiacresEglise: '',
+  modeVersetDashboard: 'daily',
+  versetDashboardReference: '',
+  versetDashboardTexte: '',
   password: '',
   confirmPassword: '',
   email: ''

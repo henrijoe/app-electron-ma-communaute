@@ -34,27 +34,14 @@ export function ComptabiliteArchiveDocument({
   return (
     <PrintDocumentLayout
       title="Archive comptable"
-      subtitle={buildComptabiliteMetaLabel('', `Archive superadmin | ${filterLabel}`)}
-      countLabel="Ecritures archivees"
-      countValue={items.length}
       variant="plain"
       showDocumentMeta={false}
     >
-      <ComptabilitePrintHero
-        title="Ecritures supprimees et conservees"
-        description="Ce document de controle liste les ecritures retirees de la comptabilite active, avec la trace de suppression, le motif fourni et l'utilisateur implique dans l'operation."
-        chips={[
-          `${items.length} ecriture(s) archivee(s)`,
-          `${items.filter((item) => item.typeComptabilite === 'entree').length} entree(s) archivee(s)`,
-          `${items.filter((item) => item.typeComptabilite === 'sortie').length} sortie(s) archivee(s)`,
-        ]}
-        variant="plain"
-      />
 
       {items.length === 0 ? (
         <PrintEmptyState
-          title="Aucune ecriture archivee"
-          message="Aucune ecriture supprimee n'est actuellement disponible dans l'archive comptable."
+          title="Aucune écriture archivée"
+          message="Aucune écriture supprimée n'est actuellement disponible dans l'archive comptable."
         />
       ) : (
         <>
@@ -62,13 +49,13 @@ export function ComptabiliteArchiveDocument({
             <TableHead>
               <TableRow>
                 <TableCell sx={{ width: 110 }}>Date</TableCell>
-                <TableCell sx={{ width: 180 }}>Libelle</TableCell>
+                <TableCell sx={{ width: 180 }}>Libellé</TableCell>
                 <TableCell sx={{ width: 110 }}>Type</TableCell>
                 <TableCell align="right" sx={{ width: 130 }}>
                   Montant
                 </TableCell>
-                <TableCell sx={{ width: 140 }}>Supprime le</TableCell>
-                <TableCell sx={{ width: 170 }}>Supprime par</TableCell>
+                <TableCell sx={{ width: 140 }}>Supprimé le</TableCell>
+                <TableCell sx={{ width: 170 }}>Supprimé par</TableCell>
                 <TableCell sx={{ width: 260 }}>Motif</TableCell>
                 <TableCell align="right" sx={{ width: 150 }}>
                   Impact solde
@@ -103,9 +90,9 @@ export function ComptabiliteArchiveDocument({
           <PrintTable minWidth={620}>
             <TableHead>
               <TableRow>
-                <TableCell>Total entrees archivees</TableCell>
-                <TableCell>Total sorties archivees</TableCell>
-                <TableCell>Impact net archive</TableCell>
+                <TableCell>Total entrées archivées</TableCell>
+                <TableCell>Total sorties archivées</TableCell>
+                <TableCell>Impact net archivé</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

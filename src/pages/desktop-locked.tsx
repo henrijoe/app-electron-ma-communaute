@@ -14,6 +14,7 @@ import { resetDesktopSecurityStatus, setDesktopSecurityStatus, setUserConnected,
 import { setConnecter, setUtilisateurData, utilisateur } from 'src/store/userSlice';
 import type { IReduxState } from 'src/store/store';
 import { apiClient } from 'src/utils/apiClient';
+import { fDate } from 'src/utils/format-time';
 
 // Ecran simple affiche quand la licence desktop bloque l'utilisateur courant.
 export default function DesktopLockedPage() {
@@ -91,7 +92,7 @@ export default function DesktopLockedPage() {
         </Typography>
 
         <Typography variant="body2" color="text.secondary">
-          Expiration actuelle : {desktopExpiresAt || 'non disponible'}
+          Expiration actuelle : {fDate(desktopExpiresAt) || 'non disponible'}
         </Typography>
 
         <Stack

@@ -28,6 +28,7 @@ export const cellule:any = {
   responsableVisiteCellule:"",
   lieuCellule:"",
   nombreMembreCellule:"",
+  responsableCellule:"",
 }
 
 export interface IResponsable {

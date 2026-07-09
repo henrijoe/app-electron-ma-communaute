@@ -22,7 +22,7 @@ import TablePagination from '@mui/material/TablePagination';
 import Tooltip from '@mui/material/Tooltip';
 
 import { apiClient } from 'src/utils/apiClient';
-import { canManageModule } from 'src/utils/access-control';
+import { canManageModule, isDesktopAppRuntime } from 'src/utils/access-control';
 import { normalizeForSearch } from 'src/utils/text';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { Iconify } from 'src/components/iconify/iconify';
@@ -62,6 +62,7 @@ export function GroupeView() {
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
   const canManageGroupe = canManageModule(appUserConnected || authUtilisateurData, 'groupe');
+  const isDesktopApp = isDesktopAppRuntime();
 
   const [loading, setLoading] = useState(true);
   const [membres, setMembres] = useState<IMembre[]>([]);
@@ -320,8 +321,8 @@ export function GroupeView() {
       >
         <Typography variant="h4" flexGrow={1}>Liste des groupes</Typography>
         <Box display="flex" gap={1.25} alignItems="center" sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-          <PrintEtatGlobal />
-          {canManageGroupe && (
+          {!isDesktopApp && <PrintEtatGlobal />}
+          {!isDesktopApp && canManageGroupe && (
             <>
               <Tooltip title="Ajouter groupe">
                 <IconButton

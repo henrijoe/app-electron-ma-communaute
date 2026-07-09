@@ -17,9 +17,6 @@ const CoursDeBaseForm = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       title="Cours de base"
-      subtitle="Fiche de suivi papier pour l'accompagnement des nouveaux membres pendant leur parcours de formation."
-      countLabel="Document"
-      countValue={1}
     >
       <Stack spacing={2.25}>
         <PrintFormSection title="Informations principales">

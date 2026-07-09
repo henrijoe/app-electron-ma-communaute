@@ -104,9 +104,9 @@ export const navData: DashboardNavItem[] = [
     icon: <SettingsRounded />,
     permissionKey: 'settings',
   },
-  {
-    title: 'Not found',
-    path: '/404',
-    icon: <WarningAmberRounded />,
-  },
+  // {
+  //   title: 'Not found',
+  //   path: '/404',
+  //   icon: <WarningAmberRounded />,
+  // },
 ];

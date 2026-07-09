@@ -86,11 +86,13 @@ type SocialConfig = {
   helperText: string;
   icon: React.ReactNode;
   label: string;
+  singularLabel: string;
 };
 
 interface IMaladieDraft {
   dateMaladie: string | null;
   idMaladie?: number | null;
+  idMembre?: number | null;
   idUtilisateur: number | null;
   lieuHospitalisation: string;
   nomMembreMaladie: string;
@@ -102,7 +104,9 @@ const emptyMariage: IMariage = {
   contactMariage: '',
   culteMariage: '',
   dateMariage: null,
+  idFrereMembre: null,
   idMariage: 0,
+  idSoeurMembre: null,
   idUtilisateur: 0,
   lieuMariage: '',
   lieuReception: '',
@@ -135,6 +139,7 @@ const emptyDeces: IDeces = {
 const emptyMaladie: IMaladieDraft = {
   dateMaladie: null,
   idMaladie: 0,
+  idMembre: null,
   idUtilisateur: 0,
   lieuHospitalisation: '',
   nomMembreMaladie: '',
@@ -145,9 +150,10 @@ const emptyMaladie: IMaladieDraft = {
 const socialConfig: Record<SocialCaseType, SocialConfig> = {
   mariage: {
     label: 'Mariages',
+    singularLabel: 'Mariage',
     color: 'secondary',
     icon: <FavoriteRoundedIcon />,
-    helperText: 'Ceremonies de mariage, reception et temoins de la communaute.',
+    helperText: 'Cérémonies de mariage, reception et temoins de la communaute.',
     emptyMessage: 'Aucun mariage enregistre pour le moment.',
     columns: [
       { key: 'nomFrereMariage', label: 'Frere' },
@@ -171,6 +177,7 @@ const socialConfig: Record<SocialCaseType, SocialConfig> = {
   },
   naissance: {
     label: 'Naissances',
+    singularLabel: 'Naissance',
     color: 'success',
     icon: <CakeRoundedIcon />,
     helperText: 'Naissances, presentation des enfants et suivi des familles.',
@@ -191,11 +198,12 @@ const socialConfig: Record<SocialCaseType, SocialConfig> = {
     ],
   },
   deces: {
-    label: 'Deces',
+    label: 'Décès',
+    singularLabel: 'Décès',
     color: 'error',
     icon: <SentimentDissatisfiedRoundedIcon />,
-    helperText: 'Deces, lieux, dates et causes pour le suivi pastoral.',
-    emptyMessage: 'Aucun deces enregistre pour le moment.',
+    helperText: 'Décès, lieux, dates et causes pour le suivi pastoral.',
+    emptyMessage: 'Aucun décès enregistré pour le moment.',
     columns: [
       { key: 'nomMembreDeces', label: 'Membre' },
       { key: 'dateDeces', label: 'Date' },
@@ -204,13 +212,14 @@ const socialConfig: Record<SocialCaseType, SocialConfig> = {
     ],
     fields: [
       { name: 'nomMembreDeces', label: 'Nom du membre', required: true },
-      { name: 'dateDeces', label: 'Date du deces', type: 'date', required: true },
-      { name: 'lieuDeces', label: 'Lieu du deces', required: true },
+      { name: 'dateDeces', label: 'Date du décès', type: 'date', required: true },
+      { name: 'lieuDeces', label: 'Lieu du décès', required: true },
       { name: 'causeDeces', label: 'Cause / circonstances', type: 'textarea', minRows: 3 },
     ],
   },
   maladie: {
     label: 'Maladies',
+    singularLabel: 'Maladie',
     color: 'info',
     icon: <FavoriteBorderRoundedIcon />,
     helperText: 'Signalements de maladie, hospitalisation et suivi pastoral.',
@@ -263,6 +272,42 @@ const buildMembreLabel = (membre: IMembre) => `${membre.nomMembre || ''} ${membr
 const isContactColumn = (key: string) =>
   key.toLowerCase().includes('contact') || key.toLowerCase().includes('telephone');
 
+const getMembreSexeCode = (membre: IMembre) => normalizeText(membre.sexeMembre);
+
+const isMaleMembre = (membre: IMembre) => {
+  const sexe = getMembreSexeCode(membre);
+  return sexe === '1' || sexe === 'm' || sexe === 'homme' || sexe === 'masculin';
+};
+
+const isFemaleMembre = (membre: IMembre) => {
+  const sexe = getMembreSexeCode(membre);
+  return sexe === '2' || sexe === 'f' || sexe === 'femme' || sexe === 'feminin';
+};
+
+const getLinkedMembreStatus = (idMembre: number | null | undefined, membres: IMembre[]) => {
+  if (!idMembre) {
+    return null;
+  }
+
+  const linkedMembre = membres.find((item) => Number(item.idMembre) === Number(idMembre));
+
+  return linkedMembre
+    ? { color: 'success' as const, label: 'Membre lié' }
+    : { color: 'warning' as const, label: 'Membre supprimé' };
+};
+
+const getSocialLinkedMembreIds = (type: SocialCaseType, row: any) => {
+  if (type === 'mariage') {
+    return [row?.idFrereMembre, row?.idSoeurMembre].filter(Boolean);
+  }
+
+  if (type === 'maladie') {
+    return row?.idMembre ? [row.idMembre] : [];
+  }
+
+  return [];
+};
+
 export function SocialView() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -281,6 +326,8 @@ export function SocialView() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; label: string } | null>(null);
   const [availableMembres, setAvailableMembres] = useState<IMembre[]>([]);
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
+  const maleMembres = useMemo(() => availableMembres.filter(isMaleMembre), [availableMembres]);
+  const femaleMembres = useMemo(() => availableMembres.filter(isFemaleMembre), [availableMembres]);
 
   // Charge toutes les categories sociales rattachees au compte courant.
   const fetchSocialCases = useCallback(async () => {
@@ -349,8 +396,8 @@ export function SocialView() {
       const memberName = String(payload?.nomMembreDeces || '').trim();
       showNotification(
         memberName
-          ? `Deces enregistre: ${memberName} a ete retire des listes actives.`
-          : 'Un deces a ete enregistre et les listes actives ont ete mises a jour.',
+          ? `Décès enregistré: ${memberName} a été retiré des listes actives.`
+          : 'Un deces a été enregistré et les listes actives ont été mises à jour.',
         'info'
       );
     };
@@ -364,8 +411,8 @@ export function SocialView() {
       const memberName = String(payload?.nomMembreDeces || '').trim();
       showNotification(
         memberName
-          ? `Le dossier de deces de ${memberName} a ete mis a jour.`
-          : 'Un dossier de deces a ete mis a jour.',
+          ? `Le dossier de décès de ${memberName} a été mis à jour.`
+          : 'Un dossier de décès a été mis à jour.',
         'info'
       );
     };
@@ -379,8 +426,8 @@ export function SocialView() {
       const memberName = String(payload?.nomMembreDeces || '').trim();
       showNotification(
         memberName
-          ? `Le deces de ${memberName} a ete supprime et le membre redevient actif.`
-          : 'Le deces a ete supprime et le membre concerne redevient actif.',
+          ? `Le décès de ${memberName} a été supprime et le membre redevient actif.`
+          : 'Le décès a été supprimé et le membre concerne redevient actif.',
         'success'
       );
     };
@@ -458,11 +505,54 @@ export function SocialView() {
     }));
   };
 
+  const handleMaladieMemberChange = (value: string) => {
+    const nextIdMembre = value ? Number(value) : null;
+    const selectedMembre = availableMembres.find((item) => Number(item.idMembre) === nextIdMembre);
+
+    setFormState((prev) => ({
+      ...prev,
+      maladie: {
+        ...prev.maladie,
+        idMembre: nextIdMembre,
+        nomMembreMaladie: selectedMembre
+          ? buildMembreLabel(selectedMembre)
+          : prev.maladie.nomMembreMaladie,
+      },
+    }));
+  };
+
+  const handleMariageMemberChange = (fieldName: 'idFrereMembre' | 'idSoeurMembre', value: string) => {
+    const nextIdMembre = value ? Number(value) : null;
+    const selectedMembre = availableMembres.find((item) => Number(item.idMembre) === nextIdMembre);
+    const nameField = fieldName === 'idFrereMembre' ? 'nomFrereMariage' : 'nomSoeurMariage';
+
+    setFormState((prev) => ({
+      ...prev,
+      mariage: {
+        ...prev.mariage,
+        [fieldName]: nextIdMembre,
+        [nameField]: selectedMembre ? buildMembreLabel(selectedMembre) : '',
+      },
+    }));
+  };
+
   const handleSubmit = async () => {
     if (!canManageSocial) return;
 
     if (!currentUserId) {
       showNotification('Utilisateur non reconnu. Reconnectez-vous pour continuer.', 'warning');
+      return;
+    }
+
+    const missingRequiredField = currentConfig.fields.find((field) => {
+      if (!field.required) return false;
+
+      const fieldValue = (formState[activeType] as any)[field.name];
+      return String(fieldValue ?? '').trim() === '';
+    });
+
+    if (missingRequiredField) {
+      showNotification(`${missingRequiredField.label} est obligatoire.`, 'warning');
       return;
     }
 
@@ -655,19 +745,33 @@ export function SocialView() {
                       variant="outlined"
                       sx={{ p: 2, borderRadius: 3, width: 1 }}
                     >
-                      <Stack spacing={1.5}>
-                        <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
-                          <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="subtitle2" noWrap>
-                              {buildDeleteLabel(activeType, row) || currentConfig.label.slice(0, -1)}
+                        <Stack spacing={1.5}>
+                          <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography variant="subtitle2" noWrap>
+                                {buildDeleteLabel(activeType, row) || currentConfig.singularLabel}
                             </Typography>
-                            <Chip
-                              size="small"
-                              color={currentConfig.color}
-                              label={currentConfig.label.slice(0, -1)}
-                              sx={{ mt: 0.75 }}
-                            />
-                          </Box>
+                              <Chip
+                                size="small"
+                                color={currentConfig.color}
+                                label={currentConfig.singularLabel}
+                                sx={{ mt: 0.75 }}
+                              />
+                              {getSocialLinkedMembreIds(activeType, row).map((idMembre) => {
+                                const status = getLinkedMembreStatus(Number(idMembre), availableMembres);
+
+                                return status ? (
+                                  <Chip
+                                    key={idMembre}
+                                    size="small"
+                                    color={status.color}
+                                    label={status.label}
+                                    variant="outlined"
+                                    sx={{ mt: 0.75, ml: 0.75 }}
+                                  />
+                                ) : null;
+                              })}
+                            </Box>
                           {canManageSocial && (
                             <Stack direction="row" spacing={0.75}>
                               <Button
@@ -752,9 +856,47 @@ export function SocialView() {
                       <TableRow key={`${activeType}-${getRowId(activeType, row)}`} hover>
                         {currentConfig.columns.map((column) => (
                           <TableCell key={column.key}>
-                            {column.key.toLowerCase().includes('date')
-                              ? formatDisplayDate(row[column.key])
-                              : row[column.key] || 'Non specifie'}
+                            {column.key === 'nomMembreMaladie' && getLinkedMembreStatus(row.idMembre, availableMembres) ? (
+                              <Stack spacing={0.75} alignItems="flex-start">
+                                <Typography variant="body2">
+                                  {row[column.key] || 'Non specifie'}
+                                </Typography>
+                                <Chip
+                                  size="small"
+                                  color={getLinkedMembreStatus(row.idMembre, availableMembres)?.color}
+                                  label={getLinkedMembreStatus(row.idMembre, availableMembres)?.label}
+                                  variant="outlined"
+                                />
+                              </Stack>
+                            ) : column.key === 'nomFrereMariage' && getLinkedMembreStatus(row.idFrereMembre, availableMembres) ? (
+                              <Stack spacing={0.75} alignItems="flex-start">
+                                <Typography variant="body2">
+                                  {row[column.key] || 'Non specifie'}
+                                </Typography>
+                                <Chip
+                                  size="small"
+                                  color={getLinkedMembreStatus(row.idFrereMembre, availableMembres)?.color}
+                                  label={getLinkedMembreStatus(row.idFrereMembre, availableMembres)?.label}
+                                  variant="outlined"
+                                />
+                              </Stack>
+                            ) : column.key === 'nomSoeurMariage' && getLinkedMembreStatus(row.idSoeurMembre, availableMembres) ? (
+                              <Stack spacing={0.75} alignItems="flex-start">
+                                <Typography variant="body2">
+                                  {row[column.key] || 'Non specifie'}
+                                </Typography>
+                                <Chip
+                                  size="small"
+                                  color={getLinkedMembreStatus(row.idSoeurMembre, availableMembres)?.color}
+                                  label={getLinkedMembreStatus(row.idSoeurMembre, availableMembres)?.label}
+                                  variant="outlined"
+                                />
+                              </Stack>
+                            ) : column.key.toLowerCase().includes('date') ? (
+                              formatDisplayDate(row[column.key])
+                            ) : (
+                              row[column.key] || 'Non specifie'
+                            )}
                           </TableCell>
                         ))}
                         {canManageSocial && (
@@ -797,7 +939,7 @@ export function SocialView() {
 
       <Dialog open={openDialog} onClose={closeDialog} maxWidth="md" fullWidth fullScreen={isMobile}>
         <DialogTitle>
-          {editingId ? 'Modifier' : 'Ajouter'} {currentConfig.label.slice(0, -1).toLowerCase()}
+          {editingId ? 'Modifier' : 'Ajouter'} {currentConfig.singularLabel.toLowerCase()}
         </DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -812,6 +954,87 @@ export function SocialView() {
                   helperText="Optionnel. Si tu choisis un membre, il quittera automatiquement la liste active."
                 >
                   <MenuItem value="">Selectionner un membre</MenuItem>
+                  {availableMembres.map((membre) => (
+                    <MenuItem key={membre.idMembre} value={membre.idMembre}>
+                      {buildMembreLabel(membre)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            )}
+            {activeType === 'mariage' && (
+              <>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    select
+                    fullWidth
+                    value={formState.mariage.idFrereMembre || ''}
+                    onChange={(event) => handleMariageMemberChange('idFrereMembre', event.target.value)}
+                    helperText="Choisis le frère s'il est déjà membre. Sinon laisse Non / saisie libre et écris son nom en bas."
+                    SelectProps={{
+                      displayEmpty: true,
+                      renderValue: (selected) => {
+                        const selectedMembre = maleMembres.find(
+                          (membre) => Number(membre.idMembre) === Number(selected)
+                        );
+
+                        return selectedMembre ? buildMembreLabel(selectedMembre) : 'Non / saisie libre';
+                      },
+                    }}
+                  >
+                    <MenuItem value="">Non / saisie libre</MenuItem>
+                    {maleMembres.length === 0 && (
+                      <MenuItem disabled>Aucun homme enregistré dans les membres.</MenuItem>
+                    )}
+                    {maleMembres.map((membre) => (
+                      <MenuItem key={membre.idMembre} value={membre.idMembre}>
+                        {buildMembreLabel(membre)}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    select
+                    fullWidth
+                    value={formState.mariage.idSoeurMembre || ''}
+                    onChange={(event) => handleMariageMemberChange('idSoeurMembre', event.target.value)}
+                    helperText="Choisis la sœur si elle est déjà membre. Sinon laisse Non / saisie libre et écris son nom en bas."
+                    SelectProps={{
+                      displayEmpty: true,
+                      renderValue: (selected) => {
+                        const selectedMembre = femaleMembres.find(
+                          (membre) => Number(membre.idMembre) === Number(selected)
+                        );
+
+                        return selectedMembre ? buildMembreLabel(selectedMembre) : 'Non / saisie libre';
+                      },
+                    }}
+                  >
+                    <MenuItem value="">Non / saisie libre</MenuItem>
+                    {femaleMembres.length === 0 && (
+                      <MenuItem disabled>Aucune femme enregistrée dans les membres.</MenuItem>
+                    )}
+                    {femaleMembres.map((membre) => (
+                      <MenuItem key={membre.idMembre} value={membre.idMembre}>
+                        {buildMembreLabel(membre)}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              </>
+            )}
+            {activeType === 'maladie' && (
+              <Grid item xs={12} md={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Membre déjà enregistré"
+                  value={formState.maladie.idMembre || ''}
+                  onChange={(event) => handleMaladieMemberChange(event.target.value)}
+                  helperText="Optionnel. Tu peux aussi saisir librement le nom si la personne n'est pas membre."
+                >
+                  <MenuItem value="">Saisie libre / aucun membre lié</MenuItem>
                   {availableMembres.map((membre) => (
                     <MenuItem key={membre.idMembre} value={membre.idMembre}>
                       {buildMembreLabel(membre)}
@@ -838,6 +1061,42 @@ export function SocialView() {
                           ...prev.deces,
                           idMembre: null,
                           nomMembreDeces: event.target.value,
+                        },
+                      }));
+                      return;
+                    }
+
+                    if (activeType === 'maladie' && field.name === 'nomMembreMaladie') {
+                      setFormState((prev) => ({
+                        ...prev,
+                        maladie: {
+                          ...prev.maladie,
+                          idMembre: null,
+                          nomMembreMaladie: event.target.value,
+                        },
+                      }));
+                      return;
+                    }
+
+                    if (activeType === 'mariage' && field.name === 'nomFrereMariage') {
+                      setFormState((prev) => ({
+                        ...prev,
+                        mariage: {
+                          ...prev.mariage,
+                          idFrereMembre: null,
+                          nomFrereMariage: event.target.value,
+                        },
+                      }));
+                      return;
+                    }
+
+                    if (activeType === 'mariage' && field.name === 'nomSoeurMariage') {
+                      setFormState((prev) => ({
+                        ...prev,
+                        mariage: {
+                          ...prev.mariage,
+                          idSoeurMembre: null,
+                          nomSoeurMariage: event.target.value,
                         },
                       }));
                       return;

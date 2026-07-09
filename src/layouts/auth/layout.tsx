@@ -31,17 +31,16 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
     () =>
       isRegisterPage
         ? {
-          eyebrow: "Création d'église",
-          title: 'Creez votre espace eglise en quelques minutes.',
-          description:
-            'Inscription simple, prise en main immediate pour votre communaute.',
-        }
+            eyebrow: "Création d'église",
+            title: 'Creez votre espace eglise en quelques minutes.',
+            description: 'Inscription simple, prise en main immediate pour votre communaute.',
+          }
         : {
-          eyebrow: 'Connexion securisée',
-          title: 'Retrouvez votre communaute et vos membres.',
-          description:
-            'Connectez-vous rapidement pour acceder aux membres, departements, cultes.',
-        },
+            eyebrow: 'Connexion securisée',
+            title: 'Retrouvez votre communaute et vos membres.',
+            description:
+              'Connectez-vous rapidement pour acceder aux membres, departements, cultes.',
+          },
     [isRegisterPage]
   );
 
@@ -61,7 +60,7 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
           slots={{
             topArea: (
               <Alert severity="info" sx={{ display: 'none', borderRadius: 0 }}>
-                 Ceci est une alerte d&apos;information
+                Ceci est une alerte d&apos;information
               </Alert>
             ),
             leftArea: null,
@@ -75,14 +74,14 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
         minHeight: '100vh',
         overflowX: 'hidden',
         overflowY: 'auto',
-        bgcolor: '#f5f7fb',
+        bgcolor: '#07101f',
         '&::after': {
           content: "''",
           position: 'fixed',
           inset: 0,
           zIndex: -1,
           background:
-            'radial-gradient(circle at top left, rgba(67,97,238,0.08), transparent 26%), radial-gradient(circle at bottom right, rgba(16,185,129,0.08), transparent 20%)',
+            'radial-gradient(circle at top left, rgba(67,97,238,0.12), transparent 26%), radial-gradient(circle at bottom right, rgba(16,185,129,0.08), transparent 20%)',
         },
         ...sx,
       }}
@@ -96,9 +95,9 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
             mx: 'auto',
             maxWidth: { xs: 520, md: 'none' },
             borderRadius: { xs: 2.5, md: 3 },
-            bgcolor: 'background.paper',
-            border: '1px solid rgba(148, 163, 184, 0.22)',
-            boxShadow: '0 28px 80px rgba(15, 23, 42, 0.10)',
+            bgcolor: '#101828',
+            border: '1px solid rgba(148, 163, 184, 0.18)',
+            boxShadow: '0 30px 90px rgba(2, 6, 23, 0.44)',
             gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 0.95fr)' },
           }}
         >
@@ -133,19 +132,29 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
                     alt="Ma Communaute"
                     sx={{ width: 56, height: 56, objectFit: 'contain' }}
                   />
-                  <Typography variant="h3" sx={{ fontSize: 28 }}>
+                  <Typography variant="h3" sx={{ fontSize: 28, color: '#0f172a', fontWeight: 800 }}>
                     Ma Communauté
                   </Typography>
                 </Stack>
-                <Typography variant="overline" sx={{ letterSpacing: 2.6, color: 'text.secondary', fontWeight: 700 }}>
+                <Typography
+                  variant="overline"
+                  sx={{
+                    letterSpacing: 2.6,
+                    color: 'rgba(100, 116, 139, 0.96)',
+                    fontWeight: 700,
+                  }}
+                >
                   {heroContent.eyebrow}
                 </Typography>
-                <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 460 }}>
+                <Typography
+                  variant="body1"
+                  sx={{ color: '#64748b', maxWidth: 460, fontWeight: 500 }}
+                >
                   {heroContent.description}
                 </Typography>
               </Stack>
 
-              <Box sx={{ position: 'relative', width: 400, height: 420, }} alignItems="center">
+              <Box sx={{ position: 'relative', width: 400, height: 420 }} alignItems="center">
                 <Box
                   sx={{
                     position: 'absolute',
@@ -180,12 +189,53 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
                     <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: '#4361ee' }} />
                   </Stack>
                 </Box>
-                <Box sx={{ position: 'absolute', left: 78, top: 240, width: 120, height: 2, bgcolor: '#cbd5e1', boxShadow: '0 34px 0 #cbd5e1' }} />
-                <Box sx={{ position: 'absolute', left: 82, top: 228, width: 8, height: 8, borderRadius: '50%', bgcolor: '#4361ee', boxShadow: '14px 0 0 #4361ee, 28px 0 0 #4361ee, 0 36px 0 #4361ee, 14px 36px 0 #4361ee, 28px 36px 0 #4361ee' }} />
-                <Box sx={{ position: 'absolute', left: 146, bottom: 100, width: 40, height: 18, borderRadius: 0.75, bgcolor: '#4361ee' }} />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    left: 78,
+                    top: 240,
+                    width: 120,
+                    height: 2,
+                    bgcolor: '#cbd5e1',
+                    boxShadow: '0 34px 0 #cbd5e1',
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    left: 82,
+                    top: 228,
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: '#4361ee',
+                    boxShadow:
+                      '14px 0 0 #4361ee, 28px 0 0 #4361ee, 0 36px 0 #4361ee, 14px 36px 0 #4361ee, 28px 36px 0 #4361ee',
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    left: 146,
+                    bottom: 100,
+                    width: 40,
+                    height: 18,
+                    borderRadius: 0.75,
+                    bgcolor: '#4361ee',
+                  }}
+                />
               </Box>
 
-              <Typography variant="h2" sx={{ fontSize: 25, lineHeight: 1.05, maxWidth: 560 }}>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontSize: 25,
+                  lineHeight: 1.05,
+                  maxWidth: 560,
+                  color: '#0f172a',
+                  fontWeight: 900,
+                }}
+              >
                 {heroContent.title}
               </Typography>
             </Stack>
@@ -193,6 +243,7 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
 
           <Box
             sx={{
+              bgcolor: '#101828',
               px: { xs: 2.5, sm: 5, md: 6 },
               py: { xs: 3.5, sm: 5, md: 7 },
               display: 'flex',
@@ -200,7 +251,7 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
               justifyContent: 'center',
             }}
           >
-            <Box sx={{ width: 1, maxWidth: 520, mx: 'auto' }}>{children}</Box>
+            <Box sx={{ width: 1, maxWidth: 520, mx: 'auto', color: '#f8fafc' }}>{children}</Box>
           </Box>
         </Box>
       </Main>

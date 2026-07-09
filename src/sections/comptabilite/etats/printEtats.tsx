@@ -4,27 +4,28 @@ import ReactToPrint from 'react-to-print';
 import React, { useRef, useMemo, useState, forwardRef } from 'react';
 
 import Box from '@mui/material/Box';
+import Menu from '@mui/material/Menu';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
 import PrintIcon from '@mui/icons-material/Print';
 import { alpha, styled } from '@mui/material/styles';
-import Menu, { type MenuProps } from '@mui/material/Menu';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 import {
   exportDesktopPdf,
   canUseDesktopPrint,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
-import { isDesktopAppRuntime } from 'src/utils/access-control';
 
 import { ComptabiliteArchiveDocument } from './comptabilite-archive-document';
 import { ComptabiliteJournalDocument } from './comptabilite-journal-document';
 import { ComptabiliteSummaryDocument } from './comptabilite-summary-document';
 import { ComptabiliteMovementDocument } from './comptabilite-movement-document';
+import { FicheComptabiliteRenseignement } from './ficheComptabiliteRenseignement';
 
 type BasePrintDocumentProps = {
   filterLabel: string;
@@ -52,14 +53,7 @@ type PrintDocumentMeta = {
 
 type PrintTarget = 'archive' | 'entrees' | 'journal' | 'sorties' | 'summary';
 
-const StyledMenu = styled((props: MenuProps) => (
-  <Menu
-    elevation={0}
-    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-    {...props}
-  />
-))(({ theme }) => ({
+const StyledMenu = styled(Menu)(({ theme }) => ({
   '& .MuiPaper-root': {
     borderRadius: 10,
     marginTop: theme.spacing(1),
@@ -71,10 +65,7 @@ const StyledMenu = styled((props: MenuProps) => (
       borderRadius: 8,
       gap: 10,
       '&:active': {
-        backgroundColor: alpha(
-          theme.palette.primary.main,
-          theme.palette.action.selectedOpacity
-        ),
+        backgroundColor: alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity),
       },
     },
   },
@@ -83,11 +74,7 @@ const StyledMenu = styled((props: MenuProps) => (
 const JournalComponent = forwardRef<HTMLDivElement, BasePrintDocumentProps>(
   ({ items, search, filterLabel }, ref) => (
     <div ref={ref}>
-      <ComptabiliteJournalDocument
-        filterLabel={filterLabel}
-        items={items}
-        search={search}
-      />
+      <ComptabiliteJournalDocument filterLabel={filterLabel} items={items} search={search} />
     </div>
   )
 );
@@ -121,11 +108,7 @@ const SortiesComponent = forwardRef<HTMLDivElement, BasePrintDocumentProps>(
 const SummaryComponent = forwardRef<HTMLDivElement, BasePrintDocumentProps>(
   ({ items, search, filterLabel }, ref) => (
     <div ref={ref}>
-      <ComptabiliteSummaryDocument
-        filterLabel={filterLabel}
-        items={items}
-        search={search}
-      />
+      <ComptabiliteSummaryDocument filterLabel={filterLabel} items={items} search={search} />
     </div>
   )
 );
@@ -138,6 +121,12 @@ const ArchiveComponent = forwardRef<HTMLDivElement, ArchivePrintDocumentProps>(
   )
 );
 
+const FormComponent = forwardRef<HTMLDivElement>((_, ref) => (
+  <div ref={ref}>
+    <FicheComptabiliteRenseignement />
+  </div>
+));
+
 export function PrintEtatComptabilite({
   items,
   deletedItems = [],
@@ -148,6 +137,7 @@ export function PrintEtatComptabilite({
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const archiveRef = useRef<HTMLDivElement>(null);
   const entreesRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const isDesktopPrint = canUseDesktopPrint();
   const journalRef = useRef<HTMLDivElement>(null);
   const open = Boolean(anchorEl);
@@ -158,23 +148,27 @@ export function PrintEtatComptabilite({
     () => ({
       archive: {
         fileName: 'comptabilite-archive',
-        title: 'Comptabilite - Archive comptable',
+        title: 'Comptabilité - Archive comptable',
       },
       entrees: {
         fileName: 'comptabilite-entrees',
-        title: 'Comptabilite - Etat des entrees',
+        title: 'Comptabilité - État des entrées',
       },
       journal: {
         fileName: 'comptabilite-journal',
-        title: 'Comptabilite - Journal de caisse',
+        title: 'Comptabilité - Journal de caisse',
       },
       sorties: {
         fileName: 'comptabilite-sorties',
-        title: 'Comptabilite - Etat des sorties',
+        title: 'Comptabilité - État des sorties',
       },
       summary: {
         fileName: 'comptabilite-synthese',
-        title: 'Comptabilite - Situation de tresorerie',
+        title: 'Comptabilité - Situation de trésorerie',
+      },
+      form: {
+        fileName: 'fiche-renseignement-comptabilite',
+        title: 'Fiche de renseignement comptabilité',
       },
     }),
     []
@@ -226,7 +220,7 @@ export function PrintEtatComptabilite({
         variant="contained"
       >
         <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-          Etats comptables
+          États comptables
         </Box>
       </Button>
 
@@ -234,10 +228,32 @@ export function PrintEtatComptabilite({
         {isDesktopPrint ? (
           <>
             <MenuItem
+              onClick={async () => {
+                setAnchorEl(null);
+                await openDesktopPrintPreview(formRef.current, {
+                  title: `Aperçu - ${meta.form.title}`,
+                  fileName: meta.form.fileName,
+                });
+              }}
+            >
+              <VisibilityIcon />
+              Fiche de renseignement
+            </MenuItem>
+            <MenuItem
+              onClick={async () => {
+                setAnchorEl(null);
+                await exportDesktopPdf(formRef.current, meta.form);
+              }}
+            >
+              <PictureAsPdfIcon />
+              Exporter fiche de renseignement
+            </MenuItem>
+            <Divider sx={{ my: 0.5 }} />
+            <MenuItem
               onClick={() =>
                 runDesktopAction('journal', (element, itemMeta) =>
                   openDesktopPrintPreview(element, {
-                    title: `Apercu - ${itemMeta.title}`,
+                    title: `Aperçu - ${itemMeta.title}`,
                     fileName: itemMeta.fileName,
                   })
                 )
@@ -250,47 +266,47 @@ export function PrintEtatComptabilite({
               onClick={() =>
                 runDesktopAction('entrees', (element, itemMeta) =>
                   openDesktopPrintPreview(element, {
-                    title: `Apercu - ${itemMeta.title}`,
+                    title: `Aperçu - ${itemMeta.title}`,
                     fileName: itemMeta.fileName,
                   })
                 )
               }
             >
               <VisibilityIcon />
-              Etat des entrees
+              État des entrées
             </MenuItem>
             <MenuItem
               onClick={() =>
                 runDesktopAction('sorties', (element, itemMeta) =>
                   openDesktopPrintPreview(element, {
-                    title: `Apercu - ${itemMeta.title}`,
+                    title: `Aperçu - ${itemMeta.title}`,
                     fileName: itemMeta.fileName,
                   })
                 )
               }
             >
               <VisibilityIcon />
-              Etat des sorties
+              État des sorties
             </MenuItem>
             <MenuItem
               onClick={() =>
                 runDesktopAction('summary', (element, itemMeta) =>
                   openDesktopPrintPreview(element, {
-                    title: `Apercu - ${itemMeta.title}`,
+                    title: `Aperçu - ${itemMeta.title}`,
                     fileName: itemMeta.fileName,
                   })
                 )
               }
             >
               <VisibilityIcon />
-              Situation de tresorerie
+              Situation de trésorerie
             </MenuItem>
             {isSuperAdmin && (
               <MenuItem
                 onClick={() =>
                   runDesktopAction('archive', (element, itemMeta) =>
                     openDesktopPrintPreview(element, {
-                      title: `Apercu - ${itemMeta.title}`,
+                      title: `Aperçu - ${itemMeta.title}`,
                       fileName: itemMeta.fileName,
                     })
                   )
@@ -307,7 +323,7 @@ export function PrintEtatComptabilite({
             </MenuItem>
             <MenuItem onClick={() => runDesktopAction('entrees', exportDesktopPdf)}>
               <PictureAsPdfIcon />
-              Exporter entrees en PDF
+              Exporter entrées en PDF
             </MenuItem>
             <MenuItem onClick={() => runDesktopAction('sorties', exportDesktopPdf)}>
               <PictureAsPdfIcon />
@@ -315,7 +331,7 @@ export function PrintEtatComptabilite({
             </MenuItem>
             <MenuItem onClick={() => runDesktopAction('summary', exportDesktopPdf)}>
               <PictureAsPdfIcon />
-              Exporter synthese en PDF
+              Exporter synthèse en PDF
             </MenuItem>
             {isSuperAdmin && (
               <MenuItem onClick={() => runDesktopAction('archive', exportDesktopPdf)}>
@@ -328,6 +344,14 @@ export function PrintEtatComptabilite({
           <>
             <MenuItem onClick={() => setAnchorEl(null)}>
               <PrintIcon />
+              Fiche de renseignement
+              <ReactToPrint
+                content={() => formRef.current}
+                trigger={() => <div>{meta.form.title}</div>}
+              />
+            </MenuItem>
+            <MenuItem onClick={() => setAnchorEl(null)}>
+              <PrintIcon />
               Journal de caisse
               <ReactToPrint
                 content={() => journalRef.current}
@@ -336,7 +360,7 @@ export function PrintEtatComptabilite({
             </MenuItem>
             <MenuItem onClick={() => setAnchorEl(null)}>
               <PrintIcon />
-              Etat des entrees
+              État des entrées
               <ReactToPrint
                 content={() => entreesRef.current}
                 trigger={() => <div>{meta.entrees.title}</div>}
@@ -344,7 +368,7 @@ export function PrintEtatComptabilite({
             </MenuItem>
             <MenuItem onClick={() => setAnchorEl(null)}>
               <PrintIcon />
-              Etat des sorties
+              État des sorties
               <ReactToPrint
                 content={() => sortiesRef.current}
                 trigger={() => <div>{meta.sorties.title}</div>}
@@ -352,7 +376,7 @@ export function PrintEtatComptabilite({
             </MenuItem>
             <MenuItem onClick={() => setAnchorEl(null)}>
               <PrintIcon />
-              Situation de tresorerie
+              Situation de trésorerie
               <ReactToPrint
                 content={() => summaryRef.current}
                 trigger={() => <div>{meta.summary.title}</div>}
@@ -389,6 +413,9 @@ export function PrintEtatComptabilite({
           <ArchiveComponent deletedItems={deletedItems} filterLabel={filterLabel} ref={archiveRef} />
         </div>
       )}
+      <div style={{ display: 'none' }}>
+        <FormComponent ref={formRef} />
+      </div>
     </>
   );
 }

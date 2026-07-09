@@ -30,9 +30,6 @@ export const ListeDesCellules = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       title="Liste des cellules"
-      subtitle="Etat imprimable des cellules avec leurs responsables, lieux et effectifs."
-      countLabel="Total cellules"
-      countValue={sortedCellules.length}
     >
       {sortedCellules.length === 0 ? (
         <PrintEmptyState title="Aucune cellule trouvee" message="Aucune cellule n'est encore enregistree dans la base locale." />
@@ -40,12 +37,12 @@ export const ListeDesCellules = () => {
         <PrintTable minWidth={980}>
           <TableHead>
             <TableRow>
-              <TableCell align="center">No</TableCell>
+              <TableCell align="center">N°</TableCell>
               <TableCell>Cellule</TableCell>
               <TableCell>Lieu</TableCell>
               <TableCell align="center">Effectif</TableCell>
               <TableCell>Responsable</TableCell>
-              <TableCell>Numero responsable</TableCell>
+              <TableCell>Numéro responsable</TableCell>
               <TableCell>Responsable visite</TableCell>
             </TableRow>
           </TableHead>

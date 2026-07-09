@@ -15,8 +15,7 @@
   "pkg": {
     "assets": [
       "views/**/*",
-      "public/**/*",
-      "albums/**/*"
+      "public/**/*"
     ]
   },
   "author": "Ma-communaute <diokrihenrijoel@gmail.com>",

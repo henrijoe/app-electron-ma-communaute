@@ -50,11 +50,9 @@ type PrintIdentity = {
 type PrintDocumentLayoutProps = {
   identity?: PrintIdentity;
   title: string;
-  subtitle?: string;
-  countLabel?: string;
-  countValue?: number;
   variant?: 'default' | 'plain';
   showDocumentMeta?: boolean;
+  showCountMeta?: boolean;
   showPagination?: boolean;
   children: React.ReactNode;
 };
@@ -182,11 +180,9 @@ function PrintFooter({ contactLine, showPagination }: PrintFooterProps) {
 export function PrintDocumentLayout({
   identity,
   title,
-  subtitle,
-  countLabel = 'Total',
-  countValue = 0,
   variant = 'default',
   showDocumentMeta = true,
+  showCountMeta = true,
   showPagination = false,
   children,
 }: PrintDocumentLayoutProps) {
@@ -227,6 +223,7 @@ export function PrintDocumentLayout({
             },
             '.print-document-root': {
               paddingBottom: '18mm',
+              minHeight: 'calc(100vh - 20mm)',
             },
             '.print-page-footer': {
               position: 'fixed',
@@ -242,9 +239,6 @@ export function PrintDocumentLayout({
 
       <Box
         className="print-document-root"
-        data-count-label={countLabel}
-        data-count-value={countValue}
-        data-subtitle={subtitle || ''}
         sx={{
           color: '#111827',
           width: '100%',
@@ -255,9 +249,11 @@ export function PrintDocumentLayout({
             ? '#ffffff'
             : 'linear-gradient(180deg, #eaf2fb 0%, #f7fbff 38%, #edf5fc 100%)',
           minHeight: isPlainVariant ? 'auto' : '100vh',
+          display: 'flex',
+          flexDirection: 'column',
           '@media print': {
             p: 0,
-            minHeight: 'auto',
+            minHeight: 'calc(100vh - 20mm)',
             background: '#ffffff',
           },
         }}
@@ -268,6 +264,7 @@ export function PrintDocumentLayout({
           sx={{
             position: 'relative',
             overflow: 'hidden',
+            flex: 1,
             backgroundColor: isPlainVariant ? 'transparent' : 'common.white',
             color: '#111827',
             borderRadius: isPlainVariant ? 0 : 6,
@@ -297,21 +294,10 @@ export function PrintDocumentLayout({
                   >
                     {title}
                   </Typography>
-                  {subtitle && (
-                    <Typography variant="body2" sx={{ mt: 0.75, color: '#5b6b7f' }}>
-                      {subtitle}
-                    </Typography>
-                  )}
+    
                 </Box>
 
-                <Box sx={{ color: '#304760' }}>
-                  <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>
-                    {countLabel}
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 800 }}>
-                    {countValue}
-                  </Typography>
-                </Box>
+ 
               </Stack>
 
               <Divider sx={{ mb: 3 }} />
