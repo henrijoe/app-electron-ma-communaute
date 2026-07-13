@@ -32,7 +32,7 @@ export const ListeDesCellules = () => {
       title="Liste des cellules"
     >
       {sortedCellules.length === 0 ? (
-        <PrintEmptyState title="Aucune cellule trouvee" message="Aucune cellule n'est encore enregistree dans la base locale." />
+        <PrintEmptyState title="Aucune cellule trouvée" message="Aucune cellule n'est encore enregistrée dans la base locale." />
       ) : (
         <PrintTable minWidth={980}>
           <TableHead>

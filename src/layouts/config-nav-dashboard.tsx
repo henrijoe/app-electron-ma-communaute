@@ -14,6 +14,7 @@ import {
   WarningAmberRounded,
   EventAvailableRounded,
   VolunteerActivismRounded,
+  HealthAndSafetyRounded,
   AccountBalanceWalletRounded,
 } from '@mui/icons-material';
 
@@ -72,6 +73,12 @@ export const navData: DashboardNavItem[] = [
     title: 'Cas sociaux',
     path: '/cas-sociaux',
     icon: <VolunteerActivismRounded />,
+    permissionKey: 'social',
+  },
+  {
+    title: 'Pastoral',
+    path: '/pastoral',
+    icon: <HealthAndSafetyRounded />,
     permissionKey: 'social',
   },
   {

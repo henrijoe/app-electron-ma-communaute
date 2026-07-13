@@ -32,12 +32,12 @@ export const ListeDesDepartements = () => {
   return (
     <PrintDocumentLayout
       identity={utilisateurData}
-      title="Liste des departements"
+      title="Liste des départements"
     >
       {sortedDepartements.length === 0 ? (
         <PrintEmptyState
-          title="Aucun departement trouve"
-          message="Aucun departement n'est encore enregistre dans la base locale."
+          title="Aucun département trouvé"
+          message="Aucun département n'est encore enregistré dans la base locale."
         />
       ) : (
         <PrintTable minWidth={1040}>
@@ -46,13 +46,13 @@ export const ListeDesDepartements = () => {
               <TableCell align="center" sx={{ width: 56 }}>
                 N°
               </TableCell>
-              <TableCell>Departement</TableCell>
+              <TableCell>Département</TableCell>
               <TableCell align="center" sx={{ width: 140 }}>
                 Sigle
               </TableCell>
               <TableCell>Slogan</TableCell>
               <TableCell>Responsable</TableCell>
-              <TableCell>Numero responsable</TableCell>
+              <TableCell>Numéro responsable</TableCell>
             </TableRow>
           </TableHead>
 

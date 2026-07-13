@@ -1,0 +1,106 @@
+name: Desktop release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    name: Build and publish Windows executable
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 20.14.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.14.0
+          cache: yarn
+
+      - name: Read package version
+        id: version
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          current_version="$(node -p "require('./package.json').version")"
+          previous_version=""
+
+          if [ "$EVENT_NAME" != "workflow_dispatch" ] && [ -n "${BEFORE_SHA:-}" ] && ! [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+            previous_version="$(git show "$BEFORE_SHA:package.json" 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version" 2>/dev/null || true)"
+          fi
+
+          should_release="false"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$current_version" != "$previous_version" ]; then
+            should_release="true"
+          fi
+
+          echo "current=$current_version" >> "$GITHUB_OUTPUT"
+          echo "previous=$previous_version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$current_version" >> "$GITHUB_OUTPUT"
+          echo "should_release=$should_release" >> "$GITHUB_OUTPUT"
+
+      - name: Check existing release tag
+        id: tag
+        if: steps.version.outputs.should_release == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --tags --force
+
+          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Le tag ${{ steps.version.outputs.tag }} existe deja. La release n'est pas reconstruite."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install frontend dependencies
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        run: yarn install --frozen-lockfile
+
+      - name: Prepare embedded backend
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -f "../server/package.json" ]; then
+            npm --prefix ../server install
+            npm --prefix ../server run build
+            node electron/prepare-backend.cjs
+          else
+            echo "::notice::Le dossier ../server n'existe pas dans ce checkout. Le backend embarque deja present dans electron/backend sera utilise."
+            test -f electron/backend/package.json
+          fi
+
+      - name: Build renderer
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        run: yarn desktop:build:web
+
+      - name: Build and publish GitHub Release
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: yarn electron-builder --win --config.directories.output=release/windows --publish always
+
+      - name: No version change
+        if: steps.version.outputs.should_release != 'true'
+        shell: bash
+        run: |
+          echo "::notice::La version package.json n'a pas change (${{ steps.version.outputs.current }}). Aucune release desktop n'est publiee."

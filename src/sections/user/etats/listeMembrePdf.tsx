@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 
-import { Chip, Avatar, Typography, Table } from '@mui/material';
+import { Chip, Avatar, Typography } from '@mui/material';
 
 import { normalizeText } from 'src/utils/text';
 
@@ -22,26 +22,22 @@ import { dataResponsabilite } from '../../../store/membreSlice';
 import type { IReduxState } from '../../../store/store';
 
 const formatContact = (contact: string) => {
-  // On affiche une valeur neutre quand aucun contact n'est disponible.
   if (!contact) {
-    return 'Non specifie';
+    return 'Non spécifié';
   }
 
-  // On retire les caracteres non numeriques pour les numeros classiques.
   const cleanedContact = contact.replace(/\D/g, '');
 
-  // Si on a exactement 10 chiffres, on applique un format plus lisible a l'impression.
   if (cleanedContact.length === 10) {
     return cleanedContact.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
   }
 
-  // Sinon on garde le texte initial pour ne rien perdre.
   return contact;
 };
 
 const getBaptemeDisplay = (value: string | number | null | undefined) => {
   if (value === null || value === undefined || value === '') {
-    return { color: 'default' as const, label: 'Non renseigne' };
+    return { color: 'default' as const, label: 'Non renseigné' };
   }
 
   const normalizedValue = String(value).trim();
@@ -55,8 +51,8 @@ const getBaptemeDisplay = (value: string | number | null | undefined) => {
   }
 
   return {
-    color: normalizedValue.toLowerCase() === 'oui' ? 'success' as const : 'default' as const,
-    label: normalizeText(normalizedValue) || 'Non renseigne',
+    color: normalizedValue.toLowerCase() === 'oui' ? ('success' as const) : ('default' as const),
+    label: normalizeText(normalizedValue) || 'Non renseigné',
   };
 };
 
@@ -66,7 +62,6 @@ export const ListeDesMembres = () => {
   const dataFilterCellule = useSelector((state: IReduxState) => state.cellule.dataFilterCellule);
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
 
-  // On transforme les listes de reference en couples value/label pour les affichages papier.
   const dataDepartement = formaterValueLabels(
     dataFilterDepartement,
     'idDepartement',
@@ -75,43 +70,29 @@ export const ListeDesMembres = () => {
   const dataCellule = formaterValueLabels(dataFilterCellule, 'idCellule', 'nomCellule');
 
   const getMembreResponsabilite = (id: number) => {
-    // On retrouve le libelle de responsabilite a partir de son identifiant.
     const responsabilite = dataResponsabilite?.find((item) => item.value === id);
-    return responsabilite?.label || 'Non specifie';
+    return responsabilite?.label || 'Non spécifié';
   };
 
   const getMembreDepartement = (id: number) => {
-    // On retrouve le departement en version courte pour garder une cellule compacte.
     const departement = dataDepartement?.find((item: any) => item.value === id);
-    return departement?.label || 'Non specifie';
+    return departement?.label || 'Non spécifié';
   };
 
   const getMembreCellule = (id: number) => {
-    // On retrouve la cellule rattachee pour enrichir la ligne du membre.
     const cellule = dataCellule?.find((item: any) => item.value === id);
-    return cellule?.label || 'Non specifie';
+    return cellule?.label || 'Non spécifié';
   };
 
   return (
-    <PrintDocumentLayout
-      identity={utilisateurData}
-      title="Liste des membres"
-    // showCountMeta={false}
-    // variant="plain"
-    >
+    <PrintDocumentLayout identity={utilisateurData} title="Liste des membres">
       {!listMembre?.length ? (
         <PrintEmptyState
-          title="Aucun membre trouve"
-          message="Aucun membre n'est actuellement enregistre dans la base locale."
+          title="Aucun membre trouvé"
+          message="Aucun membre n'est actuellement enregistré dans la base locale."
         />
       ) : (
-        <Table
-          sx={{
-            width: '100%',
-            tableLayout: 'fixed'
-          }}
-        >
-
+        <PrintTable minWidth={1180}>
           <TableHead>
             <TableRow>
               <TableCell align="center" sx={{ width: 42 }}>
@@ -120,13 +101,13 @@ export const ListeDesMembres = () => {
               <TableCell align="center" sx={{ width: 66 }}>
                 Photo
               </TableCell>
-              <TableCell sx={{ width: 160 }}>Nom et prenoms</TableCell>
-              <TableCell sx={{ width: 105 }}>Residence</TableCell>
-              <TableCell sx={{ width: 118 }}>Responsabilite</TableCell>
+              <TableCell sx={{ width: 170 }}>Nom et prénoms</TableCell>
+              <TableCell sx={{ width: 105 }}>Résidence</TableCell>
+              <TableCell sx={{ width: 118 }}>Responsabilité</TableCell>
               <TableCell align="center" sx={{ width: 82 }}>
                 Baptisé(e)
               </TableCell>
-              <TableCell sx={{ width: 110 }}>Departement</TableCell>
+              <TableCell sx={{ width: 110 }}>Département</TableCell>
               <TableCell sx={{ width: 110 }}>Cellule</TableCell>
               <TableCell sx={{ width: 118 }}>Contact</TableCell>
             </TableRow>
@@ -135,7 +116,6 @@ export const ListeDesMembres = () => {
           <TableBody>
             {listMembre.map((item: any, index: number) => {
               const baptemeDisplay = getBaptemeDisplay(item.baptemeEauMembre);
-              // On resolve la photo avec la logique web/electron deja centralisee.
               const photoUrl = getPhotoUrl(item.photoMembre);
 
               return (
@@ -164,19 +144,22 @@ export const ListeDesMembres = () => {
 
                   <TableCell>
                     <Typography variant="subtitle2" fontWeight={700} sx={{ lineHeight: 1.2 }}>
-                      {normalizeText(`${item.nomMembre || ''} ${item.prenomMembre || ''}`.trim()) || 'Non specifie'}
+                      {normalizeText(`${item.nomMembre || ''} ${item.prenomMembre || ''}`.trim()) ||
+                        'Non spécifié'}
                     </Typography>
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{ display: 'block', lineHeight: 1.15, wordBreak: 'break-all' }}
                     >
-                      {normalizeText(item.emailMembre) || 'Email non specifie'}
+                      {normalizeText(item.emailMembre) || 'Email non spécifié'}
                     </Typography>
                   </TableCell>
 
                   <TableCell>
-                    <Typography variant="body2">{normalizeText(item.residenceMembre) || 'Non specifie'}</Typography>
+                    <Typography variant="body2">
+                      {normalizeText(item.residenceMembre) || 'Non spécifié'}
+                    </Typography>
                   </TableCell>
 
                   <TableCell>
@@ -237,7 +220,7 @@ export const ListeDesMembres = () => {
               );
             })}
           </TableBody>
-        </Table>
+        </PrintTable>
       )}
     </PrintDocumentLayout>
   );

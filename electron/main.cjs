@@ -6,6 +6,13 @@ const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
 
+let autoUpdater = null;
+try {
+  ({ autoUpdater } = require("electron-updater"));
+} catch (error) {
+  autoUpdater = null;
+}
+
 let backendProcess = null;
 const SERVER_ROOT = path.join(__dirname, "..", "..", "server");
 const DESKTOP_BACKEND_PORT = Number(process.env.PORT || 49300);
@@ -23,6 +30,130 @@ function resolveDesktopSqliteDbDir() {
   }
 
   return path.join(app.getPath("userData"), "base-communaute");
+}
+
+function formatBackupTimestamp(date = new Date()) {
+  const pad = (value) => String(value).padStart(2, "0");
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+    `${pad(date.getHours())}${pad(date.getMinutes())}`,
+  ].join("-");
+}
+
+function getDesktopBackupInfo() {
+  const dataDir = resolveDesktopSqliteDbDir();
+  const backupDir = path.join(dataDir, "sauvegardes");
+  const entries = fs.existsSync(dataDir) ? fs.readdirSync(dataDir, { withFileTypes: true }) : [];
+  const databaseFiles = entries
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".db"))
+    .map((entry) => entry.name);
+
+  return {
+    success: true,
+    dataDir,
+    backupDir,
+    databaseCount: databaseFiles.length,
+    databaseFiles,
+    photoFolderExists: fs.existsSync(path.join(dataDir, "photo-membre")),
+  };
+}
+
+function runPowerShellZip(sourceDir, destinationPath) {
+  return new Promise((resolve, reject) => {
+    const powershellPath = process.env.SystemRoot
+      ? path.join(process.env.SystemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+      : "powershell.exe";
+    const script = [
+      "$source=$args[0];",
+      "$dest=$args[1];",
+      "Compress-Archive -Path (Join-Path $source '*') -DestinationPath $dest -Force",
+    ].join(" ");
+    const child = spawn(
+      powershellPath,
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script, sourceDir, destinationPath],
+      { windowsHide: true }
+    );
+    let stderr = "";
+
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(stderr.trim() || `Compression impossible. Code ${code}`));
+    });
+  });
+}
+
+async function createDesktopBackupArchive() {
+  const dataDir = resolveDesktopSqliteDbDir();
+  if (!fs.existsSync(dataDir)) {
+    throw new Error("Le dossier de donnees local est introuvable.");
+  }
+
+  const backupDir = path.join(dataDir, "sauvegardes");
+  fs.mkdirSync(backupDir, { recursive: true });
+
+  const saveResult = await dialog.showSaveDialog(mainWindowRef || undefined, {
+    title: "Sauvegarder la base locale",
+    defaultPath: path.join(
+      backupDir,
+      `ma-communaute-sauvegarde-${formatBackupTimestamp()}.zip`
+    ),
+    filters: [{ name: "Sauvegarde Ma Communaute", extensions: ["zip"] }],
+  });
+
+  if (saveResult.canceled || !saveResult.filePath) {
+    return { success: false, canceled: true };
+  }
+
+  const stagingDir = path.join(app.getPath("temp"), `ma-communaute-backup-${Date.now()}`);
+  fs.mkdirSync(stagingDir, { recursive: true });
+
+  try {
+    const entries = fs.readdirSync(dataDir, { withFileTypes: true });
+    let copiedEntries = 0;
+
+    entries.forEach((entry) => {
+      if (entry.name === "sauvegardes") {
+        return;
+      }
+
+      const sourcePath = path.join(dataDir, entry.name);
+      const destinationPath = path.join(stagingDir, entry.name);
+
+      fs.cpSync(sourcePath, destinationPath, {
+        recursive: true,
+        force: true,
+        errorOnExist: false,
+      });
+      copiedEntries += 1;
+    });
+
+    if (!copiedEntries) {
+      throw new Error("Aucune donnee locale a sauvegarder.");
+    }
+
+    await runPowerShellZip(stagingDir, saveResult.filePath);
+
+    const stat = fs.statSync(saveResult.filePath);
+    return {
+      success: true,
+      filePath: saveResult.filePath,
+      size: stat.size,
+      databaseCount: getDesktopBackupInfo().databaseCount,
+    };
+  } finally {
+    fs.rmSync(stagingDir, { recursive: true, force: true });
+  }
 }
 
 // Determine si l'adresse appartient a un reseau local classique utile pour le LAN client.
@@ -282,6 +413,142 @@ function writeDesktopLog(message) {
   }
 
   console.log(line.trim());
+}
+
+const desktopUpdateState = {
+  supported: false,
+  checking: false,
+  available: false,
+  downloaded: false,
+  currentVersion: app.getVersion(),
+  latestVersion: "",
+  message: "",
+  error: "",
+  progress: null,
+  lastCheckedAt: "",
+};
+
+function getDesktopUpdateStatus() {
+  return {
+    ...desktopUpdateState,
+    currentVersion: app.getVersion(),
+  };
+}
+
+function publishDesktopUpdateStatus(patch = {}) {
+  Object.assign(desktopUpdateState, patch, {
+    currentVersion: app.getVersion(),
+  });
+
+  const status = getDesktopUpdateStatus();
+
+  if (mainWindowRef && !mainWindowRef.isDestroyed()) {
+    mainWindowRef.webContents.send("desktop-update:status", status);
+  }
+
+  return status;
+}
+
+function configureDesktopAutoUpdater() {
+  if (!autoUpdater) {
+    publishDesktopUpdateStatus({
+      supported: false,
+      checking: false,
+      message: "Le module de mise a jour automatique n'est pas disponible.",
+    });
+    return;
+  }
+
+  if (!app.isPackaged) {
+    publishDesktopUpdateStatus({
+      supported: false,
+      checking: false,
+      message: "La mise a jour automatique sera disponible dans l'executable installe.",
+    });
+    return;
+  }
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  publishDesktopUpdateStatus({
+    supported: true,
+    message: "Pret a verifier les mises a jour.",
+  });
+
+  autoUpdater.on("checking-for-update", () => {
+    writeDesktopLog("Recherche d'une mise a jour desktop.");
+    publishDesktopUpdateStatus({
+      checking: true,
+      error: "",
+      message: "Recherche d'une mise a jour en cours...",
+      lastCheckedAt: new Date().toISOString(),
+    });
+  });
+
+  autoUpdater.on("update-available", (info) => {
+    writeDesktopLog(`Mise a jour disponible: ${info?.version || "version inconnue"}.`);
+    publishDesktopUpdateStatus({
+      checking: false,
+      available: true,
+      downloaded: false,
+      latestVersion: info?.version || "",
+      message: "Une nouvelle version est disponible. Telechargement en cours...",
+    });
+  });
+
+  autoUpdater.on("update-not-available", (info) => {
+    writeDesktopLog("Aucune mise a jour desktop disponible.");
+    publishDesktopUpdateStatus({
+      checking: false,
+      available: false,
+      downloaded: false,
+      latestVersion: info?.version || app.getVersion(),
+      progress: null,
+      message: "Cette application est deja a jour.",
+      lastCheckedAt: new Date().toISOString(),
+    });
+  });
+
+  autoUpdater.on("download-progress", (progress) => {
+    publishDesktopUpdateStatus({
+      progress: {
+        percent: Number(progress?.percent || 0),
+        transferred: Number(progress?.transferred || 0),
+        total: Number(progress?.total || 0),
+      },
+      message: "Telechargement de la mise a jour en cours...",
+    });
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    writeDesktopLog(`Mise a jour telechargee: ${info?.version || "version inconnue"}.`);
+    publishDesktopUpdateStatus({
+      checking: false,
+      available: true,
+      downloaded: true,
+      latestVersion: info?.version || "",
+      progress: null,
+      message: "Mise a jour telechargee. Redemarre pour l'installer.",
+    });
+  });
+
+  autoUpdater.on("error", (error) => {
+    writeDesktopLog(`Erreur mise a jour desktop: ${error?.message || String(error)}`);
+    publishDesktopUpdateStatus({
+      checking: false,
+      error: error?.message || "Impossible de verifier les mises a jour.",
+      message: "La verification de mise a jour a echoue.",
+    });
+  });
+}
+
+function checkForDesktopUpdates() {
+  if (!autoUpdater || !app.isPackaged) {
+    return getDesktopUpdateStatus();
+  }
+
+  return autoUpdater.checkForUpdates();
 }
 
 // Attend simplement un petit delai entre deux tentatives de verification.
@@ -622,6 +889,7 @@ if (!gotSingleInstanceLock) {
 
   app.whenReady().then(async () => {
   writeDesktopLog("Application desktop prete.");
+  configureDesktopAutoUpdater();
   const backendState = await startEmbeddedBackend();
 
   if (backendState.reason === "port-busy") {
@@ -633,6 +901,14 @@ if (!gotSingleInstanceLock) {
   }
 
   createMainWindow();
+
+  if (autoUpdater && app.isPackaged) {
+    setTimeout(() => {
+      checkForDesktopUpdates().catch((error) => {
+        writeDesktopLog(`Verification automatique des mises a jour impossible: ${error.message}`);
+      });
+    }, 8000);
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -754,6 +1030,79 @@ ipcMain.handle("desktop-shell:open-external", async (_event, url) => {
       error: error?.message || "Impossible d'ouvrir l'URL demandee",
     };
   }
+});
+
+ipcMain.handle("desktop-backup:get-info", async () => getDesktopBackupInfo());
+
+ipcMain.handle("desktop-backup:create", async () => {
+  try {
+    return await createDesktopBackupArchive();
+  } catch (error) {
+    return { success: false, error: error?.message || "Impossible de creer la sauvegarde." };
+  }
+});
+
+ipcMain.handle("desktop-backup:open-folder", async () => {
+  try {
+    const dataDir = resolveDesktopSqliteDbDir();
+    fs.mkdirSync(dataDir, { recursive: true });
+    const errorMessage = await shell.openPath(dataDir);
+
+    if (errorMessage) {
+      return { success: false, error: errorMessage };
+    }
+
+    return { success: true, dataDir };
+  } catch (error) {
+    return { success: false, error: error?.message || "Impossible d'ouvrir le dossier." };
+  }
+});
+
+ipcMain.handle("desktop-update:get-status", async () => getDesktopUpdateStatus());
+
+ipcMain.handle("desktop-update:check", async () => {
+  if (!autoUpdater) {
+    return publishDesktopUpdateStatus({
+      supported: false,
+      checking: false,
+      message: "Le module de mise a jour automatique n'est pas disponible.",
+    });
+  }
+
+  if (!app.isPackaged) {
+    return publishDesktopUpdateStatus({
+      supported: false,
+      checking: false,
+      message: "La mise a jour automatique sera disponible dans l'executable installe.",
+    });
+  }
+
+  try {
+    await checkForDesktopUpdates();
+  } catch (error) {
+    publishDesktopUpdateStatus({
+      checking: false,
+      error: error?.message || "Impossible de verifier les mises a jour.",
+      message: "La verification de mise a jour a echoue.",
+    });
+  }
+
+  return getDesktopUpdateStatus();
+});
+
+ipcMain.handle("desktop-update:install", async () => {
+  if (!autoUpdater || !desktopUpdateState.downloaded) {
+    return {
+      success: false,
+      error: "Aucune mise a jour telechargee n'est prete a etre installee.",
+    };
+  }
+
+  setImmediate(() => {
+    autoUpdater.quitAndInstall(false, true);
+  });
+
+  return { success: true };
 });
 process.on("uncaughtException", (error) => {
   writeDesktopLog(`Exception non capturee: ${error.stack || error.message}`);

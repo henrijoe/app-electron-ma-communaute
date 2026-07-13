@@ -28,3 +28,22 @@ contextBridge.exposeInMainWorld("desktopShell", {
 contextBridge.exposeInMainWorld("desktopNetwork", {
   getLocalAddress: () => ipcRenderer.invoke("desktop-network:get-local-address"),
 });
+
+// API de sauvegarde locale des donnees SQLite et medias client.
+contextBridge.exposeInMainWorld("desktopBackup", {
+  getInfo: () => ipcRenderer.invoke("desktop-backup:get-info"),
+  create: () => ipcRenderer.invoke("desktop-backup:create"),
+  openFolder: () => ipcRenderer.invoke("desktop-backup:open-folder"),
+});
+
+// API de mise a jour automatique reservee au mode desktop installe.
+contextBridge.exposeInMainWorld("desktopUpdater", {
+  getStatus: () => ipcRenderer.invoke("desktop-update:get-status"),
+  check: () => ipcRenderer.invoke("desktop-update:check"),
+  install: () => ipcRenderer.invoke("desktop-update:install"),
+  onStatus: (callback) => {
+    const listener = (_event, status) => callback(status);
+    ipcRenderer.on("desktop-update:status", listener);
+    return () => ipcRenderer.removeListener("desktop-update:status", listener);
+  },
+});

@@ -7,7 +7,6 @@ import {
   Box,
   Stack,
   Table,
-  Divider,
   TableRow,
   TableBody,
   TableCell,
@@ -81,7 +80,7 @@ type PrintFooterProps = {
 export const PRINT_LANDSCAPE_PAGE_STYLE = `
   @page {
     size: A4 landscape;
-    margin: 12mm;
+    margin: 8mm;
   }
 
   @media print {
@@ -140,19 +139,21 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
   return (
     <Box
       sx={{
-        display: 'grid',
-        gridTemplateColumns: '88px minmax(0, 1fr)',
+        display: 'flex',
         alignItems: 'center',
-        gap: 2,
-        pb: 1.75,
-        mb: 2.25,
-        borderBottom: '2px solid #0f274a',
+        gap: 1.5,
+        p: 1.35,
+        mb: 1.4,
+        border: '1px solid rgba(15, 39, 74, 0.18)',
+        borderBottom: '3px solid #0f274a',
+        borderRadius: 1.4,
+        backgroundColor: '#ffffff',
       }}
     >
       <Box
         sx={{
-          width: 38,
-          height: 38,
+          width: 44,
+          height: 44,
           borderRadius: 1.1,
           bgcolor: '#ffffff',
           display: 'flex',
@@ -160,6 +161,8 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
           justifyContent: 'center',
           overflow: 'hidden',
           p: 0.4,
+          flexShrink: 0,
+          border: '1px solid rgba(15, 39, 74, 0.14)',
         }}
       >
         {logoUrl ? (
@@ -174,9 +177,31 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
         )}
       </Box>
 
-      <Typography variant="h4" sx={{ fontWeight: 900, lineHeight: 1.05, color: '#0f274a' }}>
-        {identity.nomEgliseCourt || identity.nomTemple || 'Communaute locale'}
-      </Typography>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography
+          sx={{
+            fontSize: '1.08rem',
+            fontWeight: 900,
+            lineHeight: 1.15,
+            color: '#0f274a',
+            overflowWrap: 'anywhere',
+          }}
+        >
+          {identity.nomEgliseCourt || identity.nomTemple || 'Communauté locale'}
+        </Typography>
+        <Typography
+          sx={{
+            mt: 0.25,
+            color: '#63758c',
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: 0.8,
+          }}
+        >
+          État imprimable
+        </Typography>
+      </Box>
     </Box>
   );
 }
@@ -195,7 +220,7 @@ function PrintFooter({ contactLine, showPagination }: PrintFooterProps) {
     >
       <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
         <Typography variant="caption" sx={{ color: 'inherit' }}>
-          {contactLine || "Document interne de l'eglise"}
+          {contactLine || "Document interne de l'église"}
         </Typography>
         {showPagination ? (
           <Typography variant="caption" sx={{ color: 'inherit' }}>
@@ -230,7 +255,7 @@ export function PrintDocumentLayout({
 
   const logoUrl = getPrintableLogoUrl(mergedIdentity);
   const isPlainVariant = variant === 'plain';
-  const printPageWidth = orientation === 'landscape' ? '273mm' : '190mm';
+  const printPageWidth = orientation === 'landscape' ? '281mm' : '190mm';
   const footerContactLine = joinAvailableValues(
     mergedIdentity.lieuEglise,
     mergedIdentity.telephoneSecretariatEglise || mergedIdentity.telephoneUtilisateur,
@@ -250,12 +275,13 @@ export function PrintDocumentLayout({
             'html, body': {
               WebkitPrintColorAdjust: 'exact',
               printColorAdjust: 'exact',
+              backgroundColor: '#ffffff',
             },
             '.print-document-root': {
               width: `${printPageWidth} !important`,
               maxWidth: `${printPageWidth} !important`,
-              paddingBottom: '18mm',
-              minHeight: orientation === 'landscape' ? '186mm' : '273mm',
+              minHeight: orientation === 'landscape' ? '194mm' : '281mm',
+              paddingBottom: '14mm',
             },
             '.print-block-avoid-break': {
               breakInside: 'avoid',
@@ -263,9 +289,9 @@ export function PrintDocumentLayout({
             },
             '.print-page-footer': {
               position: 'fixed',
-              left: '12mm',
-              right: '12mm',
-              bottom: '6mm',
+              left: '8mm',
+              right: '8mm',
+              bottom: '5mm',
               marginTop: 0,
               backgroundColor: '#ffffff',
             },
@@ -274,7 +300,6 @@ export function PrintDocumentLayout({
       />
 
       <Box
-
         className="print-document-root"
         sx={{
           width: '100%',
@@ -284,6 +309,7 @@ export function PrintDocumentLayout({
           display: 'flex',
           flexDirection: 'column',
           p: 0,
+          minHeight: orientation === 'landscape' ? 720 : 1040,
 
           '@media print': {
             width: '100%',
@@ -312,32 +338,31 @@ export function PrintDocumentLayout({
         >
           {showDocumentMeta && (
             <>
-              <Stack
-                direction={{ xs: 'column', md: 'row' }}
-                spacing={2}
-                justifyContent="space-between"
-                alignItems={{ xs: 'flex-start', md: 'center' }}
-                sx={{ mb: 1.5 }}
+              <Box
+                className="print-block-avoid-break"
+                sx={{
+                  mb: isPlainVariant ? 1.2 : 2,
+                  px: 2,
+                  py: 1.05,
+                  border: '1.5px solid #0f274a',
+                  borderRadius: 1.2,
+                  backgroundColor: '#eef4ff',
+                  textAlign: 'center',
+                }}
               >
-                <Box>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontWeight: 900,
-                      color: '#0f274a',
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.8,
-                    }}
-                  >
-                    {title}
-                  </Typography>
-
-                </Box>
-
-
-              </Stack>
-
-              <Divider sx={{ mb: 3 }} />
+                <Typography
+                  sx={{
+                    fontSize: orientation === 'landscape' ? '1.08rem' : '1rem',
+                    fontWeight: 900,
+                    color: '#0f274a',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.8,
+                    lineHeight: 1.15,
+                  }}
+                >
+                  {title}
+                </Typography>
+              </Box>
             </>
           )}
 
@@ -355,13 +380,14 @@ export function PrintTable({ children, minWidth = 760 }: PrintTableProps) {
     <TableContainer
       className="print-block-avoid-break"
       sx={{
-        borderRadius: 3,
+        borderRadius: 1.6,
         width: '100%',
         maxWidth: '100%',
-        border: '1px solid rgba(15, 23, 42, 0.1)',
+        border: '1px solid rgba(15, 39, 74, 0.16)',
         overflow: 'hidden',
+        backgroundColor: '#ffffff',
         '@media print': {
-          borderRadius: 2,
+          borderRadius: 1.2,
         },
       }}
     >
@@ -371,21 +397,23 @@ export function PrintTable({ children, minWidth = 760 }: PrintTableProps) {
           width: '100%',
           tableLayout: 'fixed',
           '& .MuiTableCell-root': {
-            py: 1.5,
-            px: 1.5,
-            borderColor: 'rgba(15, 23, 42, 0.08)',
+            py: 1.1,
+            px: 1.15,
+            borderColor: 'rgba(15, 39, 74, 0.10)',
             verticalAlign: 'top',
             whiteSpace: 'normal',
             wordBreak: 'break-word',
+            color: '#10233f',
           },
           '& .MuiTableHead-root': {
-            backgroundColor: '#e8f0fb',
+            backgroundColor: '#eaf2ff',
             '& .MuiTableCell-root': {
               color: '#0f274a',
               fontWeight: 800,
               textTransform: 'uppercase',
-              fontSize: '0.75rem',
+              fontSize: '0.7rem',
               letterSpacing: 0.5,
+              py: 0.9,
             },
           },
           '& .MuiTableBody-root .MuiTableRow-root:nth-of-type(even)': {
@@ -398,10 +426,14 @@ export function PrintTable({ children, minWidth = 760 }: PrintTableProps) {
           '@media print': {
             minWidth: '100%',
             '& .MuiTableCell-root': {
-              py: 0.8,
-              px: 0.9,
-              fontSize: '0.72rem',
+              py: 0.65,
+              px: 0.72,
+              fontSize: '0.68rem',
               lineHeight: 1.2,
+            },
+            '& .MuiTableHead-root .MuiTableCell-root': {
+              fontSize: '0.62rem',
+              lineHeight: 1.1,
             },
           },
         }}

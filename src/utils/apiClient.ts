@@ -3,6 +3,7 @@ import type { ModulePermissionKey } from 'src/store/userSlice';
 
 import { normalizeText } from './text';
 import { canManageModule } from './access-control';
+import { describeJournalAction, recordActionJournalEntry } from './action-journal';
 import { sanitizeSensitiveData } from './sensitive-data';
 import { getServerUrl, getConnectionMode, getCurrentSessionUser } from './functions';
 
@@ -366,6 +367,12 @@ export async function request<T>(
     if (!response.ok) {
       const message = buildErrorMessage(responseData, getHttpStatusMessage(response.status));
       throw new ApiError(message, response.status, responseData);
+    }
+
+    const method = String(config?.method || 'GET').toUpperCase();
+    const journalAction = method === 'GET' ? null : describeJournalAction(method, route);
+    if (journalAction && (responseData as any)?.status !== 0) {
+      recordActionJournalEntry(journalAction);
     }
 
     return sanitizeSensitiveData(responseData) as T;

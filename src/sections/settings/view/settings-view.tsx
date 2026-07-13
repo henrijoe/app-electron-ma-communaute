@@ -19,6 +19,7 @@ import {
   MenuBookRounded,
   SaveRounded,
   StorageRounded,
+  SystemUpdateRounded,
   UploadRounded,
 } from '@mui/icons-material';
 import Alert from '@mui/material/Alert';
@@ -34,6 +35,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
+import LinearProgress from '@mui/material/LinearProgress';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -53,6 +55,11 @@ import type { IReduxState } from 'src/store/store';
 import type { IUtilisateur, ModulePermissionKey, UserRole } from 'src/store/userSlice';
 import { setUtilisateurData } from 'src/store/userSlice';
 import { apiClient, buildChurchLogoUrl } from 'src/utils/apiClient';
+import {
+  clearActionJournalEntries,
+  getActionJournalEntries,
+  type ActionJournalEntry,
+} from 'src/utils/action-journal';
 import {
   ALL_MODULE_PERMISSIONS,
   MODULE_PERMISSION_LABELS,
@@ -84,6 +91,23 @@ const emptyTunnelStatus: TunnelStatus = {
   requestedSubdomain: '',
   startedAt: null,
   url: '',
+};
+
+type DesktopUpdateStatus = {
+  supported: boolean;
+  checking: boolean;
+  available: boolean;
+  downloaded: boolean;
+  currentVersion: string;
+  latestVersion?: string;
+  message?: string;
+  error?: string;
+  progress?: {
+    percent?: number;
+    transferred?: number;
+    total?: number;
+  } | null;
+  lastCheckedAt?: string;
 };
 
 type ProfileFormState = {
@@ -403,7 +427,15 @@ export function SettingsView() {
   const [isExportingUnlockCodes, setIsExportingUnlockCodes] = useState(false);
   const [isGeneratingUnlockCodes, setIsGeneratingUnlockCodes] = useState(false);
   const [isRebindingMachine, setIsRebindingMachine] = useState(false);
+  const [isCreatingSqliteBackup, setIsCreatingSqliteBackup] = useState(false);
+  const [isOpeningSqliteFolder, setIsOpeningSqliteFolder] = useState(false);
   const [isRestoringSqliteBackup, setIsRestoringSqliteBackup] = useState(false);
+  const [desktopUpdateStatus, setDesktopUpdateStatus] = useState<DesktopUpdateStatus | null>(null);
+  const [isCheckingDesktopUpdate, setIsCheckingDesktopUpdate] = useState(false);
+  const [isInstallingDesktopUpdate, setIsInstallingDesktopUpdate] = useState(false);
+  const [actionJournalEntries, setActionJournalEntries] = useState<ActionJournalEntry[]>(() =>
+    getActionJournalEntries()
+  );
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm);
   const [secondaryUsers, setSecondaryUsers] = useState<IUtilisateur[]>([]);
   const [loadingSecondaryUsers, setLoadingSecondaryUsers] = useState(false);
@@ -457,6 +489,8 @@ export function SettingsView() {
     applicationState.desktopSecurityCurrentMachineDescription;
   const isFixedDesktopSuperAdmin =
     Number(userConnected?.idUtilisateur ?? utilisateurData?.idUtilisateur ?? -1) === 0;
+  const canManageDesktopUpdates = isDesktopApp && (isFixedDesktopSuperAdmin || canManageSecondaryUsers);
+  const canManageDesktopBackups = isDesktopApp && (isFixedDesktopSuperAdmin || canManageSecondaryUsers);
   const canInspectDesktopLicense = isDesktopApp || isFixedDesktopSuperAdmin;
   const desktopCountdown = useMemo(
     () => getDesktopCountdown(desktopLicenseExpiresAt, countdownNow),
@@ -468,6 +502,16 @@ export function SettingsView() {
   );
   const secondaryUserCount = secondaryUsers.length;
   const isEditingSecondaryUser = Boolean(secondaryUserForm.idUtilisateur);
+  const desktopUpdateProgress = Math.round(Number(desktopUpdateStatus?.progress?.percent || 0));
+  const desktopUpdateChip = desktopUpdateStatus?.checking
+    ? { color: 'info' as const, label: 'Recherche...' }
+    : desktopUpdateStatus?.downloaded
+      ? { color: 'success' as const, label: 'Prête à installer' }
+      : desktopUpdateStatus?.available
+        ? { color: 'warning' as const, label: 'Nouvelle version' }
+        : desktopUpdateStatus?.supported === false
+          ? { color: 'default' as const, label: 'Non disponible' }
+          : { color: 'success' as const, label: 'À jour' };
 
   const desktopAlert = useMemo(() => {
     if (isDesktopBlocked) {
@@ -677,6 +721,38 @@ export function SettingsView() {
   }, [detectPreferredBrowserUrl, refreshDesktopSecurityStatus, refreshTunnelStatus]);
 
   useEffect(() => {
+    if (!isDesktopApp || !(window as any)?.desktopUpdater) {
+      return undefined;
+    }
+
+    const updater = (window as any).desktopUpdater;
+
+    updater
+      .getStatus()
+      .then((status: DesktopUpdateStatus) => {
+        setDesktopUpdateStatus(status);
+      })
+      .catch(() => {
+        setDesktopUpdateStatus({
+          supported: false,
+          checking: false,
+          available: false,
+          downloaded: false,
+          currentVersion: '',
+          message: 'Impossible de lire le statut des mises à jour.',
+        });
+      });
+
+    if (!updater.onStatus) {
+      return undefined;
+    }
+
+    return updater.onStatus((status: DesktopUpdateStatus) => {
+      setDesktopUpdateStatus(status);
+    });
+  }, [isDesktopApp]);
+
+  useEffect(() => {
     loadSecondaryUsers();
   }, [loadSecondaryUsers]);
 
@@ -813,6 +889,61 @@ export function SettingsView() {
       );
     }
   }, [showNotification, tunnelStatus.url]);
+
+  const handleCheckDesktopUpdate = useCallback(async () => {
+    const updater = (window as any)?.desktopUpdater;
+
+    if (!updater?.check) {
+      showNotification("La mise à jour automatique n'est pas disponible dans cette fenêtre.", 'info');
+      return;
+    }
+
+    try {
+      setIsCheckingDesktopUpdate(true);
+      const status = (await updater.check()) as DesktopUpdateStatus;
+      setDesktopUpdateStatus(status);
+
+      if (status.downloaded) {
+        showNotification('Mise à jour téléchargée. Tu peux redémarrer pour installer.', 'success');
+      } else if (status.available) {
+        showNotification('Nouvelle version trouvée. Téléchargement en cours.', 'info');
+      } else if (status.supported === false) {
+        showNotification(
+          status.message || "La mise à jour automatique sera active dans l'exécutable installé.",
+          'info'
+        );
+      } else {
+        showNotification('Cette application est déjà à jour.', 'success');
+      }
+    } catch (error: any) {
+      showNotification(error?.message || 'Impossible de vérifier les mises à jour.', 'error');
+    } finally {
+      setIsCheckingDesktopUpdate(false);
+    }
+  }, [showNotification]);
+
+  const handleInstallDesktopUpdate = useCallback(async () => {
+    const updater = (window as any)?.desktopUpdater;
+
+    if (!updater?.install) {
+      showNotification("La mise à jour automatique n'est pas disponible dans cette fenêtre.", 'info');
+      return;
+    }
+
+    try {
+      setIsInstallingDesktopUpdate(true);
+      const result = await updater.install();
+
+      if (!result?.success) {
+        throw new Error(result?.error || "Aucune mise à jour n'est prête à être installée.");
+      }
+
+      showNotification("Installation de la mise à jour après redémarrage de l'application.", 'info');
+    } catch (error: any) {
+      showNotification(error?.message || "Impossible d'installer la mise à jour.", 'error');
+      setIsInstallingDesktopUpdate(false);
+    }
+  }, [showNotification]);
 
   const handleUnlockDesktop = useCallback(async () => {
     if (!currentUsername || !isFixedDesktopSuperAdmin) {
@@ -974,6 +1105,60 @@ export function SettingsView() {
     unlockPassword,
   ]);
 
+  const handleCreateSqliteBackup = useCallback(async () => {
+    const backupApi = (window as any)?.desktopBackup;
+
+    if (!canManageDesktopBackups || !backupApi?.create) {
+      showNotification('La sauvegarde locale est disponible uniquement dans l’application desktop.', 'warning');
+      return;
+    }
+
+    try {
+      setIsCreatingSqliteBackup(true);
+      const response = await backupApi.create();
+
+      if (response?.canceled) {
+        return;
+      }
+
+      if (!response?.success) {
+        showNotification(response?.error || 'Impossible de créer la sauvegarde locale.', 'error');
+        return;
+      }
+
+      showNotification(
+        'Sauvegarde créée avec succès. Conservez ce fichier sur une clé USB ou un disque externe.',
+        'success'
+      );
+    } catch (error: any) {
+      showNotification(error?.message || 'Impossible de créer la sauvegarde locale.', 'error');
+    } finally {
+      setIsCreatingSqliteBackup(false);
+    }
+  }, [canManageDesktopBackups, showNotification]);
+
+  const handleOpenSqliteDataFolder = useCallback(async () => {
+    const backupApi = (window as any)?.desktopBackup;
+
+    if (!isDesktopApp || !backupApi?.openFolder) {
+      showNotification('Le dossier des données locales est disponible uniquement dans l’application desktop.', 'warning');
+      return;
+    }
+
+    try {
+      setIsOpeningSqliteFolder(true);
+      const response = await backupApi.openFolder();
+
+      if (!response?.success) {
+        showNotification(response?.error || 'Impossible d’ouvrir le dossier des données.', 'error');
+      }
+    } catch (error: any) {
+      showNotification(error?.message || 'Impossible d’ouvrir le dossier des données.', 'error');
+    } finally {
+      setIsOpeningSqliteFolder(false);
+    }
+  }, [isDesktopApp, showNotification]);
+
   const handleRestoreSqliteBackup = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       const backupFile = event.target.files?.[0] || null;
@@ -983,13 +1168,13 @@ export function SettingsView() {
         return;
       }
 
-      if (!currentUsername || !isFixedDesktopSuperAdmin) {
-        showNotification('Seul le superadmin peut restaurer une sauvegarde SQLite.', 'warning');
+      if (!currentUsername || !canManageDesktopBackups) {
+        showNotification('Seul un administrateur principal peut restaurer une sauvegarde SQLite.', 'warning');
         return;
       }
 
       if (!unlockPassword.trim()) {
-        showNotification('Le mot de passe superadmin est requis', 'warning');
+        showNotification('Le mot de passe administrateur est requis pour restaurer.', 'warning');
         return;
       }
 
@@ -1029,8 +1214,18 @@ export function SettingsView() {
         setIsRestoringSqliteBackup(false);
       }
     },
-    [currentUsername, isFixedDesktopSuperAdmin, showNotification, unlockPassword]
+    [canManageDesktopBackups, currentUsername, showNotification, unlockPassword]
   );
+
+  const handleClearActionJournal = useCallback(() => {
+    clearActionJournalEntries();
+    setActionJournalEntries([]);
+    showNotification('Journal d’actions vidé.', 'success');
+  }, [showNotification]);
+
+  const handleRefreshActionJournal = useCallback(() => {
+    setActionJournalEntries(getActionJournalEntries());
+  }, []);
 
   const handleChangeProfileField = useCallback((field: keyof ProfileFormState, value: string) => {
     setProfileForm((prev) => ({
@@ -2468,41 +2663,266 @@ export function SettingsView() {
                       </Stack>
                     </Stack>
 
-                    <Divider />
-
-                    <Stack spacing={2}>
-                      <Box>
-                        <Typography variant="h6">Sauvegarde et restauration SQLite</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          La restauration remplace les bases locales par le contenu du zip choisi.
-                        </Typography>
-                      </Box>
-
-                      <Alert severity="warning">
-                        Avant la restauration, une sauvegarde de sécurité est créée automatiquement
-                        dans le dossier sauvegardes.
-                      </Alert>
-
-                      <Box>
-                        <Button
-                          component="label"
-                          variant="outlined"
-                          color="warning"
-                          startIcon={<UploadRounded />}
-                          disabled={isRestoringSqliteBackup}
-                        >
-                          {isRestoringSqliteBackup ? 'Restauration...' : 'Restaurer une sauvegarde'}
-                          <input
-                            hidden
-                            type="file"
-                            accept=".zip,application/zip"
-                            onChange={handleRestoreSqliteBackup}
-                          />
-                        </Button>
-                      </Box>
-                    </Stack>
                   </>
                 ) : null}
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
+
+        {canManageDesktopBackups && (
+          <Card>
+            <CardHeader
+              avatar={<StorageRounded color="primary" />}
+              title="Sauvegarde locale"
+              subheader="Sauvegarder, restaurer ou ouvrir le dossier des données de cette église."
+            />
+            <CardContent>
+              <Stack spacing={2.5}>
+                <Alert severity="info">
+                  Faites une sauvegarde avant chaque mise à jour, avant une grosse saisie ou avant
+                  toute intervention sur le poste du client.
+                </Alert>
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <Button
+                    variant="contained"
+                    startIcon={<FileDownloadRounded />}
+                    onClick={handleCreateSqliteBackup}
+                    disabled={isCreatingSqliteBackup}
+                  >
+                    {isCreatingSqliteBackup ? 'Sauvegarde...' : 'Sauvegarder la base'}
+                  </Button>
+
+                  <Button
+                    component="label"
+                    variant="outlined"
+                    color="warning"
+                    startIcon={<UploadRounded />}
+                    disabled={isRestoringSqliteBackup}
+                  >
+                    {isRestoringSqliteBackup ? 'Restauration...' : 'Restaurer une sauvegarde'}
+                    <input
+                      hidden
+                      type="file"
+                      accept=".zip,application/zip"
+                      onChange={handleRestoreSqliteBackup}
+                    />
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    startIcon={<StorageRounded />}
+                    onClick={handleOpenSqliteDataFolder}
+                    disabled={isOpeningSqliteFolder}
+                  >
+                    Ouvrir le dossier
+                  </Button>
+                </Stack>
+
+                <TextField
+                  type="password"
+                  label="Mot de passe administrateur pour restaurer"
+                  value={unlockPassword}
+                  onChange={(event) => setUnlockPassword(event.target.value)}
+                  sx={{ maxWidth: 360 }}
+                />
+
+                <Alert severity="warning">
+                  Restaurer une sauvegarde remplace les données locales actuelles. Après une
+                  restauration, redémarrez l’application desktop pour recharger correctement les
+                  données.
+                </Alert>
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
+
+        {(canManageDesktopBackups || canManageDesktopUpdates || canManageSecondaryUsers) && (
+          <Card>
+            <CardHeader
+              avatar={<MenuBookRounded color="primary" />}
+              title="Guide d’installation"
+              subheader="Les étapes essentielles à garder sous la main chez un client."
+            />
+            <CardContent>
+              <Stack spacing={1.5}>
+                {[
+                  'Installer l’exécutable sur le poste principal de l’église.',
+                  'Créer l’église et le compte administrateur principal.',
+                  'Vérifier que le poste principal et le téléphone sont sur le même réseau Wi-Fi.',
+                  'Depuis Paramètres, utiliser Ouvrir dans le navigateur ou partager l’adresse locale affichée.',
+                  'Faire une sauvegarde avant les mises à jour et avant les grosses saisies.',
+                  'Quand une mise à jour est disponible, la lancer depuis la section Mises à jour.',
+                ].map((step, index) => (
+                  <Stack key={step} direction="row" spacing={1.5} alignItems="flex-start">
+                    <Chip size="small" label={index + 1} color="primary" />
+                    <Typography variant="body2">{step}</Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
+
+        {(canManageDesktopBackups || canManageSecondaryUsers || isFixedDesktopSuperAdmin) && (
+          <Card>
+            <CardHeader
+              avatar={<EditRounded color="primary" />}
+              title="Journal d’actions"
+              subheader="Dernières opérations enregistrées sur ce poste."
+              action={
+                <Stack direction="row" spacing={1}>
+                  <Button size="small" onClick={handleRefreshActionJournal}>
+                    Actualiser
+                  </Button>
+                  <Button size="small" color="warning" onClick={handleClearActionJournal}>
+                    Vider
+                  </Button>
+                </Stack>
+              }
+            />
+            <CardContent>
+              {actionJournalEntries.length === 0 ? (
+                <Alert severity="info">Aucune action enregistrée sur ce poste pour le moment.</Alert>
+              ) : (
+                <Stack spacing={1.5}>
+                  {actionJournalEntries.slice(0, 20).map((entry) => (
+                    <Box
+                      key={entry.id}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 1,
+                        border: (theme) => `1px solid ${theme.palette.divider}`,
+                      }}
+                    >
+                      <Stack
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={1}
+                        justifyContent="space-between"
+                      >
+                        <Typography variant="subtitle2">
+                          {entry.action} - {entry.module}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(entry.date).toLocaleString('fr-FR')}
+                        </Typography>
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary">
+                        {entry.user} - {entry.details}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {canManageDesktopUpdates && (
+          <Card>
+            <CardHeader
+              avatar={<SystemUpdateRounded color="primary" />}
+              title="Mises à jour"
+              subheader="Vérifie les nouvelles versions publiées sur GitHub Releases."
+              action={
+                <Chip
+                  color={desktopUpdateChip.color}
+                  label={desktopUpdateChip.label}
+                  variant={desktopUpdateStatus?.supported === false ? 'outlined' : 'filled'}
+                />
+              }
+            />
+            <CardContent>
+              <Stack spacing={2.5}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Version installée
+                    </Typography>
+                    <Typography variant="h6">
+                      {desktopUpdateStatus?.currentVersion || 'Version inconnue'}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Dernière version trouvée
+                    </Typography>
+                    <Typography variant="h6">
+                      {desktopUpdateStatus?.latestVersion || 'Non vérifiée'}
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                {desktopUpdateStatus?.message && (
+                  <Alert
+                    severity={
+                      desktopUpdateStatus.error
+                        ? 'error'
+                        : desktopUpdateStatus.downloaded
+                          ? 'success'
+                          : desktopUpdateStatus.available
+                            ? 'info'
+                            : 'info'
+                    }
+                  >
+                    {desktopUpdateStatus.error || desktopUpdateStatus.message}
+                  </Alert>
+                )}
+
+                {desktopUpdateProgress > 0 && desktopUpdateProgress < 100 && (
+                  <Box>
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{ mb: 0.75 }}
+                    >
+                      <Typography variant="body2" color="text.secondary">
+                        Téléchargement
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {desktopUpdateProgress}%
+                      </Typography>
+                    </Stack>
+                    <LinearProgress variant="determinate" value={desktopUpdateProgress} />
+                  </Box>
+                )}
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<AutorenewRounded />}
+                    onClick={handleCheckDesktopUpdate}
+                    disabled={
+                      isCheckingDesktopUpdate ||
+                      desktopUpdateStatus?.checking ||
+                      desktopUpdateStatus?.supported === false
+                    }
+                  >
+                    {isCheckingDesktopUpdate || desktopUpdateStatus?.checking
+                      ? 'Vérification...'
+                      : 'Vérifier les mises à jour'}
+                  </Button>
+
+                  {desktopUpdateStatus?.downloaded && (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      startIcon={<SystemUpdateRounded />}
+                      onClick={handleInstallDesktopUpdate}
+                      disabled={isInstallingDesktopUpdate}
+                    >
+                      {isInstallingDesktopUpdate ? 'Redémarrage...' : 'Redémarrer et installer'}
+                    </Button>
+                  )}
+                </Stack>
+
+                <Typography variant="body2" color="text.secondary">
+                  Les mises à jour automatiques fonctionnent uniquement dans une version installée.
+                  En développement, il faut reconstruire l&apos;application manuellement.
+                </Typography>
               </Stack>
             </CardContent>
           </Card>

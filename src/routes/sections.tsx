@@ -21,6 +21,7 @@ export const ResponsabilitesPage = lazy(() => import('src/pages/responsabilites'
 export const DesktopLockedPage = lazy(() => import('src/pages/desktop-locked'));
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
 export const SocialPage = lazy(() => import('src/pages/cas-sociaux'));
+export const PastoralPage = lazy(() => import('src/pages/pastoral'));
 export const GaleriePage = lazy(() => import('src/pages/galerie'));
 export const AgendaPage = lazy(() => import('src/pages/agenda'));
 export const ComptabilitePage = lazy(() => import('src/pages/comptabilite'));
@@ -110,6 +111,7 @@ export function Router() {
         { path: 'groupe', element: <GuardedPage permission="groupe" element={<GroupePage />} /> },
         { path: 'famille-jeunesse', element: <GuardedPage permission="familleJeunesse" element={<FamilleJeunessePage />} /> },
         { path: 'cas-sociaux', element: <GuardedPage permission="social" element={<SocialPage />} /> },
+        { path: 'pastoral', element: <GuardedPage permission="social" element={<PastoralPage />} /> },
         { path: 'galerie', element: <GuardedPage permission="galerie" element={<GaleriePage />} /> },
         { path: 'agenda', element: <GuardedPage permission="agenda" element={<AgendaPage />} /> },
         { path: 'comptabilite', element: <GuardedPage permission="comptabilite" element={<ComptabilitePage />} /> },
