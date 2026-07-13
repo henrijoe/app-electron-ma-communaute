@@ -18,6 +18,10 @@ import {
   canUseDesktopPrint,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
+import {
+  PRINT_PORTRAIT_PAGE_STYLE,
+  PRINT_LANDSCAPE_PAGE_STYLE,
+} from 'src/components/print/print-document';
 
 import { ListeDesDepartements } from './listeDepartementPdf';
 import { FicheDepartementVierge } from './ficheDepartementVierge';
@@ -178,6 +182,7 @@ const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Fiche de renseignement département</div>}
                 content={() => ficheDepartementRef.current}
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
               />
             </MenuItem>
             <MenuItem onClick={handleClose}>
@@ -185,6 +190,7 @@ const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Liste des départements</div>}
                 content={() => departementRef.current}
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
               />
             </MenuItem>
           </>

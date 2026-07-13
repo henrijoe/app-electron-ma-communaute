@@ -20,6 +20,10 @@ import {
   canUseDesktopPrint,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
+import {
+  PRINT_PORTRAIT_PAGE_STYLE,
+  PRINT_LANDSCAPE_PAGE_STYLE,
+} from 'src/components/print/print-document';
 
 import { ComptabiliteArchiveDocument } from './comptabilite-archive-document';
 import { ComptabiliteJournalDocument } from './comptabilite-journal-document';
@@ -52,6 +56,15 @@ type PrintDocumentMeta = {
 };
 
 type PrintTarget = 'archive' | 'entrees' | 'journal' | 'sorties' | 'summary';
+
+const hiddenPrintHostStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: '-10000px',
+  width: '210mm',
+  pointerEvents: 'none',
+  zIndex: -1,
+};
 
 const StyledMenu = styled(Menu)(({ theme }) => ({
   '& .MuiPaper-root': {
@@ -347,6 +360,7 @@ export function PrintEtatComptabilite({
               Fiche de renseignement
               <ReactToPrint
                 content={() => formRef.current}
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
                 trigger={() => <div>{meta.form.title}</div>}
               />
             </MenuItem>
@@ -355,6 +369,7 @@ export function PrintEtatComptabilite({
               Journal de caisse
               <ReactToPrint
                 content={() => journalRef.current}
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
                 trigger={() => <div>{meta.journal.title}</div>}
               />
             </MenuItem>
@@ -363,6 +378,7 @@ export function PrintEtatComptabilite({
               État des entrées
               <ReactToPrint
                 content={() => entreesRef.current}
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
                 trigger={() => <div>{meta.entrees.title}</div>}
               />
             </MenuItem>
@@ -371,6 +387,7 @@ export function PrintEtatComptabilite({
               État des sorties
               <ReactToPrint
                 content={() => sortiesRef.current}
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
                 trigger={() => <div>{meta.sorties.title}</div>}
               />
             </MenuItem>
@@ -379,6 +396,7 @@ export function PrintEtatComptabilite({
               Situation de trésorerie
               <ReactToPrint
                 content={() => summaryRef.current}
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
                 trigger={() => <div>{meta.summary.title}</div>}
               />
             </MenuItem>
@@ -388,6 +406,7 @@ export function PrintEtatComptabilite({
                 Archive comptable
                 <ReactToPrint
                   content={() => archiveRef.current}
+                  pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
                   trigger={() => <div>{meta.archive.title}</div>}
                 />
               </MenuItem>
@@ -396,24 +415,24 @@ export function PrintEtatComptabilite({
         )}
       </StyledMenu>
 
-      <div style={{ display: 'none' }}>
+      <div aria-hidden="true" style={hiddenPrintHostStyle}>
         <JournalComponent filterLabel={filterLabel} items={items} ref={journalRef} search={search} />
       </div>
-      <div style={{ display: 'none' }}>
+      <div aria-hidden="true" style={hiddenPrintHostStyle}>
         <EntreesComponent filterLabel={filterLabel} items={items} ref={entreesRef} search={search} />
       </div>
-      <div style={{ display: 'none' }}>
+      <div aria-hidden="true" style={hiddenPrintHostStyle}>
         <SortiesComponent filterLabel={filterLabel} items={items} ref={sortiesRef} search={search} />
       </div>
-      <div style={{ display: 'none' }}>
+      <div aria-hidden="true" style={hiddenPrintHostStyle}>
         <SummaryComponent filterLabel={filterLabel} items={items} ref={summaryRef} search={search} />
       </div>
       {isSuperAdmin && (
-        <div style={{ display: 'none' }}>
+        <div aria-hidden="true" style={hiddenPrintHostStyle}>
           <ArchiveComponent deletedItems={deletedItems} filterLabel={filterLabel} ref={archiveRef} />
         </div>
       )}
-      <div style={{ display: 'none' }}>
+      <div aria-hidden="true" style={hiddenPrintHostStyle}>
         <FormComponent ref={formRef} />
       </div>
     </>

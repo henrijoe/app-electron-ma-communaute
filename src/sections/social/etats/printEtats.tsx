@@ -22,6 +22,10 @@ import {
   canUseDesktopPrint,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
+import {
+  PRINT_PORTRAIT_PAGE_STYLE,
+  PRINT_LANDSCAPE_PAGE_STYLE,
+} from 'src/components/print/print-document';
 
 import { SocialPrintDocument } from './social-print-document';
 import { FicheSocialeRenseignement } from './ficheSocialeRenseignement';
@@ -164,11 +168,19 @@ export function PrintEtatSociaux({ activeType, identity, rows }: PrintEtatsProps
           <>
             <MenuItem onClick={() => setAnchorEl(null)}>
               <PrintIcon />
-              <ReactToPrint trigger={() => <div>{formMeta.title}</div>} content={() => formRef.current} />
+              <ReactToPrint
+                trigger={() => <div>{formMeta.title}</div>}
+                content={() => formRef.current}
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
+              />
             </MenuItem>
             <MenuItem onClick={() => setAnchorEl(null)}>
               <PrintIcon />
-              <ReactToPrint trigger={() => <div>{meta.title}</div>} content={() => printRef.current} />
+              <ReactToPrint
+                trigger={() => <div>{meta.title}</div>}
+                content={() => printRef.current}
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
+              />
             </MenuItem>
           </>
         )}

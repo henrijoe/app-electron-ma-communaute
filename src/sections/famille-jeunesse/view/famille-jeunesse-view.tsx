@@ -60,7 +60,13 @@ import {
 import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { ContactPhoneLink } from 'src/components/contact-phone-link';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
-import { PrintTable, PrintEmptyState, PrintDocumentLayout } from 'src/components/print/print-document';
+import {
+  PrintTable,
+  PrintEmptyState,
+  PrintDocumentLayout,
+  PRINT_PORTRAIT_PAGE_STYLE,
+  PRINT_LANDSCAPE_PAGE_STYLE,
+} from 'src/components/print/print-document';
 
 import { FicheFamilleJeunesseRenseignement } from '../ficheFamilleJeunesseRenseignement';
 
@@ -413,6 +419,7 @@ export function FamilleJeunesseView() {
           >
             <ReactToPrint
               documentTitle="fiche-renseignement-famille-jeunesse"
+              pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
               trigger={() => (
                 <Tooltip title="Fiche de renseignement">
                   <IconButton
@@ -427,6 +434,7 @@ export function FamilleJeunesseView() {
             />
             <ReactToPrint
               documentTitle="familles-de-jeunesse"
+              pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
               trigger={() => (
                 <Tooltip title="Imprimer">
                   <IconButton
@@ -441,6 +449,7 @@ export function FamilleJeunesseView() {
             />
             <ReactToPrint
               documentTitle="fiche-renseignement-famille-jeunesse"
+              pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
               trigger={() => (
                 <Button
                   variant="outlined"
@@ -455,6 +464,7 @@ export function FamilleJeunesseView() {
             />
             <ReactToPrint
               documentTitle="familles-de-jeunesse"
+              pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
               trigger={() => (
                 <Button
                   variant="outlined"
@@ -836,6 +846,7 @@ export function FamilleJeunesseView() {
         <DialogActions>
           <ReactToPrint
             documentTitle="fiche-famille-jeunesse"
+            pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
             trigger={() => (
               <Button startIcon={<PrintRounded />}>
                 Imprimer

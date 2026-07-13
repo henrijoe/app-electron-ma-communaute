@@ -9,8 +9,7 @@ import { getServerUrl, getConnectionMode, getCurrentSessionUser } from './functi
 export const BASE_URL_DEV = 'http://localhost:49300/';
 export const BASE_URL_ONLINE = import.meta.env.VITE_API_URL || '';
 const DEFAULT_LOCAL_API_PORT = '49300';
-const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
-const LOCAL_AUTH_TOKEN_KEY = 'ma-communaute-local-auth-token';
+const DEFAULT_REQUEST_TIMEOUT_MS = 60000;
 
 const normalizeBaseUrl = (url: string): string => (url.endsWith('/') ? url : `${url}/`);
 const getLocalApiPort = (): string => String(import.meta.env.VITE_LOCAL_API_PORT || DEFAULT_LOCAL_API_PORT);
@@ -71,36 +70,6 @@ const normalizeConfiguredApiUrl = (url: string): string => {
 };
 
 export const getApiMode = (): 'local' | 'online' => getConnectionMode();
-
-const canUseLocalStorage = (): boolean =>
-  typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-
-export const saveLocalAuthToken = (token?: string | null): void => {
-  if (!canUseLocalStorage()) {
-    return;
-  }
-
-  const normalizedToken = String(token || '').trim();
-
-  if (normalizedToken) {
-    window.localStorage.setItem(LOCAL_AUTH_TOKEN_KEY, normalizedToken);
-    return;
-  }
-
-  window.localStorage.removeItem(LOCAL_AUTH_TOKEN_KEY);
-};
-
-export const getLocalAuthToken = (): string => {
-  if (!canUseLocalStorage()) {
-    return '';
-  }
-
-  return window.localStorage.getItem(LOCAL_AUTH_TOKEN_KEY) || '';
-};
-
-export const clearLocalAuthToken = (): void => {
-  saveLocalAuthToken('');
-};
 
 const assertCanManageModule = (permission: ModulePermissionKey, actionLabel?: string): void => {
   const currentUser = getCurrentSessionUser();
@@ -191,6 +160,7 @@ export interface IServerResponse {
 // Interface pour la configuration d'une requete
 export interface IConfig extends RequestInit {
   headers?: Record<string, string>;
+  timeoutMs?: number;
 }
 
 export class ApiError extends Error {
@@ -372,7 +342,10 @@ export async function request<T>(
     const isFormDataBody = typeof FormData !== 'undefined' && config?.body instanceof FormData;
 
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), DEFAULT_REQUEST_TIMEOUT_MS);
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      config?.timeoutMs || DEFAULT_REQUEST_TIMEOUT_MS
+    );
 
     const response = await fetch(url, {
       ...config,
@@ -380,7 +353,6 @@ export async function request<T>(
       headers: {
         'Accept': 'application/json',
         ...(isFormDataBody ? {} : { 'Content-Type': 'application/json' }),
-        ...(getLocalAuthToken() ? { Authorization: `Bearer ${getLocalAuthToken()}` } : {}),
         ...config?.headers,
       },
     });
@@ -401,10 +373,6 @@ export async function request<T>(
     console.error(`Request failed for ${url}:`, error);
 
     if (error instanceof ApiError) {
-      if (error.status === 401) {
-        clearLocalAuthToken();
-      }
-
       throw error;
     }
 
@@ -979,6 +947,7 @@ export const apiClient = {
     request<IServerResponse>('communaute/ajouterutilisateur', {
       method: 'POST',
       body: JSON.stringify(data),
+      timeoutMs: 120000,
     }),
 
   // Met a jour les informations du profil et de l'eglise rattaches a l'utilisateur.
@@ -1029,6 +998,7 @@ export const apiClient = {
     request<IServerResponse>('communaute/creer-base-sqlite', {
       method: 'POST',
       body: JSON.stringify(data),
+      timeoutMs: 120000,
     }),
 
   // Cree l'eglise rattachee a l'utilisateur nouvellement inscrit.
@@ -1040,6 +1010,7 @@ export const apiClient = {
     request<IServerResponse>('communaute/inserereglise', {
       method: 'POST',
       body: JSON.stringify(data),
+      timeoutMs: 120000,
     }),
 
   // Alias historique pour recuperer les cultes d'un utilisateur.

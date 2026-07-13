@@ -44,7 +44,7 @@ export const ListeDesDepartements = () => {
           <TableHead>
             <TableRow>
               <TableCell align="center" sx={{ width: 56 }}>
-                No
+                N°
               </TableCell>
               <TableCell>Departement</TableCell>
               <TableCell align="center" sx={{ width: 140 }}>

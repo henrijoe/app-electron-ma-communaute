@@ -18,6 +18,10 @@ import {
   canUseDesktopPrint,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
+import {
+  PRINT_PORTRAIT_PAGE_STYLE,
+  PRINT_LANDSCAPE_PAGE_STYLE,
+} from 'src/components/print/print-document';
 
 import { FicheDecision } from './ficheDecision';
 import CoursDeBaseForm from './ficheCoursDebase';
@@ -208,6 +212,7 @@ const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Fiche d&apos;inscription membre</div>}
                 content={() => ficheInscriptionRef.current}
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
               />
             </MenuItem>,
 
@@ -216,6 +221,7 @@ const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Liste des membres</div>}
                 content={() => membreRef.current}
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
               />
             </MenuItem>,
             
@@ -224,6 +230,7 @@ const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Fiche de decision</div>}
                 content={() => ficheDecisionRef.current}
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
               />
             </MenuItem>,
             <MenuItem key="print-cours" onClick={handleClose}>
@@ -231,6 +238,7 @@ const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Fiche de cours de base</div>}
                 content={() => coursDeBaseRef.current}
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
               />
             </MenuItem>,
 

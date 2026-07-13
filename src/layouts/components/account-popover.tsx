@@ -16,8 +16,6 @@ import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 
 import { useRouter, usePathname } from 'src/routes/hooks';
 
-import { clearLocalAuthToken } from 'src/utils/apiClient';
-
 import { _myAccount } from 'src/_mock';
 import { setUserLoggedIn, setUserConnected } from 'src/store/appSlice';
 import { utilisateur, setConnecter, setUtilisateurData } from 'src/store/userSlice';
@@ -77,7 +75,6 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
 
   const handleLogout = useCallback(() => {
     handleClosePopover();
-    clearLocalAuthToken();
     dispatch(setConnecter(false));
     dispatch(setUtilisateurData(utilisateur));
     dispatch(setUserConnected({}));

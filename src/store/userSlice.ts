@@ -43,7 +43,6 @@ export interface IUser {
 }
 
 export interface IUtilisateur {
-  token?: string;
   __syncAt?: number;
   idUtilisateur: number;
   idUtilisateurParent: number | null;

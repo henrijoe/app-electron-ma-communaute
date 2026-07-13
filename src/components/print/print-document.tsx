@@ -50,6 +50,7 @@ type PrintIdentity = {
 type PrintDocumentLayoutProps = {
   identity?: PrintIdentity;
   title: string;
+  orientation?: 'landscape' | 'portrait';
   variant?: 'default' | 'plain';
   showDocumentMeta?: boolean;
   showCountMeta?: boolean;
@@ -76,6 +77,40 @@ type PrintFooterProps = {
   contactLine: string;
   showPagination: boolean;
 };
+
+export const PRINT_LANDSCAPE_PAGE_STYLE = `
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+
+  @media print {
+    html,
+    body {
+      width: 297mm;
+      min-height: 210mm;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+`;
+
+export const PRINT_PORTRAIT_PAGE_STYLE = `
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  @media print {
+    html,
+    body {
+      width: 210mm;
+      min-height: 297mm;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+`;
 
 const joinAvailableValues = (...values: Array<string | undefined>): string =>
   values
@@ -116,16 +151,15 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
     >
       <Box
         sx={{
-          width: 78,
-          height: 78,
-          borderRadius: 2,
-          border: '1px solid rgba(15, 39, 74, 0.16)',
-          backgroundColor: '#ffffff',
+          width: 38,
+          height: 38,
+          borderRadius: 1.1,
+          bgcolor: '#ffffff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
-          p: 0.75,
+          p: 0.4,
         }}
       >
         {logoUrl ? (
@@ -133,12 +167,10 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
             component="img"
             src={logoUrl}
             alt="Logo eglise"
-            sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+            sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
         ) : (
-          <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f274a' }}>
-            MC
-          </Typography>
+          <Typography sx={{ color: '#0f172a', fontWeight: 900 }}>MC</Typography>
         )}
       </Box>
 
@@ -179,6 +211,7 @@ function PrintFooter({ contactLine, showPagination }: PrintFooterProps) {
 
 export function PrintDocumentLayout({
   identity,
+  orientation = 'landscape',
   title,
   variant = 'default',
   showDocumentMeta = true,
@@ -197,6 +230,7 @@ export function PrintDocumentLayout({
 
   const logoUrl = getPrintableLogoUrl(mergedIdentity);
   const isPlainVariant = variant === 'plain';
+  const printPageWidth = orientation === 'landscape' ? '273mm' : '190mm';
   const footerContactLine = joinAvailableValues(
     mergedIdentity.lieuEglise,
     mergedIdentity.telephoneSecretariatEglise || mergedIdentity.telephoneUtilisateur,
@@ -209,26 +243,28 @@ export function PrintDocumentLayout({
       <GlobalStyles
         styles={{
           '@page': {
-            size: 'A4 landscape',
-            margin: '10mm',
+            size: `A4 ${orientation}`,
+            margin: '8mm',
           },
           '@media print': {
             'html, body': {
               WebkitPrintColorAdjust: 'exact',
               printColorAdjust: 'exact',
             },
+            '.print-document-root': {
+              width: `${printPageWidth} !important`,
+              maxWidth: `${printPageWidth} !important`,
+              paddingBottom: '18mm',
+              minHeight: orientation === 'landscape' ? '186mm' : '273mm',
+            },
             '.print-block-avoid-break': {
               breakInside: 'avoid',
               pageBreakInside: 'avoid',
             },
-            '.print-document-root': {
-              paddingBottom: '18mm',
-              minHeight: 'calc(100vh - 20mm)',
-            },
             '.print-page-footer': {
               position: 'fixed',
-              left: '10mm',
-              right: '10mm',
+              left: '12mm',
+              right: '12mm',
               bottom: '6mm',
               marginTop: 0,
               backgroundColor: '#ffffff',
@@ -238,23 +274,24 @@ export function PrintDocumentLayout({
       />
 
       <Box
+
         className="print-document-root"
         sx={{
-          color: '#111827',
           width: '100%',
-          maxWidth: 'none',
-          mx: 'auto',
-          p: isPlainVariant ? 0 : { xs: 2, md: 3 },
-          background: isPlainVariant
-            ? '#ffffff'
-            : 'linear-gradient(180deg, #eaf2fb 0%, #f7fbff 38%, #edf5fc 100%)',
-          minHeight: isPlainVariant ? 'auto' : '100vh',
+          maxWidth: '100%',
+          background: '#fff',
+          color: '#111827',
           display: 'flex',
           flexDirection: 'column',
+          p: 0,
+
           '@media print': {
-            p: 0,
-            minHeight: 'calc(100vh - 20mm)',
-            background: '#ffffff',
+            width: '100%',
+            maxWidth: '100%',
+            background: '#fff',
+            padding: 0,
+            margin: 0,
+            minHeight: 'auto',
           },
         }}
       >
@@ -262,15 +299,15 @@ export function PrintDocumentLayout({
 
         <Box
           sx={{
+            width: '100%',
             position: 'relative',
-            overflow: 'hidden',
+            overflow: 'visible',
             flex: 1,
-            backgroundColor: isPlainVariant ? 'transparent' : 'common.white',
+            background: 'transparent',
             color: '#111827',
-            borderRadius: isPlainVariant ? 0 : 6,
-            p: isPlainVariant ? 0 : { xs: 3, md: 4 },
-            boxShadow: isPlainVariant ? 'none' : '0 18px 40px rgba(15, 23, 42, 0.08)',
-            border: isPlainVariant ? 'none' : '1px solid rgba(15, 23, 42, 0.08)',
+            border: 'none',
+            borderRadius: 0,
+            p: 0,
           }}
         >
           {showDocumentMeta && (
@@ -294,10 +331,10 @@ export function PrintDocumentLayout({
                   >
                     {title}
                   </Typography>
-    
+
                 </Box>
 
- 
+
               </Stack>
 
               <Divider sx={{ mb: 3 }} />
@@ -319,6 +356,8 @@ export function PrintTable({ children, minWidth = 760 }: PrintTableProps) {
       className="print-block-avoid-break"
       sx={{
         borderRadius: 3,
+        width: '100%',
+        maxWidth: '100%',
         border: '1px solid rgba(15, 23, 42, 0.1)',
         overflow: 'hidden',
         '@media print': {
@@ -329,6 +368,7 @@ export function PrintTable({ children, minWidth = 760 }: PrintTableProps) {
       <Table
         sx={{
           minWidth,
+          width: '100%',
           tableLayout: 'fixed',
           '& .MuiTableCell-root': {
             py: 1.5,

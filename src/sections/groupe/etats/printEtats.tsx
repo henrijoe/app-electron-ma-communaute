@@ -14,6 +14,10 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 import { isDesktopAppRuntime } from 'src/utils/access-control';
 import { exportDesktopPdf, canUseDesktopPrint, openDesktopPrintPreview } from 'src/utils/desktop-print';
+import {
+  PRINT_PORTRAIT_PAGE_STYLE,
+  PRINT_LANDSCAPE_PAGE_STYLE,
+} from 'src/components/print/print-document';
 
 import { ListeDesGroupes } from './listeGroupePdf';
 import { FicheGroupeVierge } from './ficheGroupeVierge';
@@ -138,6 +142,7 @@ export const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Fiche de renseignement groupe</div>}
                 content={() => ficheGroupeRef.current}
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
               />
             </MenuItem>
             <MenuItem onClick={handleClose}>
@@ -145,6 +150,7 @@ export const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Liste des groupes</div>}
                 content={() => groupeRef.current}
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
               />
             </MenuItem>
           </>

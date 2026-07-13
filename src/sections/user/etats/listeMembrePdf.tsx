@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 
-import { Chip, Avatar, Typography } from '@mui/material';
+import { Chip, Avatar, Typography, Table } from '@mui/material';
 
 import { normalizeText } from 'src/utils/text';
 
@@ -96,8 +96,8 @@ export const ListeDesMembres = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       title="Liste des membres"
-      showCountMeta={false}
-      variant="plain"
+    // showCountMeta={false}
+    // variant="plain"
     >
       {!listMembre?.length ? (
         <PrintEmptyState
@@ -105,11 +105,17 @@ export const ListeDesMembres = () => {
           message="Aucun membre n'est actuellement enregistre dans la base locale."
         />
       ) : (
-        <PrintTable minWidth={980}>
+        <Table
+          sx={{
+            width: '100%',
+            tableLayout: 'fixed'
+          }}
+        >
+
           <TableHead>
             <TableRow>
               <TableCell align="center" sx={{ width: 42 }}>
-                No
+                N°
               </TableCell>
               <TableCell align="center" sx={{ width: 66 }}>
                 Photo
@@ -231,7 +237,7 @@ export const ListeDesMembres = () => {
               );
             })}
           </TableBody>
-        </PrintTable>
+        </Table>
       )}
     </PrintDocumentLayout>
   );

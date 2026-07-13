@@ -60,7 +60,7 @@ export function FicheInscriptionMembre() {
         styles={{
           '@page': {
             size: 'A4 portrait',
-            margin: '2mm',
+            margin: '10mm',
           },
           '@media print': {
             'html, body': {
@@ -87,12 +87,14 @@ export function FicheInscriptionMembre() {
           '@media print': {
             width: '100%',
             border: 0,
+            boxShadow: 'none',
           },
         }}
       >
         <Box sx={{ bgcolor: '#020617', color: '#ffffff', px: 2, py: 1.2 }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1.5}>
             <Stack direction="row" alignItems="center" spacing={1.2}>
+              
               <Box
                 sx={{
                   width: 38,
@@ -131,29 +133,29 @@ export function FicheInscriptionMembre() {
           </Stack>
         </Box>
 
-        <Box
-          sx={{
-            width: 200,
-            height: 200,
-            border: '2.5px dashed rgba(255,255,255,0.65)',
-            borderRadius: 1,
-            display: 'flex',
-            alignItems: 'right  ',
-            justifyContent: 'right',
-            textAlign: 'right',
-            borderColor: 'rgba(255,255,255,0.65)',
-            backgroundColor: 'rgba(255,255,255,0.05)',
-            color: '#dbeafe',
-            marginTop: 2,
-            px: 0.8,
-          }}
-        >
-          <Typography sx={{ fontSize: 9, fontWeight: 800, color: '#dbeafe' }}>
-            Photo du membre
-          </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 1.9, pt: 1.35 }}>
+          <Box
+            sx={{
+              width: '38mm',
+              height: '42mm',
+              border: '2px dashed #98a2b3',
+              borderRadius: 1.2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
+              backgroundColor: '#f8fafc',
+              color: '#475467',
+              px: 1,
+            }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 800, color: 'inherit' }}>
+              Photo du membre
+            </Typography>
+          </Box>
         </Box>
 
-        <Stack spacing={1} sx={{ p: 1.9 }}>
+        <Stack spacing={1} sx={{ px: 1.9, pt: 1.2, pb: 1.9 }}>
           <Section title="Identité du membre">
             <Grid container spacing={1}>
               <Grid item xs={8}>

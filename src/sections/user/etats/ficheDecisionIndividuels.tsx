@@ -23,6 +23,7 @@ export const FicheDecisionIndividuelPDf = () => {
   return (
     <PrintDocumentLayout
       identity={utilisateurData}
+      orientation="portrait"
       title="Fiche de decision individuelle"
     >
       <Stack spacing={2.25}>

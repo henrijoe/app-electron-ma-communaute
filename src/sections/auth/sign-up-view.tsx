@@ -24,7 +24,7 @@ import {
 import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
-import { apiClient, getApiErrorMessage, saveLocalAuthToken } from 'src/utils/apiClient';
+import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
 import {
   type LinkedBrowserContext,
   captureLinkedBrowserContextFromCurrentUrl,
@@ -186,7 +186,6 @@ export function SignUpView() {
       const connectedUser = extractFirstItem(loginResponse.data);
 
       dispatch(setUtilisateurData(connectedUser));
-      saveLocalAuthToken(connectedUser?.token);
       dispatch(setConnecter(true));
       dispatch(setUserConnected(connectedUser));
       dispatch(setUserLoggedIn(true));

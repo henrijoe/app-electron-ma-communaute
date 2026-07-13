@@ -16,6 +16,7 @@ const CoursDeBaseForm = () => {
   return (
     <PrintDocumentLayout
       identity={utilisateurData}
+      orientation="portrait"
       title="Cours de base"
     >
       <Stack spacing={2.25}>

@@ -20,7 +20,7 @@ import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
 import { getScopeUserIdFromUser } from 'src/utils/access-control';
-import { apiClient, getApiErrorMessage, saveLocalAuthToken } from 'src/utils/apiClient';
+import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
 import {
   saveLinkedBrowserContext,
   type LinkedBrowserContext,
@@ -214,7 +214,6 @@ export function SignInView() {
       }
 
       dispatch(setUtilisateurData(utilisateurConnecte));
-      saveLocalAuthToken(utilisateurConnecte?.token);
       dispatch(setConnecter(true));
       dispatch(setUserConnected(utilisateurConnecte));
       dispatch(setUserLoggedIn(true));

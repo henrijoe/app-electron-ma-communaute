@@ -149,7 +149,7 @@ export function BlankOrganisationForm({ title, subtitle, sections }: BlankOrgani
         styles={{
           '@page': {
             size: 'A4 portrait',
-            margin: '8mm',
+            margin: '10mm',
           },
           '@media print': {
             'html, body': {
@@ -162,8 +162,8 @@ export function BlankOrganisationForm({ title, subtitle, sections }: BlankOrgani
             },
             '.blank-organisation-form-footer': {
               position: 'fixed',
-              left: '8mm',
-              right: '8mm',
+              left: '10mm',
+              right: '10mm',
               bottom: '5mm',
               background: '#ffffff',
             },

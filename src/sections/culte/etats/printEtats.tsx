@@ -14,6 +14,10 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 import { isDesktopAppRuntime } from 'src/utils/access-control';
 import { exportDesktopPdf, canUseDesktopPrint, openDesktopPrintPreview } from 'src/utils/desktop-print';
+import {
+  PRINT_PORTRAIT_PAGE_STYLE,
+  PRINT_LANDSCAPE_PAGE_STYLE,
+} from 'src/components/print/print-document';
 
 import { ListeDesCultes } from './listeCultePdf';
 import { FicheCulteRenseignement } from './ficheCulteRenseignement';
@@ -151,6 +155,7 @@ const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Fiche de renseignement culte</div>}
                 content={() => ficheCulteRef.current}
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
               />
             </MenuItem>
             <MenuItem onClick={handleClose}>
@@ -158,6 +163,7 @@ const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Liste des cultes</div>}
                 content={() => culteRef.current}
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
               />
             </MenuItem>
           </>
