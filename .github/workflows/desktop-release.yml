@@ -141,7 +141,7 @@ jobs:
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: spider-windows-v${{ steps.version.outputs.current }}
+          name: ma-communaute-v${{ steps.version.outputs.current }}
           path: |
             release/windows/**/*.exe
             release/windows/**/*.msi
