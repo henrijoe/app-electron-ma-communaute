@@ -87,7 +87,10 @@ jobs:
             node electron/prepare-backend.cjs
           else
             echo "::notice::Le dossier ../server n'existe pas dans ce checkout. Le backend embarque deja present dans electron/backend sera utilise."
+            test -f electron/backend/dist/app.js
             test -f electron/backend/package.json
+            npm --prefix electron/backend install --omit=dev
+            node -e "for (const pkg of ['express','sqlite3','socket.io','cors','bcrypt']) require.resolve(pkg, { paths: ['./electron/backend'] })"
           fi
 
       - name: Build renderer
@@ -161,6 +164,4 @@ jobs:
         shell: bash
         run: |
           echo "::notice::La version package.json n'a pas change (${{ steps.version.outputs.current }}). Aucune release desktop n'est publiee."
-
-
 

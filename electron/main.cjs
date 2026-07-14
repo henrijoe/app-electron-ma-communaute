@@ -752,6 +752,9 @@ async function startEmbeddedBackend() {
       ELECTRON_RUN_AS_NODE: backendEntry.useElectronAsNode ? "1" : process.env.ELECTRON_RUN_AS_NODE,
       // Ce dossier centralise les bases SQLite desktop sur la machine cliente.
       SQLITE_DB_DIR: resolveDesktopSqliteDbDir(),
+      // Le backend doit etre accessible depuis les autres postes du meme reseau.
+      HOST: process.env.HOST || "0.0.0.0",
+      BIND_HOST: process.env.BIND_HOST || "0.0.0.0",
     },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
@@ -994,6 +997,16 @@ ipcMain.handle("desktop-print:close-window", async (event) => {
 // Expose au renderer l'adresse IP locale detectee pour construire automatiquement l'URL web.
 ipcMain.handle("desktop-network:get-local-address", async () => {
   try {
+    const backendReady = await pingDesktopBackend();
+
+    if (!backendReady) {
+      return {
+        success: false,
+        error:
+          "Le backend local ne repond pas sur le port 49300. Relance l'application desktop puis verifie le journal desktop si le probleme continue.",
+      };
+    }
+
     const ipAddress = resolveLocalIpv4Address();
 
     // Si aucune IPv4 exploitable n'est trouvee, on le signale clairement au front.
