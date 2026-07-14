@@ -1,3 +1,4 @@
+
 name: Desktop release
 
 on:
@@ -17,12 +18,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Use Node.js 20.14.0
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20.14.0
           cache: yarn
@@ -44,6 +45,7 @@ jobs:
           fi
 
           should_release="false"
+
           if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$current_version" != "$previous_version" ]; then
             should_release="true"
           fi
@@ -97,10 +99,68 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: yarn electron-builder --win --config.directories.output=release/windows --publish always
+        run: >
+          yarn electron-builder
+          --win
+          --config.directories.output=release/windows
+          --publish always
+
+      - name: List generated Windows files
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        shell: powershell
+        run: |
+          if (-not (Test-Path "release/windows")) {
+            Write-Error "Le dossier release/windows n'existe pas."
+            exit 1
+          }
+
+          Write-Host "Fichiers generes :"
+
+          Get-ChildItem "release/windows" -Recurse -File |
+            Select-Object FullName, Length
+
+          $executables = @(
+            Get-ChildItem "release/windows" `
+              -Recurse `
+              -File `
+              -Filter "*.exe"
+          )
+
+          if ($executables.Count -eq 0) {
+            Write-Error "Aucun executable Windows n'a ete genere."
+            exit 1
+          }
+
+          Write-Host "Executables trouves :"
+
+          foreach ($executable in $executables) {
+            Write-Host $executable.FullName
+          }
+
+      - name: Upload Windows executable
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: spider-windows-v${{ steps.version.outputs.current }}
+          path: |
+            release/windows/**/*.exe
+            release/windows/**/*.msi
+            release/windows/**/*.yml
+            release/windows/**/*.blockmap
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Existing version tag
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists == 'true'
+        shell: bash
+        run: |
+          echo "::notice::Le tag ${{ steps.version.outputs.tag }} existe deja. Modifie la version dans package.json pour generer une nouvelle release."
 
       - name: No version change
         if: steps.version.outputs.should_release != 'true'
         shell: bash
         run: |
           echo "::notice::La version package.json n'a pas change (${{ steps.version.outputs.current }}). Aucune release desktop n'est publiee."
+
+
+
