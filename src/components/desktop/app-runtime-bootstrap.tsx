@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { setConnectionMode, setServerUrl, setUserConnected } from 'src/store/appSlice';
+import { setServerUrl, setConnectionMode, setUserConnected } from 'src/store/appSlice';
 import type { IReduxState } from 'src/store/store';
-import { setUtilisateurData, type IUtilisateur } from 'src/store/userSlice';
+import type { IUtilisateur } from 'src/store/userSlice';
+
+import { setUtilisateurData } from 'src/store/userSlice';
 import { getScopeUserIdFromUser, getSessionUser } from 'src/utils/access-control';
 import {
   captureLinkedBrowserContextFromCurrentUrl,

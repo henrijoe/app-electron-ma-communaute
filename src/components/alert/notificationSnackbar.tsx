@@ -1,6 +1,8 @@
 import React from 'react';
-import Snackbar, { SnackbarCloseReason } from '@mui/material/Snackbar';
+
 import Alert from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar';
+import type { SnackbarCloseReason } from '@mui/material/Snackbar';
 
 const normalizeNotificationMessage = (message: string): string => {
   const rawMessage = String(message || '').trim();
