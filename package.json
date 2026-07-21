@@ -2,7 +2,7 @@
   "name": "Ma-communaute",
   "author": "",
   "licence": "MIT",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": false,
   "type": "module",
   "main": "electron/main.cjs",
@@ -108,7 +108,7 @@
     "appId": "com.ma.communaute.desktop",
     "productName": "Ma Communaute",
     "icon": "public/assets/images/logoCom1.png",
-    "compression": "normal",
+    "compression": "store",
     "files": [
       "dist/**/*",
       "electron/main.cjs",
@@ -121,7 +121,12 @@
         "from": "electron/backend",
         "to": "backend",
         "filter": [
-          "**/*",
+          "dist/**/*",
+          "views/**/*",
+          "templates/**/*",
+          "public/**/*",
+          "package.json",
+          "node_modules/**/*",
           "!node_modules/.cache/**",
           "!node_modules/@types/**",
           "!node_modules/nodemon/**",
@@ -150,6 +155,9 @@
     "win": {
       "icon": "public/assets/images/logoCom1.png",
       "target": "nsis"
+    },
+    "nsis": {
+      "differentialPackage": false
     },
     "mac": {
       "icon": "public/assets/images/logoCom1.png",

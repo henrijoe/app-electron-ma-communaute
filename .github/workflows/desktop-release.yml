@@ -116,6 +116,21 @@ jobs:
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
         run: yarn desktop:build:web
 
+      - name: Check embedded backend size
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        shell: powershell
+        run: |
+          $backendPath = "electron/backend"
+          $size = (Get-ChildItem $backendPath -Recurse -File | Measure-Object Length -Sum).Sum
+          $sizeMb = [Math]::Round($size / 1MB, 2)
+
+          Write-Host "Taille du backend embarque : $sizeMb Mo"
+
+          if ($sizeMb -gt 250) {
+            Write-Error "Le backend embarque est trop lourd pour un packaging fiable ($sizeMb Mo). Verifie les dependances de production."
+            exit 1
+          }
+
       - name: Build and publish GitHub Release
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
         env:
