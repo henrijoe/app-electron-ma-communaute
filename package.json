@@ -2,7 +2,7 @@
   "name": "Ma-communaute",
   "author": "",
   "licence": "MIT",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": false,
   "type": "module",
   "main": "electron/main.cjs",
@@ -108,6 +108,7 @@
     "appId": "com.ma.communaute.desktop",
     "productName": "Ma Communaute",
     "icon": "public/assets/images/logoCom1.png",
+    "compression": "normal",
     "files": [
       "dist/**/*",
       "electron/main.cjs",
@@ -118,7 +119,21 @@
     "extraResources": [
       {
         "from": "electron/backend",
-        "to": "backend"
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!node_modules/.cache/**",
+          "!node_modules/@types/**",
+          "!node_modules/nodemon/**",
+          "!node_modules/ts-node/**",
+          "!node_modules/typescript/**",
+          "!node_modules/nw/**",
+          "!node_modules/nwjs-builder-phoenix/**",
+          "!**/*.map",
+          "!**/test/**",
+          "!**/tests/**",
+          "!**/docs/**"
+        ]
       }
     ],
     "directories": {
