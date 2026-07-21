@@ -131,16 +131,16 @@ jobs:
             exit 1
           }
 
-      - name: Build Windows unpacked app
+      - name: Build and publish GitHub Release
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: >
           yarn electron-builder
           --win
-          --dir
           --config.directories.output=release/windows
-          --publish never
+          --publish always
 
       - name: List generated Windows files
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
@@ -180,7 +180,6 @@ jobs:
         with:
           name: ma-communaute-v${{ steps.version.outputs.current }}
           path: |
-            release/windows/win-unpacked/**
             release/windows/**/*.exe
             release/windows/**/*.zip
             release/windows/**/*.msi
