@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld("desktopNetwork", {
 contextBridge.exposeInMainWorld("desktopBackup", {
   getInfo: () => ipcRenderer.invoke("desktop-backup:get-info"),
   create: () => ipcRenderer.invoke("desktop-backup:create"),
+  restore: () => ipcRenderer.invoke("desktop-backup:restore"),
   openFolder: () => ipcRenderer.invoke("desktop-backup:open-folder"),
 });
 

@@ -93,6 +93,39 @@ function runPowerShellZip(sourceDir, destinationPath) {
   });
 }
 
+function runPowerShellUnzip(sourcePath, destinationDir) {
+  return new Promise((resolve, reject) => {
+    const powershellPath = process.env.SystemRoot
+      ? path.join(process.env.SystemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+      : "powershell.exe";
+    const script = [
+      "$source=$args[0];",
+      "$dest=$args[1];",
+      "Expand-Archive -Path $source -DestinationPath $dest -Force",
+    ].join(" ");
+    const child = spawn(
+      powershellPath,
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script, sourcePath, destinationDir],
+      { windowsHide: true }
+    );
+    let stderr = "";
+
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(stderr.trim() || `Extraction impossible. Code ${code}`));
+    });
+  });
+}
+
 async function createDesktopBackupArchive() {
   const dataDir = resolveDesktopSqliteDbDir();
   if (!fs.existsSync(dataDir)) {
@@ -151,6 +184,105 @@ async function createDesktopBackupArchive() {
       size: stat.size,
       databaseCount: getDesktopBackupInfo().databaseCount,
     };
+  } finally {
+    fs.rmSync(stagingDir, { recursive: true, force: true });
+  }
+}
+
+async function restoreDesktopBackupArchive() {
+  const dataDir = resolveDesktopSqliteDbDir();
+  fs.mkdirSync(dataDir, { recursive: true });
+
+  const openResult = await dialog.showOpenDialog(mainWindowRef || undefined, {
+    title: "Restaurer une sauvegarde Ma Communaute",
+    filters: [{ name: "Sauvegarde Ma Communaute", extensions: ["zip"] }],
+    properties: ["openFile"],
+  });
+
+  if (openResult.canceled || !openResult.filePaths?.[0]) {
+    return { success: false, canceled: true };
+  }
+
+  const backupFilePath = openResult.filePaths[0];
+  const extractionDir = path.join(app.getPath("temp"), `ma-communaute-restore-${Date.now()}`);
+  const safetyBackupPath = path.join(
+    dataDir,
+    "sauvegardes",
+    `avant-restauration-${formatBackupTimestamp()}.zip`
+  );
+
+  fs.mkdirSync(extractionDir, { recursive: true });
+
+  try {
+    await runPowerShellUnzip(backupFilePath, extractionDir);
+
+    const extractedEntries = fs.readdirSync(extractionDir, { withFileTypes: true });
+    const hasDatabase = extractedEntries.some(
+      (entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".db")
+    );
+
+    if (!hasDatabase) {
+      throw new Error("Cette archive ne contient aucune base de donnees .db restaurable.");
+    }
+
+    await createDesktopBackupArchiveForPath(safetyBackupPath);
+
+    const currentEntries = fs.existsSync(dataDir) ? fs.readdirSync(dataDir, { withFileTypes: true }) : [];
+    currentEntries.forEach((entry) => {
+      if (entry.name === "sauvegardes") {
+        return;
+      }
+
+      fs.rmSync(path.join(dataDir, entry.name), { recursive: true, force: true });
+    });
+
+    extractedEntries.forEach((entry) => {
+      fs.cpSync(path.join(extractionDir, entry.name), path.join(dataDir, entry.name), {
+        recursive: true,
+        force: true,
+        errorOnExist: false,
+      });
+    });
+
+    return {
+      success: true,
+      filePath: backupFilePath,
+      safetyBackupPath,
+      databaseCount: getDesktopBackupInfo().databaseCount,
+    };
+  } finally {
+    fs.rmSync(extractionDir, { recursive: true, force: true });
+  }
+}
+
+async function createDesktopBackupArchiveForPath(destinationPath) {
+  const dataDir = resolveDesktopSqliteDbDir();
+  const backupDir = path.dirname(destinationPath);
+  fs.mkdirSync(backupDir, { recursive: true });
+
+  const stagingDir = path.join(app.getPath("temp"), `ma-communaute-backup-${Date.now()}`);
+  fs.mkdirSync(stagingDir, { recursive: true });
+
+  try {
+    const entries = fs.existsSync(dataDir) ? fs.readdirSync(dataDir, { withFileTypes: true }) : [];
+    let copiedEntries = 0;
+
+    entries.forEach((entry) => {
+      if (entry.name === "sauvegardes") {
+        return;
+      }
+
+      fs.cpSync(path.join(dataDir, entry.name), path.join(stagingDir, entry.name), {
+        recursive: true,
+        force: true,
+        errorOnExist: false,
+      });
+      copiedEntries += 1;
+    });
+
+    if (copiedEntries) {
+      await runPowerShellZip(stagingDir, destinationPath);
+    }
   } finally {
     fs.rmSync(stagingDir, { recursive: true, force: true });
   }
@@ -1052,6 +1184,14 @@ ipcMain.handle("desktop-backup:create", async () => {
     return await createDesktopBackupArchive();
   } catch (error) {
     return { success: false, error: error?.message || "Impossible de creer la sauvegarde." };
+  }
+});
+
+ipcMain.handle("desktop-backup:restore", async () => {
+  try {
+    return await restoreDesktopBackupArchive();
+  } catch (error) {
+    return { success: false, error: error?.message || "Impossible de restaurer la sauvegarde." };
   }
 });
 

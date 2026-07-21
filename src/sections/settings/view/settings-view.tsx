@@ -1160,26 +1160,19 @@ export function SettingsView() {
   }, [isDesktopApp, showNotification]);
 
   const handleRestoreSqliteBackup = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const backupFile = event.target.files?.[0] || null;
-      event.target.value = '';
-
-      if (!backupFile) {
-        return;
-      }
+    async () => {
+      const backupApi = (window as any)?.desktopBackup;
 
       if (!currentUsername || !canManageDesktopBackups) {
         showNotification('Seul un administrateur principal peut restaurer une sauvegarde SQLite.', 'warning');
         return;
       }
 
-      if (!unlockPassword.trim()) {
-        showNotification('Le mot de passe administrateur est requis pour restaurer.', 'warning');
-        return;
-      }
-
-      if (!backupFile.name.toLowerCase().endsWith('.zip')) {
-        showNotification('Veuillez choisir une sauvegarde au format .zip.', 'warning');
+      if (!backupApi?.restore) {
+        showNotification(
+          "La restauration locale est disponible uniquement dans l'application desktop.",
+          'warning'
+        );
         return;
       }
 
@@ -1194,12 +1187,18 @@ export function SettingsView() {
 
       try {
         setIsRestoringSqliteBackup(true);
-        const response = await apiClient.restoreSqliteBackup({
-          nomUtilisateur: currentUsername,
-          password: unlockPassword,
-          backupFile,
-        });
-        const restoredCount = Number(response?.data?.databaseCount || 0);
+        const response = await backupApi.restore();
+
+        if (response?.canceled) {
+          return;
+        }
+
+        if (!response?.success) {
+          showNotification(response?.error || 'Impossible de restaurer cette sauvegarde SQLite.', 'error');
+          return;
+        }
+
+        const restoredCount = Number(response?.databaseCount || 0);
 
         showNotification(
           `Restauration terminée : ${restoredCount} base(s) restaurée(s). Redémarrez l'application pour recharger les données.`,
@@ -1214,7 +1213,7 @@ export function SettingsView() {
         setIsRestoringSqliteBackup(false);
       }
     },
-    [canManageDesktopBackups, currentUsername, showNotification, unlockPassword]
+    [canManageDesktopBackups, currentUsername, showNotification]
   );
 
   const handleClearActionJournal = useCallback(() => {
@@ -2525,16 +2524,7 @@ export function SettingsView() {
                       variant={tunnelStatus.active ? 'filled' : 'outlined'}
                     />
                   </Stack>
-
-                  <Alert severity={tunnelStatus.active ? 'warning' : 'info'}>
-                    Le lien tunnel n&apos;est pas une sécurité. Partage-le uniquement avec une
-                    personne de confiance, garde la connexion obligatoire dans l&apos;application et
-                    désactive le tunnel après le test.
-                    {tunnelStatus.active && tunnelExpiresAtLabel
-                      ? ` Fermeture automatique prévue le ${tunnelExpiresAtLabel}.`
-                      : ' Une fermeture automatique est prévue après activation.'}
-                  </Alert>
-
+                  
                   {tunnelStatus.active && tunnelStatus.url && (
                     <TextField
                       fullWidth
@@ -2695,19 +2685,13 @@ export function SettingsView() {
                   </Button>
 
                   <Button
-                    component="label"
                     variant="outlined"
                     color="warning"
                     startIcon={<UploadRounded />}
+                    onClick={handleRestoreSqliteBackup}
                     disabled={isRestoringSqliteBackup}
                   >
                     {isRestoringSqliteBackup ? 'Restauration...' : 'Restaurer une sauvegarde'}
-                    <input
-                      hidden
-                      type="file"
-                      accept=".zip,application/zip"
-                      onChange={handleRestoreSqliteBackup}
-                    />
                   </Button>
 
                   <Button
@@ -2719,14 +2703,6 @@ export function SettingsView() {
                     Ouvrir le dossier
                   </Button>
                 </Stack>
-
-                <TextField
-                  type="password"
-                  label="Mot de passe administrateur pour restaurer"
-                  value={unlockPassword}
-                  onChange={(event) => setUnlockPassword(event.target.value)}
-                  sx={{ maxWidth: 360 }}
-                />
 
                 <Alert severity="warning">
                   Restaurer une sauvegarde remplace les données locales actuelles. Après une
@@ -2750,7 +2726,6 @@ export function SettingsView() {
                 {[
                   'Installer l’exécutable sur le poste principal de l’église.',
                   'Créer l’église et le compte administrateur principal.',
-                  'Vérifier que le poste principal et le téléphone sont sur le même réseau Wi-Fi.',
                   'Depuis Paramètres, utiliser Ouvrir dans le navigateur ou partager l’adresse locale affichée.',
                   'Faire une sauvegarde avant les mises à jour et avant les grosses saisies.',
                   'Quand une mise à jour est disponible, la lancer depuis la section Mises à jour.',

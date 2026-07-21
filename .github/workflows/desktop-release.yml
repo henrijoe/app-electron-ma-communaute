@@ -39,20 +39,29 @@ jobs:
 
           current_version="$(node -p "require('./package.json').version")"
           previous_version=""
+          current_tag="v$current_version"
 
           if [ "$EVENT_NAME" != "workflow_dispatch" ] && [ -n "${BEFORE_SHA:-}" ] && ! [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
             previous_version="$(git show "$BEFORE_SHA:package.json" 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version" 2>/dev/null || true)"
           fi
 
+          git fetch --tags --force
+
+          tag_exists="false"
+          if git rev-parse "$current_tag" >/dev/null 2>&1; then
+            tag_exists="true"
+          fi
+
           should_release="false"
 
-          if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$current_version" != "$previous_version" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$current_version" != "$previous_version" ] || [ "$tag_exists" != "true" ]; then
             should_release="true"
           fi
 
           echo "current=$current_version" >> "$GITHUB_OUTPUT"
           echo "previous=$previous_version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$current_version" >> "$GITHUB_OUTPUT"
+          echo "tag=$current_tag" >> "$GITHUB_OUTPUT"
+          echo "tag_exists=$tag_exists" >> "$GITHUB_OUTPUT"
           echo "should_release=$should_release" >> "$GITHUB_OUTPUT"
 
       - name: Check existing release tag
@@ -164,4 +173,3 @@ jobs:
         shell: bash
         run: |
           echo "::notice::La version package.json n'a pas change (${{ steps.version.outputs.current }}). Aucune release desktop n'est publiee."
-

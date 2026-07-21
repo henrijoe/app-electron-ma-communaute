@@ -57,6 +57,13 @@ const normalizeConfiguredApiUrl = (url: string): string => {
       return parsedUrl.toString();
     }
 
+    if (getApiMode() === 'local' && isLoopbackHost(parsedUrl.hostname) && !isLoopbackHost(currentHost)) {
+      parsedUrl.protocol = window.location.protocol;
+      parsedUrl.hostname = currentHost;
+      parsedUrl.port = getLocalApiPort();
+      return parsedUrl.toString();
+    }
+
     if (getApiMode() === 'local' && parsedUrl.port && parsedUrl.port !== getLocalApiPort() && (
       parsedUrl.hostname === currentHost || isKnownFrontendPort
     )) {

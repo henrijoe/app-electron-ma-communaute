@@ -36,7 +36,6 @@ const getConfiguredPort = () => {
     return parsedPort;
 };
 const PORT = getConfiguredPort();
-const HOST = process.env.HOST || process.env.BIND_HOST || "0.0.0.0";
 const IP = require("ip").address();
 const compression = require("compression");
 const cors = require("cors");
@@ -207,7 +206,7 @@ httpServer.once("error", (error) => {
     process.exit(1);
 });
 // Ajouter recemment pour voir les logs
-httpServer.listen(PORT, HOST, () => {
+httpServer.listen(PORT, () => {
     try {
         console.log(welcomeMsg);
         qrcode.generate(JSON.stringify(qrValue));
