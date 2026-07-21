@@ -139,6 +139,7 @@ jobs:
         run: >
           yarn electron-builder
           --win
+          portable
           --config.directories.output=release/windows
           --publish always
 
