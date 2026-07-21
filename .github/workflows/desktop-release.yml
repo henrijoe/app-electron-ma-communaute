@@ -139,7 +139,7 @@ jobs:
         run: >
           yarn electron-builder
           --win
-          portable
+          zip
           --config.directories.output=release/windows
           --publish always
 
@@ -182,6 +182,7 @@ jobs:
           name: ma-communaute-v${{ steps.version.outputs.current }}
           path: |
             release/windows/**/*.exe
+            release/windows/**/*.zip
             release/windows/**/*.msi
             release/windows/**/*.yml
             release/windows/**/*.blockmap
