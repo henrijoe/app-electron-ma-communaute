@@ -131,8 +131,30 @@ jobs:
             exit 1
           }
 
+      - name: Build Windows unpacked app fallback
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: >
+          yarn electron-builder
+          --win
+          --dir
+          --config.directories.output=release/windows
+          --publish never
+
+      - name: Upload Windows unpacked fallback
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ma-communaute-unpacked-v${{ steps.version.outputs.current }}
+          path: release/windows/win-unpacked/**
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Build and publish GitHub Release
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        timeout-minutes: 25
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
