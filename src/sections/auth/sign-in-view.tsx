@@ -303,15 +303,6 @@ export function SignInView() {
         </Typography>
       </Box>
 
-      {linkedBrowserContext && (
-        <Alert severity="info" sx={{ mb: 3, ...authInfoAlertSx }}>
-          Ce navigateur est lié à{' '}
-          {linkedBrowserContext.churchName || 'la base ouverte depuis le desktop'}. Connecte-toi
-          avec {linkedBrowserContext.username || 'le compte principal'} ou avec un utilisateur
-          secondaire créé depuis Paramètres.
-        </Alert>
-      )}
-
       <Stack
         component="form"
         onSubmit={(event) => {

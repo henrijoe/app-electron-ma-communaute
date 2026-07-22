@@ -2894,10 +2894,7 @@ export function SettingsView() {
                   )}
                 </Stack>
 
-                <Typography variant="body2" color="text.secondary">
-                  Les mises à jour automatiques fonctionnent uniquement dans une version installée.
-                  En développement, il faut reconstruire l&apos;application manuellement.
-                </Typography>
+      
               </Stack>
             </CardContent>
           </Card>
