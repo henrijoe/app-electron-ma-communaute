@@ -260,9 +260,6 @@ export function MemberProfilePrint({
                 <Grid item xs={6}>
                   <Fact label="Niveau d’étude" value={labels.niveauEtude} />
                 </Grid>
-                <Grid item xs={6}>
-                  <Fact label="Nombre d'enfant(s)" value={String(membre.nombreEnfantMembre || 0)} />
-                </Grid>
               </Grid>
 
               <Divider sx={{ my: 2 }} />

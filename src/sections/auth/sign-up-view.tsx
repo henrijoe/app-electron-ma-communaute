@@ -7,6 +7,7 @@ import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
@@ -14,9 +15,10 @@ import InputAdornment from '@mui/material/InputAdornment';
 import {
   LockOutlined,
   ChurchRounded,
-  HomeWorkOutlined,
+  VisibilityRounded,
   StorefrontRounded,
   PhoneIphoneRounded,
+  VisibilityOffRounded,
   PersonOutlineRounded,
   AlternateEmailRounded,
 } from '@mui/icons-material';
@@ -80,6 +82,8 @@ export function SignUpView() {
 
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<RegisterForm>(initialForm);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [linkedBrowserContext, setLinkedBrowserContext] = useState<LinkedBrowserContext | null>(
     null
   );
@@ -91,7 +95,12 @@ export function SignUpView() {
 
   const onChange = useCallback(
     (field: keyof RegisterForm) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, [field]: event.target.value }));
+      const value =
+        field === 'telephoneUtilisateur'
+          ? event.target.value.replace(/\D/g, '')
+          : event.target.value;
+
+      setForm((prev) => ({ ...prev, [field]: value }));
     },
     []
   );
@@ -274,8 +283,8 @@ export function SignUpView() {
               onChange={onChange('nomTemple')}
               InputLabelProps={{ shrink: true }}
               InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
+                startAdornment: (
+                  <InputAdornment position="start">
                     <ChurchRounded sx={{ color: 'text.disabled' }} />
                   </InputAdornment>
                 ),
@@ -293,8 +302,8 @@ export function SignUpView() {
               InputLabelProps={{ shrink: true }}
               helperText="Affiché dans l'entête de l'application."
               InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
+                startAdornment: (
+                  <InputAdornment position="start">
                     <StorefrontRounded sx={{ color: 'text.disabled' }} />
                   </InputAdornment>
                 ),
@@ -311,8 +320,8 @@ export function SignUpView() {
               onChange={onChange('nomEglise')}
               InputLabelProps={{ shrink: true }}
               InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
+                startAdornment: (
+                  <InputAdornment position="start">
                     <StorefrontRounded sx={{ color: 'text.disabled' }} />
                   </InputAdornment>
                 ),
@@ -329,8 +338,8 @@ export function SignUpView() {
               onChange={onChange('nomUtilisateur')}
               InputLabelProps={{ shrink: true }}
               InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
+                startAdornment: (
+                  <InputAdornment position="start">
                     <PersonOutlineRounded sx={{ color: 'text.disabled' }} />
                   </InputAdornment>
                 ),
@@ -347,8 +356,8 @@ export function SignUpView() {
               onChange={onChange('prenomUtilisateur')}
               InputLabelProps={{ shrink: true }}
               InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
+                startAdornment: (
+                  <InputAdornment position="start">
                     <PersonOutlineRounded sx={{ color: 'text.disabled' }} />
                   </InputAdornment>
                 ),
@@ -364,9 +373,13 @@ export function SignUpView() {
               value={form.telephoneUtilisateur}
               onChange={onChange('telephoneUtilisateur')}
               InputLabelProps={{ shrink: true }}
+              inputProps={{
+                inputMode: 'numeric',
+                pattern: '[0-9]*',
+              }}
               InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
+                startAdornment: (
+                  <InputAdornment position="start">
                     <PhoneIphoneRounded sx={{ color: 'text.disabled' }} />
                   </InputAdornment>
                 ),
@@ -385,8 +398,8 @@ export function SignUpView() {
               InputLabelProps={{ shrink: true }}
               helperText="Cet email servira à récupérer votre mot de passe en cas d'oubli."
               InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
+                startAdornment: (
+                  <InputAdornment position="start">
                     <AlternateEmailRounded sx={{ color: 'text.disabled' }} />
                   </InputAdornment>
                 ),
@@ -398,15 +411,31 @@ export function SignUpView() {
             <TextField
               fullWidth
               label="Mot de passe *"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               placeholder="Choisissez un mot de passe"
               value={form.password}
               onChange={onChange('password')}
               InputLabelProps={{ shrink: true }}
               InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockOutlined sx={{ color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
                 endAdornment: (
                   <InputAdornment position="end">
-                    <LockOutlined sx={{ color: 'text.disabled' }} />
+                    <IconButton
+                      edge="end"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      onMouseDown={(event) => event.preventDefault()}
+                      aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                    >
+                      {showPassword ? (
+                        <VisibilityOffRounded sx={{ color: 'text.disabled' }} />
+                      ) : (
+                        <VisibilityRounded sx={{ color: 'text.disabled' }} />
+                      )}
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}
@@ -417,15 +446,35 @@ export function SignUpView() {
             <TextField
               fullWidth
               label="Confirmer le mot de passe *"
-              type="password"
+              type={showConfirmPassword ? 'text' : 'password'}
               placeholder="Retapez votre mot de passe"
               value={form.confirmPassword}
               onChange={onChange('confirmPassword')}
               InputLabelProps={{ shrink: true }}
               InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockOutlined sx={{ color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
                 endAdornment: (
                   <InputAdornment position="end">
-                    <HomeWorkOutlined sx={{ color: 'text.disabled' }} />
+                    <IconButton
+                      edge="end"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      onMouseDown={(event) => event.preventDefault()}
+                      aria-label={
+                        showConfirmPassword
+                          ? 'Masquer la confirmation du mot de passe'
+                          : 'Afficher la confirmation du mot de passe'
+                      }
+                    >
+                      {showConfirmPassword ? (
+                        <VisibilityOffRounded sx={{ color: 'text.disabled' }} />
+                      ) : (
+                        <VisibilityRounded sx={{ color: 'text.disabled' }} />
+                      )}
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}

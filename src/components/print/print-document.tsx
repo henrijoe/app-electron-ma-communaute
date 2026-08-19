@@ -77,27 +77,29 @@ type PrintFooterProps = {
   showPagination: boolean;
 };
 
-export const PRINT_LANDSCAPE_PAGE_STYLE = `
-  @page {
-    size: A4 landscape;
-    margin: 8mm;
-  }
 
-  @media print {
-    html,
-    body {
-      width: 297mm;
-      min-height: 210mm;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+
+export const PRINT_LANDSCAPE_PAGE_STYLE = `
+@page {
+  size: A4 landscape;
+  margin: 5mm;
+}
+
+@media print {
+  html, body {
+    width: 297mm;
+    height: 210mm;
+    margin:0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
+}
 `;
 
 export const PRINT_PORTRAIT_PAGE_STYLE = `
   @page {
     size: A4 portrait;
-    margin: 10mm;
+    margin: 5mm;
   }
 
   @media print {
@@ -269,7 +271,7 @@ export function PrintDocumentLayout({
         styles={{
           '@page': {
             size: `A4 ${orientation}`,
-            margin: '8mm',
+            margin: '5mm',
           },
           '@media print': {
             'html, body': {
@@ -281,7 +283,7 @@ export function PrintDocumentLayout({
               width: `${printPageWidth} !important`,
               maxWidth: `${printPageWidth} !important`,
               minHeight: orientation === 'landscape' ? '194mm' : '281mm',
-              paddingBottom: '14mm',
+              paddingBottom: '10mm',
             },
             '.print-block-avoid-break': {
               breakInside: 'avoid',
@@ -289,8 +291,8 @@ export function PrintDocumentLayout({
             },
             '.print-page-footer': {
               position: 'fixed',
-              left: '8mm',
-              right: '8mm',
+              left: '5mm',
+              right: '5mm',
               bottom: '5mm',
               marginTop: 0,
               backgroundColor: '#ffffff',

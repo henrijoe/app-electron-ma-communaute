@@ -154,7 +154,7 @@ const socialConfig: Record<SocialCaseType, SocialConfig> = {
     color: 'secondary',
     icon: <FavoriteRoundedIcon />,
     helperText: 'Cérémonies de mariage, reception et temoins de la communaute.',
-    emptyMessage: 'Aucun mariage enregistre pour le moment.',
+    emptyMessage: 'Aucun mariage enregistré pour le moment.',
     columns: [
       { key: 'nomFrereMariage', label: 'Frere' },
       { key: 'nomSoeurMariage', label: 'Soeur' },
@@ -181,7 +181,7 @@ const socialConfig: Record<SocialCaseType, SocialConfig> = {
     color: 'success',
     icon: <CakeRoundedIcon />,
     helperText: 'Naissances, presentation des enfants et suivi des familles.',
-    emptyMessage: 'Aucune naissance enregistree pour le moment.',
+    emptyMessage: 'Aucune naissance enregistrée pour le moment.',
     columns: [
       { key: 'nomEnfantNaissance', label: 'Enfant' },
       { key: 'nomCoupleNaissance', label: 'Parents' },
@@ -223,7 +223,7 @@ const socialConfig: Record<SocialCaseType, SocialConfig> = {
     color: 'info',
     icon: <FavoriteBorderRoundedIcon />,
     helperText: 'Signalements de maladie, hospitalisation et suivi pastoral.',
-    emptyMessage: 'Aucun cas de maladie enregistre pour le moment.',
+    emptyMessage: 'Aucun cas de maladie enregistrée pour le moment.',
     columns: [
       { key: 'nomMembreMaladie', label: 'Membre' },
       { key: 'typeMaladie', label: 'Type' },
@@ -292,7 +292,7 @@ const getLinkedMembreStatus = (idMembre: number | null | undefined, membres: IMe
   const linkedMembre = membres.find((item) => Number(item.idMembre) === Number(idMembre));
 
   return linkedMembre
-    ? { color: 'success' as const, label: 'Membre lié' }
+    ? { color: 'success' as const, label: "Membre de l'église" }
     : { color: 'warning' as const, label: 'Membre supprimé' };
 };
 
@@ -460,11 +460,18 @@ export function SocialView() {
     );
   }, [currentConfig.columns, currentRows, searchTerm]);
 
-  const openCreateDialog = () => {
+  // type est optionnel : par defaut on ouvre le dialogue pour l'onglet actif,
+  // mais les icones "+" des cartes ci-dessous passent explicitement leur type
+  // pour ouvrir directement le bon formulaire (mariage, naissance...) sans
+  // devoir d'abord cliquer sur la carte pour changer d'onglet.
+  const openCreateDialog = (type: SocialCaseType = activeType) => {
     if (!canManageSocial) return;
 
+    if (type !== activeType) {
+      setActiveType(type);
+    }
     setEditingId(null);
-    setFormState((prev) => ({ ...prev, [activeType]: emptyFormState[activeType] as any }));
+    setFormState((prev) => ({ ...prev, [type]: emptyFormState[type] as any }));
     setOpenDialog(true);
   };
 
@@ -627,18 +634,6 @@ export function SocialView() {
             }}
           >
             <PrintEtatSociaux activeType={activeType} identity={utilisateurData} rows={currentRows} />
-            {canManageSocial && (
-              <>
-                <Tooltip title="Ajouter">
-                  <IconButton color="primary" onClick={openCreateDialog} sx={{ display: { xs: 'inline-flex', sm: 'none' }, bgcolor: 'action.selected', borderRadius: 1 }}>
-                    <AddRoundedIcon />
-                  </IconButton>
-                </Tooltip>
-                <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={openCreateDialog} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
-                  Ajouter
-                </Button>
-              </>
-            )}
           </Stack>
         </Stack>
 
@@ -668,12 +663,31 @@ export function SocialView() {
               >
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Box sx={{ color: `${socialConfig[type].color}.main` }}>{socialConfig[type].icon}</Box>
-                  <Chip
-                    size="small"
-                    color={socialConfig[type].color}
-                    label={records[type].length}
-                    variant={activeType === type ? 'filled' : 'outlined'}
-                  />
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <Chip
+                      size="small"
+                      color={socialConfig[type].color}
+                      label={records[type].length}
+                      variant={activeType === type ? 'filled' : 'outlined'}
+                    />
+                    {canManageSocial && (
+                      <Tooltip title={`Ajouter ${socialConfig[type].singularLabel.toLowerCase()}`}>
+                        <IconButton
+                          size="small"
+                          color={socialConfig[type].color}
+                          onClick={(event) => {
+                            // On empeche le clic de remonter jusqu'a la carte
+                            // (qui, elle, se contente de changer d'onglet).
+                            event.stopPropagation();
+                            openCreateDialog(type);
+                          }}
+                          sx={{ border: 1, borderColor: 'divider' }}
+                        >
+                          <AddRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Stack>
                 </Stack>
                 <Typography variant="h6" sx={{ mt: { xs: 1.5, sm: 2 }, fontWeight: 700, fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
                   {socialConfig[type].label}
@@ -730,9 +744,6 @@ export function SocialView() {
                 <VolunteerActivismRoundedIcon sx={{ fontSize: 44, color: 'text.disabled', mb: 1 }} />
                 <Typography variant="h6" sx={{ mb: 0.75 }}>
                   {currentConfig.emptyMessage}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Ajoute un premier enregistrement pour commencer le suivi de cette categorie.
                 </Typography>
               </Card>
             ) : (

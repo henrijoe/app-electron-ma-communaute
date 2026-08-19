@@ -501,6 +501,37 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  // Envoie une demande d'inscription membre depuis le formulaire QR code.
+  createMemberRegistrationRequest: (data: any) =>
+    request<IServerResponse>('communaute/demandeinscriptionmembre', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Recupere les demandes d'inscription membre en attente.
+  getMemberRegistrationRequests: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/demandesinscriptionmembre/${idUtilisateur}`, { method: 'GET' }),
+
+  // Valide une demande d'inscription QR code et cree le membre.
+  approveMemberRegistrationRequest: (
+    idDemandeInscription: number | string,
+    idUtilisateur: number | string
+  ) =>
+    request<IServerResponse>('communaute/validerdemandeinscriptionmembre', {
+      method: 'POST',
+      body: JSON.stringify({ idDemandeInscription, idUtilisateur }),
+    }),
+
+  // Rejette une demande d'inscription QR code.
+  rejectMemberRegistrationRequest: (
+    idDemandeInscription: number | string,
+    idUtilisateur: number | string
+  ) =>
+    request<IServerResponse>('communaute/rejeterdemandeinscriptionmembre', {
+      method: 'POST',
+      body: JSON.stringify({ idDemandeInscription, idUtilisateur }),
+    }),
+
   // Met a jour un membre existant.
   updateMembre: (data: any) =>
     request<IServerResponse>('communaute/modifiermembre', {

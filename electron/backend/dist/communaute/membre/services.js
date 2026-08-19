@@ -119,11 +119,27 @@ const modifierMembre = (data) => {
         }
     }));
 };
+const ajouterDemandeInscriptionMembre = (data) => {
+    return functions_1.default.ajouterDemandeInscriptionMembre(data);
+};
+const recupDemandesInscriptionMembreByUtilisateur = (idUtilisateur) => {
+    return functions_1.default.recupDemandesInscriptionMembreByUtilisateur(idUtilisateur);
+};
+const validerDemandeInscriptionMembre = (idDemandeInscription, idUtilisateur) => {
+    return functions_1.default.validerDemandeInscriptionMembre(idDemandeInscription, idUtilisateur);
+};
+const rejeterDemandeInscriptionMembre = (idDemandeInscription, idUtilisateur) => {
+    return functions_1.default.rejeterDemandeInscriptionMembre(idDemandeInscription, idUtilisateur);
+};
 exports.default = {
     recupMembre,
     ajouterMembre,
     supprimerMembre,
     modifierMembre,
     recupMembreByIdUtilsateur,
+    ajouterDemandeInscriptionMembre,
+    recupDemandesInscriptionMembreByUtilisateur,
+    validerDemandeInscriptionMembre,
+    rejeterDemandeInscriptionMembre,
 };
 //# sourceMappingURL=services.js.map

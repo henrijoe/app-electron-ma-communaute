@@ -66,8 +66,8 @@ const persistConfig = {
   key: 'root',
   version: 1,
   storage,
-  // On persiste aussi l'authentification pour conserver le profil et les infos d'eglise.
-  whitelist: ['application', 'authentification', 'membre', 'cellule', 'departement', 'familleJeunesse', 'groupe', 'galerie', 'agenda', 'comptabilite', 'culte', 'mariage', 'naissance', 'deces'] ,
+  // Les listes metier viennent toujours de la base active pour eviter les anciennes donnees en cache.
+  whitelist: ['application', 'authentification'],
   transforms: [sensitiveDataTransform],
   timeout: 1000,
 };

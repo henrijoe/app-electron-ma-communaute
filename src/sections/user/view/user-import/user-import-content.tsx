@@ -436,7 +436,6 @@ export function UserImportContent({
       capaciteSpirituelleMembre: String(capaciteResolver(getRowValue(row, ['capaciteSpirituelleMembre', 'capacite spirituelle']))),
       situationMatrimonialeMembre: String(situationResolver(getRowValue(row, ['situationMatrimonialeMembre', 'situation matrimoniale']))),
       nomFiance: normalizeText(getRowValue(row, ['nomFiance', 'nom fiance', 'fiance'])),
-      nombreEnfantMembre: Number(normalizeText(getRowValue(row, ['nombreEnfantMembre', 'nombre enfant'])) || 0),
       photoMembre: '',
       lieuBaptemeEauMembre: normalizeText(getRowValue(row, ['lieuBaptemeEauMembre', 'lieu bapteme', 'lieu du bapteme'])),
       contactParentMembre: '',
@@ -644,7 +643,7 @@ export function UserImportContent({
                   <TableRow>
                     <TableCell>Ligne</TableCell>
                     <TableCell>Nom</TableCell>
-                    <TableCell>Prenoms</TableCell>
+                    <TableCell>Prénoms</TableCell>
                     <TableCell>Contact</TableCell>
                     <TableCell>Departement</TableCell>
                     <TableCell>Cellule</TableCell>

@@ -11,5 +11,9 @@ membreRouter.get("/listemembre", controllers_1.default.recupMembre);
 membreRouter.post("/supprimermembre", controllers_1.default.supprimerMembre);
 membreRouter.post("/modifiermembre", /* validator.modifierMembreValidator(), */ controllers_1.default.modifierMembre);
 membreRouter.get("/recupmembrebyutilisateur/:idUtilisateur", controllers_1.default.recupMembreByIdUtilsateur);
+membreRouter.post("/demandeinscriptionmembre", controllers_1.default.ajouterDemandeInscriptionMembre);
+membreRouter.get("/demandesinscriptionmembre/:idUtilisateur", controllers_1.default.recupDemandesInscriptionMembreByUtilisateur);
+membreRouter.post("/validerdemandeinscriptionmembre", controllers_1.default.validerDemandeInscriptionMembre);
+membreRouter.post("/rejeterdemandeinscriptionmembre", controllers_1.default.rejeterDemandeInscriptionMembre);
 exports.default = membreRouter;
 //# sourceMappingURL=routes.js.map

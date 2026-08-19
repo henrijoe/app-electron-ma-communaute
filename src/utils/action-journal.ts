@@ -1,4 +1,5 @@
-const ACTION_JOURNAL_STORAGE_KEY = 'ma-communaute-action-journal-v1';
+const ACTION_JOURNAL_LEGACY_STORAGE_KEY = 'ma-communaute-action-journal-v1';
+const ACTION_JOURNAL_STORAGE_PREFIX = `${ACTION_JOURNAL_LEGACY_STORAGE_KEY}:scope`;
 const ACTION_JOURNAL_MAX_ENTRIES = 500;
 
 export type ActionJournalEntry = {
@@ -7,12 +8,23 @@ export type ActionJournalEntry = {
   user: string;
   action: string;
   module: string;
-  details: string;
+  details?: string;
 };
 
-const readPersistedUserLabel = (): string => {
+const slugifyScope = (value: unknown): string =>
+  String(value || 'eglise')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'eglise';
+
+const readPersistedContext = (): { storageKey: string; userLabel: string } => {
   if (typeof window === 'undefined') {
-    return 'Utilisateur inconnu';
+    return {
+      storageKey: `${ACTION_JOURNAL_STORAGE_PREFIX}:unknown`,
+      userLabel: 'Utilisateur inconnu',
+    };
   }
 
   try {
@@ -21,10 +33,19 @@ const readPersistedUserLabel = (): string => {
     const auth = persistedRoot.authentification ? JSON.parse(persistedRoot.authentification) : {};
     const user = application.userConnected || auth.utilisateurData || {};
     const fullName = [user.prenomUtilisateur, user.nomUtilisateur].filter(Boolean).join(' ').trim();
+    const accountId = Number(user.idUtilisateurParent || user.idUtilisateur || 0);
+    const churchSlug = slugifyScope(user.nomEgliseCourt || user.nomTemple);
+    const scope = accountId > 0 ? `account-${accountId}` : churchSlug;
 
-    return fullName || user.nomUtilisateur || 'Utilisateur connecté';
+    return {
+      storageKey: `${ACTION_JOURNAL_STORAGE_PREFIX}:${scope}`,
+      userLabel: fullName || user.nomUtilisateur || 'Utilisateur connecté',
+    };
   } catch (_error) {
-    return 'Utilisateur connecté';
+    return {
+      storageKey: `${ACTION_JOURNAL_STORAGE_PREFIX}:unknown`,
+      userLabel: 'Utilisateur connecté',
+    };
   }
 };
 
@@ -34,7 +55,8 @@ export const getActionJournalEntries = (): ActionJournalEntry[] => {
   }
 
   try {
-    const entries = JSON.parse(localStorage.getItem(ACTION_JOURNAL_STORAGE_KEY) || '[]');
+    const { storageKey } = readPersistedContext();
+    const entries = JSON.parse(localStorage.getItem(storageKey) || '[]');
     return Array.isArray(entries) ? entries : [];
   } catch (_error) {
     return [];
@@ -46,24 +68,30 @@ export const clearActionJournalEntries = () => {
     return;
   }
 
-  localStorage.removeItem(ACTION_JOURNAL_STORAGE_KEY);
+  const { storageKey } = readPersistedContext();
+  localStorage.removeItem(storageKey);
+  localStorage.removeItem(ACTION_JOURNAL_LEGACY_STORAGE_KEY);
 };
 
-export const recordActionJournalEntry = (entry: Omit<ActionJournalEntry, 'id' | 'date' | 'user'>) => {
+export const recordActionJournalEntry = (
+  entry: Omit<ActionJournalEntry, 'id' | 'date' | 'user'>
+) => {
   if (typeof window === 'undefined') {
     return;
   }
 
+  const { storageKey, userLabel } = readPersistedContext();
   const entries = getActionJournalEntries();
   const nextEntry: ActionJournalEntry = {
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     date: new Date().toISOString(),
-    user: readPersistedUserLabel(),
+    user: userLabel,
     ...entry,
+    details: entry.details || '',
   };
 
   localStorage.setItem(
-    ACTION_JOURNAL_STORAGE_KEY,
+    storageKey,
     JSON.stringify([nextEntry, ...entries].slice(0, ACTION_JOURNAL_MAX_ENTRIES))
   );
 };
@@ -113,6 +141,6 @@ export const describeJournalAction = (method: string, route: string) => {
   return {
     action,
     module,
-    details: `${normalizedMethod} ${route}`,
+    details: '',
   };
 };

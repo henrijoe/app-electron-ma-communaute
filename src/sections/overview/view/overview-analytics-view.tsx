@@ -337,7 +337,6 @@ export function OverviewAnalyticsView() {
             color="success"
             icon={
               <StatIcon>
-                {/* La cellule represente une maison de priere dans ce contexte. */}
                 <HomeRounded color="success" />
               </StatIcon>
             }
@@ -369,7 +368,7 @@ export function OverviewAnalyticsView() {
         <Grid xs={12} md={6} lg={4}>
           {/* Cette vue sert a lire d'un coup d'oeil la repartition entre modules. */}
           <AnalyticsCurrentVisits
-            title="Repartition generale"
+            title="Repartition générale"
             subheader={`Total enregistre : ${totalGeneral}`}
             chart={{
               series: [

@@ -36,7 +36,7 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
             description: 'Inscription simple, prise en main immediate pour votre communaute.',
           }
         : {
-            eyebrow: 'Connexion securisée',
+            eyebrow: 'Connexion à votre communaute',
             title: 'Retrouvez votre communaute et vos membres.',
             description:
               'Connectez-vous rapidement pour acceder aux membres, departements, cultes.',

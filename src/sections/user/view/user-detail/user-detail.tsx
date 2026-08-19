@@ -222,7 +222,7 @@ export function MembreDetailView() {
               documentTitle={`fiche-personnelle-${fullName.replace(/\s+/g, '-').toLowerCase()}`}
               trigger={() => (
                 <Button variant="contained" startIcon={<PrintIcon />}>
-                  Fiche imprimable
+                  Imprimer la fiche
                 </Button>
               )}
               content={() => profilePrintRef.current}

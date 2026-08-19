@@ -757,9 +757,6 @@ export function ComptabiliteView() {
                     <TableCell colSpan={7}>
                       <Stack spacing={1} alignItems="center" sx={{ py: 6 }}>
                         <Typography variant="h6">Aucune écriture pour le moment</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Commence avec une recette, une dépense ou une note de tresorerie.
-                        </Typography>
                       </Stack>
                     </TableCell>
                   </TableRow>

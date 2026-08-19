@@ -17,6 +17,7 @@ export const SignInPage = lazy(() => import('src/pages/sign-in'));
 export const SignUpPage = lazy(() => import('src/pages/sign-up'));
 export const ProductsPage = lazy(() => import('src/pages/products'));
 export const SettingsPage = lazy(() => import('src/pages/settings'));
+export const GuidePage = lazy(() => import('src/pages/guide'));
 export const ResponsabilitesPage = lazy(() => import('src/pages/responsabilites'));
 export const DesktopLockedPage = lazy(() => import('src/pages/desktop-locked'));
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
@@ -33,6 +34,7 @@ export const CulteEdit = lazy(() => import('src/sections/culte/view/culte-edit/c
 
 export const UserPage = lazy(() => import('src/pages/user'));
 export const UserImportPage = lazy(() => import('src/pages/user-import'));
+export const MemberRegistrationPublicPage = lazy(() => import('src/pages/member-registration-public'));
 export const UserDetail = lazy(() => import('src/sections/user/view/user-detail/user-detail'));
 export const UserEdit = lazy(() => import('src/sections/user/view/user-edit/user-edit'));
 
@@ -93,6 +95,14 @@ export function Router() {
 
   return useRoutes([
     {
+      path: 'inscription-membre',
+      element: (
+        <Suspense fallback={renderFallback}>
+          <MemberRegistrationPublicPage />
+        </Suspense>
+      ),
+    },
+    {
       element: mustWaitDesktopSecurity ? renderFallback : mustShowDesktopLocked ? <Navigate to="/desktop-locked" replace /> : isLoggedIn ? (
         <DashboardLayout>
           <Suspense fallback={renderFallback}>
@@ -118,6 +128,7 @@ export function Router() {
         { path: 'responsabilites', element: <GuardedPage permission="settings" element={<ResponsabilitesPage />} /> },
         { path: 'products', element: <ProductsPage /> },
         { path: 'settings', element: <GuardedPage permission="settings" element={<SettingsPage />} /> },
+        { path: 'guide', element: <GuidePage /> },
         { path: 'blog', element: <BlogPage /> },
         {
           path: 'details',

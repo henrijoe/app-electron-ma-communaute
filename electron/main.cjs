@@ -340,6 +340,8 @@ function buildPrintableDocument(payload) {
   const title = payload?.title || "Apercu impression";
   const headHtml = payload?.headHtml || "";
   const bodyHtml = payload?.bodyHtml || "";
+  // Portrait par defaut si l'appelant ne precise rien (comportement historique).
+  const orientation = payload?.orientation === "landscape" ? "landscape" : "portrait";
 
   // On reconstruit une page HTML complete pour obtenir un apercu stable dans Electron.
   return `<!DOCTYPE html>
@@ -349,6 +351,22 @@ function buildPrintableDocument(payload) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(title)}</title>
     ${headHtml}
+    <style>
+      /*
+        Cette regle @page est volontairement placee APRES le headHtml recopie
+        depuis l'application : le renderer garde toujours plusieurs documents
+        imprimables montes en meme temps (caches via display:none), et chacun
+        declare sa propre regle @page (portrait ou paysage). En CSS, quand
+        plusieurs regles @page ont la meme specificite, c'est la derniere du
+        document qui l'emporte : on s'assure ainsi que l'orientation demandee
+        explicitement par payload.orientation est toujours celle qui s'applique
+        reellement, peu importe l'ordre de montage des composants React.
+      */
+      @page {
+        size: A4 ${orientation};
+        margin: 5mm;
+      }
+    </style>
     <style>
       :root {
         color-scheme: light;
@@ -446,6 +464,15 @@ function buildPrintableDocument(payload) {
           border-radius: 0;
           margin: 0;
         }
+
+        .desktop-print-shell {
+          /* Sans ce reset, le "min-height: 100vh" defini plus haut reste base sur la
+             hauteur de la fenetre d'apercu (ecran) et non sur la page imprimee. Comme
+             cette hauteur ecran depasse souvent la hauteur imprimable d'une page A4
+             (surtout en paysage), Chromium ajoutait une 2e page quasi vide meme pour
+             un document tenant sur une seule ligne. */
+          min-height: 0;
+        }
       }
     </style>
   </head>
@@ -483,6 +510,11 @@ function createPrintPreviewWindow(payload) {
     },
   });
 
+  // On memorise l'orientation demandee sur la fenetre elle-meme : les handlers
+  // "print-window" et "save-pdf-window" (declenches plus tard par les boutons de
+  // la fenetre d'apercu) en ont besoin pour forcer le bon format de feuille.
+  previewWindow.isLandscapePrint = payload?.orientation === "landscape";
+
   // On charge le HTML genere directement en memoire pour ne pas dependre d'un fichier temporaire.
   const printableHtml = buildPrintableDocument(payload);
   previewWindow.once("ready-to-show", () => previewWindow.show());
@@ -515,9 +547,12 @@ async function exportPdfFromPayload(payload) {
     }
 
     // Electron genere le contenu PDF a partir du rendu HTML de la fenetre.
+    // "landscape" est passe explicitement en plus de preferCSSPageSize : voir le
+    // commentaire sur previewWindow.isLandscapePrint pour l'explication complete.
     const pdfBuffer = await exportWindow.webContents.printToPDF({
       printBackground: true,
       preferCSSPageSize: true,
+      landscape: Boolean(exportWindow.isLandscapePrint),
     });
 
     // On ecrit le PDF sur disque uniquement apres validation du chemin par l'utilisateur.
@@ -1075,6 +1110,10 @@ ipcMain.handle("desktop-print:print-window", async (event) => {
     currentWindow.webContents.print(
       {
         printBackground: true,
+        // Sans ce flag explicite, la boite de dialogue d'impression native ignore
+        // la regle CSS "@page: landscape" et imprime toujours en portrait (voir
+        // previewWindow.isLandscapePrint pour le contexte complet).
+        landscape: Boolean(currentWindow.isLandscapePrint),
       },
       (success, failureReason) => {
         // On logue uniquement les echecs pour faciliter le support client.
@@ -1110,6 +1149,7 @@ ipcMain.handle("desktop-print:save-pdf-window", async (event) => {
   const pdfBuffer = await currentWindow.webContents.printToPDF({
     printBackground: true,
     preferCSSPageSize: true,
+    landscape: Boolean(currentWindow.isLandscapePrint),
   });
 
   fs.writeFileSync(saveResult.filePath, pdfBuffer);

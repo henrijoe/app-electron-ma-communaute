@@ -16,6 +16,7 @@ const fs_1 = __importDefault(require("fs"));
 const db_1 = require("../../db");
 const functions_1 = require("../functions");
 const normalizeDuplicatePhone = (value) => String(value !== null && value !== void 0 ? value : '').replace(/\D/g, '');
+const normalizeDuplicateName = (value) => String(value !== null && value !== void 0 ? value : '').trim().toLowerCase().replace(/\s+/g, ' ');
 const normalizeDuplicateBirthDate = (value) => {
     const raw = String(value !== null && value !== void 0 ? value : '').trim();
     if (!raw)
@@ -51,6 +52,50 @@ const recupMembreDoublon = (idUtilisateur, contactMembre, dateNaissMembre, ignor
     }
     sql += ' LIMIT 1';
     const rows = yield (0, db_1._selectSql)(sql, params);
+    return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+});
+const recupMembreDoublonByIdentity = (idUtilisateur, nomMembre, prenomMembre, contactMembre, ignoredMemberId) => __awaiter(void 0, void 0, void 0, function* () {
+    const normalizedPhone = normalizeDuplicatePhone(contactMembre);
+    const normalizedNom = normalizeDuplicateName(nomMembre);
+    const normalizedPrenom = normalizeDuplicateName(prenomMembre);
+    if (!idUtilisateur || !normalizedPhone || !normalizedNom) {
+        return null;
+    }
+    const params = [idUtilisateur, normalizedPhone, normalizedNom, normalizedPrenom];
+    let sql = `
+    SELECT *
+    FROM membre
+    WHERE idUtilisateur = ?
+      AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(IFNULL(contactMembre, ''), ' ', ''), '-', ''), '.', ''), '/', ''), '+', ''), '(', ''), ')', '') = ?
+      AND LOWER(TRIM(IFNULL(nomMembre, ''))) = ?
+      AND LOWER(TRIM(IFNULL(prenomMembre, ''))) = ?
+  `;
+    if (ignoredMemberId) {
+        sql += ' AND idMembre <> ?';
+        params.push(ignoredMemberId);
+    }
+    sql += ' LIMIT 1';
+    const rows = yield (0, db_1._selectSql)(sql, params);
+    return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+});
+const recupDemandeInscriptionDoublon = (idUtilisateur, nomMembre, prenomMembre, contactMembre) => __awaiter(void 0, void 0, void 0, function* () {
+    const normalizedPhone = normalizeDuplicatePhone(contactMembre);
+    const normalizedNom = normalizeDuplicateName(nomMembre);
+    const normalizedPrenom = normalizeDuplicateName(prenomMembre);
+    if (!idUtilisateur || !normalizedPhone || !normalizedNom) {
+        return null;
+    }
+    const sql = `
+    SELECT *
+    FROM membre_inscription_demande
+    WHERE idUtilisateur = ?
+      AND statutDemande = 'en_attente'
+      AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(IFNULL(contactMembre, ''), ' ', ''), '-', ''), '.', ''), '/', ''), '+', ''), '(', ''), ')', '') = ?
+      AND LOWER(TRIM(IFNULL(nomMembre, ''))) = ?
+      AND LOWER(TRIM(IFNULL(prenomMembre, ''))) = ?
+    LIMIT 1
+  `;
+    const rows = yield (0, db_1._selectSql)(sql, [idUtilisateur, normalizedPhone, normalizedNom, normalizedPrenom]);
     return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 });
 const ajouterMembre = (data) => {
@@ -98,7 +143,8 @@ const ajouterMembre = (data) => {
     ];
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const doublon = yield recupMembreDoublon(data.idUtilisateur, data.contactMembre, data.dateNaissMembre);
+            const doublon = (yield recupMembreDoublon(data.idUtilisateur, data.contactMembre, data.dateNaissMembre))
+                || (yield recupMembreDoublonByIdentity(data.idUtilisateur, data.nomMembre, data.prenomMembre, data.contactMembre));
             if (doublon) {
                 reject(new Error('Ce membre a deja ete enregistre.'));
                 return;
@@ -237,7 +283,8 @@ const modifierMembre = (data) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         var _a, _b;
         try {
-            const doublon = yield recupMembreDoublon(data.idUtilisateur, data.contactMembre, data.dateNaissMembre, data.idMembre);
+            const doublon = (yield recupMembreDoublon(data.idUtilisateur, data.contactMembre, data.dateNaissMembre, data.idMembre))
+                || (yield recupMembreDoublonByIdentity(data.idUtilisateur, data.nomMembre, data.prenomMembre, data.contactMembre, data.idMembre));
             if (doublon) {
                 reject(new Error('Ce membre a deja ete enregistre.'));
                 return;
@@ -333,6 +380,138 @@ const modifierMembre = (data) => {
         }
     }));
 };
+const ajouterDemandeInscriptionMembre = (data) => {
+    return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const payload = Object.assign(Object.assign({}, data), { idUtilisateur: Number(data.idUtilisateur) || null });
+            if (!payload.idUtilisateur) {
+                reject(new Error("Lien d'inscription incomplet."));
+                return;
+            }
+            if (!String(payload.nomMembre || '').trim()) {
+                reject(new Error('Le nom du membre est requis.'));
+                return;
+            }
+            if (!String(payload.contactMembre || '').trim()) {
+                reject(new Error('Le telephone du membre est requis.'));
+                return;
+            }
+            const doublonMembre = yield recupMembreDoublonByIdentity(payload.idUtilisateur, payload.nomMembre, payload.prenomMembre, payload.contactMembre);
+            if (doublonMembre) {
+                reject(new Error('Ce membre est deja enregistre dans la communaute.'));
+                return;
+            }
+            const doublonDemande = yield recupDemandeInscriptionDoublon(payload.idUtilisateur, payload.nomMembre, payload.prenomMembre, payload.contactMembre);
+            if (doublonDemande) {
+                reject(new Error("Une demande d'inscription est deja en attente pour ce membre."));
+                return;
+            }
+            const sql = `INSERT INTO membre_inscription_demande(
+        idUtilisateur,
+        nomMembre,
+        prenomMembre,
+        contactMembre,
+        payloadDemande,
+        statutDemande
+      ) VALUES (?,?,?,?,?,?)`;
+            const result = yield (0, db_1._executeSql)(sql, [
+                payload.idUtilisateur,
+                payload.nomMembre || '',
+                payload.prenomMembre || '',
+                payload.contactMembre || '',
+                JSON.stringify(payload),
+                'en_attente',
+            ]);
+            const insertedId = result.insertId;
+            const demande = yield recupDemandeInscriptionMembreById(insertedId);
+            resolve(demande[0]);
+        }
+        catch (error) {
+            reject(error);
+        }
+    }));
+};
+const normalizeDemandeInscriptionMembre = (demande) => {
+    let payload = {};
+    try {
+        payload = JSON.parse(demande.payloadDemande || '{}');
+    }
+    catch (_error) {
+        payload = {};
+    }
+    return Object.assign(Object.assign({}, demande), { payloadDemande: payload });
+};
+const recupDemandeInscriptionMembreById = (idDemandeInscription) => {
+    return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const sql = 'SELECT * FROM membre_inscription_demande WHERE idDemandeInscription = ?;';
+            const demandes = yield (0, db_1._selectSql)(sql, [idDemandeInscription]);
+            if (!demandes.length)
+                return reject({ name: 'Erreur_demande_inscription', message: "Aucune demande d'inscription trouvee" });
+            resolve(demandes.map(normalizeDemandeInscriptionMembre));
+        }
+        catch (error) {
+            reject(error);
+        }
+    }));
+};
+const recupDemandesInscriptionMembreByUtilisateur = (idUtilisateur) => {
+    return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const sql = `SELECT *
+        FROM membre_inscription_demande
+        WHERE idUtilisateur = ? AND statutDemande = 'en_attente'
+        ORDER BY idDemandeInscription DESC;`;
+            const demandes = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
+            resolve(demandes.map(normalizeDemandeInscriptionMembre));
+        }
+        catch (error) {
+            reject(error);
+        }
+    }));
+};
+const validerDemandeInscriptionMembre = (idDemandeInscription, idUtilisateur) => {
+    return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const demandes = yield recupDemandeInscriptionMembreById(idDemandeInscription);
+            const demande = demandes[0];
+            if (Number(demande.idUtilisateur) !== Number(idUtilisateur)) {
+                reject(new Error("Cette demande ne correspond pas a l'eglise connectee."));
+                return;
+            }
+            if (demande.statutDemande !== 'en_attente') {
+                reject(new Error('Cette demande a deja ete traitee.'));
+                return;
+            }
+            const membreCree = yield ajouterMembre(Object.assign(Object.assign({}, demande.payloadDemande), { idUtilisateur }));
+            yield (0, db_1._executeSql)(`UPDATE membre_inscription_demande
+        SET statutDemande = 'validee', idMembreCree = ?, dateTraitement = CURRENT_TIMESTAMP
+        WHERE idDemandeInscription = ? AND idUtilisateur = ?`, [
+                membreCree.idMembre,
+                idDemandeInscription,
+                idUtilisateur,
+            ]);
+            resolve(membreCree);
+        }
+        catch (error) {
+            reject(error);
+        }
+    }));
+};
+const rejeterDemandeInscriptionMembre = (idDemandeInscription, idUtilisateur) => {
+    return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const sql = `UPDATE membre_inscription_demande
+        SET statutDemande = 'rejetee', dateTraitement = CURRENT_TIMESTAMP
+        WHERE idDemandeInscription = ? AND idUtilisateur = ? AND statutDemande = 'en_attente'`;
+            const result = yield (0, db_1._executeSql)(sql, [idDemandeInscription, idUtilisateur]);
+            resolve(Boolean(result === null || result === void 0 ? void 0 : result.affectedRows));
+        }
+        catch (error) {
+            reject(error);
+        }
+    }));
+};
 exports.default = {
     recupMembre,
     ajouterMembre,
@@ -340,5 +519,9 @@ exports.default = {
     modifierMembre,
     recupMembreById,
     recupMembreByIdUtilsateur,
+    ajouterDemandeInscriptionMembre,
+    recupDemandesInscriptionMembreByUtilisateur,
+    validerDemandeInscriptionMembre,
+    rejeterDemandeInscriptionMembre,
 };
 //# sourceMappingURL=functions.js.map

@@ -5,6 +5,7 @@ import {
   BadgeRounded,
   ChurchRounded,
   GroupsRounded,
+  MenuBookRounded,
   SettingsRounded,
   ApartmentRounded,
   DashboardRounded,
@@ -110,6 +111,11 @@ export const navData: DashboardNavItem[] = [
     path: '/settings',
     icon: <SettingsRounded />,
     permissionKey: 'settings',
+  },
+  {
+    title: 'Guide',
+    path: '/guide',
+    icon: <MenuBookRounded />,
   },
   // {
   //   title: 'Not found',

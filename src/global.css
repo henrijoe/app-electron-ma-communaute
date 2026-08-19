@@ -572,3 +572,25 @@ input[type='number']::-webkit-inner-spin-button {
       object-fit: contain;
    }
 }
+
+@media print and (orientation: landscape) {
+
+  .print-landscape-content {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .print-landscape-content table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+
+  .print-landscape-content th,
+  .print-landscape-content td {
+    font-size: 10px;
+    padding: 4px;
+    border: 1px solid #000;
+  }
+
+}

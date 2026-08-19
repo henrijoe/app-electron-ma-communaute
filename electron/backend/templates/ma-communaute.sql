@@ -290,6 +290,29 @@ CREATE TABLE `membre` (
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `membre_inscription_demande`
+--
+
+CREATE TABLE `membre_inscription_demande` (
+  `idDemandeInscription` int(11) NOT NULL,
+  `idUtilisateur` int(11) NOT NULL,
+  `nomMembre` varchar(255) DEFAULT NULL,
+  `prenomMembre` varchar(255) DEFAULT NULL,
+  `contactMembre` varchar(255) DEFAULT NULL,
+  `payloadDemande` text NOT NULL,
+  `statutDemande` varchar(50) DEFAULT 'en_attente',
+  `idMembreCree` int(11) DEFAULT NULL,
+  `dateCreation` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `dateTraitement` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Contenu de la table `membre_inscription_demande`
+--
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `naissance`
 --
 
@@ -548,6 +571,13 @@ ALTER TABLE `membre`
   ADD KEY `idUtilisateur` (`idUtilisateur`);
 
 --
+-- Index pour la table `membre_inscription_demande`
+--
+ALTER TABLE `membre_inscription_demande`
+  ADD PRIMARY KEY (`idDemandeInscription`),
+  ADD KEY `idx_membre_inscription_demande_utilisateur` (`idUtilisateur`,`statutDemande`);
+
+--
 -- Index pour la table `naissance`
 --
 ALTER TABLE `naissance`
@@ -661,6 +691,11 @@ ALTER TABLE `mariage`
 --
 ALTER TABLE `membre`
   MODIFY `idMembre` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+--
+-- AUTO_INCREMENT pour la table `membre_inscription_demande`
+--
+ALTER TABLE `membre_inscription_demande`
+  MODIFY `idDemandeInscription` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `naissance`
 --

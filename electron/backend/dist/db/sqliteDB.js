@@ -553,6 +553,24 @@ const ensureMembreAndDecesColumns = (database) => __awaiter(void 0, void 0, void
     yield ensureColumnExists(database, 'mariage', 'idSoeurMembre', 'INTEGER');
     yield execDatabase(database, 'UPDATE "membre" SET "estDecede" = 0 WHERE "estDecede" IS NULL;');
 });
+const ensureMembreInscriptionDemandeTable = (database) => __awaiter(void 0, void 0, void 0, function* () {
+    yield execDatabase(database, `
+      CREATE TABLE IF NOT EXISTS "membre_inscription_demande" (
+        "idDemandeInscription" INTEGER PRIMARY KEY AUTOINCREMENT,
+        "idUtilisateur" INTEGER NOT NULL,
+        "nomMembre" TEXT,
+        "prenomMembre" TEXT,
+        "contactMembre" TEXT,
+        "payloadDemande" TEXT NOT NULL,
+        "statutDemande" TEXT DEFAULT 'en_attente',
+        "idMembreCree" INTEGER,
+        "dateCreation" TEXT DEFAULT CURRENT_TIMESTAMP,
+        "dateTraitement" TEXT
+      );
+      CREATE INDEX IF NOT EXISTS "idx_membre_inscription_demande_utilisateur_sqlite"
+        ON "membre_inscription_demande" ("idUtilisateur", "statutDemande");
+    `);
+});
 const ensureComptabiliteColumns = (database) => __awaiter(void 0, void 0, void 0, function* () {
     yield ensureColumnExists(database, 'comptabilite', 'estSupprimeComptabilite', 'INTEGER DEFAULT 0');
     yield ensureColumnExists(database, 'comptabilite', 'dateSuppressionComptabilite', 'TEXT');
@@ -662,6 +680,7 @@ const ensureSqliteSchemaUpdated = (databasePath) => __awaiter(void 0, void 0, vo
         // completer les tables et indexes manquants sans dupliquer les donnees.
         yield executeStatements(database, schemaStatements);
         yield ensureMembreAndDecesColumns(database);
+        yield ensureMembreInscriptionDemandeTable(database);
         yield ensureComptabiliteColumns(database);
         yield repairBrokenGalerieTables(database);
     }

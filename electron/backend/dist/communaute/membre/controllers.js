@@ -70,11 +70,64 @@ const recupMembreByIdUtilsateur = (req, res) => {
     })
         .catch((error) => res.status(400).send({ status: 0, error }));
 };
+const ajouterDemandeInscriptionMembre = (req, res) => {
+    services_1.default
+        .ajouterDemandeInscriptionMembre(req.body)
+        .then((result) => {
+        req.io.emit("demandeInscriptionMembre", result);
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({
+        status: 0,
+        error,
+        message: (error === null || error === void 0 ? void 0 : error.message) || "Erreur lors de l'envoi de la demande d'inscription",
+    }));
+};
+const recupDemandesInscriptionMembreByUtilisateur = (req, res) => {
+    const { idUtilisateur } = req.params;
+    services_1.default
+        .recupDemandesInscriptionMembreByUtilisateur(idUtilisateur)
+        .then((result) => res.status(200).send({ status: 1, data: result }))
+        .catch((error) => res.status(400).send({ status: 0, error }));
+};
+const validerDemandeInscriptionMembre = (req, res) => {
+    const { idDemandeInscription, idUtilisateur } = req.body;
+    services_1.default
+        .validerDemandeInscriptionMembre(idDemandeInscription, idUtilisateur)
+        .then((result) => {
+        req.io.emit("ajouterMembre", result);
+        req.io.emit("demandeInscriptionMembreTraitee", { idDemandeInscription, idUtilisateur });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({
+        status: 0,
+        error,
+        message: (error === null || error === void 0 ? void 0 : error.message) || "Erreur lors de la validation de la demande",
+    }));
+};
+const rejeterDemandeInscriptionMembre = (req, res) => {
+    const { idDemandeInscription, idUtilisateur } = req.body;
+    services_1.default
+        .rejeterDemandeInscriptionMembre(idDemandeInscription, idUtilisateur)
+        .then((result) => {
+        req.io.emit("demandeInscriptionMembreTraitee", { idDemandeInscription, idUtilisateur });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({
+        status: 0,
+        error,
+        message: (error === null || error === void 0 ? void 0 : error.message) || "Erreur lors du rejet de la demande",
+    }));
+};
 exports.default = {
     recupMembre,
     ajouterMembre,
     supprimerMembre,
     modifierMembre,
-    recupMembreByIdUtilsateur
+    recupMembreByIdUtilsateur,
+    ajouterDemandeInscriptionMembre,
+    recupDemandesInscriptionMembreByUtilisateur,
+    validerDemandeInscriptionMembre,
+    rejeterDemandeInscriptionMembre
 };
 //# sourceMappingURL=controllers.js.map

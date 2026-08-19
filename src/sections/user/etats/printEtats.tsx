@@ -18,15 +18,12 @@ import {
   canUseDesktopPrint,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
-import {
-  PRINT_PORTRAIT_PAGE_STYLE,
-  PRINT_LANDSCAPE_PAGE_STYLE,
-} from 'src/components/print/print-document';
+import { PRINT_PORTRAIT_PAGE_STYLE } from 'src/components/print/print-document';
 
 import { FicheDecision } from './ficheDecision';
 import CoursDeBaseForm from './ficheCoursDebase';
-import { ListeDesMembres } from './listeMembrePdf';
 import { FicheInscriptionMembre } from './ficheInscriptionMembre';
+import { ListeDesMembres, MEMBER_LIST_PRINT_PAGE_STYLE } from './listeMembrePdf';
 
 const StyledMenu = styled((props: MenuProps) => (
   <Menu
@@ -110,36 +107,52 @@ const PrintEtatGlobal = () => {
   const buildDesktopHandlers = (
     ref: React.RefObject<HTMLDivElement>,
     title: string,
-    fileName: string
+    fileName: string,
+    // Orientation reelle du document : elle est envoyee explicitement a Electron
+    // (voir src/utils/desktop-print.ts) plutot que deduite de la regle CSS "@page",
+    // car tous les documents imprimables de ce menu sont montes en meme temps
+    // (caches) et n'ont donc pas chacun une regle "@page" isolee et fiable.
+    orientation: 'landscape' | 'portrait' = 'portrait'
   ) => ({
     preview: async () => {
       // On ferme le menu avant d'ouvrir l'aperçu natif du desktop.
       handleClose();
-      await openDesktopPrintPreview(ref.current, { title: `Aperçu - ${title}`, fileName });
+      await openDesktopPrintPreview(ref.current, { title: `Aperçu - ${title}`, fileName, orientation });
     },
     pdf: async () => {
       // On ferme le menu avant d'exporter le document cible au format PDF.
       handleClose();
-      await exportDesktopPdf(ref.current, { title, fileName });
+      await exportDesktopPdf(ref.current, { title, fileName, orientation });
     },
   });
 
-  const membersHandlers = buildDesktopHandlers(membreRef, 'Liste des membres', 'liste-membres');
+  const membersHandlers = buildDesktopHandlers(
+    membreRef,
+    'Liste des membres',
+    'liste-membres',
+    'landscape'
+  );
   const ficheHandlers = buildDesktopHandlers(
     ficheDecisionRef,
     'Fiche de decision',
-    'fiche-decision'
+    'fiche-decision',
+    'portrait'
   );
   const coursHandlers = buildDesktopHandlers(
     coursDeBaseRef,
     'Fiche de cours de base',
-    'fiche-cours-de-base'
+    'fiche-cours-de-base',
+    'portrait'
   );
   const inscriptionHandlers = buildDesktopHandlers(
     ficheInscriptionRef,
     "Fiche d'inscription membre",
-    'fiche-inscription-membre'
+    'fiche-inscription-membre',
+    'portrait'
   );
+
+
+
 
   return (
     <div>
@@ -221,7 +234,9 @@ const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Liste des membres</div>}
                 content={() => membreRef.current}
-                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
+                // pageStyle dedie (page CSS nommee) plutot que PRINT_LANDSCAPE_PAGE_STYLE :
+                // voir le commentaire de MEMBER_LIST_PRINT_PAGE_STYLE dans listeMembrePdf.tsx.
+                pageStyle={MEMBER_LIST_PRINT_PAGE_STYLE}
               />
             </MenuItem>,
             

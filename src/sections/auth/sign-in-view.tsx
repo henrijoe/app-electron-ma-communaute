@@ -1,20 +1,23 @@
 import { useDispatch } from 'react-redux';
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
 import Dialog from '@mui/material/Dialog';
+import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
 import DialogTitle from '@mui/material/DialogTitle';
+import ToggleButton from '@mui/material/ToggleButton';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import InputAdornment from '@mui/material/InputAdornment';
 import { PersonOutlineRounded } from '@mui/icons-material';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 
 import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
@@ -51,6 +54,24 @@ const extractFirstItem = (data: any) => {
   return data || null;
 };
 
+type UsernameInputMode = 'manual' | 'select';
+
+type LoginUserOption = {
+  idUtilisateur?: number;
+  nomUtilisateur?: string;
+  prenomUtilisateur?: string;
+  roleUtilisateur?: string;
+};
+
+const getLoginUserLabel = (user: LoginUserOption) => {
+  const username = String(user.nomUtilisateur || '').trim();
+  const firstName = String(user.prenomUtilisateur || '').trim();
+  const role = String(user.roleUtilisateur || '').trim();
+  const identity = firstName ? `${username} - ${firstName}` : username;
+
+  return role ? `${identity} (${role})` : identity;
+};
+
 export function SignInView() {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -59,6 +80,9 @@ export function SignInView() {
   const [loading, setLoading] = useState(false);
   const [unlockLoading, setUnlockLoading] = useState(false);
   const [nomUtilisateur, setNomUtilisateur] = useState('');
+  const [usernameInputMode, setUsernameInputMode] = useState<UsernameInputMode>('manual');
+  const [churchUsers, setChurchUsers] = useState<LoginUserOption[]>([]);
+  const [churchUsersLoading, setChurchUsersLoading] = useState(false);
   const [password, setPassword] = useState('');
   const [unlockCode, setUnlockCode] = useState('');
   const [showUnlockCodeForm, setShowUnlockCodeForm] = useState(false);
@@ -77,6 +101,26 @@ export function SignInView() {
   });
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
   const isDesktopApp = Boolean((window as any)?.desktopApp?.isDesktop);
+  const linkedAccountId = Number(linkedBrowserContext?.accountId || 0);
+  const churchUserOptions = useMemo(() => {
+    const linkedUsername = String(linkedBrowserContext?.username || '').trim();
+    const options = [...churchUsers];
+
+    if (
+      linkedUsername &&
+      !options.some((user) => String(user.nomUtilisateur || '').trim() === linkedUsername)
+    ) {
+      options.unshift({
+        idUtilisateur: linkedAccountId || undefined,
+        nomUtilisateur: linkedUsername,
+      });
+    }
+
+    return options;
+  }, [churchUsers, linkedAccountId, linkedBrowserContext?.username]);
+  const selectedUsernameExists = churchUserOptions.some(
+    (user) => String(user.nomUtilisateur || '').trim() === nomUtilisateur.trim()
+  );
 
   useEffect(() => {
     setLinkedBrowserContext(captureLinkedBrowserContextFromCurrentUrl());
@@ -87,6 +131,45 @@ export function SignInView() {
       setNomUtilisateur(linkedBrowserContext.username);
     }
   }, [linkedBrowserContext, nomUtilisateur]);
+
+  useEffect(() => {
+    if (!linkedAccountId) {
+      setChurchUsers([]);
+      return undefined;
+    }
+
+    let mounted = true;
+
+    const loadChurchUsers = async () => {
+      try {
+        setChurchUsersLoading(true);
+        const response = await apiClient.get(`communaute/listeutilisateurparent/${linkedAccountId}`, {
+          timeoutMs: 15000,
+        });
+        const users = Array.isArray(response.data) ? response.data : [];
+
+        if (mounted) {
+          setChurchUsers(
+            users.filter((user: LoginUserOption) => String(user.nomUtilisateur || '').trim())
+          );
+        }
+      } catch (_error) {
+        if (mounted) {
+          setChurchUsers([]);
+        }
+      } finally {
+        if (mounted) {
+          setChurchUsersLoading(false);
+        }
+      }
+    };
+
+    loadChurchUsers();
+
+    return () => {
+      mounted = false;
+    };
+  }, [linkedAccountId]);
 
   const handleOpenForgotPassword = useCallback(() => {
     setForgotStep('request');
@@ -296,7 +379,7 @@ export function SignInView() {
     <>
       <Box sx={{ mb: 5 }}>
         <Typography variant="h1" sx={authTitleSx}>
-          Connexion à Ma Communauté
+          Connexion à Ma-Communauté
         </Typography>
         <Typography variant="body1" sx={authBodyTextSx}>
           Connectez-vous pour retrouver les membres, cultes, départements.
@@ -311,23 +394,93 @@ export function SignInView() {
         }}
         spacing={3}
       >
-        <TextField
-          fullWidth
-          name="nomUtilisateur"
-          label="Nom utilisateur"
-          placeholder="Entrez votre nom utilisateur"
-          value={nomUtilisateur}
-          onChange={(event) => setNomUtilisateur(event.target.value)}
-          InputLabelProps={{ shrink: true }}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <PersonOutlineRounded sx={{ color: 'text.disabled' }} />
-              </InputAdornment>
-            ),
-          }}
-          sx={authTextFieldSx}
-        />
+        {linkedAccountId > 0 && (
+          <ToggleButtonGroup
+            exclusive
+            fullWidth
+            size="small"
+            value={usernameInputMode}
+            onChange={(_event, value) => {
+              if (value) {
+                setUsernameInputMode(value);
+              }
+            }}
+            sx={{
+              '& .MuiToggleButton-root': {
+                flex: 1,
+                py: 1,
+                textTransform: 'none',
+                borderColor: 'divider',
+                color: 'text.secondary',
+                '&.Mui-selected': {
+                  color: 'primary.main',
+                  bgcolor: 'primary.lighter',
+                },
+              },
+            }}
+          >
+            <ToggleButton value="manual">Saisie libre</ToggleButton>
+            <ToggleButton value="select">Choisir dans la liste</ToggleButton>
+          </ToggleButtonGroup>
+        )}
+
+        {usernameInputMode === 'select' && linkedAccountId > 0 ? (
+          <TextField
+            select
+            fullWidth
+            name="nomUtilisateur"
+            label="Utilisateur"
+            value={selectedUsernameExists ? nomUtilisateur.trim() : ''}
+            onChange={(event) => setNomUtilisateur(event.target.value)}
+            helperText={
+              churchUsersLoading
+                ? 'Chargement des utilisateurs...'
+                : churchUserOptions.length
+                  ? 'Choisissez votre nom, puis saisissez votre mot de passe.'
+                  : 'Aucun utilisateur trouvé. Utilisez la saisie libre.'
+            }
+            InputLabelProps={{ shrink: true }}
+            sx={authTextFieldSx}
+          >
+            {churchUsersLoading && (
+              <MenuItem disabled value="">
+                Chargement...
+              </MenuItem>
+            )}
+            {!churchUsersLoading && churchUserOptions.length === 0 && (
+              <MenuItem disabled value="">
+                Aucun utilisateur disponible
+              </MenuItem>
+            )}
+            {churchUserOptions.map((user) => {
+              const username = String(user.nomUtilisateur || '').trim();
+
+              return (
+                <MenuItem key={user.idUtilisateur || username} value={username}>
+                  {getLoginUserLabel(user)}
+                </MenuItem>
+              );
+            })}
+          </TextField>
+        ) : (
+          <TextField
+            fullWidth
+            name="nomUtilisateur"
+            label="Nom utilisateur"
+            placeholder="Entrez votre nom utilisateur"
+            value={nomUtilisateur}
+            onChange={(event) => setNomUtilisateur(event.target.value)}
+            InputLabelProps={{ shrink: true }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <PersonOutlineRounded sx={{ color: 'text.disabled' }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={authTextFieldSx}
+          />
+        )}
 
         <Link
           component="button"

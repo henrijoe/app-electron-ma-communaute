@@ -1801,10 +1801,6 @@ export function SettingsView() {
                         <Typography variant="subtitle1" fontWeight={700} textAlign="center">
                           Logo de l&apos;église
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" textAlign="center">
-                          Le logo est stocke localement et reutilise automatiquement dans les
-                          impressions.
-                        </Typography>
                       </Stack>
 
                       <Stack
@@ -2080,21 +2076,12 @@ export function SettingsView() {
                             handleChangeProfileField('versetDashboardTexte', event.target.value)
                           }
                         />
-                        <Alert severity="info">
-                          Si le texte du verset personnalise est vide, aucun espace ne sera affiche
-                          sur le tableau de bord.
-                        </Alert>
+              
                       </Stack>
                     )}
                   </Stack>
                 </CardContent>
               </Card>
-
-              <Alert severity="info">
-                Les données enregistrées ici sont réutilisées par le tableau de bord, l&apos;espace
-                compte et les états imprimés. Tu peux les modifier à tout moment sans perdre les
-                valeurs déjà saisies.
-              </Alert>
 
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <Button
@@ -2122,8 +2109,7 @@ export function SettingsView() {
                 <Stack direction={{ xs: 'column', xl: 'row' }} spacing={3} alignItems="stretch">
                   <Stack spacing={2} sx={{ flex: 1, minWidth: 0 }}>
                     <Alert severity="info">
-                      Utilisateurs secondaires créés : {secondaryUserCount} / 5. Le dashboard reste
-                      toujours accessible pour éviter de bloquer une session après connexion.
+                      Utilisateurs secondaires créés : {secondaryUserCount} / 5. 
                     </Alert>
 
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
@@ -2714,32 +2700,6 @@ export function SettingsView() {
           </Card>
         )}
 
-        {(canManageDesktopBackups || canManageDesktopUpdates || canManageSecondaryUsers) && (
-          <Card>
-            <CardHeader
-              avatar={<MenuBookRounded color="primary" />}
-              title="Guide d’installation"
-              subheader="Les étapes essentielles à garder sous la main chez un client."
-            />
-            <CardContent>
-              <Stack spacing={1.5}>
-                {[
-                  'Installer l’exécutable sur le poste principal de l’église.',
-                  'Créer l’église et le compte administrateur principal.',
-                  'Depuis Paramètres, utiliser Ouvrir dans le navigateur ou partager l’adresse locale affichée.',
-                  'Faire une sauvegarde avant les mises à jour et avant les grosses saisies.',
-                  'Quand une mise à jour est disponible, la lancer depuis la section Mises à jour.',
-                ].map((step, index) => (
-                  <Stack key={step} direction="row" spacing={1.5} alignItems="flex-start">
-                    <Chip size="small" label={index + 1} color="primary" />
-                    <Typography variant="body2">{step}</Typography>
-                  </Stack>
-                ))}
-              </Stack>
-            </CardContent>
-          </Card>
-        )}
-
         {(canManageDesktopBackups || canManageSecondaryUsers || isFixedDesktopSuperAdmin) && (
           <Card>
             <CardHeader
@@ -2761,8 +2721,15 @@ export function SettingsView() {
               {actionJournalEntries.length === 0 ? (
                 <Alert severity="info">Aucune action enregistrée sur ce poste pour le moment.</Alert>
               ) : (
-                <Stack spacing={1.5}>
-                  {actionJournalEntries.slice(0, 20).map((entry) => (
+                <Stack
+                  spacing={1.5}
+                  sx={{
+                    maxHeight: 360,
+                    overflowY: 'auto',
+                    pr: 0.5,
+                  }}
+                >
+                  {actionJournalEntries.map((entry) => (
                     <Box
                       key={entry.id}
                       sx={{
@@ -2771,6 +2738,7 @@ export function SettingsView() {
                         border: (theme) => `1px solid ${theme.palette.divider}`,
                       }}
                     >
+
                       <Stack
                         direction={{ xs: 'column', sm: 'row' }}
                         spacing={1}
@@ -2784,7 +2752,7 @@ export function SettingsView() {
                         </Typography>
                       </Stack>
                       <Typography variant="body2" color="text.secondary">
-                        {entry.user} - {entry.details}
+                        {entry.user}
                       </Typography>
                     </Box>
                   ))}
@@ -2799,7 +2767,7 @@ export function SettingsView() {
             <CardHeader
               avatar={<SystemUpdateRounded color="primary" />}
               title="Mises à jour"
-              subheader="Vérifie les nouvelles versions publiées sur GitHub Releases."
+              subheader="Vérifie les nouvelles modifications de l’application et installe la dernière version disponible."
               action={
                 <Chip
                   color={desktopUpdateChip.color}

@@ -219,7 +219,7 @@ export function ResponsabilitesView() {
                       : 'Ajouter la responsabilité'}
                 </Button>
                 <Button variant="outlined" onClick={handleResetResponsabiliteForm} disabled={isSavingResponsabilite}>
-                  Reinitialiser
+                  Annuler
                 </Button>
               </Stack>
 
@@ -233,7 +233,13 @@ export function ResponsabilitesView() {
                     <Card key={responsabilite.idResponsabilite} variant="outlined" sx={{ borderRadius: 3 }}>
                       <CardContent>
                         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between">
-                          <Box>
+                          <Box
+                            sx={{
+                              maxHeight: 80,
+                              overflowY: 'auto',
+                              pr: 0.5,
+                            }}
+                          >
                             <Typography variant="subtitle1" fontWeight={700}>
                               {responsabilite.libelleResponsabilite}
                             </Typography>
