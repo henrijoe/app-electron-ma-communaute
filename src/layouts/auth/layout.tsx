@@ -32,12 +32,12 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
       isRegisterPage
         ? {
             eyebrow: "Création d'église",
-            title: 'Creez votre espace eglise en quelques minutes.',
+            title: 'Créez votre espace église en quelques minutes.',
             description: 'Inscription simple, prise en main immediate pour votre communaute.',
           }
         : {
             eyebrow: 'Connexion à votre communaute',
-            title: 'Retrouvez votre communaute et vos membres.',
+            title: 'Retrouvez votre communauté et vos membres.',
             description:
               'Connectez-vous rapidement pour acceder aux membres, departements, cultes.',
           },

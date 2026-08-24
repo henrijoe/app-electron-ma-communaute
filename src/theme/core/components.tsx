@@ -60,6 +60,15 @@ const MuiOutlinedInput: Components<Theme>['MuiOutlinedInput'] = {
  notchedOutline: ({ theme }) => ({
  borderColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.2),
     }),
+    // Les champs <input type="date"/"time"/"month"> affichent une icone
+    // (calendrier/horloge) dessinee par le navigateur, pas par MUI. Cette
+    // icone reste sombre par defaut et devient invisible sur fond sombre :
+    // on l'inverse en blanc uniquement quand le theme sombre est actif.
+    input: ({ theme }) => ({
+      '&::-webkit-calendar-picker-indicator': theme.applyStyles('dark', {
+        filter: 'invert(1)',
+      }),
+    }),
   },
 };
 

@@ -41,6 +41,7 @@ import { isDesktopAppRuntime } from 'src/utils/access-control';
 
 import { getPhotoUrl } from '../../utils';
 import { dataResponsabilite } from '../../../../store/membreSlice';
+import { PrintCartesMembre } from '../../etats/printCarteMembre';
 import { MemberProfilePrint } from '../../etats/member-profile-print';
 
 import type { IMembre } from '../../../../store/membreSlice';
@@ -217,17 +218,21 @@ export function MembreDetailView() {
             Retour
           </Button>
 
-          {!isDesktopApp && (
-            <ReactToPrint
-              documentTitle={`fiche-personnelle-${fullName.replace(/\s+/g, '-').toLowerCase()}`}
-              trigger={() => (
-                <Button variant="contained" startIcon={<PrintIcon />}>
-                  Imprimer la fiche
-                </Button>
-              )}
-              content={() => profilePrintRef.current}
-            />
-          )}
+          <Stack direction="row" spacing={1.5}>
+            {membre && <PrintCartesMembre membres={[membre]} label="Imprimer sa carte" />}
+
+            {!isDesktopApp && (
+              <ReactToPrint
+                documentTitle={`fiche-personnelle-${fullName.replace(/\s+/g, '-').toLowerCase()}`}
+                trigger={() => (
+                  <Button variant="contained" startIcon={<PrintIcon />}>
+                    Imprimer la fiche
+                  </Button>
+                )}
+                content={() => profilePrintRef.current}
+              />
+            )}
+          </Stack>
         </Stack>
 
         {/* Hero social avec couverture et avatar superpose. */}

@@ -5,6 +5,7 @@ import {
   CakeRounded as CakeRoundedIcon,
   DeleteRounded as DeleteRoundedIcon,
   EditRounded as EditRoundedIcon,
+  EventNoteRounded as EventNoteRoundedIcon,
   FavoriteBorderRounded as FavoriteBorderRoundedIcon,
   FavoriteRounded as FavoriteRoundedIcon,
   SearchRounded as SearchRoundedIcon,
@@ -20,6 +21,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Grid,
   IconButton,
   MenuItem,
@@ -51,6 +53,12 @@ import type { INaissance } from 'src/store/naissanceSlice';
 import { apiClient } from 'src/utils/apiClient';
 import { canManageModule } from 'src/utils/access-control';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
+import {
+  type PeriodMode,
+  isDateWithinRange,
+  formatPeriodLabel,
+  resolvePeriodRange,
+} from 'src/utils/period-filter';
 
 type SocialCaseType = 'mariage' | 'naissance' | 'deces' | 'maladie';
 
@@ -247,6 +255,25 @@ const emptyStateByType: SocialCaseState = {
   naissance: [],
 };
 
+// Le champ de date propre à chaque catégorie, utilisé pour le filtre de période.
+const dateFieldByType: Record<SocialCaseType, string> = {
+  mariage: 'dateMariage',
+  naissance: 'dateNaissance',
+  deces: 'dateDeces',
+  maladie: 'dateMaladie',
+};
+
+// Options de période proposées ici : contrairement à "Suivi pastoral", chaque
+// évènement social a toujours une date certaine, donc pas besoin d'exclure de
+// catégorie — juste des raccourcis courants plus une période personnalisée.
+const socialPeriodOptions: Array<{ value: PeriodMode; label: string }> = [
+  { value: 'all', label: 'Toute la période' },
+  { value: 'this-month', label: 'Ce mois-ci' },
+  { value: 'last-month', label: 'Le mois dernier' },
+  { value: 'last-3-months', label: 'Ces 3 derniers mois' },
+  { value: 'custom', label: 'Période personnalisée' },
+];
+
 const emptyFormState: SocialCaseFormState = {
   deces: emptyDeces,
   maladie: emptyMaladie,
@@ -319,6 +346,11 @@ export function SocialView() {
   const [activeType, setActiveType] = useState<SocialCaseType>('mariage');
   const [searchTerm, setSearchTerm] = useState('');
   const [records, setRecords] = useState<SocialCaseState>(emptyStateByType);
+
+  // Filtre de période : "all" par défaut (comportement historique, tout l'historique).
+  const [periodMode, setPeriodMode] = useState<PeriodMode>('all');
+  const [periodCustomStart, setPeriodCustomStart] = useState('');
+  const [periodCustomEnd, setPeriodCustomEnd] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -447,7 +479,31 @@ export function SocialView() {
   }, [currentUserId, fetchSocialCases, showNotification]);
 
   const currentConfig = socialConfig[activeType];
-  const currentRows = records[activeType];
+
+  // Plage de dates correspondant au filtre de période actif (null = "Toute la période").
+  const periodRange = useMemo(
+    () => resolvePeriodRange(periodMode, { customStart: periodCustomStart, customEnd: periodCustomEnd }, new Date()),
+    [periodMode, periodCustomStart, periodCustomEnd]
+  );
+  const periodLabel = useMemo(() => formatPeriodLabel(periodMode, periodRange), [periodMode, periodRange]);
+
+  // Chaque catégorie restreinte à la période active : c'est cette version qui
+  // alimente à la fois les compteurs des cartes en haut et la liste/le PDF de
+  // l'onglet actif, pour que tout l'écran (et pas seulement la liste) reflète
+  // vraiment la période choisie.
+  const periodFilteredRecords = useMemo<SocialCaseState>(() => {
+    const filterByPeriod = (rows: any[], type: SocialCaseType) =>
+      rows.filter((row) => isDateWithinRange(row?.[dateFieldByType[type]], periodRange));
+
+    return {
+      mariage: filterByPeriod(records.mariage, 'mariage'),
+      naissance: filterByPeriod(records.naissance, 'naissance'),
+      deces: filterByPeriod(records.deces, 'deces'),
+      maladie: filterByPeriod(records.maladie, 'maladie'),
+    };
+  }, [records, periodRange]);
+
+  const currentRows = periodFilteredRecords[activeType];
 
   const filteredRows = useMemo(() => {
     if (!searchTerm.trim()) return currentRows;
@@ -459,6 +515,10 @@ export function SocialView() {
       searchableFields.some((field) => normalizeText(row?.[field]).includes(normalizedSearch))
     );
   }, [currentConfig.columns, currentRows, searchTerm]);
+
+  // Sous-titre repris dans le document imprimé/PDF, pour qu'il reste clair,
+  // une fois détaché de l'écran, à quelle période et quel onglet il correspond.
+  const printSubtitle = `Période : ${periodLabel} — ${filteredRows.length} élément(s)`;
 
   // type est optionnel : par defaut on ouvre le dialogue pour l'onglet actif,
   // mais les icones "+" des cartes ci-dessous passent explicitement leur type
@@ -496,6 +556,46 @@ export function SocialView() {
         [fieldName]: value,
       },
     }));
+  };
+
+  // Rendu d'un champ du formulaire mariage a partir de son nom (evite de dupliquer
+  // la logique de saisie libre pour chaque section : couple / ceremonie / temoins / reception).
+  const renderMariageField = (fieldName: string) => {
+    const field = socialConfig.mariage.fields.find((item) => item.name === fieldName);
+    if (!field) return null;
+
+    return (
+      <TextField
+        fullWidth
+        required={field.required}
+        multiline={field.type === 'textarea'}
+        minRows={field.minRows}
+        type={field.type === 'date' ? 'date' : 'text'}
+        label={field.label}
+        value={(formState.mariage as any)?.[field.name] || ''}
+        onChange={(event) => {
+          if (field.name === 'nomFrereMariage') {
+            setFormState((prev) => ({
+              ...prev,
+              mariage: { ...prev.mariage, idFrereMembre: null, nomFrereMariage: event.target.value },
+            }));
+            return;
+          }
+
+          if (field.name === 'nomSoeurMariage') {
+            setFormState((prev) => ({
+              ...prev,
+              mariage: { ...prev.mariage, idSoeurMembre: null, nomSoeurMariage: event.target.value },
+            }));
+            return;
+          }
+
+          handleFieldChange(field.name, event.target.value);
+        }}
+        InputLabelProps={field.type === 'date' ? { shrink: true } : undefined}
+        helperText={field.required ? 'Champ requis' : 'Champ optionnel'}
+      />
+    );
   };
 
   const handleDecesMemberChange = (value: string) => {
@@ -633,7 +733,14 @@ export function SocialView() {
               flexWrap: 'wrap',
             }}
           >
-            <PrintEtatSociaux activeType={activeType} identity={utilisateurData} rows={currentRows} />
+            <PrintEtatSociaux
+              activeType={activeType}
+              identity={utilisateurData}
+              // Le filtrage (recherche + periode) ne change pas la forme des lignes,
+              // seulement leur nombre : on reaffirme le type precis perdu par .filter().
+              rows={filteredRows as typeof currentRows}
+              subtitle={printSubtitle}
+            />
           </Stack>
         </Stack>
 
@@ -667,7 +774,7 @@ export function SocialView() {
                     <Chip
                       size="small"
                       color={socialConfig[type].color}
-                      label={records[type].length}
+                      label={periodFilteredRecords[type].length}
                       variant={activeType === type ? 'filled' : 'outlined'}
                     />
                     {canManageSocial && (
@@ -729,6 +836,62 @@ export function SocialView() {
               />
 
               <Chip color={currentConfig.color} label={`${filteredRows.length} resultat(s)`} />
+            </Stack>
+
+            {/* Filtre de période : restreint aussi bien les compteurs des cartes que
+                la liste et le PDF de cet onglet, pour ne pas toujours imprimer/afficher
+                tout l'historique. */}
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'stretch', md: 'center' }}
+              sx={{ mb: 3 }}
+            >
+              <TextField
+                select
+                label="Période"
+                value={periodMode}
+                onChange={(event) => setPeriodMode(event.target.value as PeriodMode)}
+                InputProps={{ startAdornment: <EventNoteRoundedIcon sx={{ color: 'text.disabled', mr: 1 }} fontSize="small" /> }}
+                sx={{ minWidth: { xs: 1, md: 220 } }}
+              >
+                {socialPeriodOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              {periodMode === 'custom' && (
+                <>
+                  <TextField
+                    type="date"
+                    label="Du"
+                    value={periodCustomStart}
+                    onChange={(event) => setPeriodCustomStart(event.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ minWidth: { xs: 1, md: 180 } }}
+                  />
+                  <TextField
+                    type="date"
+                    label="Au"
+                    value={periodCustomEnd}
+                    onChange={(event) => setPeriodCustomEnd(event.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ minWidth: { xs: 1, md: 180 } }}
+                  />
+                </>
+              )}
+
+              {periodMode !== 'all' && (
+                <Chip
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  icon={<EventNoteRoundedIcon fontSize="small" />}
+                  label={periodLabel}
+                />
+              )}
             </Stack>
 
             {filteredRows.length === 0 ? (
@@ -975,13 +1138,22 @@ export function SocialView() {
             )}
             {activeType === 'mariage' && (
               <>
+                {/* Section 1 : le couple. Le selecteur de membre et le nom de chacun sont
+                    regroupes cote a cote (frere / soeur) pour bien montrer que ce sont
+                    deux blocs paralleles, distincts des informations partagees plus bas. */}
+                <Grid item xs={12}>
+                  <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+                    Le couple
+                  </Typography>
+                </Grid>
                 <Grid item xs={12} md={6}>
                   <TextField
                     select
                     fullWidth
+                    // label="Frère"
                     value={formState.mariage.idFrereMembre || ''}
                     onChange={(event) => handleMariageMemberChange('idFrereMembre', event.target.value)}
-                    helperText="Choisis le frère s'il est déjà membre. Sinon laisse Non / saisie libre et écris son nom en bas."
+                    helperText="Choisis le frère s'il est déjà membre. Sinon laisse ce champ libre."
                     SelectProps={{
                       displayEmpty: true,
                       renderValue: (selected) => {
@@ -989,11 +1161,10 @@ export function SocialView() {
                           (membre) => Number(membre.idMembre) === Number(selected)
                         );
 
-                        return selectedMembre ? buildMembreLabel(selectedMembre) : 'Non / saisie libre';
+                        return selectedMembre ? buildMembreLabel(selectedMembre) : 'Le frère';
                       },
                     }}
                   >
-                    <MenuItem value="">Non / saisie libre</MenuItem>
                     {maleMembres.length === 0 && (
                       <MenuItem disabled>Aucun homme enregistré dans les membres.</MenuItem>
                     )}
@@ -1008,9 +1179,10 @@ export function SocialView() {
                   <TextField
                     select
                     fullWidth
+                    // label="Sœur"
                     value={formState.mariage.idSoeurMembre || ''}
                     onChange={(event) => handleMariageMemberChange('idSoeurMembre', event.target.value)}
-                    helperText="Choisis la sœur si elle est déjà membre. Sinon laisse Non / saisie libre et écris son nom en bas."
+                    helperText="Choisis la sœur si elle est déjà membre. Sinon laisse ce champ libre."
                     SelectProps={{
                       displayEmpty: true,
                       renderValue: (selected) => {
@@ -1018,11 +1190,10 @@ export function SocialView() {
                           (membre) => Number(membre.idMembre) === Number(selected)
                         );
 
-                        return selectedMembre ? buildMembreLabel(selectedMembre) : 'Non / saisie libre';
+                        return selectedMembre ? buildMembreLabel(selectedMembre) : 'La sœur';
                       },
                     }}
                   >
-                    <MenuItem value="">Non / saisie libre</MenuItem>
                     {femaleMembres.length === 0 && (
                       <MenuItem disabled>Aucune femme enregistrée dans les membres.</MenuItem>
                     )}
@@ -1033,6 +1204,42 @@ export function SocialView() {
                     ))}
                   </TextField>
                 </Grid>
+                <Grid item xs={12} md={6}>{renderMariageField('nomFrereMariage')}</Grid>
+                <Grid item xs={12} md={6}>{renderMariageField('nomSoeurMariage')}</Grid>
+
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+                    Détails de la cérémonie
+                  </Typography>
+                  <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
+                    Ces informations concernent l&apos;évènement, pas seulement l&apos;un des deux mariés.
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} md={6}>{renderMariageField('dateMariage')}</Grid>
+                <Grid item xs={12} md={6}>{renderMariageField('lieuMariage')}</Grid>
+                <Grid item xs={12} md={6}>{renderMariageField('culteMariage')}</Grid>
+
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+                    Témoins
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} md={6}>{renderMariageField('temoin1Mariage')}</Grid>
+                <Grid item xs={12} md={6}>{renderMariageField('temoin2Mariage')}</Grid>
+
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+                    Réception et contact
+                  </Typography>
+                  <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
+                    Contact unique à joindre pour toute question sur ce mariage (pas specifique au frère ou à la sœur).
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} md={6}>{renderMariageField('lieuReception')}</Grid>
+                <Grid item xs={12} md={6}>{renderMariageField('contactMariage')}</Grid>
               </>
             )}
             {activeType === 'maladie' && (
@@ -1054,7 +1261,7 @@ export function SocialView() {
                 </TextField>
               </Grid>
             )}
-            {currentConfig.fields.map((field) => (
+            {activeType !== 'mariage' && currentConfig.fields.map((field) => (
               <Grid item xs={12} md={field.type === 'textarea' ? 12 : 6} key={field.name}>
                 <TextField
                   fullWidth
@@ -1084,30 +1291,6 @@ export function SocialView() {
                           ...prev.maladie,
                           idMembre: null,
                           nomMembreMaladie: event.target.value,
-                        },
-                      }));
-                      return;
-                    }
-
-                    if (activeType === 'mariage' && field.name === 'nomFrereMariage') {
-                      setFormState((prev) => ({
-                        ...prev,
-                        mariage: {
-                          ...prev.mariage,
-                          idFrereMembre: null,
-                          nomFrereMariage: event.target.value,
-                        },
-                      }));
-                      return;
-                    }
-
-                    if (activeType === 'mariage' && field.name === 'nomSoeurMariage') {
-                      setFormState((prev) => ({
-                        ...prev,
-                        mariage: {
-                          ...prev.mariage,
-                          idSoeurMembre: null,
-                          nomSoeurMariage: event.target.value,
                         },
                       }));
                       return;

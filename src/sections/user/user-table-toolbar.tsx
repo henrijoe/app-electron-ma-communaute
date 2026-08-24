@@ -15,6 +15,9 @@ type UserTableToolbarProps = {
   onFilterName: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onDelete?: () => void;
   deleteLoading?: boolean;
+  // Action supplementaire affichee a cote de "Supprimer" quand des lignes sont
+  // selectionnees (ex : bouton d'impression des cartes de membre).
+  extraAction?: React.ReactNode;
 };
 
 export function UserTableToolbar({
@@ -23,6 +26,7 @@ export function UserTableToolbar({
   onFilterName,
   onDelete,
   deleteLoading = false,
+  extraAction,
 }: UserTableToolbarProps) {
   return (
     <Toolbar
@@ -59,11 +63,14 @@ export function UserTableToolbar({
       )}
 
       {numSelected > 0 ? (
-        <Tooltip title="Supprimer">
-          <IconButton onClick={onDelete} disabled={deleteLoading}>
-            <Iconify icon="solar:trash-bin-trash-bold" />
-          </IconButton>
-        </Tooltip>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {extraAction}
+          <Tooltip title="Supprimer">
+            <IconButton onClick={onDelete} disabled={deleteLoading}>
+              <Iconify icon="solar:trash-bin-trash-bold" />
+            </IconButton>
+          </Tooltip>
+        </Box>
       ) : (
         <span>
           <FilterDropdown />

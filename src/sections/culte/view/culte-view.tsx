@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { useMemo, useState, useEffect, useCallback } from 'react';
@@ -12,9 +14,15 @@ import Typography from '@mui/material/Typography';
 import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
 import {
-  Grid, Dialog, Divider, MenuItem, TextField, DialogTitle, DialogActions,
-  Stack, DialogContent, IconButton, Tooltip
+  Grid, Chip, Dialog, Divider, MenuItem, TextField, DialogTitle, DialogActions,
+  Stack, DialogContent, IconButton, Tooltip, InputAdornment
 } from '@mui/material';
+import ChurchRounded from '@mui/icons-material/ChurchRounded';
+import GroupsRounded from '@mui/icons-material/GroupsRounded';
+import MaleRounded from '@mui/icons-material/MaleRounded';
+import FemaleRounded from '@mui/icons-material/FemaleRounded';
+import MenuBookRounded from '@mui/icons-material/MenuBookRounded';
+import AttachMoneyRounded from '@mui/icons-material/AttachMoneyRounded';
 
 import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
 import { canManageModule, isDesktopAppRuntime } from 'src/utils/access-control';
@@ -45,7 +53,54 @@ import PrintEtatGlobal from '../etats/printEtats';
 import { CulteTableHead } from '../culte-table-head';
 import { IDataChoice } from '../../../store/membreSlice';
 
-
+// Petite carte de statistique affichee en tete de la liste des cultes
+// (nombre de cultes affiches, participants, offrandes, enfants Ecodim).
+function CulteStatCard({
+  color,
+  icon,
+  label,
+  value,
+}: {
+  color: 'primary' | 'info' | 'success' | 'warning';
+  icon: ReactNode;
+  label: string;
+  value: number;
+}) {
+  return (
+    <Card
+      variant="outlined"
+      sx={{
+        p: 2,
+        borderRadius: 3,
+        boxShadow: 'none',
+        borderColor: `${color}.light`,
+        bgcolor: `${color}.lighter`,
+      }}
+    >
+      <Stack direction="row" spacing={1.5} alignItems="center">
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'common.white',
+            color: `${color}.main`,
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="h6" sx={{ lineHeight: 1.1 }}>{value}</Typography>
+          <Typography variant="caption" color="text.secondary" noWrap>{label}</Typography>
+        </Box>
+      </Stack>
+    </Card>
+  );
+}
 
 
 export function CulteView() {
@@ -315,6 +370,28 @@ export function CulteView() {
   }),
     [dataFiltered, table.order]
   );
+  // Cartes-resume affichees en tete de page, calculees sur la liste actuellement
+  // filtree/recherchee (sortedData) : elles refletent donc la recherche et les
+  // filtres avances actifs, sans necessiter un filtre de periode supplementaire.
+  const culteStats = useMemo(() => {
+    let totalParticipants = 0;
+    let totalOffrandes = 0;
+    let totalEcodim = 0;
+
+    sortedData.forEach((item: ICulte) => {
+      totalParticipants += (Number(item.nombreHommeCulte) || 0) + (Number(item.nombreFemmeCulte) || 0);
+      totalOffrandes += (Number(item.offrandeCulte) || 0) + (Number(item.offrandeEcodim) || 0);
+      totalEcodim += (Number(item.ecodim) || 0) + (Number(item.filleEcodim) || 0);
+    });
+
+    return {
+      total: sortedData.length,
+      totalParticipants,
+      totalOffrandes,
+      totalEcodim,
+    };
+  }, [sortedData]);
+
   const currentPageCultes = useMemo(
     () =>
       sortedData?.slice(
@@ -460,6 +537,41 @@ export function CulteView() {
           )}
         </Stack>
       </Box>
+
+      <Grid container spacing={2} sx={{ mb: { xs: 3, md: 4 } }}>
+        <Grid item xs={6} md={3}>
+          <CulteStatCard
+            icon={<ChurchRounded />}
+            color="primary"
+            label="Cultes affichés"
+            value={culteStats.total}
+          />
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <CulteStatCard
+            icon={<GroupsRounded />}
+            color="info"
+            label="Participants"
+            value={culteStats.totalParticipants}
+          />
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <CulteStatCard
+            icon={<AttachMoneyRounded />}
+            color="success"
+            label="Offrandes"
+            value={culteStats.totalOffrandes}
+          />
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <CulteStatCard
+            icon={<MenuBookRounded />}
+            color="warning"
+            label="Enfants Ecodim"
+            value={culteStats.totalEcodim}
+          />
+        </Grid>
+      </Grid>
 
       <Card>
         <UserTableToolbar
@@ -652,8 +764,15 @@ export function CulteView() {
         <DialogContent>
           <form onSubmit={formHandleSubmit(onFormSubmit)}>
             <Grid container spacing={2}>
+              {/* Section : informations générales */}
+              <Grid item xs={12}>
+                <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+                  Informations générales
+                </Typography>
+              </Grid>
+
               {/* Type de culte */}
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -666,6 +785,13 @@ export function CulteView() {
                   onChange={handleChange}
                   error={!!errors.typeCulte}
                   helperText={errors.typeCulte?.message}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <ChurchRounded fontSize="small" color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -682,7 +808,7 @@ export function CulteView() {
               </Grid>
 
               {/* Date du culte */}
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -706,7 +832,7 @@ export function CulteView() {
               </Grid>
 
               {/* Dirigeant */}
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -725,8 +851,16 @@ export function CulteView() {
                 />
               </Grid>
 
+              {/* Section : prédication */}
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+                <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+                  Prédication
+                </Typography>
+              </Grid>
+
               {/* Prédication */}
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -746,7 +880,7 @@ export function CulteView() {
               </Grid>
 
               {/* Passage biblique */}
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -756,6 +890,13 @@ export function CulteView() {
                   value={data.passageBiblique}
                   {...register('passageBiblique')}
                   onChange={handleChange}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <MenuBookRounded fontSize="small" color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -766,7 +907,7 @@ export function CulteView() {
               </Grid>
 
               {/* Thème de la prédication */}
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -785,8 +926,41 @@ export function CulteView() {
                 />
               </Grid>
 
+              {/* Résumé de la prédication */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  margin="dense"
+                  label="Résumé de la prédication"
+                  variant="outlined"
+                  multiline
+                  rows={3}
+                  value={data.resumePredication}
+                  {...register('resumePredication')}
+                  onChange={handleChange}
+                />
+              </Grid>
+
+              {/* Section : participants */}
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+                <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" rowGap={1}>
+                  <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+                    Participants
+                  </Typography>
+                  <Chip
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    icon={<GroupsRounded fontSize="small" />}
+                    label={`Total : ${(Number(data.nombreHommeCulte) || 0) + (Number(data.nombreFemmeCulte) || 0)}`}
+                  />
+                </Stack>
+              </Grid>
+
               {/* Nombre d'hommes */}
-              <Grid item xs={12} sm={6} md={2}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -797,6 +971,13 @@ export function CulteView() {
                   value={data.nombreHommeCulte}
                   {...register('nombreHommeCulte')}
                   onChange={handleChange}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <MaleRounded fontSize="small" color="info" />
+                      </InputAdornment>
+                    ),
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -807,7 +988,7 @@ export function CulteView() {
               </Grid>
 
               {/* Nombre de femmes */}
-              <Grid item xs={12} sm={6} md={2}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -818,6 +999,13 @@ export function CulteView() {
                   value={data.nombreFemmeCulte}
                   {...register('nombreFemmeCulte')}
                   onChange={handleChange}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <FemaleRounded fontSize="small" sx={{ color: 'secondary.main' }} />
+                      </InputAdornment>
+                    ),
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -827,29 +1015,16 @@ export function CulteView() {
                 />
               </Grid>
 
-              {/* Offrandes du culte */}
-              <Grid item xs={12} sm={6} md={2}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  margin="dense"
-                  type="number"
-                  label="Offrande du culte"
-                  variant="outlined"
-                  value={data.offrandeCulte}
-                  {...register('offrandeCulte')}
-                  onChange={handleChange}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      setFocus('ecodim');
-                    }
-                  }}
-                />
+              {/* Section : Ecodim */}
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+                <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+                  Ecodim (école du dimanche)
+                </Typography>
               </Grid>
 
               {/* Nombre Ecodim */}
-              <Grid item xs={12} sm={6} md={2}>
+              <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -867,33 +1042,31 @@ export function CulteView() {
                     }
                   }}
                 />
-
               </Grid>
 
               {/* Fille Ecodim */}
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  margin="dense"
+                  type="number"
+                  label="Fille Ecodim"
+                  variant="outlined"
+                  value={data.filleEcodim}
+                  {...register('filleEcodim')}
+                  onChange={handleChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      setFocus('offrandeEcodim');
+                    }
+                  }}
+                />
+              </Grid>
 
-                <Grid item xs={12} sm={6} md={2}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    margin="dense"
-                    type="number"
-                    label="Fille Ecodim"
-                    variant="outlined"
-                    value={data.filleEcodim}
-                    {...register('filleEcodim')}
-                    onChange={handleChange}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        setFocus('offrandeEcodim');
-                      }
-                    }}
-                  />
-                </Grid>
-
-        {/* Offrandes Ecodim */}
-              <Grid item xs={12} sm={6} md={2}>
+              {/* Offrandes Ecodim */}
+              <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -904,28 +1077,55 @@ export function CulteView() {
                   value={data.offrandeEcodim}
                   {...register('offrandeEcodim')}
                   onChange={handleChange}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <AttachMoneyRounded fontSize="small" color="success" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      setFocus('offrandeCulte');
+                    }
+                  }}
+                />
+              </Grid>
+
+              {/* Section : offrandes */}
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+                <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+                  Offrandes
+                </Typography>
+              </Grid>
+
+              {/* Offrandes du culte */}
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  margin="dense"
+                  type="number"
+                  label="Offrande du culte"
+                  variant="outlined"
+                  value={data.offrandeCulte}
+                  {...register('offrandeCulte')}
+                  onChange={handleChange}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <AttachMoneyRounded fontSize="small" color="success" />
+                      </InputAdornment>
+                    ),
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       setFocus('resumePredication');
                     }
                   }}
-                />
-              </Grid>
-
-              {/* Résumé de la prédication */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  margin="dense"
-                  label="Résumé de la prédication"
-                  variant="outlined"
-                  multiline
-                  rows={4}
-                  value={data.resumePredication}
-                  {...register('resumePredication')}
-                  onChange={handleChange}
                 />
               </Grid>
             </Grid>

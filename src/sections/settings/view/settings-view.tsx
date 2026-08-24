@@ -10,6 +10,7 @@ import {
   EditRounded,
   FileDownloadRounded,
   GroupAddRounded,
+  HowToRegRounded,
   LanguageRounded,
   LaunchRounded,
   LinkOffRounded,
@@ -38,8 +39,10 @@ import Divider from '@mui/material/Divider';
 import LinearProgress from '@mui/material/LinearProgress';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
@@ -72,6 +75,8 @@ import { buildLinkedBrowserSignInUrl } from 'src/utils/browser-link';
 import { sanitizeSensitiveData } from 'src/utils/sensitive-data';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 import { fDate } from 'src/utils/format-time';
+
+import { VersetProgrammeManager } from './verset-programme-manager';
 
 type ConnectionMode = 'local' | 'online';
 
@@ -137,6 +142,10 @@ type ProfileFormState = {
   modeVersetDashboard: DashboardVerseMode;
   versetDashboardReference: string;
   versetDashboardTexte: string;
+  // 1 = un responsable doit valider chaque inscription envoyee par QR code
+  // (par defaut) ; 0 = les inscriptions sont ajoutees directement aux membres.
+  // Type number (et non boolean) pour rester compatible avec IUtilisateur.
+  validerInscriptionMembre: number;
   email: string;
   password: string;
   confirmPassword: string;
@@ -169,6 +178,7 @@ const emptyProfileForm: ProfileFormState = {
   modeVersetDashboard: 'daily',
   versetDashboardReference: '',
   versetDashboardTexte: '',
+  validerInscriptionMembre: 1,
   email: '',
   password: '',
   confirmPassword: '',
@@ -248,6 +258,7 @@ const buildSharedChurchProfileData = (
   modeVersetDashboard: normalizeDashboardVerseMode(source.modeVersetDashboard),
   versetDashboardReference: source.versetDashboardReference || '',
   versetDashboardTexte: source.versetDashboardTexte || '',
+  validerInscriptionMembre: Number(source.validerInscriptionMembre) === 0 ? 0 : 1,
 });
 
 const buildSecondaryUserFormFromEntity = (user: IUtilisateur): SecondaryUserFormState => ({
@@ -587,6 +598,9 @@ export function SettingsView() {
       modeVersetDashboard: normalizeDashboardVerseMode(source?.modeVersetDashboard),
       versetDashboardReference: source?.versetDashboardReference || '',
       versetDashboardTexte: source?.versetDashboardTexte || '',
+      // Absent en base (compte jamais enregistre depuis cet ajout) = validation
+      // obligatoire par defaut, pour ne rien changer au comportement existant.
+      validerInscriptionMembre: Number(source?.validerInscriptionMembre) === 0 ? 0 : 1,
       email: source?.email || '',
       password: '',
       confirmPassword: '',
@@ -1226,7 +1240,7 @@ export function SettingsView() {
     setActionJournalEntries(getActionJournalEntries());
   }, []);
 
-  const handleChangeProfileField = useCallback((field: keyof ProfileFormState, value: string) => {
+  const handleChangeProfileField = useCallback((field: keyof ProfileFormState, value: string | number) => {
     setProfileForm((prev) => ({
       ...prev,
       [field]: value,
@@ -2023,7 +2037,7 @@ export function SettingsView() {
                 <CardHeader
                   avatar={<MenuBookRounded color="primary" />}
                   title="Verset du jour"
-                  subheader="Choisis si un verset biblique doit apparaitre sur le tableau de bord."
+                  subheader="Choisissez si un verset biblique doit apparaître sur le tableau de bord."
                 />
                 <CardContent>
                   <Stack spacing={2.5}>
@@ -2041,13 +2055,14 @@ export function SettingsView() {
                     >
                       <MenuItem value="disabled">Ne pas afficher</MenuItem>
                       <MenuItem value="daily">Verset automatique du jour</MenuItem>
-                      <MenuItem value="custom">Verset personnalise</MenuItem>
+                      <MenuItem value="custom">Verset personnalisé (un seul)</MenuItem>
+                      <MenuItem value="scheduled">Programme sur plusieurs mois</MenuItem>
                     </TextField>
 
                     {profileForm.modeVersetDashboard === 'daily' && (
                       <Alert severity="info">
-                        L&apos;application affichera automatiquement un verset local different selon le
-                        jour. Aucun acces internet n&apos;est necessaire.
+                        L&apos;application affichera automatiquement un verset local différent selon le
+                        jour. Aucun accès internet n&apos;est nécessaire.
                       </Alert>
                     )}
 
@@ -2055,7 +2070,7 @@ export function SettingsView() {
                       <Stack spacing={2}>
                         <TextField
                           fullWidth
-                          label="Reference biblique"
+                          label="Référence biblique"
                           placeholder="Ex: Jean 3:16"
                           value={profileForm.versetDashboardReference}
                           onChange={(event) =>
@@ -2070,14 +2085,68 @@ export function SettingsView() {
                           multiline
                           minRows={3}
                           label="Texte du verset"
-                          placeholder="Ex: Car Dieu a tant aime le monde..."
+                          placeholder="Ex: Car Dieu a tant aimé le monde..."
                           value={profileForm.versetDashboardTexte}
                           onChange={(event) =>
                             handleChangeProfileField('versetDashboardTexte', event.target.value)
                           }
                         />
-              
+
                       </Stack>
+                    )}
+
+                    {profileForm.modeVersetDashboard === 'scheduled' && (
+                      <Box>
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                          Programmez un verset différent pour chaque jour, sur 1, 2 ou 6 mois à
+                          l&apos;avance. S&apos;il n&apos;y a rien de programmé pour un jour donné, le
+                          verset automatique prend le relais.
+                        </Alert>
+                        {currentAccountId > 0 && (
+                          <VersetProgrammeManager idUtilisateur={currentAccountId} />
+                        )}
+                      </Box>
+                    )}
+                  </Stack>
+                </CardContent>
+              </Card>
+
+              <Card variant="outlined" sx={{ borderRadius: 3 }}>
+                <CardHeader
+                  avatar={<HowToRegRounded color="primary" />}
+                  title="Validation des inscriptions QR code"
+                  subheader="Decidez si les inscriptions envoyées par QR code doivent d'abord etre validées."
+                />
+                <CardContent>
+                  <Stack spacing={2}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={profileForm.validerInscriptionMembre !== 0}
+                          onChange={(event) =>
+                            handleChangeProfileField('validerInscriptionMembre', event.target.checked ? 1 : 0)
+                          }
+                        />
+                      }
+                      label={
+                        profileForm.validerInscriptionMembre !== 0
+                          ? 'Un responsable doit valider chaque inscription (par defaut)'
+                          : 'Ajout automatique, sans validation'
+                      }
+                    />
+
+                    {profileForm.validerInscriptionMembre !== 0 ? (
+                      <Alert severity="info">
+                        Chaque fiche envoyee par le QR code apparait dans « Demandes d&apos;inscription »
+                        (page Membre) en attente qu&apos;un responsable clique « Valider et ajouter ».
+                      </Alert>
+                    ) : (
+                      <Alert severity="warning">
+                        Les fiches envoyees par le QR code sont ajoutees directement a la liste des
+                        membres, sans relecture prealable. Recommande pour les eglises avec beaucoup
+                        d&apos;inscriptions, ou personne n&apos;a le temps de toutes les valider une par une.
+                        Un anti-doublon (nom + telephone) reste actif dans tous les cas.
+                      </Alert>
                     )}
                   </Stack>
                 </CardContent>

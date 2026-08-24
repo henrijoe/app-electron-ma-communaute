@@ -297,31 +297,79 @@ function isPrivateIpv4Address(address) {
   );
 }
 
+function isLikelyVirtualNetworkInterface(name) {
+  return /(virtual|vmware|virtualbox|hyper-v|wsl|docker|vether|npcap|loopback|bluetooth|tailscale|zerotier|hamachi|tap|vpn)/i.test(
+    name || ""
+  );
+}
+
+function isLikelyLanNetworkInterface(name) {
+  return /(wi-?fi|wireless|wlan|ethernet|local area|reseau local)/i.test(
+    name || ""
+  );
+}
+
+function scoreLocalIpv4Candidate(candidate) {
+  let score = 0;
+
+  if (isLikelyLanNetworkInterface(candidate.name)) {
+    score += 60;
+  }
+
+  if (isLikelyVirtualNetworkInterface(candidate.name)) {
+    score -= 100;
+  } else {
+    score += 30;
+  }
+
+  if (candidate.address.startsWith("192.168.")) {
+    score += 30;
+  } else if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(candidate.address)) {
+    score += 20;
+  } else if (candidate.address.startsWith("10.")) {
+    score += 10;
+  }
+
+  return score;
+}
+
 // Recupere la meilleure IPv4 de la machine qui lance l'application desktop.
 function resolveLocalIpv4Address() {
   const networkInterfaces = os.networkInterfaces();
-  const candidateAddresses = [];
+  const candidates = [];
 
   // On inspecte toutes les interfaces reseau exposees par le systeme.
-  Object.values(networkInterfaces).forEach((entries) => {
+  Object.entries(networkInterfaces).forEach(([name, entries]) => {
     (entries || []).forEach((entry) => {
       // On ignore les interfaces internes, IPv6 ou incompletes.
-      if (!entry || entry.family !== "IPv4" || entry.internal || !entry.address) {
+      if (
+        !entry ||
+        entry.family !== "IPv4" ||
+        entry.internal ||
+        !entry.address ||
+        entry.address.startsWith("169.254.")
+      ) {
         return;
       }
 
-      candidateAddresses.push(entry.address);
+      candidates.push({
+        name,
+        address: entry.address,
+        score: scoreLocalIpv4Candidate({ name, address: entry.address }),
+      });
     });
   });
 
-  // On privilegie d'abord une IP privee de reseau local, plus pertinente pour les clients.
-  const privateAddress = candidateAddresses.find((address) => isPrivateIpv4Address(address));
-  if (privateAddress) {
-    return privateAddress;
+  const privateCandidates = candidates
+    .filter((candidate) => isPrivateIpv4Address(candidate.address))
+    .sort((left, right) => right.score - left.score);
+
+  if (privateCandidates[0]) {
+    return privateCandidates[0].address;
   }
 
   // Sinon, on retourne la premiere IPv4 externe disponible.
-  return candidateAddresses[0] || null;
+  return candidates.sort((left, right) => right.score - left.score)[0]?.address || null;
 }
 
 function escapeHtml(value) {

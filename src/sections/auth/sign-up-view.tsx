@@ -14,7 +14,6 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import {
   LockOutlined,
-  ChurchRounded,
   VisibilityRounded,
   StorefrontRounded,
   PhoneIphoneRounded,
@@ -47,9 +46,11 @@ import {
   authPrimaryButtonSx,
 } from './auth-view-shared';
 
+// Formulaire d'inscription volontairement court : un seul champ pour le nom
+// de l'église (le nom abrégé et le "nom du temple" détaillés se règlent
+// ensuite dans Paramètres, une fois connecté, pour ne pas surcharger cette
+// première étape).
 type RegisterForm = {
-  nomTemple: string;
-  nomEgliseCourt: string;
   nomEglise: string;
   nomUtilisateur: string;
   prenomUtilisateur: string;
@@ -60,8 +61,6 @@ type RegisterForm = {
 };
 
 const initialForm: RegisterForm = {
-  nomTemple: '',
-  nomEgliseCourt: '',
   nomEglise: '',
   nomUtilisateur: '',
   prenomUtilisateur: '',
@@ -117,7 +116,7 @@ export function SignUpView() {
     }
 
     const requiredValues = [
-      form.nomTemple,
+      form.nomEglise,
       form.nomUtilisateur,
       form.prenomUtilisateur,
       form.telephoneUtilisateur,
@@ -138,10 +137,14 @@ export function SignUpView() {
     try {
       setLoading(true);
 
+      const nomEglise = form.nomEglise.trim();
+
+      // Le backend attend historiquement un "nomTemple" : on lui donne le nom
+      // d'église saisi ici. L'admin pourra affiner (nom abrégé, nom du temple
+      // séparé...) plus tard dans Paramètres s'il le souhaite.
       const registerPayload = {
         logoUtilisateur: '',
-        nomTemple: form.nomTemple.trim(),
-        nomEgliseCourt: form.nomEgliseCourt.trim(),
+        nomTemple: nomEglise,
         nomUtilisateur: form.nomUtilisateur.trim(),
         prenomUtilisateur: form.prenomUtilisateur.trim(),
         telephoneUtilisateur: form.telephoneUtilisateur.trim(),
@@ -161,12 +164,10 @@ export function SignUpView() {
         throw new Error('Compte créé sans identifiant utilisateur');
       }
 
-      const nomEglise = form.nomEglise.trim() || form.nomTemple.trim();
-
       try {
         await apiClient.createCommunauteDatabase({
           idUtilisateur: Number(createdUser.idUtilisateur),
-          nomTemple: form.nomEgliseCourt.trim() || form.nomTemple.trim(),
+          nomTemple: nomEglise,
           nomEglise,
           dossierBase: 'C:\\base-communaute',
         });
@@ -232,10 +233,10 @@ export function SignUpView() {
 
         <Stack spacing={3}>
           <Alert severity="warning" sx={authWarningAlertSx}>
-            Pour eviter de creer plusieurs eglises differentes pour les memes donnees, cette page
+            Pour eviter de créer plusieurs églises differentes pour les mêmes données, cette page
             d&apos;inscription est bloquee sur ce navigateur. Connecte-toi avec{' '}
-            {linkedBrowserContext.username || 'le compte principal'} ou demande la creation
-            d&apos;un utilisateur secondaire dans Parametres.
+            {linkedBrowserContext.username || 'le compte principal'} ou demande la création
+            d&apos;un utilisateur secondaire dans parametres.
           </Alert>
 
           <Button
@@ -245,7 +246,7 @@ export function SignUpView() {
             color="inherit"
             sx={authPrimaryButtonSx}
           >
-            Aller a la connexion
+            Aller à la connexion
           </Button>
         </Stack>
 
@@ -274,48 +275,13 @@ export function SignUpView() {
         spacing={3}
       >
         <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Nom du temple *"
-              placeholder="Ex: Temple Eben-Ezer"
-              value={form.nomTemple}
-              onChange={onChange('nomTemple')}
-              InputLabelProps={{ shrink: true }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <ChurchRounded sx={{ color: 'text.disabled' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={authTextFieldSx}
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Nom abrege"
-              placeholder="Ex: EEAD ANDOKOI PENIEL"
-              value={form.nomEgliseCourt}
-              onChange={onChange('nomEgliseCourt')}
-              InputLabelProps={{ shrink: true }}
-              helperText="Affiché dans l'entête de l'application."
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <StorefrontRounded sx={{ color: 'text.disabled' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={authTextFieldSx}
-            />
-          </Grid>
+          {/* Un seul champ pour le nom de l'église : le nom abrégé (affiché
+              dans l'entête) se règle ensuite dans Paramètres, une fois connecté. */}
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label="Nom de l'église"
-              placeholder="Ex: Communauté de la Grâce"
+              label="Nom de l'église *"
+              placeholder="Ex: Eglise de la Grâce"
               value={form.nomEglise}
               onChange={onChange('nomEglise')}
               InputLabelProps={{ shrink: true }}
@@ -396,7 +362,7 @@ export function SignUpView() {
               value={form.email}
               onChange={onChange('email')}
               InputLabelProps={{ shrink: true }}
-              helperText="Cet email servira à récupérer votre mot de passe en cas d'oubli."
+              helperText="Cet émail servira à récupérer votre mot de passe en cas d'oubli."
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -492,7 +458,7 @@ export function SignUpView() {
           loading={loading}
           sx={authPrimaryButtonSx}
         >
-          Creer un compte
+          Créer un compte
         </LoadingButton>
       </Stack>
 

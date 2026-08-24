@@ -28,7 +28,7 @@ const ajouterDepartement = (data) => {
                 data.libelleCourtDepartement,
             ]);
             if (result.count > 0) {
-                return reject(new Error("Ce departement existe deja."));
+                return reject(new Error("Ce departement existe déjà."));
             }
             const sqlInsert = `INSERT INTO departement(libelleLongDepartement,libelleCourtDepartement,sloganDepartement,responsableDepartement,idUtilisateur) VALUES (?,?,?,?,?)`;
             const departement = yield (0, db_1._executeSql)(sqlInsert, values);

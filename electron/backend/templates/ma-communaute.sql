@@ -313,6 +313,48 @@ CREATE TABLE `membre_inscription_demande` (
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `verset_programme`
+--
+
+CREATE TABLE `verset_programme` (
+  `idVersetProgramme` int(11) NOT NULL,
+  `idUtilisateur` int(11) NOT NULL,
+  `dateAffichage` date NOT NULL,
+  `reference` varchar(255) DEFAULT NULL,
+  `texte` text NOT NULL,
+  `dateCreation` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Contenu de la table `verset_programme`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `programme_eglise`
+--
+
+CREATE TABLE `programme_eglise` (
+  `idProgramme` int(11) NOT NULL,
+  `idUtilisateur` int(11) NOT NULL,
+  `dateProgramme` date NOT NULL,
+  `direction` varchar(255) DEFAULT NULL,
+  `saintCene` varchar(255) DEFAULT NULL,
+  `predication` varchar(255) DEFAULT NULL,
+  `offrandes` varchar(255) DEFAULT NULL,
+  `annonces` varchar(255) DEFAULT NULL,
+  `thematique` text,
+  `dateCreation` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Contenu de la table `programme_eglise`
+--
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `naissance`
 --
 
@@ -551,6 +593,13 @@ ALTER TABLE `groupe`
   ADD KEY `idUtilisateur` (`idUtilisateur`);
 
 --
+-- Index pour la table `maladie`
+--
+ALTER TABLE `maladie`
+  ADD PRIMARY KEY (`idMaladie`),
+  ADD KEY `idUtilisateur` (`idUtilisateur`);
+
+--
 -- Index pour la table `mariage`
 --
 ALTER TABLE `mariage`
@@ -576,6 +625,20 @@ ALTER TABLE `membre`
 ALTER TABLE `membre_inscription_demande`
   ADD PRIMARY KEY (`idDemandeInscription`),
   ADD KEY `idx_membre_inscription_demande_utilisateur` (`idUtilisateur`,`statutDemande`);
+
+--
+-- Index pour la table `verset_programme`
+--
+ALTER TABLE `verset_programme`
+  ADD PRIMARY KEY (`idVersetProgramme`),
+  ADD UNIQUE KEY `idx_verset_programme_utilisateur_date` (`idUtilisateur`,`dateAffichage`);
+
+--
+-- Index pour la table `programme_eglise`
+--
+ALTER TABLE `programme_eglise`
+  ADD PRIMARY KEY (`idProgramme`),
+  ADD UNIQUE KEY `idx_programme_eglise_utilisateur_date` (`idUtilisateur`,`dateProgramme`);
 
 --
 -- Index pour la table `naissance`
@@ -682,6 +745,11 @@ ALTER TABLE `eglise`
 ALTER TABLE `groupe`
   MODIFY `idGroupe` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
+-- AUTO_INCREMENT pour la table `maladie`
+--
+ALTER TABLE `maladie`
+  MODIFY `idMaladie` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+--
 -- AUTO_INCREMENT pour la table `mariage`
 --
 ALTER TABLE `mariage`
@@ -696,6 +764,16 @@ ALTER TABLE `membre`
 --
 ALTER TABLE `membre_inscription_demande`
   MODIFY `idDemandeInscription` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+--
+-- AUTO_INCREMENT pour la table `verset_programme`
+--
+ALTER TABLE `verset_programme`
+  MODIFY `idVersetProgramme` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+--
+-- AUTO_INCREMENT pour la table `programme_eglise`
+--
+ALTER TABLE `programme_eglise`
+  MODIFY `idProgramme` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT pour la table `naissance`
 --

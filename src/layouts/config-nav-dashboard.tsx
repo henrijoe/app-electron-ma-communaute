@@ -83,7 +83,7 @@ export const navData: DashboardNavItem[] = [
     permissionKey: 'social',
   },
   {
-    title: 'Galerie',
+    title: 'Nos évènements',
     path: '/galerie',
     icon: <PhotoLibraryRounded />,
     permissionKey: 'galerie',

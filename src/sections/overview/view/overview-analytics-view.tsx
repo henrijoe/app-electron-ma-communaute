@@ -17,8 +17,10 @@ import {
 
 import {
   getDailyVerse,
+  formatIsoDate,
   normalizeDashboardVerseMode,
   type DashboardVerse,
+  type ScheduledVerse,
 } from 'src/data/daily-verses';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { apiClient } from 'src/utils/apiClient';
@@ -80,6 +82,39 @@ export function OverviewAnalyticsView() {
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
   const dashboardDateLabel = useMemo(() => formatDashboardDate(new Date()), []);
+
+  // Liste des versets programmes par l'administrateur (mode "scheduled").
+  // Chargee une fois que l'eglise connectee est connue.
+  const [scheduledVerses, setScheduledVerses] = useState<ScheduledVerse[]>([]);
+
+  useEffect(() => {
+    // "cancelled" evite d'ecrire le resultat d'une requete devenue perimee
+    // (ex: l'utilisateur change de compte pendant que la requete precedente
+    // est encore en cours) : on ignore alors sa reponse quand elle arrive.
+    let cancelled = false;
+
+    if (!currentUserId) {
+      setScheduledVerses([]);
+      return undefined;
+    }
+
+    apiClient.getVersetsProgramme(currentUserId)
+      .then((response) => {
+        if (!cancelled && response.status === 1) {
+          setScheduledVerses(Array.isArray(response.data) ? response.data : []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setScheduledVerses([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId]);
+
   const dashboardVerse = useMemo<DashboardVerse | null>(() => {
     const mode = normalizeDashboardVerseMode(sessionUser?.modeVersetDashboard);
 
@@ -98,8 +133,22 @@ export function OverviewAnalyticsView() {
       return { text, reference };
     }
 
+    if (mode === 'scheduled') {
+      const today = formatIsoDate(new Date());
+      const todaysVerse = scheduledVerses.find((verse) => verse.dateAffichage === today);
+
+      // Si rien n'est programme pour aujourd'hui, on retombe sur le verset
+      // automatique plutot que de laisser le tableau de bord vide.
+      if (todaysVerse) {
+        return { text: todaysVerse.texte, reference: todaysVerse.reference };
+      }
+
+      return getDailyVerse();
+    }
+
     return getDailyVerse();
   }, [
+    scheduledVerses,
     sessionUser?.modeVersetDashboard,
     sessionUser?.versetDashboardReference,
     sessionUser?.versetDashboardTexte,

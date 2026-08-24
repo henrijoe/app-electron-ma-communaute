@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   AddRounded,
+  EventNoteRounded,
   CalendarMonthRounded,
   ChevronLeftRounded,
   ChevronRightRounded,
@@ -14,6 +15,8 @@ import {
   ViewWeekRounded,
 } from '@mui/icons-material';
 import {
+  Tab,
+  Tabs,
   Alert,
   alpha,
   Box,
@@ -50,6 +53,8 @@ import {
 } from 'src/store/agendaSlice';
 import { apiClient } from 'src/utils/apiClient';
 import { canManageModule } from 'src/utils/access-control';
+
+import { ProgrammeEgliseManager } from './programme-eglise-manager';
 
 type AgendaViewMode = 'month' | 'week' | 'day' | 'list';
 type ReminderLevel = 'today' | 'next-hour';
@@ -298,6 +303,9 @@ export function AgendaView() {
   const canManageAgenda = canManageModule(identity, 'agenda');
   const notifiedReminderKeys = useRef<Set<string>>(new Set());
 
+  // Onglet actif de la page : le calendrier habituel, ou le planning "Programme
+  // église" (qui dirige/preche/fait les annonces a chaque culte).
+  const [activeTab, setActiveTab] = useState<'calendrier' | 'programme'>('calendrier');
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [viewMode, setViewMode] = useState<AgendaViewMode>('month');
   const [agendaDialogOpen, setAgendaDialogOpen] = useState(false);
@@ -662,6 +670,8 @@ export function AgendaView() {
               flexWrap: 'wrap',
             }}
           >
+            {activeTab === 'calendrier' && (
+            <>
             <PrintEtatAgenda events={monthEvents} identity={identity} monthLabel={selectedMonthLabel} />
             {canManageAgenda && (
               <>
@@ -673,9 +683,28 @@ export function AgendaView() {
                 <Button variant="contained" sx={{ ...primaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<AddRounded />} onClick={() => openCreateDialog()}>Ajouter un événement</Button>
               </>
             )}
+            </>
+            )}
           </Stack>
         </Stack>
 
+        <Tabs
+          value={activeTab}
+          onChange={(_, nextValue) => setActiveTab(nextValue)}
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Tab value="calendrier" label="Calendrier" icon={<CalendarMonthRounded fontSize="small" />} iconPosition="start" />
+          <Tab value="programme" label="Programme église" icon={<EventNoteRounded fontSize="small" />} iconPosition="start" />
+        </Tabs>
+
+        {activeTab === 'programme' && (
+          <Card sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 4, ...themedPanelSx }}>
+            <ProgrammeEgliseManager idUtilisateur={currentUserId || 0} />
+          </Card>
+        )}
+
+        {activeTab === 'calendrier' && (
+        <>
         {reminderEvents.length > 0 && (
           <Stack spacing={1.5}>
             {reminderEvents.slice(0, 3).map(({ event, level }) => (
@@ -765,6 +794,8 @@ export function AgendaView() {
             </Card>
           </Grid>
         </Grid>
+        </>
+        )}
       </Stack>
 
       <Dialog open={agendaDialogOpen} onClose={() => setAgendaDialogOpen(false)} fullScreen={isMobile} fullWidth maxWidth="sm" PaperProps={{ sx: { m: { xs: 0, sm: 2 }, borderRadius: { xs: 0, sm: 3 } } }}> 

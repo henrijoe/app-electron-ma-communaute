@@ -66,6 +66,7 @@ import { setListDepartement } from '../../../store/departementSlice';
 import { setListCellule } from '../../../store/celluleSlice';
 import { setListGroupe } from '../../../store/groupeSlice';
 import PrintEtatGlobal from '../etats/printEtats';
+import { PrintCartesMembre } from '../etats/printCarteMembre';
 import { QrRegistrationPoster } from '../etats/qrRegistrationPoster'; // L'affiche A4 imprimable avec le QR code en grand
 
 // ----------------------------------------------------------------------
@@ -1010,6 +1011,12 @@ export function UserView() {
       return;
     }
 
+    if (formData.contactMembre.replace(/\D/g, '').length < 10) {
+      showNotification('Le numéro de téléphone est incorrect (10 chiffres minimum)', 'warning');
+      setFocus('contactMembre');
+      return;
+    }
+
     if (
       isYesValue(data.baptemeEauMembre || formData.baptemeEauMembre)
       && !String(data.dateBaptemeMembre || formData.dateBaptemeMembre || '').trim()
@@ -1088,12 +1095,21 @@ export function UserView() {
     [sortedData, table.page, table.rowsPerPage]
   );
 
+  // Membres correspondant aux lignes cochees dans le tableau, utilises pour
+  // imprimer une carte de membre par personne selectionnee.
+  const selectedMembres = useMemo(
+    () => (listMembre || []).filter((item: IMembre) => selected.includes(String(item.idMembre))),
+    [listMembre, selected]
+  );
+
   const handleChange = useCallback((event: any) => {
     const { name, value } = event.target;
     let sanitizedValue = value;
 
-    if (name === 'contactMembre' && !/^\d*\.?\d*$/.test(value)) {
-      sanitizedValue = '';
+    if (name === 'contactMembre') {
+      // Seuls des chiffres sont acceptes dans le telephone (on retire le reste
+      // au lieu de vider tout le champ, pour ne pas perdre ce qui est deja tape).
+      sanitizedValue = String(value).replace(/\D/g, '');
     }
 
     const nextData: Record<string, any> = { [name]: sanitizedValue };
@@ -1457,6 +1473,7 @@ export function UserView() {
           }}
           onDelete={() => setConfirmDeleteSelectedOpen(true)}
           deleteLoading={deleteLoading}
+          extraAction={canManageUsers ? <PrintCartesMembre membres={selectedMembres} /> : undefined}
         />
 
         {/* --- Vue mobile : une carte par membre --- */}
@@ -2503,14 +2520,15 @@ export function UserView() {
                   fullWidth
                   size="small"
                   margin="dense"
-                  type="number"
+                  type="tel"
+                  inputMode="numeric"
                   variant="outlined"
-                  label="Telephone *"
+                  label="Téléphone *"
                   value={data.contactMembre}
-                  {...register('contactMembre', { required: 'Le telephone est requis' })}
+                  {...register('contactMembre', { required: 'Le téléphone est requis' })}
                   onChange={handleChange}
                   error={!!errors.contactMembre}
-                  helperText={errors.contactMembre?.message}
+                  helperText={errors.contactMembre?.message || '10 chiffres minimum'}
 
                 />
               </Grid>

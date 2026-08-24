@@ -43,7 +43,7 @@ const UTILISATEUR_OPTIONAL_TEXT_FIELDS = [
     'resetPasswordCode',
     'resetPasswordExpiresAt',
 ];
-const UTILISATEUR_OPTIONAL_NUMBER_FIELDS = ['idUtilisateurParent', 'actifUtilisateur'];
+const UTILISATEUR_OPTIONAL_NUMBER_FIELDS = ['idUtilisateurParent', 'actifUtilisateur', 'validerInscriptionMembre'];
 const MYSQL_UTILISATEUR_TEXT_COLUMNS = {
     logoEglise: 'TEXT NULL',
     nomEgliseCourt: 'VARCHAR(255) NULL',
@@ -74,6 +74,9 @@ const MYSQL_UTILISATEUR_TEXT_COLUMNS = {
 const MYSQL_UTILISATEUR_NUMBER_COLUMNS = {
     idUtilisateurParent: 'INT NULL',
     actifUtilisateur: 'INT NOT NULL DEFAULT 1',
+    // 1 = une demande d'inscription QR code doit etre validee par un responsable (comportement historique).
+    // 0 = le membre est ajoute directement a la liste, sans validation (utile pour les grandes eglises).
+    validerInscriptionMembre: 'INT NOT NULL DEFAULT 1',
 };
 const SQLITE_UTILISATEUR_TEXT_COLUMNS = {
     logoEglise: 'TEXT',
@@ -105,6 +108,7 @@ const SQLITE_UTILISATEUR_TEXT_COLUMNS = {
 const SQLITE_UTILISATEUR_NUMBER_COLUMNS = {
     idUtilisateurParent: 'INTEGER',
     actifUtilisateur: 'INTEGER DEFAULT 1',
+    validerInscriptionMembre: 'INTEGER DEFAULT 1',
 };
 const ALL_MODULE_PERMISSIONS = JSON.stringify([
     'dashboard',
@@ -127,6 +131,8 @@ const normalizeUtilisateurData = (data) => ({
         : 'admin',
     permissionsUtilisateur: data.permissionsUtilisateur || ALL_MODULE_PERMISSIONS,
     actifUtilisateur: Number(data.actifUtilisateur || 1),
+    // Par defaut (undefined/absent) on garde le comportement historique : validation obligatoire.
+    validerInscriptionMembre: Number(data.validerInscriptionMembre) === 0 ? 0 : 1,
     logoUtilisateur: data.logoUtilisateur || '',
     logoEglise: data.logoEglise || '',
     nomTemple: data.nomTemple || '',
@@ -237,10 +243,11 @@ const ajouterUtilisateur = (rawData) => {
         permissionsUtilisateur,
         idUtilisateurParent,
         actifUtilisateur,
+        validerInscriptionMembre,
         password,
         confirmPassword,
         email
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
             const values = [
                 data.logoUtilisateur,
                 data.logoEglise,
@@ -272,6 +279,7 @@ const ajouterUtilisateur = (rawData) => {
                 data.permissionsUtilisateur,
                 data.idUtilisateurParent,
                 data.actifUtilisateur,
+                data.validerInscriptionMembre,
                 data.password,
                 hashedconfirmPassword,
                 data.email,
@@ -393,6 +401,7 @@ const modifierUtilisateur = (rawData) => {
         permissionsUtilisateur=?,
         idUtilisateurParent=?,
         actifUtilisateur=?,
+        validerInscriptionMembre=?,
         password=?,
         confirmPassword=?,
         email=?
@@ -428,6 +437,7 @@ const modifierUtilisateur = (rawData) => {
                 data.permissionsUtilisateur,
                 data.idUtilisateurParent,
                 data.actifUtilisateur,
+                data.validerInscriptionMembre,
                 data.password,
                 data.confirmPassword,
                 data.email,

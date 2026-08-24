@@ -56,6 +56,7 @@ const normalizeUtilisateurData = (data) => ({
         : 'admin',
     permissionsUtilisateur: data.permissionsUtilisateur || ALL_MODULE_PERMISSIONS,
     actifUtilisateur: Number(data.actifUtilisateur || 1),
+    validerInscriptionMembre: Number(data.validerInscriptionMembre) === 0 ? 0 : 1,
     logoUtilisateur: data.logoUtilisateur || '',
     logoEglise: data.logoEglise || '',
     nomTemple: data.nomTemple || '',

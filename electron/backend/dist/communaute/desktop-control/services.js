@@ -132,37 +132,6 @@ const hashUnlockCode = (code) => crypto_1.default
     .createHmac("sha256", sqliteSecurity_1.SQLITE_REFERENCE_PASSWORD)
     .update(normalizeUnlockCode(code))
     .digest("hex");
-const SIGNED_UNLOCK_CODE_DURATIONS = new Set([30, 60, 180, 365]);
-const SIGNED_UNLOCK_CODE_SIGNATURE_LENGTH = 16;
-const buildSignedUnlockPayload = (durationDays, nonce) => `${durationDays}:${nonce}`;
-const signUnlockCodePayload = (durationDays, nonce) => crypto_1.default
-    .createHmac("sha256", sqliteSecurity_1.SQLITE_REFERENCE_PASSWORD)
-    .update(buildSignedUnlockPayload(durationDays, nonce))
-    .digest("hex")
-    .slice(0, SIGNED_UNLOCK_CODE_SIGNATURE_LENGTH)
-    .toUpperCase();
-const validateSignedUnlockCode = (code) => {
-    const match = normalizeUnlockCode(code).match(/^MCS(30|60|180|365)([A-Z0-9]{8})([A-F0-9]{16})$/);
-    if (!match) {
-        return null;
-    }
-    const durationDays = Number(match[1]);
-    const nonce = match[2];
-    const signature = match[3];
-    if (!SIGNED_UNLOCK_CODE_DURATIONS.has(durationDays)) {
-        return null;
-    }
-    const expectedSignature = signUnlockCodePayload(durationDays, nonce);
-    if (signature !== expectedSignature) {
-        return null;
-    }
-    return {
-        durationDays,
-        nonce,
-        signature,
-        codeHash: hashUnlockCode(code),
-    };
-};
 // Genere un segment lisible sans caracteres ambigus.
 const generateUnlockCodeSegment = (length = 4) => {
     let segment = "";
@@ -318,7 +287,6 @@ const buildDefaultDesktopLicense = (seedSuperAdminUsername) => {
         // Les codes en clair ne sont gardes que jusqu'au premier export reserve au superadmin fixe.
         unlockCodes: unlockCodePack.records,
         pendingPlainUnlockCodes: unlockCodePack.plainCodes,
-        usedSignedUnlockCodes: [],
         lastUnlockCodesGeneratedAt: now,
         lastUnlockCodesExportedAt: null,
         machineBinding: buildCurrentMachineBinding(),
@@ -360,9 +328,7 @@ const readDesktopLicenseConfig = (seedSuperAdminUsername) => __awaiter(void 0, v
             ? String(parsedContent.lastUnlockCodesGeneratedAt)
             : defaultConfig.lastUnlockCodesGeneratedAt, lastUnlockCodesExportedAt: parsedContent.lastUnlockCodesExportedAt
             ? String(parsedContent.lastUnlockCodesExportedAt)
-            : null, usedSignedUnlockCodes: Array.isArray(parsedContent.usedSignedUnlockCodes)
-            ? parsedContent.usedSignedUnlockCodes.map((item) => String(item)).filter(Boolean)
-            : [], machineBinding: storedMachineBinding || buildCurrentMachineBinding() });
+            : null, machineBinding: storedMachineBinding || buildCurrentMachineBinding() });
     if (!hasStoredUnlockCodes || !storedMachineBinding) {
         yield writeDesktopLicenseConfig(config);
     }
@@ -482,15 +448,7 @@ const unlockDesktopLicenseWithCode = (payload) => __awaiter(void 0, void 0, void
     const codeHash = hashUnlockCode(normalizedCode);
     const matchingCode = config.unlockCodes.find((unlockCode) => unlockCode.codeHash === codeHash);
     if (!matchingCode || matchingCode.usedAt) {
-        const signedCode = validateSignedUnlockCode(normalizedCode);
-        const usedSignedUnlockCodes = Array.isArray(config.usedSignedUnlockCodes) ? config.usedSignedUnlockCodes : [];
-        if (!signedCode || usedSignedUnlockCodes.includes(signedCode.codeHash)) {
-            throw new Error("Code de deblocage invalide ou deja utilise.");
-        }
-        const now = new Date().toISOString();
-        const nextConfig = Object.assign(Object.assign({}, config), { manuallyBlocked: false, expiresAt: buildExtendedExpirationDate(config.expiresAt, signedCode.durationDays), lastUnlockedAt: now, lastUnlockedBy: payload.nomUtilisateur || "code-client", usedSignedUnlockCodes: [...usedSignedUnlockCodes, signedCode.codeHash] });
-        yield writeDesktopLicenseConfig(nextConfig);
-        return (0, exports.getDesktopLicenseStatus)(payload.nomUtilisateur);
+        throw new Error("Code de deblocage invalide ou deja utilise.");
     }
     const now = new Date().toISOString();
     const nextConfig = Object.assign(Object.assign({}, config), { manuallyBlocked: false, expiresAt: buildExtendedExpirationDate(config.expiresAt, matchingCode.durationDays), lastUnlockedAt: now, lastUnlockedBy: payload.nomUtilisateur || "code-client", unlockCodes: config.unlockCodes.map((unlockCode) => unlockCode.id === matchingCode.id

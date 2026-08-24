@@ -1,8 +1,23 @@
-export type DashboardVerseMode = 'disabled' | 'daily' | 'custom';
+// Les 4 façons dont le tableau de bord peut afficher un verset :
+// - disabled  : rien n'est affiché
+// - daily     : un verset choisi automatiquement (rotation locale, voir dailyVerses ci-dessous)
+// - custom    : un seul verset fixe, saisi une fois pour toutes par l'admin
+// - scheduled : un calendrier de versets, un par date, géré dans Paramètres
+export type DashboardVerseMode = 'disabled' | 'daily' | 'custom' | 'scheduled';
 
 export type DashboardVerse = {
   reference: string;
   text: string;
+};
+
+// Un verset programme par l'administrateur pour une date precise
+// (ex: "verset du jour" different pendant 1, 2 ou 6 mois).
+export type ScheduledVerse = {
+  idVersetProgramme: number;
+  idUtilisateur: number;
+  dateAffichage: string;
+  reference: string;
+  texte: string;
 };
 
 export const dailyVerses: DashboardVerse[] = [
@@ -129,11 +144,20 @@ export const dailyVerses: DashboardVerse[] = [
 ];
 
 export const normalizeDashboardVerseMode = (value: unknown): DashboardVerseMode => {
-  if (value === 'disabled' || value === 'custom') {
+  if (value === 'disabled' || value === 'custom' || value === 'scheduled') {
     return value;
   }
 
   return 'daily';
+};
+
+// Formate une date en 'YYYY-MM-DD' (fuseau local) pour la comparer aux
+// dates programmees, qui sont stockees sous ce meme format simple.
+export const formatIsoDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 export const getDailyVerse = (date = new Date()): DashboardVerse => {

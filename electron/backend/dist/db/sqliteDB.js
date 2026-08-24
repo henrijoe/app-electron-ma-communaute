@@ -555,21 +555,53 @@ const ensureMembreAndDecesColumns = (database) => __awaiter(void 0, void 0, void
 });
 const ensureMembreInscriptionDemandeTable = (database) => __awaiter(void 0, void 0, void 0, function* () {
     yield execDatabase(database, `
-      CREATE TABLE IF NOT EXISTS "membre_inscription_demande" (
-        "idDemandeInscription" INTEGER PRIMARY KEY AUTOINCREMENT,
-        "idUtilisateur" INTEGER NOT NULL,
-        "nomMembre" TEXT,
-        "prenomMembre" TEXT,
-        "contactMembre" TEXT,
-        "payloadDemande" TEXT NOT NULL,
-        "statutDemande" TEXT DEFAULT 'en_attente',
-        "idMembreCree" INTEGER,
-        "dateCreation" TEXT DEFAULT CURRENT_TIMESTAMP,
-        "dateTraitement" TEXT
-      );
-      CREATE INDEX IF NOT EXISTS "idx_membre_inscription_demande_utilisateur_sqlite"
-        ON "membre_inscription_demande" ("idUtilisateur", "statutDemande");
-    `);
+    CREATE TABLE IF NOT EXISTS "membre_inscription_demande" (
+      "idDemandeInscription" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "idUtilisateur" INTEGER NOT NULL,
+      "nomMembre" TEXT,
+      "prenomMembre" TEXT,
+      "contactMembre" TEXT,
+      "payloadDemande" TEXT NOT NULL,
+      "statutDemande" TEXT DEFAULT 'en_attente',
+      "idMembreCree" INTEGER,
+      "dateCreation" TEXT DEFAULT CURRENT_TIMESTAMP,
+      "dateTraitement" TEXT
+    );
+    CREATE INDEX IF NOT EXISTS "idx_membre_inscription_demande_utilisateur_sqlite"
+      ON "membre_inscription_demande" ("idUtilisateur", "statutDemande");
+  `);
+});
+const ensureVersetProgrammeTable = (database) => __awaiter(void 0, void 0, void 0, function* () {
+    yield execDatabase(database, `
+    CREATE TABLE IF NOT EXISTS "verset_programme" (
+      "idVersetProgramme" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "idUtilisateur" INTEGER NOT NULL,
+      "dateAffichage" TEXT NOT NULL,
+      "reference" TEXT,
+      "texte" TEXT NOT NULL,
+      "dateCreation" TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS "idx_verset_programme_utilisateur_date"
+      ON "verset_programme" ("idUtilisateur", "dateAffichage");
+  `);
+});
+const ensureProgrammeEgliseTable = (database) => __awaiter(void 0, void 0, void 0, function* () {
+    yield execDatabase(database, `
+    CREATE TABLE IF NOT EXISTS "programme_eglise" (
+      "idProgramme" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "idUtilisateur" INTEGER NOT NULL,
+      "dateProgramme" TEXT NOT NULL,
+      "direction" TEXT,
+      "saintCene" TEXT,
+      "predication" TEXT,
+      "offrandes" TEXT,
+      "annonces" TEXT,
+      "thematique" TEXT,
+      "dateCreation" TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS "idx_programme_eglise_utilisateur_date"
+      ON "programme_eglise" ("idUtilisateur", "dateProgramme");
+  `);
 });
 const ensureComptabiliteColumns = (database) => __awaiter(void 0, void 0, void 0, function* () {
     yield ensureColumnExists(database, 'comptabilite', 'estSupprimeComptabilite', 'INTEGER DEFAULT 0');
@@ -668,6 +700,51 @@ const repairBrokenGalerieTables = (database) => __awaiter(void 0, void 0, void 0
     `);
     }
 });
+// Le dump d'origine ne declarait pas idMaladie comme cle primaire/auto-increment
+// (contrairement a deces/mariage) : les bases SQLite deja creees avant ce correctif
+// ont donc une table `maladie` qui rejette tout INSERT (idMaladie NOT NULL sans defaut).
+const repairBrokenMaladieTable = (database) => __awaiter(void 0, void 0, void 0, function* () {
+    const maladieBroken = yield hasBrokenAutoIncrementPrimaryKey(database, "maladie", "idMaladie");
+    if (!maladieBroken) {
+        return;
+    }
+    yield execDatabase(database, `
+    DROP TABLE IF EXISTS "__maladie_repair";
+    CREATE TABLE "__maladie_repair" (
+      "idMaladie" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "idMembre" INTEGER,
+      "nomMembreMaladie" TEXT,
+      "typeMaladie" TEXT,
+      "dateMaladie" TEXT,
+      "lieuHospitalisation" TEXT,
+      "observationMaladie" TEXT,
+      "idUtilisateur" INTEGER
+    );
+    INSERT INTO "__maladie_repair" (
+      "idMaladie",
+      "idMembre",
+      "nomMembreMaladie",
+      "typeMaladie",
+      "dateMaladie",
+      "lieuHospitalisation",
+      "observationMaladie",
+      "idUtilisateur"
+    )
+    SELECT
+      "idMaladie",
+      "idMembre",
+      "nomMembreMaladie",
+      "typeMaladie",
+      "dateMaladie",
+      "lieuHospitalisation",
+      "observationMaladie",
+      "idUtilisateur"
+    FROM "maladie";
+    DROP TABLE "maladie";
+    ALTER TABLE "__maladie_repair" RENAME TO "maladie";
+    CREATE INDEX IF NOT EXISTS "idx_maladie_utilisateur_sqlite" ON "maladie" ("idUtilisateur");
+  `);
+});
 /**
  * Ajoute les tables et indexes manquants sur une base SQLite deja existante.
  */
@@ -681,8 +758,11 @@ const ensureSqliteSchemaUpdated = (databasePath) => __awaiter(void 0, void 0, vo
         yield executeStatements(database, schemaStatements);
         yield ensureMembreAndDecesColumns(database);
         yield ensureMembreInscriptionDemandeTable(database);
+        yield ensureVersetProgrammeTable(database);
+        yield ensureProgrammeEgliseTable(database);
         yield ensureComptabiliteColumns(database);
         yield repairBrokenGalerieTables(database);
+        yield repairBrokenMaladieTable(database);
     }
     finally {
         yield new Promise((resolve, reject) => {

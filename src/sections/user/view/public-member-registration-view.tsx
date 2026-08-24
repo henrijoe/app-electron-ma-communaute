@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Avatar from '@mui/material/Avatar';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
@@ -11,11 +12,21 @@ import MenuItem from '@mui/material/MenuItem';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import TextField from '@mui/material/TextField';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
+import LinearProgress from '@mui/material/LinearProgress';
 import CircularProgress from '@mui/material/CircularProgress';
+import CloseRounded from '@mui/icons-material/CloseRounded';
+import BadgeRounded from '@mui/icons-material/BadgeRounded';
+import PersonRounded from '@mui/icons-material/PersonRounded';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
+import FactCheckRounded from '@mui/icons-material/FactCheckRounded';
+import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded';
+import PhotoCameraRounded from '@mui/icons-material/PhotoCameraRounded';
+import ContactPhoneRounded from '@mui/icons-material/ContactPhoneRounded';
 import PersonAddAlt1Rounded from '@mui/icons-material/PersonAddAlt1Rounded';
+import VolunteerActivismRounded from '@mui/icons-material/VolunteerActivismRounded';
 
 import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
 
@@ -43,24 +54,29 @@ type PublicMemberForm = {
   situationMatrimonialeMembre: string;
   nomFiance: string;
   nomAmiEglise: string;
+  photoMembre: string;
 };
 
 const steps = [
   {
     label: 'Identité',
-    description: 'Les informations principales du membre.',
+    description: 'Faisons connaissance ! Quelques informations sur vous.',
+    icon: BadgeRounded,
   },
   {
     label: 'Contact',
-      description: 'Adresse, téléphone et informations utiles.',
-    },
+    description: 'Comment l’église peut-elle vous joindre ?',
+    icon: ContactPhoneRounded,
+  },
   {
     label: 'Vie spirituelle',
-    description: 'Conversion, bâptemes et rattachement spirituel.',
+    description: 'Parlez-nous un peu de votre parcours avec Dieu.',
+    icon: VolunteerActivismRounded,
   },
   {
     label: 'Validation',
-    description: 'Dernière verification avant envoi.',
+    description: 'Presque fini ! Vérifiez vos informations avant d’envoyer.',
+    icon: FactCheckRounded,
   },
 ];
 
@@ -88,6 +104,7 @@ const initialForm: PublicMemberForm = {
   situationMatrimonialeMembre: '',
   nomFiance: '',
   nomAmiEglise: '',
+  photoMembre: '',
 };
 
 const civiliteOptions = [
@@ -117,6 +134,33 @@ const situationOptions = [
 
 const isYes = (value: string) => value === '1';
 
+// La situation "Fiancé(e)" ou "Marié(e)" est la seule ou le nom du/de la
+// partenaire a un sens : on cache le champ sinon pour ne pas demander une
+// information qui ne s'applique pas (célibataire, divorcé, veuf/veuve).
+const showsNomFiance = (value: string) => value === '3' || value === '5';
+
+const MOIS_LABELS = [
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+];
+
+// Annee courante calculee une seule fois : evite de recalculer a chaque rendu
+// et couvre largement les dates de naissance les plus anciennes (110 ans).
+const CURRENT_YEAR = new Date().getFullYear();
+const ANNEE_OPTIONS = Array.from({ length: 110 }, (_, index) => String(CURRENT_YEAR - index));
+
+const pad2 = (value: number) => String(value).padStart(2, '0');
+
+const parseIsoDate = (value: string) => {
+  const [year = '', month = '', day = ''] = value ? value.split('-') : [];
+  return { year, month, day };
+};
+
+const getDaysInMonth = (year: string, month: string) => {
+  if (!year || !month) return 31;
+  return new Date(Number(year), Number(month), 0).getDate();
+};
+
 export function PublicMemberRegistrationView() {
   const [searchParams] = useSearchParams();
   const [activeStep, setActiveStep] = useState(0);
@@ -125,6 +169,7 @@ export function PublicMemberRegistrationView() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [photoError, setPhotoError] = useState('');
 
   const idUtilisateur = Number(searchParams.get('user') || searchParams.get('idUtilisateur') || 0);
   const churchName = searchParams.get('church') || 'Ma Communaute';
@@ -139,7 +184,10 @@ export function PublicMemberRegistrationView() {
   }), []);
 
   const setField = (name: keyof PublicMemberForm, value: string) => {
-    const nextForm: PublicMemberForm = { ...form, [name]: value };
+    // Le telephone n'accepte que des chiffres : on retire le reste au lieu
+    // de refuser la saisie, pour ne pas perdre ce qui est deja tape.
+    const sanitizedValue = name === 'contactMembre' ? value.replace(/\D/g, '') : value;
+    const nextForm: PublicMemberForm = { ...form, [name]: sanitizedValue };
 
     if (name === 'civiliteMembre') {
       if (value === '1') {
@@ -159,6 +207,10 @@ export function PublicMemberRegistrationView() {
       nextForm.dateBaptemeSaintEspritMembre = '';
     }
 
+    if (name === 'situationMatrimonialeMembre' && !showsNomFiance(value)) {
+      nextForm.nomFiance = '';
+    }
+
     setForm(nextForm);
     setErrors((previous) => {
       const nextErrors = { ...previous };
@@ -170,6 +222,38 @@ export function PublicMemberRegistrationView() {
     });
   };
 
+  const convertFileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoError('La photo ne doit pas dépasser 5 Mo.');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Veuillez sélectionner une image valide.');
+      return;
+    }
+
+    setPhotoError('');
+    const base64 = await convertFileToBase64(file);
+    setForm((previous) => ({ ...previous, photoMembre: base64 }));
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoError('');
+    setForm((previous) => ({ ...previous, photoMembre: '' }));
+  };
+
   const validateStep = (stepIndex: number) => {
     const nextErrors: Record<string, string> = {};
 
@@ -179,16 +263,20 @@ export function PublicMemberRegistrationView() {
       }
     });
 
+    if (stepIndex === 1 && form.contactMembre.replace(/\D/g, '').length < 10) {
+      nextErrors.contactMembre = 'Numéro incorrect (10 chiffres minimum)';
+    }
+
     if (stepIndex === 1 && form.emailMembre.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailMembre.trim())) {
       nextErrors.emailMembre = 'Email invalide';
     }
 
     if (stepIndex === 2 && isYes(form.baptemeEauMembre) && !form.dateBaptemeMembre) {
-      nextErrors.dateBaptemeMembre = "Date du bapteme d'eau obligatoire";
+      nextErrors.dateBaptemeMembre = "Date du baptême d'eau obligatoire";
     }
 
     if (stepIndex === 2 && isYes(form.baptemeSaintEspritMembre) && !form.dateBaptemeSaintEspritMembre) {
-      nextErrors.dateBaptemeSaintEspritMembre = 'Date du bapteme du Saint-Esprit obligatoire';
+      nextErrors.dateBaptemeSaintEspritMembre = 'Date du baptême du Saint-Esprit obligatoire';
     }
 
     setErrors(nextErrors);
@@ -210,7 +298,7 @@ export function PublicMemberRegistrationView() {
 
   const handleSubmit = async () => {
     if (!idUtilisateur) {
-      setSubmitError("Ce lien d'inscription est incomplet. Demandez un nouveau QR code a l'eglise.");
+      setSubmitError("Ce lien d'inscription est incomplet. Demandez un nouveau QR code à l'église.");
       return;
     }
 
@@ -244,7 +332,7 @@ export function PublicMemberRegistrationView() {
         heureVisiteMembre: '',
         raisonNonVisiteMembre: '',
         dateDecisionMembre: null,
-        photoMembre: '',
+        photoMembre: form.photoMembre || '',
         idNiveauEtude: null,
         idCellule: null,
         idDepartement: null,
@@ -258,15 +346,85 @@ export function PublicMemberRegistrationView() {
       const response = await apiClient.createMemberRegistrationRequest(payload);
 
       if (response.status !== 1) {
-        throw new Error(response.message || "L'inscription n'a pas pu etre envoyee.");
+        throw new Error(response.message || "L'inscription n'a pas pu être envoyée.");
       }
 
       setSubmitted(true);
     } catch (error) {
-      setSubmitError(getApiErrorMessage(error, "L'inscription n'a pas pu etre envoyee."));
+      setSubmitError(getApiErrorMessage(error, "L'inscription n'a pas pu être envoyée."));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Champ date en 3 listes (Jour / Mois / Année) plutot qu'un input natif type="date" :
+  // sur mobile, le calendrier natif oblige a naviguer mois par mois pour atteindre une
+  // annee ancienne (ex. une date de naissance en 1995), ce qui est tres penible. Ici,
+  // l'annee se choisit directement dans une liste deroulante.
+  const renderDateField = (name: keyof PublicMemberForm, label: string) => {
+    const { day, month, year } = parseIsoDate(form[name]);
+    const maxDay = getDaysInMonth(year, month);
+    const jourOptions = Array.from({ length: maxDay }, (_, index) => pad2(index + 1));
+
+    const updateDate = (nextDay: string, nextMonth: string, nextYear: string) => {
+      setField(name, nextDay && nextMonth && nextYear ? `${nextYear}-${nextMonth}-${nextDay}` : '');
+    };
+
+    return (
+      <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
+        <Typography variant="caption" color={errors[name] ? 'error' : 'text.secondary'} sx={{ display: 'block', mb: 0.5 }}>
+          {label}
+        </Typography>
+        <Stack direction="row" spacing={1}>
+          <TextField
+            select
+            label="Jour"
+            value={day}
+            onChange={(event) => updateDate(event.target.value, month, year)}
+            error={Boolean(errors[name])}
+            sx={{ flex: 1, minWidth: 0 }}
+          >
+            {jourOptions.map((option) => (
+              <MenuItem key={option} value={option}>{option}</MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            label="Mois"
+            value={month}
+            onChange={(event) => {
+              const nextMonth = event.target.value;
+              const clampedMax = getDaysInMonth(year, nextMonth);
+              const nextDay = day && Number(day) > clampedMax ? pad2(clampedMax) : day;
+              updateDate(nextDay, nextMonth, year);
+            }}
+            error={Boolean(errors[name])}
+            sx={{ flex: 1.6, minWidth: 0 }}
+          >
+            {MOIS_LABELS.map((label_, index) => (
+              <MenuItem key={label_} value={pad2(index + 1)}>{label_}</MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            label="Année"
+            value={year}
+            onChange={(event) => updateDate(day, month, event.target.value)}
+            error={Boolean(errors[name])}
+            sx={{ flex: 1.2, minWidth: 0 }}
+          >
+            {ANNEE_OPTIONS.map((option) => (
+              <MenuItem key={option} value={option}>{option}</MenuItem>
+            ))}
+          </TextField>
+        </Stack>
+        {errors[name] && (
+          <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
+            {errors[name]}
+          </Typography>
+        )}
+      </Box>
+    );
   };
 
   const renderTextField = (
@@ -274,43 +432,93 @@ export function PublicMemberRegistrationView() {
     label: string,
     options?: Array<{ value: string; label: string }>,
     type = 'text'
-  ) => (
-    <TextField
-      fullWidth
-      select={Boolean(options)}
-      type={type}
-      label={label}
-      value={form[name]}
-      onChange={(event) => setField(name, event.target.value)}
-      error={Boolean(errors[name])}
-      helperText={errors[name]}
-      InputLabelProps={type === 'date' ? { shrink: true } : undefined}
-    >
-      {options?.map((option) => (
-        <MenuItem key={option.value} value={option.value}>
-          {option.label}
-        </MenuItem>
-      ))}
-    </TextField>
-  );
+  ) => {
+    if (type === 'date') {
+      return renderDateField(name, label);
+    }
+
+    return (
+      <TextField
+        fullWidth
+        select={Boolean(options)}
+        type={type}
+        label={label}
+        value={form[name]}
+        onChange={(event) => setField(name, event.target.value)}
+        error={Boolean(errors[name])}
+        helperText={errors[name] || (type === 'tel' ? '10 chiffres minimum' : undefined)}
+        inputProps={type === 'tel' ? { inputMode: 'numeric', maxLength: 15 } : undefined}
+      >
+        {options?.map((option) => (
+          <MenuItem key={option.value} value={option.value}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </TextField>
+    );
+  };
 
   const renderStepContent = () => {
     if (activeStep === 0) {
       return (
         <Stack spacing={2}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            {renderTextField('nomMembre', 'Nom *')}
-            {renderTextField('prenomMembre', 'Prenoms')}
+          <Stack alignItems="center" spacing={1}>
+            <Box position="relative">
+              <Avatar
+                src={form.photoMembre || undefined}
+                sx={{ width: 96, height: 96, border: '2px solid #ccc', backgroundColor: '#f5f5f5' }}
+              >
+                {!form.photoMembre && <PersonRounded fontSize="large" />}
+              </Avatar>
+              <IconButton
+                component="label"
+                size="small"
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  backgroundColor: 'primary.main',
+                  color: 'white',
+                  '&:hover': { backgroundColor: 'primary.dark' },
+                }}
+              >
+                <PhotoCameraRounded fontSize="small" />
+                <input type="file" hidden accept="image/*" onChange={handlePhotoChange} />
+              </IconButton>
+              {form.photoMembre && (
+                <IconButton
+                  size="small"
+                  onClick={handleRemovePhoto}
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    backgroundColor: 'error.main',
+                    color: 'white',
+                    '&:hover': { backgroundColor: 'error.dark' },
+                  }}
+                >
+                  <CloseRounded fontSize="small" />
+                </IconButton>
+              )}
+            </Box>
+            <Typography variant="caption" color={photoError ? 'error' : 'text.secondary'}>
+              {photoError || 'Ajoutez votre photo (facultatif)'}
+            </Typography>
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            {renderTextField('civiliteMembre', 'Civilite', civiliteOptions)}
+            {renderTextField('nomMembre', 'Nom *')}
+            {renderTextField('prenomMembre', 'Prénoms')}
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            {renderTextField('civiliteMembre', 'Civilité', civiliteOptions)}
             {renderTextField('sexeMembre', 'Genre', genreOptions)}
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             {renderTextField('dateNaissMembre', 'Date de naissance', undefined, 'date')}
             {renderTextField('lieuNaissMembre', 'Lieu de naissance')}
           </Stack>
-          {renderTextField('nationaliteMembre', 'Nationalite')}
+          {renderTextField('nationaliteMembre', 'Nationalité')}
         </Stack>
       );
     }
@@ -319,10 +527,10 @@ export function PublicMemberRegistrationView() {
       return (
         <Stack spacing={2}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            {renderTextField('contactMembre', 'Telephone *', undefined, 'tel')}
+            {renderTextField('contactMembre', 'Téléphone *', undefined, 'tel')}
             {renderTextField('emailMembre', 'Email', undefined, 'email')}
           </Stack>
-          {renderTextField('residenceMembre', 'Lieu d habitation')}
+          {renderTextField('residenceMembre', "Lieu d'habitation")}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             {renderTextField('fonctionMembre', 'Fonction / profession')}
             {renderTextField('lieuTravailMembre', 'Lieu de travail')}
@@ -339,15 +547,15 @@ export function PublicMemberRegistrationView() {
             {renderTextField('dateConversionMembre', 'Date de conversion', undefined, 'date')}
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            {renderTextField('baptemeEauMembre', "Bapteme d'eau", yesNoOptions)}
-            {isYes(form.baptemeEauMembre) && renderTextField('dateBaptemeMembre', "Date du bapteme d'eau *", undefined, 'date')}
+            {renderTextField('baptemeEauMembre', "Baptême d'eau", yesNoOptions)}
+            {isYes(form.baptemeEauMembre) && renderTextField('dateBaptemeMembre', "Date du baptême d'eau *", undefined, 'date')}
           </Stack>
-          {isYes(form.baptemeEauMembre) && renderTextField('lieuBaptemeEauMembre', "Lieu du bapteme d'eau")}
+          {isYes(form.baptemeEauMembre) && renderTextField('lieuBaptemeEauMembre', "Lieu du baptême d'eau")}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            {renderTextField('baptemeSaintEspritMembre', 'Bapteme du Saint-Esprit', yesNoOptions)}
-            {isYes(form.baptemeSaintEspritMembre) && renderTextField('dateBaptemeSaintEspritMembre', 'Date du bapteme du Saint-Esprit *', undefined, 'date')}
+            {renderTextField('baptemeSaintEspritMembre', 'Baptême du Saint-Esprit', yesNoOptions)}
+            {isYes(form.baptemeSaintEspritMembre) && renderTextField('dateBaptemeSaintEspritMembre', 'Date du baptême du Saint-Esprit *', undefined, 'date')}
           </Stack>
-          {renderTextField('egliseOrigineMembre', "Eglise d'origine")}
+          {renderTextField('egliseOrigineMembre', "Église d'origine")}
         </Stack>
       );
     }
@@ -355,15 +563,19 @@ export function PublicMemberRegistrationView() {
     return (
       <Stack spacing={2}>
         {renderTextField('situationMatrimonialeMembre', 'Situation matrimoniale', situationOptions)}
-        {renderTextField('nomFiance', 'Nom fiance(e) / conjoint')}
-        {renderTextField('nomAmiEglise', "Ami a l'eglise")}
-        <Alert severity="info">
-          Véifiez les informations avant validation. La fiche sera envoyée à l&apos;élise pour
-          verification par un responsable.
+        {showsNomFiance(form.situationMatrimonialeMembre) &&
+          renderTextField('nomFiance', 'Nom fiancé(e) / conjoint')}
+        {renderTextField('nomAmiEglise', "Ami à l'église")}
+        <Alert severity="info" icon={<CheckCircleRounded fontSize="inherit" />}>
+          Vous y êtes presque ! Vérifiez vos informations puis envoyez-les : l&apos;église les
+          examinera avant de vous accueillir officiellement parmi les membres.
         </Alert>
       </Stack>
     );
   };
+
+  const StepIcon = stepInfo.icon;
+  const progressPercent = Math.round(((activeStep + 1) / steps.length) * 100);
 
   return (
     <Box
@@ -374,20 +586,54 @@ export function PublicMemberRegistrationView() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: (theme) => theme.palette.mode === 'dark' ? 'background.default' : '#f4f7fb',
+        background: (theme) => theme.palette.mode === 'dark'
+          ? theme.palette.background.default
+          : `radial-gradient(circle at top, ${theme.palette.primary.lighter} 0%, #f4f7fb 55%)`,
       }}
     >
-      <Card sx={{ width: 1, maxWidth: 760, borderRadius: 3, boxShadow: '0 18px 60px rgba(15, 23, 42, 0.12)' }}>
+      <Card
+        sx={{
+          width: 1,
+          maxWidth: 760,
+          borderRadius: 4,
+          overflow: 'hidden',
+          boxShadow: '0 24px 70px rgba(15, 23, 42, 0.14)',
+        }}
+      >
+        {/* Simple bandeau decoratif en haut de la carte, pour rendre le
+            formulaire plus accueillant (masque une fois l'inscription envoyee). */}
+        {!submitted && (
+          <Box
+            sx={{
+              height: 6,
+              background: (theme) =>
+                `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.success.main})`,
+            }}
+          />
+        )}
+
         <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
           {submitted ? (
             <Stack spacing={2.5} alignItems="center" textAlign="center" py={4}>
-              <CheckCircleRounded color="success" sx={{ fontSize: 72 }} />
+              <Box
+                sx={{
+                  width: 96,
+                  height: 96,
+                  borderRadius: '50%',
+                  display: 'grid',
+                  placeItems: 'center',
+                  bgcolor: 'success.lighter',
+                }}
+              >
+                <CheckCircleRounded color="success" sx={{ fontSize: 64 }} />
+              </Box>
               <Box>
                 <Typography variant="h4" gutterBottom>
-                  Informations envoyées avec succès
+                  Bienvenue parmi nous&nbsp;!
                 </Typography>
-                <Typography color="text.secondary">
-                  Merci. L&apos;église a bien reçu vos informations.
+                <Typography color="text.secondary" sx={{ maxWidth: 420, mx: 'auto' }}>
+                  Merci {form.prenomMembre || form.nomMembre}. {churchName} a bien reçu vos
+                  informations et reviendra vers vous très bientôt.
                 </Typography>
               </Box>
             </Stack>
@@ -403,12 +649,13 @@ export function PublicMemberRegistrationView() {
                     placeItems: 'center',
                     color: 'primary.main',
                     bgcolor: 'primary.lighter',
+                    flexShrink: 0,
                   }}
                 >
                   <PersonAddAlt1Rounded />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="overline" color="text.secondary">
+                  <Typography variant="overline" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
                     {churchName}
                   </Typography>
                   <Typography variant="h4" sx={{ fontSize: { xs: '1.45rem', sm: '2rem' } }}>
@@ -425,12 +672,46 @@ export function PublicMemberRegistrationView() {
                 ))}
               </Stepper>
 
+              {/* Barre de progression : visible meme sur mobile, contrairement au
+                  Stepper ci-dessus qui est masque sur petit ecran (voir son sx). */}
               <Box>
-                <Typography variant="h6">{stepInfo.label}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {stepInfo.description}
-                </Typography>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.75 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    Étape {activeStep + 1} sur {steps.length}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {progressPercent}%
+                  </Typography>
+                </Stack>
+                <LinearProgress
+                  variant="determinate"
+                  value={progressPercent}
+                  sx={{ height: 8, borderRadius: 999, bgcolor: 'action.hover' }}
+                />
               </Box>
+
+              <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    display: 'grid',
+                    placeItems: 'center',
+                    color: 'primary.main',
+                    bgcolor: 'primary.lighter',
+                    flexShrink: 0,
+                  }}
+                >
+                  <StepIcon fontSize="small" />
+                </Box>
+                <Box>
+                  <Typography variant="h6">{stepInfo.label}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {stepInfo.description}
+                  </Typography>
+                </Box>
+              </Stack>
 
               {submitError && <Alert severity="error">{submitError}</Alert>}
 
@@ -441,15 +722,24 @@ export function PublicMemberRegistrationView() {
                   Retour
                 </Button>
                 {activeStep < steps.length - 1 ? (
-                  <Button variant="contained" onClick={handleNext}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={handleNext}
+                    endIcon={<ArrowForwardRounded />}
+                    sx={{ px: 3.5 }}
+                  >
                     Continuer
                   </Button>
                 ) : (
                   <Button
                     variant="contained"
+                    color="success"
+                    size="large"
                     onClick={handleSubmit}
                     disabled={submitting}
-                    startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
+                    startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : <CheckCircleRounded />}
+                    sx={{ px: 3.5 }}
                   >
                     Valider l&apos;inscription
                   </Button>

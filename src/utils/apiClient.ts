@@ -532,6 +532,86 @@ export const apiClient = {
       body: JSON.stringify({ idDemandeInscription, idUtilisateur }),
     }),
 
+  // Recupere les versets bibliques programmes pour une eglise (verset du jour personnalise sur plusieurs mois).
+  getVersetsProgramme: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/versetsprogramme/${idUtilisateur}`, { method: 'GET' }),
+
+  // Programme un nouveau verset pour une date donnee.
+  createVersetProgramme: (data: {
+    idUtilisateur: number;
+    dateAffichage: string;
+    reference?: string;
+    texte: string;
+  }) =>
+    request<IServerResponse>('communaute/ajouterversetprogramme', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Modifie un verset deja programme.
+  updateVersetProgramme: (data: {
+    idVersetProgramme: number;
+    idUtilisateur: number;
+    dateAffichage: string;
+    reference?: string;
+    texte: string;
+  }) =>
+    request<IServerResponse>('communaute/modifierversetprogramme', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Retire un verset programme.
+  deleteVersetProgramme: (idVersetProgramme: number, idUtilisateur: number) =>
+    request<IServerResponse>('communaute/supprimerversetprogramme', {
+      method: 'POST',
+      body: JSON.stringify({ idVersetProgramme, idUtilisateur }),
+    }),
+
+  // Recupere le programme d'eglise (qui dirige/preche/fait les annonces a chaque culte).
+  getProgrammesEglise: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/programmeseglise/${idUtilisateur}`, { method: 'GET' }),
+
+  // Ajoute une ligne de programme pour une date donnee.
+  createProgrammeEglise: (data: {
+    idUtilisateur: number;
+    dateProgramme: string;
+    direction: string;
+    saintCene?: string;
+    predication?: string;
+    offrandes?: string;
+    annonces?: string;
+    thematique?: string;
+  }) =>
+    request<IServerResponse>('communaute/ajouterprogrammeeglise', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Modifie une ligne de programme deja existante.
+  updateProgrammeEglise: (data: {
+    idProgramme: number;
+    idUtilisateur: number;
+    dateProgramme: string;
+    direction: string;
+    saintCene?: string;
+    predication?: string;
+    offrandes?: string;
+    annonces?: string;
+    thematique?: string;
+  }) =>
+    request<IServerResponse>('communaute/modifierprogrammeeglise', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Retire une ligne de programme.
+  deleteProgrammeEglise: (idProgramme: number, idUtilisateur: number) =>
+    request<IServerResponse>('communaute/supprimerprogrammeeglise', {
+      method: 'POST',
+      body: JSON.stringify({ idProgramme, idUtilisateur }),
+    }),
+
   // Met a jour un membre existant.
   updateMembre: (data: any) =>
     request<IServerResponse>('communaute/modifiermembre', {
@@ -985,6 +1065,7 @@ export const apiClient = {
     modeVersetDashboard?: string;
     versetDashboardReference?: string;
     versetDashboardTexte?: string;
+    validerInscriptionMembre?: number;
     password?: string;
     confirmPassword?: string;
     email?: string;
@@ -1024,6 +1105,7 @@ export const apiClient = {
     modeVersetDashboard?: string;
     versetDashboardReference?: string;
     versetDashboardTexte?: string;
+    validerInscriptionMembre?: number;
     password?: string;
     confirmPassword?: string;
     email?: string;

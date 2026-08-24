@@ -49,6 +49,9 @@ export interface IUtilisateur {
   roleUtilisateur: UserRole;
   permissionsUtilisateur: string;
   actifUtilisateur: number;
+  // 1 = les inscriptions envoyees par QR code doivent etre validees par un
+  // responsable avant de devenir des membres ; 0 = ajout direct sans validation.
+  validerInscriptionMembre: number;
   logoUtilisateur: string;
   logoEglise: string;
   nomTemple: string;
@@ -86,6 +89,7 @@ export const utilisateur: IUtilisateur = {
   roleUtilisateur: 'admin',
   permissionsUtilisateur: '',
   actifUtilisateur: 1,
+  validerInscriptionMembre: 1,
   logoUtilisateur: '',
   logoEglise: '',
   nomTemple: '',

@@ -85,7 +85,7 @@ require("./socket/socketIO").initializeSocket(io, cnxInfos)
 // ============================================== FIN ==================================    
 //public routes 
 app.get("/test", function (_, res) {
-    const msg = `ConnectÃƒÆ’Ã‚Â© au serveur ${constants_1.SERVER_NAME} avec succÃƒÆ’Ã‚Â¨s!`;
+    const msg = `Connecté au serveur ${constants_1.SERVER_NAME} avec succès!`;
     console.log(msg);
     res.status(201).send({
         status: 1,
@@ -99,7 +99,7 @@ app.get("/db-test", (req, res) => {
     if (sqliteDB_1.default.isSqliteMode()) {
         sqliteDB_1.default.selectSqlite("SELECT 1 AS status")
             .then(() => {
-            res.json({ status: "SQLite connecte" });
+            res.json({ status: "SQLite connecté" });
         })
             .catch((error) => {
             res.status(500).json({
@@ -116,7 +116,7 @@ app.get("/db-test", (req, res) => {
                 error: err.message,
             });
         }
-        res.json({ status: "MySQL connectÃƒÆ’Ã‚Â© ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â°" });
+        res.json({ status: "MySQL connecté" });
     });
 });
 // Middleware personnalisÃƒÆ’Ã‚Â© qui dÃƒÆ’Ã‚Â©finit un cookie
@@ -126,7 +126,7 @@ const setAppCookie = (req, res, next) => {
     );
     next();
 };
-app.use(setAppCookie); // utilise le middleware personnalisÃƒÆ’Ã‚Â© qui dÃƒÆ’Ã‚Â©finit le cookie
+app.use(setAppCookie); // utilise le middleware personnalisé qui est  déjà ‚définit le cookie
 app.use('/', express_1.default.static(htmlPath));
 app.get("/*", function (req, res) {
     res.sendFile(`${htmlPath}/index.html`);
@@ -151,8 +151,8 @@ const runDailySqliteBackup = (logSkipped = false) => __awaiter(void 0, void 0, v
     }
     else if (logSkipped) {
         const reason = backupResult.reason === "already-exists"
-            ? "deja presente pour aujourd'hui"
-            : "aucune base SQLite a sauvegarder";
+            ? "déjà presente pour aujourd'hui"
+            : "aucune base SQLite à sauvegarder";
         console.log(`[DB] Sauvegarde SQLite: ${reason}`);
     }
     if (backupResult.deletedBackups > 0) {
@@ -180,7 +180,7 @@ const logDatabaseStartup = () => __awaiter(void 0, void 0, void 0, function* () 
         console.log(`[DB] Mode actif: sqlite`);
         console.log(`[DB] Dossier SQLite: ${sqliteDB_1.default.getSqliteDirectory()}`);
         console.log(`[DB] Base SQLite active: ${activeDatabasePath}`);
-        console.log(`[DB] Bases SQLite verifiees: ${updatedDatabases.length}`);
+        console.log(`[DB] Bases SQLite verifiées: ${updatedDatabases.length}`);
         yield runDailySqliteBackup(true);
         startSqliteBackupScheduler();
         return;
@@ -215,7 +215,7 @@ httpServer.listen(PORT, () => {
         });
     }
     catch (err) {
-        console.error('Erreur lors du dÃƒÆ’Ã‚Â©marrage du serveur:', err);
+        console.error('Erreur lors du démarrage du serveur:', err);
     }
 });
 //# sourceMappingURL=app.js.map

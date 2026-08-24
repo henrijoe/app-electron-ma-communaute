@@ -5,6 +5,7 @@ import {
   ArrowForwardRounded,
   AutorenewRounded,
   ChurchRounded,
+  EventNoteRounded,
   FavoriteRounded,
   HealingRounded,
   PersonAddAlt1Rounded,
@@ -42,6 +43,16 @@ import { apiClient } from 'src/utils/apiClient';
 import { getScopeUserIdFromUser } from 'src/utils/access-control';
 import { normalizeText } from 'src/utils/text';
 import type { IMaladieDraft } from 'src/sections/social/types';
+import {
+  type DateRange,
+  type PeriodMode,
+  isDateWithinRange,
+  formatPeriodLabel,
+  resolvePeriodRange,
+} from 'src/utils/period-filter';
+
+import { PrintEtatPastoral } from '../etats/printEtats';
+import type { PastoralPrintRow } from '../etats/pastoral-print-document';
 
 // Valeurs possibles pour l'onglet de filtre affiché en haut de la liste pastorale.
 // 'all' et 'priority' sont des filtres transverses, les autres correspondent à une catégorie précise.
@@ -56,6 +67,17 @@ type PastoralFilter =
 
 // Couleurs MUI utilisées pour les Chip/SummaryCard selon la catégorie de l'élément pastoral.
 type PastoralStatusColor = 'default' | 'error' | 'info' | 'primary' | 'success' | 'warning';
+
+// Options de période proposées sur cette page (le détail des modes et leur
+// calcul sont partagés avec "Cas sociaux" dans src/utils/period-filter.ts).
+// "custom" permet de choisir soi-même deux dates (début / fin).
+const periodOptions: Array<{ value: PeriodMode; label: string }> = [
+  { value: 'all', label: 'Toute la période' },
+  { value: 'month', label: 'Un mois précis' },
+  { value: 'last-week', label: 'La semaine dernière' },
+  { value: 'last-sunday', label: 'Le dimanche dernier' },
+  { value: 'custom', label: 'Période personnalisée' },
+];
 
 // Une situation pastorale précise (ex: "pas encore baptisé d'eau") détectée pour une
 // personne. Une même personne peut cumuler plusieurs situations : elles sont regroupées
@@ -98,6 +120,43 @@ const worstPriority = (situations: PastoralSituation[]): 'haute' | 'normale' | '
     (worst, situation) => (PRIORITY_RANK[situation.priority] < PRIORITY_RANK[worst] ? situation.priority : worst),
     'suivi'
   );
+
+// Date la plus ancienne parmi les situations datées d'une carte (nouvelle-ame/maladie/deces).
+// Sert a faire remonter en premier les cas non traites depuis le plus longtemps. Une carte
+// sans aucune date (visite/bapteme, qui sont des statuts en cours sans evenement daté)
+// reçoit +Infinity : elle reste dans son palier de priorité mais après les cas dates.
+const oldestSituationDate = (item: PastoralItem): number => {
+  const timestamps = item.situations
+    .map((situation) => (situation.date ? new Date(situation.date).getTime() : NaN))
+    .filter((time) => !Number.isNaN(time));
+
+  return timestamps.length > 0 ? Math.min(...timestamps) : Number.POSITIVE_INFINITY;
+};
+
+// Trie par urgence reelle : d'abord le palier de priorité (haute > normale > suivi),
+// puis, a priorité egale, le cas non traité depuis le plus longtemps en premier.
+const sortByUrgency = (items: PastoralItem[]): PastoralItem[] =>
+  [...items].sort((a, b) => {
+    const priorityDiff = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
+    return priorityDiff !== 0 ? priorityDiff : oldestSituationDate(a) - oldestSituationDate(b);
+  });
+
+// Catégories qui portent une date d'événement réelle (conversion, maladie, décès).
+// "visite" et "bapteme" décrivent un statut en cours (pas encore fait), sans date
+// d'événement : ils ne peuvent donc pas être rattachés de façon fiable à une
+// période précise, et ne s'affichent que lorsque la période est "Toute la période".
+const DATED_CATEGORIES = new Set<PastoralSituation['category']>(['nouvelle-ame', 'maladie', 'deces']);
+
+// Une carte "appartient" à la période sélectionnée si au moins une de ses
+// situations datées tombe dans la plage. Sans période active (range = null),
+// tout le monde est conservé.
+const itemMatchesPeriod = (item: PastoralItem, range: DateRange | null): boolean => {
+  if (!range) return true;
+
+  return item.situations.some(
+    (situation) => DATED_CATEGORIES.has(situation.category) && isDateWithinRange(situation.date, range)
+  );
+};
 
 // Options affichées dans les onglets (Tabs) de filtrage.
 const filterOptions: Array<{ value: PastoralFilter; label: string }> = [
@@ -147,6 +206,28 @@ const formatDate = (date?: string | null): string => {
   }
 
   return parsedDate.toLocaleDateString('fr-FR');
+};
+
+// Ancienneté lisible d'une date d'événement ("il y a 3 semaines"), affichée à côté de
+// la date exacte pour que le pasteur voie tout de suite pourquoi un cas remonte en
+// priorité, sans avoir à calculer la différence lui-même.
+const formatRelativeAge = (date?: string | null): string => {
+  if (!date) return '';
+
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return '';
+
+  const days = Math.floor((Date.now() - parsedDate.getTime()) / (1000 * 60 * 60 * 24));
+  if (days < 0) return '';
+  if (days === 0) return "aujourd'hui";
+  if (days === 1) return 'hier';
+  if (days < 7) return `il y a ${days} jours`;
+
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `il y a ${weeks} semaine${weeks > 1 ? 's' : ''}`;
+
+  const months = Math.floor(days / 30);
+  return `il y a ${months} mois`;
 };
 
 // À partir de la liste des membres, génère UNE PastoralItem par membre ayant au moins
@@ -202,7 +283,7 @@ const buildMemberItems = (membres: IMembre[]): PastoralItem[] => {
     if (!isYes(membre.baptemeSaintEspritMembre)) {
       situations.push({
         category: 'bapteme',
-        categoryLabel: 'Pas encore baptisé Saint-Esprit',
+        categoryLabel: 'Pas encore baptisé du Saint-Esprit',
         color: 'primary',
         priority: 'suivi',
         description: 'Ce membre n’est pas encore marqué comme baptisé du Saint-Esprit.',
@@ -378,7 +459,13 @@ function PastoralItemCard({ item, onOpen }: { item: PastoralItem; onOpen: (item:
                 {situation.description}
               </Typography>
               {situation.date && (
-                <Chip size="small" variant="outlined" sx={{ mt: 0.75 }} label={formatDate(situation.date)} />
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  color={situation.priority === 'haute' ? 'warning' : 'default'}
+                  sx={{ mt: 0.75 }}
+                  label={`${formatDate(situation.date)} (${formatRelativeAge(situation.date)})`}
+                />
               )}
             </Box>
           ))}
@@ -419,6 +506,17 @@ export function PastoralView() {
   const [filter, setFilter] = useState<PastoralFilter>('all');
   const [priority, setPriority] = useState('all');
   const [search, setSearch] = useState('');
+
+  // Filtre de période : "all" par défaut pour ne rien changer au comportement
+  // existant. "periodMonth" ne sert que pour le mode "month", et
+  // "periodCustomStart"/"periodCustomEnd" que pour le mode "custom".
+  const [periodMode, setPeriodMode] = useState<PeriodMode>('all');
+  const [periodMonth, setPeriodMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [periodCustomStart, setPeriodCustomStart] = useState('');
+  const [periodCustomEnd, setPeriodCustomEnd] = useState('');
 
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -479,12 +577,36 @@ export function PastoralView() {
     [deces, maladies, membres]
   );
 
-  // Applique le filtre de catégorie (onglet), le filtre de priorité et la recherche
-  // texte libre (nom, titre, description, contact, résidence, libellé de catégorie).
+  // Plage de dates correspondant au filtre de période actif (null = "Toute la période").
+  const periodRange = useMemo(
+    () =>
+      resolvePeriodRange(
+        periodMode,
+        { month: periodMonth, customStart: periodCustomStart, customEnd: periodCustomEnd },
+        new Date()
+      ),
+    [periodMode, periodMonth, periodCustomStart, periodCustomEnd]
+  );
+
+  // Texte affiché à l'utilisateur pour rappeler la période active (dans l'entête
+  // et repris tel quel dans le document imprimé/PDF).
+  const periodLabel = useMemo(() => formatPeriodLabel(periodMode, periodRange), [periodMode, periodRange]);
+
+  // Étape 1 du filtrage : ne garder que les cartes qui appartiennent à la période
+  // sélectionnée. C'est cette liste (et non pastoralItems) qui alimente aussi bien
+  // les compteurs que la liste affichée, pour que "le dashboard" change réellement
+  // avec le filtre au lieu d'afficher toujours la totalité de l'historique.
+  const periodItems = useMemo(
+    () => pastoralItems.filter((item) => itemMatchesPeriod(item, periodRange)),
+    [pastoralItems, periodRange]
+  );
+
+  // Étape 2 : applique le filtre de catégorie (onglet), le filtre de priorité et la
+  // recherche texte libre (nom, titre, description, contact, résidence, libellé de catégorie).
   const filteredItems = useMemo(() => {
     const normalizedSearch = normalizeText(search);
 
-    return pastoralItems.filter((item) => {
+    const matched = periodItems.filter((item) => {
       // Une carte correspond au filtre de catégorie si au moins une de ses situations correspond.
       const matchesFilter =
         filter === 'all' ||
@@ -507,27 +629,32 @@ export function PastoralView() {
 
       return matchesFilter && matchesPriority && (!normalizedSearch || haystack.includes(normalizedSearch));
     });
-  }, [filter, pastoralItems, priority, search]);
 
-  // Compteurs affichés dans les SummaryCard, calculés sur l'ensemble des situations
-  // (pas des cartes) pour rester cohérents avec l'ancien comptage : un membre avec
-  // 2 baptêmes manquants compte pour 2 dans "Pas encore baptisés".
+    // Classement par urgence reelle plutot que par ordre d'insertion (maladies, puis
+    // membres, puis deces) : le pasteur voit d'abord les cas prioritaires les plus
+    // anciens, sans avoir a parcourir manuellement toute la liste.
+    return sortByUrgency(matched);
+  }, [filter, periodItems, priority, search]);
+
+  // Compteurs affichés dans les SummaryCard, calculés sur periodItems (donc sensibles
+  // au filtre de période) mais indépendants de l'onglet/recherche : ils donnent une
+  // vue d'ensemble de la période choisie, quel que soit l'onglet actuellement ouvert.
   const summary = useMemo(() => {
     const situationCount = (category: PastoralSituation['category']) =>
-      pastoralItems.reduce(
+      periodItems.reduce(
         (count, item) => count + item.situations.filter((situation) => situation.category === category).length,
         0
       );
 
     return {
-      priority: pastoralItems.filter((item) => item.priority === 'haute').length,
+      priority: periodItems.filter((item) => item.priority === 'haute').length,
       nouvelleAme: situationCount('nouvelle-ame'),
       visite: situationCount('visite'),
       bapteme: situationCount('bapteme'),
       maladie: situationCount('maladie'),
       deces: situationCount('deces'),
     };
-  }, [pastoralItems]);
+  }, [periodItems]);
 
   // Navigue vers la fiche membre si l'élément est rattaché à un membre,
   // sinon vers le module "cas sociaux" (cas maladie/décès sans membre lié).
@@ -542,6 +669,35 @@ export function PastoralView() {
     },
     [navigate]
   );
+
+  // Identité de l'église connectée, pour l'en-tête du document imprimé/PDF.
+  const utilisateurData = useSelector((state: IReduxState) => state.authentification?.utilisateurData);
+
+  // Libellé du filtre de catégorie actif, repris dans le sous-titre imprimé.
+  const activeFilterLabel = useMemo(
+    () => filterOptions.find((option) => option.value === filter)?.label || 'Tout',
+    [filter]
+  );
+
+  // Traduit la liste déjà filtrée (période + onglet + priorité + recherche) en lignes
+  // imprimables : c'est cette même liste que l'utilisateur voit à l'écran qui part au PDF.
+  const printRows = useMemo<PastoralPrintRow[]>(
+    () =>
+      filteredItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        priorityLabel: item.priority === 'haute' ? 'Priorité haute' : item.priority === 'normale' ? 'Suivi normal' : 'À surveiller',
+        categories: item.situations.map((situation) => situation.categoryLabel).join(', '),
+        details: item.situations.map((situation) => situation.description).join(' / '),
+        contact: item.contact,
+        residence: item.residence,
+      })),
+    [filteredItems]
+  );
+
+  // Sous-titre affiché en haut du document imprimé, pour qu'il reste clair (une fois
+  // imprimé et détaché de l'écran) à quelle période et quel filtre il correspond.
+  const printSubtitle = `Période : ${periodLabel} — Filtre : ${activeFilterLabel} — ${filteredItems.length} élément(s)`;
 
   return (
     <DashboardContent maxWidth="xl">
@@ -568,6 +724,7 @@ export function PastoralView() {
             >
               Actualiser
             </Button>
+            <PrintEtatPastoral identity={utilisateurData} rows={printRows} subtitle={printSubtitle} />
             <Button variant="contained" onClick={() => navigate('/cas-sociaux')}>
               Cas sociaux
             </Button>
@@ -590,7 +747,7 @@ export function PastoralView() {
             <SummaryCard
               color="success"
               icon={<PersonAddAlt1Rounded />}
-              label="Nouvelle âmes"
+              label="Nouvelles âmes"
               value={summary.nouvelleAme}
             />
           </Grid>
@@ -650,6 +807,81 @@ export function PastoralView() {
                 <MenuItem value="suivi">À surveiller</MenuItem>
               </TextField>
             </Stack>
+
+            {/* Filtre de période : c'est lui qui rend tout le tableau de bord dynamique
+                (compteurs + liste), au lieu d'afficher tout l'historique en permanence. */}
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+              <TextField
+                select
+                label="Période"
+                value={periodMode}
+                onChange={(event) => setPeriodMode(event.target.value as PeriodMode)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EventNoteRounded fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ minWidth: { xs: 1, md: 220 } }}
+              >
+                {periodOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              {periodMode === 'month' && (
+                <TextField
+                  type="month"
+                  label="Mois"
+                  value={periodMonth}
+                  onChange={(event) => setPeriodMonth(event.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ minWidth: { xs: 1, md: 200 } }}
+                />
+              )}
+
+              {periodMode === 'custom' && (
+                <>
+                  <TextField
+                    type="date"
+                    label="Du"
+                    value={periodCustomStart}
+                    onChange={(event) => setPeriodCustomStart(event.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ minWidth: { xs: 1, md: 180 } }}
+                  />
+                  <TextField
+                    type="date"
+                    label="Au"
+                    value={periodCustomEnd}
+                    onChange={(event) => setPeriodCustomEnd(event.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ minWidth: { xs: 1, md: 180 } }}
+                  />
+                </>
+              )}
+
+              {periodMode !== 'all' && (
+                <Chip
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  icon={<EventNoteRounded fontSize="small" />}
+                  label={periodLabel}
+                />
+              )}
+            </Stack>
+
+            {periodMode !== 'all' && (
+              <Alert severity="info">
+                Les visites et les baptêmes en attente n&apos;ont pas de date d&apos;événement propre :
+                ils ne s&apos;affichent qu&apos;en mode « Toute la période ». Les autres catégories
+                (nouvelles âmes, malades, décès) sont bien restreintes à la période choisie.
+              </Alert>
+            )}
 
             {loading && <LinearProgress />}
 

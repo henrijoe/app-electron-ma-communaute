@@ -16,7 +16,6 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
-import { isDesktopAppRuntime } from 'src/utils/access-control';
 import {
   exportDesktopPdf,
   canUseDesktopPrint,
@@ -45,6 +44,7 @@ type PrintEtatsProps = {
   activeType: SocialCaseType;
   identity?: PrintIdentity;
   rows: IDeces[] | IMaladieDraft[] | IMariage[] | INaissance[];
+  subtitle?: string;
 };
 
 const StyledMenu = styled(Menu)(({ theme }) => ({
@@ -73,9 +73,9 @@ const labels: Record<SocialCaseType, { fileName: string; title: string }> = {
 };
 
 const ComponentToPrint = forwardRef<HTMLDivElement, PrintEtatsProps>(
-  ({ activeType, identity, rows }, ref) => (
+  ({ activeType, identity, rows, subtitle }, ref) => (
     <div ref={ref}>
-      <SocialPrintDocument type={activeType} identity={identity} rows={rows} />
+      <SocialPrintDocument type={activeType} identity={identity} rows={rows} subtitle={subtitle} />
     </div>
   )
 );
@@ -88,7 +88,7 @@ const ComponentToPrintForm = forwardRef<HTMLDivElement, { activeType: SocialCase
   )
 );
 
-export function PrintEtatSociaux({ activeType, identity, rows }: PrintEtatsProps) {
+export function PrintEtatSociaux({ activeType, identity, rows, subtitle }: PrintEtatsProps) {
   const formRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -102,10 +102,6 @@ export function PrintEtatSociaux({ activeType, identity, rows }: PrintEtatsProps
     }),
     [activeType]
   );
-
-  if (isDesktopAppRuntime()) {
-    return null;
-  }
 
   return (
     <>
@@ -186,7 +182,7 @@ export function PrintEtatSociaux({ activeType, identity, rows }: PrintEtatsProps
         )}
       </StyledMenu>
       <div style={{ display: 'none' }}>
-        <ComponentToPrint ref={printRef} activeType={activeType} identity={identity} rows={rows} />
+        <ComponentToPrint ref={printRef} activeType={activeType} identity={identity} rows={rows} subtitle={subtitle} />
         <ComponentToPrintForm ref={formRef} activeType={activeType} />
       </div>
     </>

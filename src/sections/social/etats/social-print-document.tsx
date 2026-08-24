@@ -31,6 +31,9 @@ type SocialPrintDocumentProps = {
   identity?: PrintIdentity;
   type: SocialCaseType;
   rows: IDeces[] | IMaladieDraft[] | IMariage[] | INaissance[];
+  // Rappelle la periode et le nombre d'elements actifs au moment de l'impression
+  // (sinon un document imprime plus tard serait indiscernable d'un autre).
+  subtitle?: string;
 };
 
 const titles: Record<SocialCaseType, { empty: string; fileTitle: string }> = {
@@ -47,12 +50,17 @@ const formatDate = (value?: string | null) => {
   return parsed.toLocaleDateString('fr-FR');
 };
 
-export function SocialPrintDocument({ identity, rows, type }: SocialPrintDocumentProps) {
+export function SocialPrintDocument({ identity, rows, type, subtitle }: SocialPrintDocumentProps) {
   const config = titles[type];
   const normalizedRows = Array.isArray(rows) ? rows : [];
 
   return (
     <PrintDocumentLayout identity={identity} title={config.fileTitle}>
+      {subtitle && (
+        <Typography variant="body2" sx={{ mb: 1.5, color: '#475569' }}>
+          {subtitle}
+        </Typography>
+      )}
       {normalizedRows.length === 0 ? (
         <PrintEmptyState
           title={config.empty}
