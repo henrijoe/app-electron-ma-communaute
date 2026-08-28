@@ -664,6 +664,24 @@ function publishDesktopUpdateStatus(patch = {}) {
   return status;
 }
 
+// Traduit une erreur technique d'electron-updater (souvent une trace HTTP complete,
+// illisible pour un utilisateur non technique) en un message court et comprehensible.
+// Le detail brut reste disponible dans le fichier de log (voir writeDesktopLog) pour
+// le diagnostic, mais ne doit jamais s'afficher tel quel dans l'application.
+function formatUpdateErrorMessage(rawMessage) {
+  const message = String(rawMessage || "");
+
+  if (/ERR_INTERNET_DISCONNECTED|ENOTFOUND|ETIMEDOUT|ECONNREFUSED|net::/i.test(message)) {
+    return "Pas de connexion internet. Reessayez une fois connecte au reseau.";
+  }
+
+  if (/404/.test(message) && /latest\.yml|releases/i.test(message)) {
+    return "Aucune mise a jour disponible pour le moment. Reessayez plus tard.";
+  }
+
+  return "Impossible de verifier les mises a jour pour le moment.";
+}
+
 function configureDesktopAutoUpdater() {
   if (!autoUpdater) {
     publishDesktopUpdateStatus({
@@ -749,10 +767,15 @@ function configureDesktopAutoUpdater() {
   });
 
   autoUpdater.on("error", (error) => {
-    writeDesktopLog(`Erreur mise a jour desktop: ${error?.message || String(error)}`);
+    const rawMessage = error?.message || String(error);
+    // Le message brut d'electron-updater (trace complete, en-tetes HTTP, URL de
+    // Github...) est illisible pour un utilisateur final. On le garde dans le
+    // fichier de log pour le diagnostic, mais on n'affiche qu'un message clair
+    // et en francais dans l'interface (voir formatUpdateErrorMessage ci-dessous).
+    writeDesktopLog(`Erreur mise a jour desktop: ${rawMessage}`);
     publishDesktopUpdateStatus({
       checking: false,
-      error: error?.message || "Impossible de verifier les mises a jour.",
+      error: formatUpdateErrorMessage(rawMessage),
       message: "La verification de mise a jour a echoue.",
     });
   });

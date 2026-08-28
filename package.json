@@ -2,7 +2,7 @@
   "name": "Ma-communaute",
   "author": "",
   "licence": "MIT",
-  "version": "1.0.8",
+  "version": "1.0.11",
   "private": false,
   "type": "module",
   "main": "electron/main.cjs",

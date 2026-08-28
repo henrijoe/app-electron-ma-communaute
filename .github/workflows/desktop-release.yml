@@ -152,6 +152,7 @@ jobs:
           retention-days: 30
 
       - name: Build and publish GitHub Release
+        id: publish_release
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
         timeout-minutes: 25
         continue-on-error: true
@@ -209,6 +210,30 @@ jobs:
             release/windows/**/*.blockmap
           if-no-files-found: error
           retention-days: 30
+
+      # IMPORTANT : l'etape "Build and publish GitHub Release" a "continue-on-error: true"
+      # pour que l'artefact GitHub Actions ci-dessus reste disponible meme si la
+      # publication de la Release echoue (ex: probleme reseau/signature cote GitHub).
+      # Mais sans verification explicite APRES l'upload de secours, un echec de
+      # publication passait totalement inapercu : le workflow restait "vert" alors que
+      # la Release publique se retrouvait vide (aucun .exe, aucun latest.yml) —
+      # cassant a la fois le telechargement manuel ET la mise a jour automatique pour
+      # tous les utilisateurs (c'est exactement ce qui est arrive avec la release
+      # v1.0.8, publiee vide). Ce garde-fou fait donc echouer le job (visible dans
+      # l'onglet Actions) des que la publication rate, sans empecher l'artefact de
+      # secours d'etre disponible au telechargement depuis le run GitHub Actions.
+      - name: Verify GitHub Release was actually published
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ steps.publish_release.outcome }}" != "success" ]; then
+            echo "::error::La publication de la GitHub Release ${{ steps.version.outputs.tag }} a echoue (voir l'etape 'Build and publish GitHub Release' ci-dessus). L'executable reste disponible en artefact GitHub Actions ('ma-communaute-v${{ steps.version.outputs.current }}'), mais AUCUNE release publique n'a ete mise a jour : le telechargement manuel et la mise a jour automatique resteront casses tant que ce n'est pas corrige."
+            exit 1
+          fi
+
+          echo "La GitHub Release ${{ steps.version.outputs.tag }} a bien ete publiee."
 
       - name: Existing version tag
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists == 'true'
