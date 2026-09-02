@@ -108,7 +108,7 @@
     "appId": "com.ma.communaute.desktop",
     "productName": "Ma Communaute",
     "icon": "public/assets/images/logoCom1.png",
-    "compression": "store",
+    "compression": "normal",
     "files": [
       "dist/**/*",
       "electron/main.cjs",

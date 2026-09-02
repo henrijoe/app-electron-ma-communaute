@@ -154,7 +154,13 @@ jobs:
       - name: Build and publish GitHub Release
         id: publish_release
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
-        timeout-minutes: 25
+        # L'installeur genere par cette etape (upload compris) approche voire depasse
+        # 25 minutes quand la compression est desactivee ("compression": "store") :
+        # l'upload d'un fichier de plusieurs centaines de Mo vers GitHub Releases est
+        # lent et variable. On a corrige la taille du fichier (voir "compression":
+        # "normal" dans package.json), mais on garde une marge genereuse ici au cas
+        # ou le runner soit particulierement lent un jour donne.
+        timeout-minutes: 40
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

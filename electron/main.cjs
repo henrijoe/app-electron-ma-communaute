@@ -1344,9 +1344,15 @@ ipcMain.handle("desktop-update:check", async () => {
   try {
     await checkForDesktopUpdates();
   } catch (error) {
+    // "autoUpdater" emet deja son propre evenement "error" (gere plus haut par
+    // formatUpdateErrorMessage), mais checkForUpdates() rejette AUSSI la promesse
+    // pour le meme echec : sans reprendre le meme formatage ici, ce catch ecrasait
+    // le message convivial avec le message brut (trace complete) juste apres.
+    const rawMessage = error?.message || String(error);
+    writeDesktopLog(`Erreur mise a jour desktop (verification manuelle): ${rawMessage}`);
     publishDesktopUpdateStatus({
       checking: false,
-      error: error?.message || "Impossible de verifier les mises a jour.",
+      error: formatUpdateErrorMessage(rawMessage),
       message: "La verification de mise a jour a echoue.",
     });
   }
