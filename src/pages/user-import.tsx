@@ -6,7 +6,7 @@ export default function UserImportPage() {
   return (
     <>
       <Helmet>
-        <title> Import membres | Ma Communaute </title>
+        <title> Import membres | Ma Communauté </title>
       </Helmet>
 
       <UserImportView />

@@ -83,7 +83,7 @@ export function UserEditView() {
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
 
-  // Les listes dynamiques evitent de maintenir des options statiques cote front.
+  // Les listes dynamiques évitent de maintenir des options statiques côté front.
   const departementOptions = Array.isArray(listDepartement) && listDepartement.length > 0
     ? listDepartement.map((item: any) => ({ value: item.idDepartement, label: item.libelleLongDepartement }))
     : [];
@@ -98,9 +98,9 @@ export function UserEditView() {
     : [];
 
   // Les champs `select` de MUI manipulent ici des valeurs de formulaire sous
-  // forme de chaines. Cette fonction normalise donc les donnees venant de
+  // forme de chaînes. Cette fonction normalise donc les données venant de
   // l'API/store pour que les comparaisons conditionnelles du rendu restent
-  // fiables pendant l'edition.
+  // fiables pendant l'édition.
   const normalizeSelectValue = (value: string | number | null | undefined): string =>
     value === null || value === undefined || value === '' ? '' : String(value);
   useEffect(() => {
@@ -131,7 +131,7 @@ export function UserEditView() {
           dispatch(setListResponsabilite(responsabilites));
         }
       } catch (error) {
-        console.error('Erreur de chargement des listes li�es au membre:', error);
+        console.error('Erreur de chargement des listes liées au membre:', error);
       }
     };
 
@@ -146,7 +146,7 @@ export function UserEditView() {
       
       if (foundMembre) {
         setMembre(foundMembre);
-        // On normalise les valeurs au chargement pour eviter les incoherences entre nombres, null et chaines.
+        // On normalise les valeurs au chargement pour éviter les incoherences entre nombres, null et chaînes.
         // Initialiser les données du formulaire
         const initialData = {
           nomMembre: foundMembre.nomMembre || '',
@@ -280,7 +280,7 @@ export function UserEditView() {
     }
 
     if (isYesValue(formData.baptemeEauMembre) && !String(formData.dateBaptemeMembre || '').trim()) {
-      showNotification("La date du bapteme d'eau est requise", 'warning');
+      showNotification("La date du baptême d'eau est requise", 'warning');
       return;
     }
 
@@ -288,7 +288,7 @@ export function UserEditView() {
       isYesValue(formData.baptemeSaintEspritMembre)
       && !String(formData.dateBaptemeSaintEspritMembre || '').trim()
     ) {
-      showNotification('La date du bapteme du Saint-Esprit est requise', 'warning');
+      showNotification('La date du baptême du Saint-Esprit est requise', 'warning');
       return;
     }
 
@@ -794,7 +794,7 @@ export function UserEditView() {
                   fullWidth
                   required
                   type="date"
-                  label="Date du bapteme d'eau"
+                  label="Date du baptême d'eau"
                   name="dateBaptemeMembre"
                   value={formData.dateBaptemeMembre || ''}
                   onChange={handleChange}
@@ -807,7 +807,7 @@ export function UserEditView() {
               <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
-                  label="Lieu du bapteme"
+                  label="Lieu du baptême"
                   name="lieuBaptemeEauMembre"
                   value={formData.lieuBaptemeEauMembre || ''}
                   onChange={handleChange}
@@ -838,7 +838,7 @@ export function UserEditView() {
                   fullWidth
                   required
                   type="date"
-                  label="Date du bapteme Saint-Esprit"
+                  label="Date du baptême Saint-Esprit"
                   name="dateBaptemeSaintEspritMembre"
                   value={formData.dateBaptemeSaintEspritMembre || ''}
                   onChange={handleChange}

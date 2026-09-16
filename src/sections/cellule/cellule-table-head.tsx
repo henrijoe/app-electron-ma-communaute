@@ -29,7 +29,7 @@ export function CelluleTableHead({ order, orderBy, rowCount, numSelected, onSort
   const [selectedAll, setSelectedAll] = useState(false);
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    // On renvoie les identifiants affichés pour garder la sélection cohérente.
+    // On renvoie les identifiants affichÃ©s pour garder la sÃ©lection cohÃ©rente.
     const checked = event.target.checked;
     setSelectedAll(checked);
     const newSelecteds = checked ? Array.from({ length: rowCount }, (_, i) => i.toString()) : [];

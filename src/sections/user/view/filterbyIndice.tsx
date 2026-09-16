@@ -152,19 +152,19 @@ const FilterDropdown = () => {
         <Box sx={{ p: 2, width: 280 }}>
           <Typography variant="h6" gutterBottom>Filtrer</Typography>
 
-          <TextField fullWidth size="small" margin="dense" select name="baptemeEauMembre" label="Bapteme d'eau" value={filters.baptemeEauMembre} onChange={(e) => setFilters({ ...filters, baptemeEauMembre: e.target.value })}>
+          <TextField fullWidth size="small" margin="dense" select name="baptemeEauMembre" label="Baptême d'eau" value={filters.baptemeEauMembre} onChange={(e) => setFilters({ ...filters, baptemeEauMembre: e.target.value })}>
             {dataBapteme.map((option) => <MenuItem key={option.value} value={String(option.value)}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
-          <TextField fullWidth size="small" margin="dense" select name="nouvelleAmeMembre" label="Nouvelle ame" value={filters.nouvelleAmeMembre} onChange={(e) => setFilters({ ...filters, nouvelleAmeMembre: e.target.value })}>
+          <TextField fullWidth size="small" margin="dense" select name="nouvelleAmeMembre" label="Nouvelle âme" value={filters.nouvelleAmeMembre} onChange={(e) => setFilters({ ...filters, nouvelleAmeMembre: e.target.value })}>
             {dataNouvelAme.map((option) => <MenuItem key={option.value} value={String(option.value)}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
-          <TextField fullWidth size="small" margin="dense" select name="idDepartement" label="Departement" value={filters.idDepartement} onChange={(e) => setFilters({ ...filters, idDepartement: e.target.value })}>
+          <TextField fullWidth size="small" margin="dense" select name="idDepartement" label="Département" value={filters.idDepartement} onChange={(e) => setFilters({ ...filters, idDepartement: e.target.value })}>
             {departementOptions.map((option) => <MenuItem key={option.value} value={option.value}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
-          <TextField fullWidth size="small" margin="dense" select name="idResponsabilite" label="Responsabilite" value={filters.idResponsabilite} onChange={(e) => setFilters({ ...filters, idResponsabilite: e.target.value })}>
+          <TextField fullWidth size="small" margin="dense" select name="idResponsabilite" label="Responsabilité" value={filters.idResponsabilite} onChange={(e) => setFilters({ ...filters, idResponsabilite: e.target.value })}>
             {responsabiliteOptions.map((option) => <MenuItem key={option.value} value={option.value}>{normalizeText(option.label)}</MenuItem>)}
           </TextField>
 
@@ -181,7 +181,7 @@ const FilterDropdown = () => {
           </TextField>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-            <Button variant="outlined" onClick={handleReset}>Reinitialiser</Button>
+            <Button variant="outlined" onClick={handleReset}>Réinitialiser</Button>
             <Button variant="contained" onClick={handleSearch}>Appliquer</Button>
           </Box>
         </Box>

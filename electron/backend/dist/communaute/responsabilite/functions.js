@@ -29,7 +29,7 @@ const ajouterResponsabilite = (data) => {
     }));
 };
 /**
- * recupererer toute les responsabilites
+ * récupérer toute les responsabilités
  * @returns
  */
 const recupResponsabilite = () => {

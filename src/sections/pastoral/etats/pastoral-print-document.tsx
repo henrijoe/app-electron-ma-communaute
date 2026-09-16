@@ -28,7 +28,7 @@ type PrintIdentity = {
 };
 
 // Version simplifiee d'un item pastoral, juste ce qu'il faut pour l'imprimer
-// (evite de dependre du type complet de pastoral-view.tsx).
+// (évite de dépendre du type complet de pastoral-view.tsx).
 export type PastoralPrintRow = {
   id: string;
   name: string;

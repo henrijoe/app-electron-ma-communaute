@@ -28,7 +28,7 @@ export const Deces:any = {
   causeDeces:"",
 }
 
-// initialiation des states
+// initialisation des states
 const initialStates: any = {
   dataDeces: [],
   dataFilterDeces: [],
@@ -43,7 +43,7 @@ export const DecesSlice = createSlice({
   name: 'deces',
   initialState: initialStates,
   reducers: {
-    // fonction pour ajouter un Departement
+    // fonction pour ajouter un Département
     addDeces: (state, action: PayloadAction<IDeces>) => {
       state.dataDeces.unshift(action.payload)
     },
@@ -57,7 +57,7 @@ export const DecesSlice = createSlice({
       state.listDeces.unshift(action.payload)
     },
 
-    // fonction pour suprimer un Departement
+    // fonction pour supprimer un Département
     deleteDeces: (state, action) => {
       state.dataNaissance = state.dataNaissance.filter(
         (item:any) => item.idNaissance !== action.payload
@@ -67,16 +67,16 @@ export const DecesSlice = createSlice({
       );
     },
     
-    // fonction pour rechecher un Departement dans le tableau
+    // fonction pour rechercher un Département dans le tableau
     setListFilterDeces: (state, action) => {
       state.dataFilterDeces = action.payload
     },
-    // fonction pour voir les detail de chaque Departement enregister
+    // fonction pour voir les détail de chaque Département enregistrer
     setDetailItem: (state, action) => {
       state.detailItem = action.payload
     },
     
-    // fonction pour modifier chaque Departement enregister
+    // fonction pour modifier chaque Département enregistrer
     setDataModifiesDeces: (state, action) => {
       state.dataDeces = state.dataDeces?.map((item: any) =>
       item.idDeces === action.payload.idDeces ? action.payload : item

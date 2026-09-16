@@ -35,7 +35,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 
 import { ICulte, typeCulteOptions } from '../../../../store/culteSlice';
 
-// Affiche une ligne simple d'information dans les cartes detail.
+// Affiche une ligne simple d'information dans les cartes détail.
 interface InfoItemProps {
   icon: React.ReactNode;
   label: string;
@@ -50,7 +50,7 @@ const InfoItem: React.FC<InfoItemProps> = ({ icon, label, value }) => (
         {label}
       </Typography>
     </Box>
-    <Typography variant="body1">{value || 'Non specifie'}</Typography>
+    <Typography variant="body1">{value || 'Non spécifié'}</Typography>
   </Box>
 );
 
@@ -64,12 +64,12 @@ export function CulteDetailView() {
   const [culte, setCulte] = useState<ICulte | null>(null);
 
   const getTypeCulteLabel = (typeId: string) => {
-    if (!typeId) return 'Non specifie';
+    if (!typeId) return 'Non spécifié';
     const type = typeCulteOptions.find((item) => item.value.toString() === typeId);
-    return type ? type.label : 'Non specifie';
+    return type ? type.label : 'Non spécifié';
   };
 
-  // Charge les details directement depuis le store pour rester coherent avec les autres ecrans.
+  // Charge les détails directement depuis le store pour rester cohérent avec les autres ecrans.
   const fetchCulteDetails = useCallback(() => {
     if (!id) return;
 
@@ -79,7 +79,7 @@ export function CulteDetailView() {
       const culteFromStore = listCulte.find((item: ICulte) => item.idCulte === culteId);
       setCulte(culteFromStore || null);
     } catch (error) {
-      console.error('Erreur lors du chargement des details du culte :', error);
+      console.error('Erreur lors du chargement des détails du culte :', error);
       setCulte(null);
     } finally {
       setLoading(false);
@@ -95,7 +95,7 @@ export function CulteDetailView() {
   }, [navigate]);
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Non specifie';
+    if (!dateString) return 'Non spécifié';
 
     try {
       return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -152,10 +152,10 @@ export function CulteDetailView() {
         <Container maxWidth="lg">
           <Box textAlign="center" py={10}>
             <Typography variant="h5" color="text.secondary" gutterBottom>
-              Culte non trouve
+              Culte non trouvé
             </Typography>
             <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
-              Retour a la liste
+              Retour à la liste
             </Button>
           </Box>
         </Container>
@@ -169,7 +169,7 @@ export function CulteDetailView() {
         {/* En-tete detail sans action de modification. */}
         <Box mb={3}>
           <Button startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ mb: 2 }}>
-            Retour a la liste
+            Retour à la liste
           </Button>
         </Box>
 
@@ -198,7 +198,7 @@ export function CulteDetailView() {
                       {getTypeCulteLabel(culte.typeCulte)}
                     </Typography>
                     <Typography variant="h5" color="text.secondary" gutterBottom>
-                      {culte.themePredication || 'Sans theme specifique'}
+                      {culte.themePredication || 'Sans thème spécifique'}
                     </Typography>
                   </Box>
 
@@ -257,24 +257,24 @@ export function CulteDetailView() {
               <Card sx={{ p: 3 }}>
                 <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <MenuBookIcon color="primary" />
-                  Details de la predication
+                  Détails de la prédication
                 </Typography>
                 <Divider sx={{ my: 2 }} />
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <InfoItem icon={<AccountCircleIcon />} label="Dirigeant" value={culte.dirigeant || 'Non specifie'} />
+                    <InfoItem icon={<AccountCircleIcon />} label="Dirigeant" value={culte.dirigeant || 'Non spécifié'} />
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <InfoItem icon={<CategoryIcon />} label="Type de culte" value={getTypeCulteLabel(culte.typeCulte)} />
                   </Grid>
                   <Grid item xs={12}>
-                    <InfoItem icon={<MenuBookIcon />} label="Predicateur" value={culte.predication || 'Non specifie'} />
+                    <InfoItem icon={<MenuBookIcon />} label="Prédicateur" value={culte.predication || 'Non spécifié'} />
                   </Grid>
                   <Grid item xs={12}>
-                    <InfoItem icon={<ChurchIcon />} label="Passage biblique" value={culte.passageBiblique || 'Non specifie'} />
+                    <InfoItem icon={<ChurchIcon />} label="Passage biblique" value={culte.passageBiblique || 'Non spécifié'} />
                   </Grid>
                   <Grid item xs={12}>
-                    <InfoItem icon={<NotesIcon />} label="Theme" value={culte.themePredication || 'Non specifie'} />
+                    <InfoItem icon={<NotesIcon />} label="Thème" value={culte.themePredication || 'Non spécifié'} />
                   </Grid>
                 </Grid>
               </Card>
@@ -283,7 +283,7 @@ export function CulteDetailView() {
                 <Card sx={{ p: 3 }}>
                   <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <NotesIcon color="primary" />
-                    Resume de la predication
+                    Résumé de la prédication
                   </Typography>
                   <Divider sx={{ my: 2 }} />
                   <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
@@ -351,7 +351,7 @@ export function CulteDetailView() {
 
               <Card sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Informations complementaires
+                  Informations complémentaires
                 </Typography>
                 <Divider sx={{ my: 1 }} />
                 <Stack spacing={1}>
@@ -359,7 +359,7 @@ export function CulteDetailView() {
                     ID: {culte.idCulte}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Cree par : Utilisateur #{culte.idUtilisateur}
+                    Créé par : Utilisateur #{culte.idUtilisateur}
                   </Typography>
                 </Stack>
               </Card>

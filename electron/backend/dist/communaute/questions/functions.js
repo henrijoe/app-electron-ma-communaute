@@ -60,7 +60,7 @@ const ajouterQuestion = (data) => {
     }));
 };
 /**
- * recupererer toute les quetions
+ * récupérer toute les quetions
  * @returns
  */
 const recupQuestion = () => {

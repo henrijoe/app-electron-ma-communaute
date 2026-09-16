@@ -82,12 +82,12 @@ const PrintEtatGlobal = () => {
   }
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    // On memorise l'element qui a ouvert le menu pour l'aligner correctement.
+    // On mémorise l'élément qui a ouvert le menu pour l'aligner correctement.
     setAnchorEl(event.currentTarget);
   };
 
   const handleClose = () => {
-    // On referme le menu a la fin de chaque action d'impression.
+    // On referme le menu à la fin de chaque action d'impression.
     setAnchorEl(null);
   };
 
@@ -101,7 +101,7 @@ const PrintEtatGlobal = () => {
   };
 
   const handleExportPdf = async () => {
-    // On ferme d'abord le menu pour garder une seule action visible a l'ecran.
+    // On ferme d'abord le menu pour garder une seule action visible à l'écran.
     handleClose();
     await exportDesktopPdf(departementRef.current, {
       title: 'Liste des départements',

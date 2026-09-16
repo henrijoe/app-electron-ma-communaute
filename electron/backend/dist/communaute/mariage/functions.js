@@ -44,7 +44,7 @@ const ajouterMariage = (data) => {
     }));
 };
 /**
- * recupererer toute les mariages
+ * récupérer toute les mariages
  * @returns
  */
 const recupMariage = () => {

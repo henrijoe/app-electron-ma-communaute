@@ -1,9 +1,9 @@
 // ============================================================================
 // verset-programme-manager.tsx
-// Ecran de gestion du calendrier de versets programmes (Parametres > Verset
+// Écran de gestion du calendrier de versets programmes (Paramètres > Verset
 // du jour > mode "Programme sur plusieurs mois"). Affiche la liste des
-// versets deja programmes, groupes par mois, et permet d'en ajouter, modifier
-// ou retirer via une boite de dialogue.
+// versets déjà programmes, groupes par mois, et permet d'en ajouter, modifier
+// ou retirer via une boîte de dialogue.
 // ============================================================================
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
@@ -53,7 +53,7 @@ const emptyForm: VerseFormState = {
   texte: '',
 };
 
-// Regroupe les versets par mois pour que la liste reste lisible meme
+// Regroupe les versets par mois pour que la liste reste lisible même
 // quand elle couvre 6 mois de programmation.
 const groupByMonth = (verses: ScheduledVerse[]) => {
   const groups = new Map<string, ScheduledVerse[]>();
@@ -108,8 +108,8 @@ export function VersetProgrammeManager({ idUtilisateur }: VersetProgrammeManager
   const todayIso = useMemo(() => formatIsoDate(new Date()), []);
 
   const openAddDialog = () => {
-    // On propose par defaut le lendemain du dernier verset programme, pour
-    // enchainer facilement plusieurs jours d'affilee sans ressaisir la date.
+    // On propose par défaut le lendemain du dernier verset programme, pour
+    // enchainer facilement plusieurs jours d'affilée sans ressaisir la date.
     const lastDate = verses.length ? verses[verses.length - 1].dateAffichage : null;
     const base = lastDate ? new Date(`${lastDate}T00:00:00`) : new Date();
     if (lastDate) {

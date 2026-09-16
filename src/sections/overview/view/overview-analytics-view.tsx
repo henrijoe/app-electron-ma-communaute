@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import Grid from '@mui/material/Unstable_Grid2';
@@ -23,7 +23,7 @@ import {
   type ScheduledVerse,
 } from 'src/data/daily-verses';
 import { DashboardContent } from 'src/layouts/dashboard';
-import { apiClient } from 'src/utils/apiClient';
+import { ApiError, apiClient, type IServerResponse } from 'src/utils/apiClient';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
@@ -47,6 +47,47 @@ const StatIcon = ({ children }: { children: React.ReactNode }) => (
     {children}
   </Box>
 );
+
+// Événements serveur qui rendent les totaux du tableau de bord obsolètes.
+const DASHBOARD_REFRESH_EVENTS = [
+  'ajouterMembre',
+  'modifierMembre',
+  'supprimerMembre',
+  'ajouterDeces',
+  'modifierDeces',
+  'supprimerDeces',
+  'ajouterCulte',
+  'modifierCulte',
+  'supprimerCulte',
+  'ajouterDepartement',
+  'modifierDepartement',
+  'supprimerDepartement',
+  'ajouterCellule',
+  'modifierCellule',
+  'supprimerCellule',
+  'ajouterGroupe',
+  'modifierGroupe',
+  'supprimerGroupe',
+  'demandeInscriptionMembreTraitee',
+];
+
+// Un module encore vide répond 400 avec "Aucun X trouvé" : c'est un compteur à zéro,
+// pas une panne réseau. On le distingue pour ne pas afficher un repli trompeur.
+const isEmptyListError = (error: unknown): boolean =>
+  error instanceof ApiError && (error.status === 404 || /^aucun/i.test(String(error.message).trim()));
+
+const countFromSettled = (
+  result: PromiseSettledResult<IServerResponse>,
+  fallbackCount: number
+): number => {
+  if (result.status === 'fulfilled') {
+    return Array.isArray(result.value?.data) ? result.value.data.length : fallbackCount;
+  }
+
+  // Seule une vraie erreur (serveur injoignable, 500...) justifie de garder
+  // la dernière valeur connue plutôt que d'annoncer zéro.
+  return isEmptyListError(result.reason) ? 0 : fallbackCount;
+};
 
 const formatDashboardDate = (date: Date) => {
   const dayName = new Intl.DateTimeFormat('fr-FR', { weekday: 'long' }).format(date);
@@ -84,13 +125,13 @@ export function OverviewAnalyticsView() {
   const dashboardDateLabel = useMemo(() => formatDashboardDate(new Date()), []);
 
   // Liste des versets programmes par l'administrateur (mode "scheduled").
-  // Chargee une fois que l'eglise connectee est connue.
+  // Chargee une fois que l'église connectée est connue.
   const [scheduledVerses, setScheduledVerses] = useState<ScheduledVerse[]>([]);
 
   useEffect(() => {
-    // "cancelled" evite d'ecrire le resultat d'une requete devenue perimee
-    // (ex: l'utilisateur change de compte pendant que la requete precedente
-    // est encore en cours) : on ignore alors sa reponse quand elle arrive.
+    // "cancelled" évite d'écrire le résultat d'une requête devenue périmée
+    // (ex: l'utilisateur change de compte pendant que la requête précédente
+    // est encore en cours) : on ignore alors sa réponse quand elle arrive.
     let cancelled = false;
 
     if (!currentUserId) {
@@ -138,7 +179,7 @@ export function OverviewAnalyticsView() {
       const todaysVerse = scheduledVerses.find((verse) => verse.dateAffichage === today);
 
       // Si rien n'est programme pour aujourd'hui, on retombe sur le verset
-      // automatique plutot que de laisser le tableau de bord vide.
+      // automatique plutôt que de laisser le tableau de bord vide.
       if (todaysVerse) {
         return { text: todaysVerse.texte, reference: todaysVerse.reference };
       }
@@ -154,89 +195,108 @@ export function OverviewAnalyticsView() {
     sessionUser?.versetDashboardTexte,
   ]);
 
-  const loadStats = useCallback(async () => {
-      try {
-        // Toutes les cartes du dashboard restent bornees au compte connecte.
-        const [membresRes, cultesRes, departementsRes, cellulesRes, groupesRes] = await Promise.all([
-          apiClient.getMembres(),
-          currentUserId ? apiClient.getCultesByUtilisateur(currentUserId) : apiClient.getCultes(),
-          currentUserId
-            ? apiClient.getDepartementsByUtilisateur(currentUserId)
-            : apiClient.getDepartements(),
-          currentUserId ? apiClient.getCellulesByUtilisateur(currentUserId) : apiClient.getCellules(),
-          currentUserId ? apiClient.getGroupesByUtilisateur(currentUserId) : apiClient.getGroupes(),
-        ]);
+  // Les compteurs du store ne servent que de repli : on les garde dans une ref pour
+  // que loadStats ne soit pas recréé à chaque changement de liste (et ne relance pas
+  // une rafale de requêtes).
+  const storeCountsRef = useRef({
+    membres: 0,
+    cultes: 0,
+    departements: 0,
+    cellules: 0,
+    groupes: 0,
+  });
 
-        const allMembres = Array.isArray(membresRes?.data)
-          ? membresRes.data
-          : listMembre;
-
-        setTotals({
-          membres: allMembres.length,
-          cultes: Array.isArray(cultesRes?.data) ? cultesRes.data.length : listCulte.length,
-          departements: Array.isArray(departementsRes?.data)
-            ? departementsRes.data.length
-            : listDepartement.length,
-          cellules: Array.isArray(cellulesRes?.data) ? cellulesRes.data.length : listCellule.length,
-          groupes: Array.isArray(groupesRes?.data) ? groupesRes.data.length : listGroupe.length,
-        });
-      } catch (error) {
-        setTotals({
-          membres: listMembre.length,
-          cultes: listCulte.length,
-          departements: listDepartement.length,
-          cellules: listCellule.length,
-          groupes: listGroupe.length,
-        });
-      }
+  useEffect(() => {
+    storeCountsRef.current = {
+      membres: listMembre.length,
+      cultes: listCulte.length,
+      departements: listDepartement.length,
+      cellules: listCellule.length,
+      groupes: listGroupe.length,
+    };
   }, [
-    currentUserId,
-    listCulte.length,
     listCellule.length,
+    listCulte.length,
     listDepartement.length,
     listGroupe.length,
-    listMembre,
+    listMembre.length,
   ]);
+
+  const loadStats = useCallback(async () => {
+    // allSettled et non all : un module vide répond 400 "Aucun X trouvé", et un seul
+    // rejet suffisait à faire retomber TOUTES les cartes sur le store, vide tant qu'un
+    // autre onglet n'avait pas été ouvert. D'où le tableau de bord à 00 au démarrage.
+    const [membresRes, cultesRes, departementsRes, cellulesRes, groupesRes] =
+      await Promise.allSettled([
+        // Toutes les cartes du dashboard restent bornées au compte connecté.
+        currentUserId ? apiClient.getMembresByUtilisateur(currentUserId) : apiClient.getMembres(),
+        currentUserId ? apiClient.getCultesByUtilisateur(currentUserId) : apiClient.getCultes(),
+        currentUserId
+          ? apiClient.getDepartementsByUtilisateur(currentUserId)
+          : apiClient.getDepartements(),
+        currentUserId ? apiClient.getCellulesByUtilisateur(currentUserId) : apiClient.getCellules(),
+        currentUserId ? apiClient.getGroupesByUtilisateur(currentUserId) : apiClient.getGroupes(),
+      ]);
+
+    const fallback = storeCountsRef.current;
+
+    setTotals({
+      membres: countFromSettled(membresRes, fallback.membres),
+      cultes: countFromSettled(cultesRes, fallback.cultes),
+      departements: countFromSettled(departementsRes, fallback.departements),
+      cellules: countFromSettled(cellulesRes, fallback.cellules),
+      groupes: countFromSettled(groupesRes, fallback.groupes),
+    });
+  }, [currentUserId]);
 
   useEffect(() => {
     loadStats();
   }, [loadStats]);
 
   useEffect(() => {
-    if (!currentUserId) {
-      return undefined;
-    }
-
+    // Sans utilisateur courant (superadmin fixe), on écoute tout : les compteurs
+    // affichés ne sont eux non plus bornés à un compte.
     const shouldRefreshForUser = (payload: any) => {
-      if (!payload?.idUtilisateur) {
+      if (!currentUserId || !payload?.idUtilisateur) {
         return true;
       }
 
       return Number(payload.idUtilisateur) === Number(currentUserId);
     };
 
+    // Une suppression multiple émet un événement par ligne : on regroupe les
+    // rafales pour ne recalculer les totaux qu'une fois.
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
     const refreshStats = (payload: any) => {
-      if (shouldRefreshForUser(payload)) {
-        loadStats();
+      if (!shouldRefreshForUser(payload)) {
+        return;
       }
+
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
+
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        loadStats();
+      }, 300);
     };
 
-    const unsubscribers = [
-      subscribeToCommunauteEvent('ajouterMembre', refreshStats),
-      subscribeToCommunauteEvent('modifierMembre', refreshStats),
-      subscribeToCommunauteEvent('supprimerMembre', refreshStats),
-      subscribeToCommunauteEvent('ajouterDeces', refreshStats),
-      subscribeToCommunauteEvent('modifierDeces', refreshStats),
-      subscribeToCommunauteEvent('supprimerDeces', refreshStats),
-    ];
+    const unsubscribers = DASHBOARD_REFRESH_EVENTS.map((eventName) =>
+      subscribeToCommunauteEvent(eventName, refreshStats)
+    );
 
     return () => {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
   }, [currentUserId, loadStats]);
 
   const totalGeneral = useMemo(
-    // On garde un total global unique pour alimenter les sous-titres et la synthese.
+    // On garde un total global unique pour alimenter les sous-titres et la synthèse.
     () => totals.membres + totals.cultes + totals.departements + totals.cellules + totals.groupes,
     [totals]
   );
@@ -362,7 +422,7 @@ export function OverviewAnalyticsView() {
 
         <Grid xs={12} sm={6} md={4} lg={2.4}>
           <AnalyticsWidgetSummary
-            title="Departements"
+            title="Départements"
             total={totals.departements}
             percent={0}
             color="warning"
@@ -372,7 +432,7 @@ export function OverviewAnalyticsView() {
               </StatIcon>
             }
             chart={{
-              categories: ['Departements'],
+              categories: ['Départements'],
               series: [totals.departements],
             }}
           />
@@ -417,13 +477,13 @@ export function OverviewAnalyticsView() {
         <Grid xs={12} md={6} lg={4}>
           {/* Cette vue sert a lire d'un coup d'oeil la repartition entre modules. */}
           <AnalyticsCurrentVisits
-            title="Repartition générale"
-            subheader={`Total enregistre : ${totalGeneral}`}
+            title="Répartition générale"
+            subheader={`Total enregistré : ${totalGeneral}`}
             chart={{
               series: [
                 { label: 'Membres', value: totals.membres },
                 { label: 'Cultes', value: totals.cultes },
-                { label: 'Departements', value: totals.departements },
+                { label: 'Départements', value: totals.departements },
                 { label: 'Cellules', value: totals.cellules },
                 { label: 'Groupes', value: totals.groupes },
               ],
@@ -434,10 +494,10 @@ export function OverviewAnalyticsView() {
         <Grid xs={12} md={6} lg={8}>
           {/* Cette serie compare toutes les entites sur une meme echelle. */}
           <AnalyticsWebsiteVisits
-            title="Vue globale de la communaute"
-            subheader={`Total enregistre : ${totalGeneral}`}
+            title="Vue globale de la communauté"
+            subheader={`Total enregistré : ${totalGeneral}`}
             chart={{
-              categories: ['Membres', 'Cultes', 'Departements', 'Cellules', 'Groupes'],
+              categories: ['Membres', 'Cultes', 'Départements', 'Cellules', 'Groupes'],
               series: [
                 {
                   name: 'Total',

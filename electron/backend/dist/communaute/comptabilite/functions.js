@@ -130,7 +130,7 @@ const restaurerComptabilite = (idComptabilite) => new Promise((resolve, reject) 
 });
 const supprimerComptabiliteDefinitivement = (idComptabilite, nomUtilisateur) => new Promise((resolve, reject) => {
     if (normalizeUsername(nomUtilisateur) !== normalizeUsername(sqliteSecurity_1.DESKTOP_SUPERADMIN_USERNAME)) {
-        reject(new Error('Seul le superadmin peut supprimer definitivement une ecriture comptable.'));
+        reject(new Error('Seul le superadmin peut supprimer définitivement une écriture comptable.'));
         return;
     }
     const sql = 'DELETE FROM comptabilite WHERE idComptabilite = ?';

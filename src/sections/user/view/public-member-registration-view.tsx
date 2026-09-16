@@ -135,7 +135,7 @@ const situationOptions = [
 const isYes = (value: string) => value === '1';
 
 // La situation "Fiancé(e)" ou "Marié(e)" est la seule ou le nom du/de la
-// partenaire a un sens : on cache le champ sinon pour ne pas demander une
+// partenaire à un sens : on cache le champ sinon pour ne pas demander une
 // information qui ne s'applique pas (célibataire, divorcé, veuf/veuve).
 const showsNomFiance = (value: string) => value === '3' || value === '5';
 
@@ -144,7 +144,7 @@ const MOIS_LABELS = [
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
 ];
 
-// Annee courante calculee une seule fois : evite de recalculer a chaque rendu
+// Année courante calculée une seule fois : évite de recalculer à chaque rendu
 // et couvre largement les dates de naissance les plus anciennes (110 ans).
 const CURRENT_YEAR = new Date().getFullYear();
 const ANNEE_OPTIONS = Array.from({ length: 110 }, (_, index) => String(CURRENT_YEAR - index));
@@ -172,7 +172,7 @@ export function PublicMemberRegistrationView() {
   const [photoError, setPhotoError] = useState('');
 
   const idUtilisateur = Number(searchParams.get('user') || searchParams.get('idUtilisateur') || 0);
-  const churchName = searchParams.get('church') || 'Ma Communaute';
+  const churchName = searchParams.get('church') || 'Ma Communauté';
 
   const stepInfo = steps[activeStep];
 
@@ -184,8 +184,8 @@ export function PublicMemberRegistrationView() {
   }), []);
 
   const setField = (name: keyof PublicMemberForm, value: string) => {
-    // Le telephone n'accepte que des chiffres : on retire le reste au lieu
-    // de refuser la saisie, pour ne pas perdre ce qui est deja tape.
+    // Le téléphone n'accepte que des chiffres : on retire le reste au lieu
+    // de refuser la saisie, pour ne pas perdre ce qui est déjà tape.
     const sanitizedValue = name === 'contactMembre' ? value.replace(/\D/g, '') : value;
     const nextForm: PublicMemberForm = { ...form, [name]: sanitizedValue };
 
@@ -357,10 +357,10 @@ export function PublicMemberRegistrationView() {
     }
   };
 
-  // Champ date en 3 listes (Jour / Mois / Année) plutot qu'un input natif type="date" :
+  // Champ date en 3 listes (Jour / Mois / Année) plutôt qu'un input natif type="date" :
   // sur mobile, le calendrier natif oblige a naviguer mois par mois pour atteindre une
-  // annee ancienne (ex. une date de naissance en 1995), ce qui est tres penible. Ici,
-  // l'annee se choisit directement dans une liste deroulante.
+  // année ancienne (ex. une date de naissance en 1995), ce qui est très penible. Ici,
+  // l'année se choisit directement dans une liste deroulante.
   const renderDateField = (name: keyof PublicMemberForm, label: string) => {
     const { day, month, year } = parseIsoDate(form[name]);
     const maxDay = getDaysInMonth(year, month);

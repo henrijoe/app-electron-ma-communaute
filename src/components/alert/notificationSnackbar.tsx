@@ -8,7 +8,7 @@ const normalizeNotificationMessage = (message: string): string => {
   const rawMessage = String(message || '').trim();
 
   if (!rawMessage) {
-    return 'Une erreur est survenue. Reessayez dans quelques instants.';
+    return 'Une erreur est survenue. Réessayez dans quelques instants.';
   }
 
   const cleanedMessage = rawMessage
@@ -17,7 +17,7 @@ const normalizeNotificationMessage = (message: string): string => {
     .trim();
 
   if (/failed to fetch|networkerror|load failed/i.test(cleanedMessage)) {
-    return "Impossible de joindre le serveur. Verifiez que l'application serveur est lancee, que vous etes sur le meme reseau et que le pare-feu autorise le port 49300.";
+    return "Impossible de joindre le serveur. Vérifiez que l'application serveur est lancée, que vous êtes sur le même réseau et que le pare-feu autorise le port 49300.";
   }
 
   const httpStatusMatch = cleanedMessage.match(/HTTP error!\s*status:\s*(\d+)/i);
@@ -26,11 +26,11 @@ const normalizeNotificationMessage = (message: string): string => {
     const status = Number(httpStatusMatch[1]);
 
     if (status === 404) {
-      return "Le service demande est introuvable. Verifiez que l'adresse serveur pointe vers le port 49300.";
+      return "Le service demande est introuvable. Vérifiez que l'adresse serveur pointe vers le port 49300.";
     }
 
     if (status === 401) {
-      return 'Votre session a expire ou vos identifiants sont incorrects. Reconnectez-vous pour continuer.';
+      return 'Votre session a expiré ou vos identifiants sont incorrects. Reconnectez-vous pour continuer.';
     }
 
     if (status === 403) {
@@ -38,18 +38,18 @@ const normalizeNotificationMessage = (message: string): string => {
     }
 
     if (status >= 500) {
-      return 'Le serveur a rencontre une erreur. Reessayez dans quelques instants.';
+      return 'Le serveur a rencontré une erreur. Réessayez dans quelques instants.';
     }
 
-    return "La demande n'a pas pu etre traitee. Verifiez les informations puis reessayez.";
+    return "La demande n'a pas pu être traitée. Vérifiez les informations puis réessayez.";
   }
 
   if (/identifiants invalides|invalid credentials|mot de passe incorrect|utilisateur introuvable/i.test(cleanedMessage)) {
-    return "Nom utilisateur ou mot de passe incorrect. Verifiez vos informations puis reessayez.";
+    return "Nom utilisateur ou mot de passe incorrect. Vérifiez vos informations puis réessayez.";
   }
 
   if (/session expiree|session expirée/i.test(cleanedMessage)) {
-    return 'Votre session a expire. Reconnectez-vous pour continuer.';
+    return 'Votre session a expiré. Reconnectez-vous pour continuer.';
   }
 
   return cleanedMessage;

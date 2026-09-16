@@ -12,11 +12,11 @@ const sqliteDB_1 = __importDefault(require("./sqliteDB"));
 //     host: 'localhost',
 //     // user: 'qonu5103',
 //     // password: 'root',
-//     // database: 'qonu5103_ma-communaute',
+//     // database: 'qonu5103_ma-communauté',
 //     // en local
 //     user: 'root',
 //     password: 'root',
-//     database: 'ma-communaute',
+//     database: 'ma-communauté',
 // })
 const mysqlDB = mysql.createPool({
     host: process.env.DB_HOST,

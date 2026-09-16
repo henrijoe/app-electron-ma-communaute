@@ -25,11 +25,29 @@ function hasOnlyProperties(obj, properties) {
     return Object.keys(obj).length === properties.length &&
         properties.every(prop => Object.keys(obj).includes(prop));
 }
+// Une erreur technique porte un code moteur (SQLITE_*, ER_*, ECONNREFUSED...) :
+// son message n'a aucun sens pour l'utilisateur et reste masqué en production.
+const isTechnicalError = (error) => Boolean(error === null || error === void 0 ? void 0 : error.code) ||
+    /^(SQLITE_|ER_|ECONN|ENOENT|EADDR|EPERM|EACCES)/i.test(String((error === null || error === void 0 ? void 0 : error.message) || ""));
+// Normalise toute erreur en { name, message } exploitable par le front.
+// Attention : les propriétés d'une instance Error ne sont pas énumérables, donc
+// `JSON.stringify(new Error("..."))` vaut "{}" ; sans cette normalisation le
+// client ne recevait aucun message et retombait sur le texte générique du code HTTP.
 const errorMsg = (response) => {
-    const error = { error: response };
-    if (error.hasOwnProperty("error") && hasOnlyProperties(error.error, ['name', 'message']))
-        return error.error;
-    return (exports.isProd ? exports.msg : error);
+    if (response instanceof Error) {
+        if (exports.isProd && isTechnicalError(response))
+            return exports.msg;
+        return { name: response.name, message: response.message };
+    }
+    // Forme déjà normalisée par les couches métier : reject({ name, message }).
+    if (response && typeof response === "object" && hasOnlyProperties(response, ["name", "message"])) {
+        return response;
+    }
+    if (typeof response === "string" && response.trim()) {
+        return { name: "ERROR", message: response };
+    }
+    // Forme inattendue : on ne devine pas, on masque le détail en production.
+    return exports.isProd ? exports.msg : { error: response };
 };
 exports.errorMsg = errorMsg;
 const fs = require("fs");

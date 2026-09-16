@@ -32,9 +32,9 @@ export interface ICulte {
 // Données pour les sélections (à adapter selon vos données réelles)
 export const typeCulteOptions: IDataChoice[] = [
   { value: 1, label: 'Culte du dimanche' },
-  { value: 2, label: 'Reunion de mardi' },
-  { value: 3, label: 'Reunion de jeudi' },
-  { value: 4, label: 'Reunion de jeunesse' },
+  { value: 2, label: 'Réunion de mardi' },
+  { value: 3, label: 'Réunion de jeudi' },
+  { value: 4, label: 'Réunion de jeunesse' },
   { value: 5, label: 'Culte spécial' },
 ];
 

@@ -234,7 +234,7 @@ export function ComptabiliteView() {
       const data = Array.isArray(response?.data) ? response.data.map(normalizeComptabilite) : [];
       dispatch(setListComptabilite(data));
     } catch (error: any) {
-      showNotificationRef.current(error?.message || 'Impossible de charger la comptabilite', 'error');
+      showNotificationRef.current(error?.message || 'Impossible de charger la comptabilité', 'error');
     } finally {
       dispatch(setLoadingComptabilite(false));
     }
@@ -252,7 +252,7 @@ export function ComptabiliteView() {
       const data = Array.isArray(response?.data) ? response.data.map(normalizeComptabilite) : [];
       setDeletedItems(data);
     } catch (error: any) {
-      showNotificationRef.current(error?.message || 'Impossible de charger les ecritures supprimees', 'error');
+      showNotificationRef.current(error?.message || 'Impossible de charger les écritures supprimées', 'error');
     } finally {
       setLoadingDeletedComptabilite(false);
     }
@@ -288,35 +288,35 @@ export function ComptabiliteView() {
           return;
         }
         refreshActiveOnly();
-        showNotificationRef.current('Une nouvelle écriture a ete synchronisee.', 'info');
+        showNotificationRef.current('Une nouvelle écriture a été synchronisée.', 'info');
       }),
       subscribeToCommunauteEvent('modifierComptabilite', (payload) => {
         if (Number(payload?.idUtilisateur) !== currentUserId) {
           return;
         }
         refreshActiveOnly();
-        showNotificationRef.current('Une écriture comptable a ete mise a jour.', 'info');
+        showNotificationRef.current('Une écriture comptable a été mise à jour.', 'info');
       }),
       subscribeToCommunauteEvent('supprimerComptabilite', (payload) => {
         if (Number(payload?.idUtilisateur) !== currentUserId) {
           return;
         }
         refreshAll();
-        showNotificationRef.current('Une écriture a ete archivee.', 'info');
+        showNotificationRef.current('Une écriture a été archivée.', 'info');
       }),
       subscribeToCommunauteEvent('restaurerComptabilite', (payload) => {
         if (Number(payload?.idUtilisateur) !== currentUserId) {
           return;
         }
         refreshAll();
-        showNotificationRef.current('Une écriture archivee a ete restauree.', 'info');
+        showNotificationRef.current('Une écriture archivée a été restaurée.', 'info');
       }),
       subscribeToCommunauteEvent('supprimerComptabiliteDefinitivement', (payload) => {
         if (Number(payload?.idUtilisateur) !== currentUserId) {
           return;
         }
         refreshAll();
-        showNotificationRef.current('Une écriture archivee a ete supprimee definitivement.', 'info');
+        showNotificationRef.current('Une écriture archivée a été supprimée définitivement.', 'info');
       }),
     ];
 
@@ -339,7 +339,7 @@ export function ComptabiliteView() {
     });
   }, [filterType, listComptabilite, search]);
 
-  const activeFilterLabel = filterType === 'all' ? 'Toutes les ecritures' : filterType === 'entree' ? 'Entrees seulement' : 'Sorties seulement';
+  const activeFilterLabel = filterType === 'all' ? 'Toutes les écritures' : filterType === 'entree' ? 'Entrées seulement' : 'Sorties seulement';
 
   const totals = useMemo(() => {
     const entree = filteredItems.reduce((sum: number, item: IComptabiliteItem) => sum + parseNumber(item.entreeComptabilite), 0);
@@ -383,12 +383,12 @@ export function ComptabiliteView() {
     if (!canManageComptabilite) return;
 
     if (!currentUserId) {
-      showNotificationRef.current('Utilisateur non trouve', 'warning');
+      showNotificationRef.current('Utilisateur non trouvé', 'warning');
       return;
     }
 
     if (!currentItem.nomComptabilite.trim()) {
-      showNotificationRef.current('Le libelle est obligatoire', 'warning');
+      showNotificationRef.current('Le libellé est obligatoire', 'warning');
       return;
     }
 
@@ -399,7 +399,7 @@ export function ComptabiliteView() {
 
     const payload = buildPayload(currentItem, currentUserId);
     if (parseNumber(currentItem.montantComptabilite) <= 0) {
-      showNotificationRef.current(currentItem.typeComptabilite === 'entree' ? 'Renseigne le montant de l\'entree' : 'Renseigne le montant de la sortie', 'warning');
+      showNotificationRef.current(currentItem.typeComptabilite === 'entree' ? 'Renseigne le montant de l\'entrée' : 'Renseigne le montant de la sortie', 'warning');
       return;
     }
 
@@ -411,7 +411,7 @@ export function ComptabiliteView() {
 
       const normalized = normalizeComptabilite(Array.isArray(response?.data) ? response.data[0] : response?.data);
       dispatch(upsertComptabilite(normalized));
-      showNotificationRef.current(currentItem.idComptabilite ? 'Ecriture mise a jour' : 'Ecriture enregistree', 'success');
+      showNotificationRef.current(currentItem.idComptabilite ? 'Écriture mise à jour' : 'Écriture enregistrée', 'success');
       handleCloseDialog();
       fetchComptabilite();
     } catch (error: any) {
@@ -437,10 +437,10 @@ export function ComptabiliteView() {
       await apiClient.deleteComptabilite(
         itemToDelete.idComptabilite,
         itemToDelete.idUtilisateur || currentUserId || undefined,
-        'Archivee depuis la comptabilite'
+        'Archivée depuis la comptabilité'
       );
       dispatch(removeComptabilite(itemToDelete.idComptabilite));
-      showNotificationRef.current('Ecriture archivee. Elle reste consultable par le superadmin.', 'success');
+      showNotificationRef.current('Écriture archivée. Elle reste consultable par le superadmin.', 'success');
       setDeleteDialogOpen(false);
       setItemToDelete(null);
       fetchComptabilite();
@@ -459,7 +459,7 @@ export function ComptabiliteView() {
 
     try {
       await apiClient.restoreComptabilite(itemToRestore.idComptabilite);
-      showNotificationRef.current('Ecriture restauree avec succes.', 'success');
+      showNotificationRef.current('Écriture restaurée avec succès.', 'success');
       setRestoreDialogOpen(false);
       setItemToRestore(null);
       fetchComptabilite();
@@ -476,7 +476,7 @@ export function ComptabiliteView() {
 
     try {
       await apiClient.deleteComptabilitePermanently(itemToDeletePermanently.idComptabilite, currentUsername);
-      showNotificationRef.current('Ecriture supprimee definitivement.', 'success');
+      showNotificationRef.current('Écriture supprimée définitivement.', 'success');
       setPermanentDeleteDialogOpen(false);
       setItemToDeletePermanently(null);
       fetchDeletedComptabilite();
@@ -528,7 +528,7 @@ export function ComptabiliteView() {
         >
           {[
             {
-              title: 'Entrees',
+              title: 'Entrées',
               value: currencyFormatter.format(totals.entree),
               icon: <ArrowDownwardRounded />,
               color: theme.palette.success.main,
@@ -578,7 +578,7 @@ export function ComptabiliteView() {
               fullWidth
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Rechercher un libelle, une note ou une date..."
+              placeholder="Rechercher un libellé, une note ou une date..."
             />
             <TextField
               select
@@ -641,7 +641,7 @@ export function ComptabiliteView() {
 
                       <Chip
                         size="small"
-                        label={isEntree ? 'Entree' : 'Sortie'}
+                        label={isEntree ? 'Entrée' : 'Sortie'}
                         color={isEntree ? 'success' : 'error'}
                         variant="outlined"
                       />
@@ -685,7 +685,7 @@ export function ComptabiliteView() {
               <Card sx={{ p: 4, borderRadius: 3, textAlign: 'center' }}>
                 <Typography variant="h6">Aucune écriture pour le moment</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                  Commence avec une recette, une depense ou une note de tresorerie.
+                  Commence avec une recette, une dépense ou une note de trésorerie.
                 </Typography>
               </Card>
             )}
@@ -698,7 +698,7 @@ export function ComptabiliteView() {
               <TableHead>
                 <TableRow>
                   <TableCell>Date</TableCell>
-                  <TableCell>Libelle</TableCell>
+                  <TableCell>Libellé</TableCell>
                   <TableCell>Type</TableCell>
                   <TableCell align="right">Entrée</TableCell>
                   <TableCell align="right">Sortie</TableCell>
@@ -731,7 +731,7 @@ export function ComptabiliteView() {
                         </Stack>
                       </TableCell>
                       <TableCell>
-                        <Chip size="small" label={isEntree ? 'Entree' : 'Sortie'} />
+                        <Chip size="small" label={isEntree ? 'Entrée' : 'Sortie'} />
                       </TableCell>
                       <TableCell align="right">{item.entreeComptabilite > 0 ? currencyFormatter.format(item.entreeComptabilite) : '--'}</TableCell>
                       <TableCell align="right">{item.sortieComptabilite > 0 ? currencyFormatter.format(item.sortieComptabilite) : '--'}</TableCell>
@@ -770,9 +770,9 @@ export function ComptabiliteView() {
           <Card sx={{ p: 2.5, borderRadius: 4 }}>
             <Stack spacing={2}>
               <Box>
-                <Typography variant="h6">Ecritures supprimees</Typography>
+                <Typography variant="h6">Écritures supprimées</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Archive comptable reservee au superadmin. Les lignes supprimées restent consultables ici avec leur trace.
+                  Archive comptable réservée au superadmin. Les lignes supprimées restent consultables ici avec leur trace.
                 </Typography>
               </Box>
 
@@ -794,7 +794,7 @@ export function ComptabiliteView() {
                               {item.dateComptabilite || '--'}
                             </Typography>
                           </Box>
-                          <Chip size="small" color={item.typeComptabilite === 'entree' ? 'success' : 'error'} label={item.typeComptabilite === 'entree' ? 'Entree' : 'Sortie'} />
+                          <Chip size="small" color={item.typeComptabilite === 'entree' ? 'success' : 'error'} label={item.typeComptabilite === 'entree' ? 'Entrée' : 'Sortie'} />
                         </Stack>
 
                         <Stack direction="row" justifyContent="space-between" spacing={2}>
@@ -827,7 +827,7 @@ export function ComptabiliteView() {
                         </Stack>
 
                         <Typography variant="body2" color="text.secondary">
-                          Supprime le {item.dateSuppressionComptabilite || '--'} par {item.nomUtilisateurSuppression || '--'}
+                          Supprimé le {item.dateSuppressionComptabilite || '--'} par {item.nomUtilisateurSuppression || '--'}
                         </Typography>
                         <Typography variant="body2">{item.motifSuppressionComptabilite || '--'}</Typography>
                       </Stack>
@@ -836,9 +836,9 @@ export function ComptabiliteView() {
 
                   {!loadingDeletedComptabilite && deletedItems.length === 0 && (
                     <Card variant="outlined" sx={{ p: 3, borderRadius: 3, textAlign: 'center' }}>
-                      <Typography variant="subtitle1">Aucune écriture archivee</Typography>
+                      <Typography variant="subtitle1">Aucune écriture archivée</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                        Rien à controler pour le moment dans la corbeille comptable.
+                        Rien à contrôler pour le moment dans la corbeille comptable.
                       </Typography>
                     </Card>
                   )}
@@ -850,10 +850,10 @@ export function ComptabiliteView() {
                   <TableHead>
                     <TableRow>
                       <TableCell>Date</TableCell>
-                      <TableCell>Libelle</TableCell>
+                      <TableCell>Libellé</TableCell>
                       <TableCell>Type</TableCell>
                       <TableCell align="right">Montant</TableCell>
-                      <TableCell>Supprime le</TableCell>
+                      <TableCell>Supprimé le</TableCell>
                       <TableCell>Supprimé par</TableCell>
                       <TableCell>Motif</TableCell>
                       {canManageComptabilite && <TableCell align="right">Actions</TableCell>}
@@ -865,7 +865,7 @@ export function ComptabiliteView() {
                         <TableCell>{item.dateComptabilite || '--'}</TableCell>
                         <TableCell>{item.nomComptabilite}</TableCell>
                         <TableCell>
-                          <Chip size="small" color={item.typeComptabilite === 'entree' ? 'success' : 'error'} label={item.typeComptabilite === 'entree' ? 'Entree' : 'Sortie'} />
+                          <Chip size="small" color={item.typeComptabilite === 'entree' ? 'success' : 'error'} label={item.typeComptabilite === 'entree' ? 'Entrée' : 'Sortie'} />
                         </TableCell>
                         <TableCell align="right">{currencyFormatter.format(item.montantComptabilite || 0)}</TableCell>
                         <TableCell>{item.dateSuppressionComptabilite || '--'}</TableCell>
@@ -904,7 +904,7 @@ export function ComptabiliteView() {
                           <Stack spacing={1} alignItems="center" sx={{ py: 4 }}>
                             <Typography variant="subtitle1">Aucune écriture archivée</Typography>
                             <Typography variant="body2" color="text.secondary">
-                              Rien à controler pour le moment dans la corbeille comptable.
+                              Rien à contrôler pour le moment dans la corbeille comptable.
                             </Typography>
                           </Stack>
                         </TableCell>
@@ -925,7 +925,7 @@ export function ComptabiliteView() {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Libelle"
+                label="Libellé"
                 value={currentItem.nomComptabilite}
                 onChange={(event) => handleChange('nomComptabilite', event.target.value)}
               />
@@ -938,7 +938,7 @@ export function ComptabiliteView() {
                 value={currentItem.typeComptabilite}
                 onChange={(event) => handleChange('typeComptabilite', event.target.value)}
               >
-                <MenuItem value="entree">Entree</MenuItem>
+                <MenuItem value="entree">Entrée</MenuItem>
                 <MenuItem value="sortie">Sortie</MenuItem>
               </TextField>
             </Grid>
@@ -955,7 +955,7 @@ export function ComptabiliteView() {
               <TextField
                 fullWidth
                 type="number"
-                label={currentItem.typeComptabilite === 'entree' ? 'Montant de l\'entree' : 'Montant de la sortie'}
+                label={currentItem.typeComptabilite === 'entree' ? 'Montant de l\'entrée' : 'Montant de la sortie'}
                 value={currentItem.montantComptabilite || ''}
                 onChange={(event) => handleChange('montantComptabilite', event.target.value)}
               />
@@ -986,7 +986,7 @@ export function ComptabiliteView() {
         }}
         onConfirm={handleDelete}
         title="Archiver cette écriture"
-        message="Cette écriture disparaitra de la liste active, mais restera conservée pour superadmin."
+        message="Cette écriture disparaîtra de la liste active, mais restera conservée pour superadmin."
         confirmText="Archiver"
       />
 
@@ -998,7 +998,7 @@ export function ComptabiliteView() {
         }}
         onConfirm={handleRestore}
         title="Restaurer cette écriture"
-        message="Cette écriture va revenir dans la liste active de la comptabilite."
+        message="Cette écriture va revenir dans la liste active de la comptabilité."
         confirmText="Restaurer"
       />
 
@@ -1009,9 +1009,9 @@ export function ComptabiliteView() {
           setItemToDeletePermanently(null);
         }}
         onConfirm={handlePermanentDelete}
-        title="Supprimer definitivement cette écriture"
+        title="Supprimer définitivement cette écriture"
         message="Cette suppression est irréversible. L'écriture sera retirée même de l'archive comptable."
-        confirmText="Supprimer definitivement"
+        confirmText="Supprimer définitivement"
       />
     </DashboardContent>
   );

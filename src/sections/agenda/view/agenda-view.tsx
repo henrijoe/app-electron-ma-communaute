@@ -120,7 +120,7 @@ const colorOptions = [
   { label: 'Indigo', value: '#6366f1' },
   { label: 'Gris', value: '#64748b' },
   { label: 'Rouge', value: '#ef4444' },
-  { label: 'Bleu fonce', value: '#2563eb' },
+  { label: 'Bleu foncé', value: '#2563eb' },
 ];
 const primaryActionButtonSx = {
   minWidth: 'auto',
@@ -304,7 +304,7 @@ export function AgendaView() {
   const notifiedReminderKeys = useRef<Set<string>>(new Set());
 
   // Onglet actif de la page : le calendrier habituel, ou le planning "Programme
-  // église" (qui dirige/preche/fait les annonces a chaque culte).
+  // église" (qui dirige/preche/fait les annonces à chaque culte).
   const [activeTab, setActiveTab] = useState<'calendrier' | 'programme'>('calendrier');
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [viewMode, setViewMode] = useState<AgendaViewMode>('month');

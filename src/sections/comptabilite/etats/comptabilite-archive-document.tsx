@@ -71,7 +71,7 @@ export function ComptabiliteArchiveDocument({
                   <TableRow key={item.idComptabilite || `${item.nomComptabilite}-${item.dateComptabilite}`}>
                     <TableCell>{formatComptabiliteDate(item.dateComptabilite)}</TableCell>
                     <TableCell>{item.nomComptabilite || '--'}</TableCell>
-                    <TableCell>{item.typeComptabilite === 'entree' ? 'Entree' : 'Sortie'}</TableCell>
+                    <TableCell>{item.typeComptabilite === 'entree' ? 'Entrée' : 'Sortie'}</TableCell>
                     <TableCell align="right">
                       {comptabiliteCurrencyFormatter.format(montant)}
                     </TableCell>

@@ -101,7 +101,7 @@ const modifierMembre = (data) => {
                 photoFileName = `membre_${data.idMembre}.jpg`;
                 const filePath = (0, functions_2.getAvatarsPath)(photoFileName);
                 yield (0, functions_2.saveFileToBase64)(filePath, base64Data);
-                console.log(`Photo sauvegard�e: ${photoFileName}`);
+                console.log(`Photo sauvegardée: ${photoFileName}`);
             }
             const updateData = Object.assign(Object.assign({}, data), { photoMembre: photoFileName });
             yield functions_1.default.modifierMembre(updateData);
@@ -110,7 +110,7 @@ const modifierMembre = (data) => {
                 resolve(membreMisAJour[0]);
             }
             else {
-                reject(new Error("Membre non trouv� apr�s modification"));
+                reject(new Error("Membre non trouvé après modification"));
             }
         }
         catch (error) {

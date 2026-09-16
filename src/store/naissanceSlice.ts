@@ -29,7 +29,7 @@ export const naissance:any = {
   datePresentationNaissance: "",
 }
 
-// initialiation des states
+// initialisation des states
 const initialStates: INaissanceSlice = {
   dataNaissance: [],
   dataFilterNaissance: [],
@@ -43,7 +43,7 @@ export const NaissanceSlice = createSlice({
   name: 'naissance',
   initialState: initialStates,
   reducers: {
-    // fonction pour ajouter un Departement
+    // fonction pour ajouter un Département
     addNaissance: (state, action: PayloadAction<INaissance>) => {
       state.dataNaissance.unshift(action.payload)
     },
@@ -57,7 +57,7 @@ export const NaissanceSlice = createSlice({
       state.listNaissance.unshift(action.payload)
     },
 
-    // fonction pour suprimer un Departement
+    // fonction pour supprimer un Département
     deleteNaissance: (state, action) => {
       state.dataNaissance = state.dataNaissance.filter(
         (item) => item.idNaissance !== action.payload
@@ -67,16 +67,16 @@ export const NaissanceSlice = createSlice({
       );
     },
     
-    // fonction pour rechecher un Departement dans le tableau
+    // fonction pour rechercher un Département dans le tableau
     setListFilterNaissance: (state, action) => {
       state.dataFilterNaissance = action.payload
     },
-    // fonction pour voir les detail de chaque Departement enregister
+    // fonction pour voir les détail de chaque Département enregistrer
     setDetailItem: (state, action) => {
       state.detailItem = action.payload
     },
     
-    // fonction pour modifier chaque Departement enregister
+    // fonction pour modifier chaque Département enregistrer
     setDataModifiesNaissance: (state, action) => {
       state.dataNaissance = state.dataNaissance?.map((item: any) =>
       item.idNaissance === action.payload.idNaissance ? action.payload : item

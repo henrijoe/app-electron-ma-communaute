@@ -33,13 +33,13 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
         ? {
             eyebrow: "Création d'église",
             title: 'Créez votre espace église en quelques minutes.',
-            description: 'Inscription simple, prise en main immediate pour votre communaute.',
+            description: 'Inscription simple, prise en main immédiate pour votre communauté.',
           }
         : {
-            eyebrow: 'Connexion à votre communaute',
+            eyebrow: 'Connexion à votre communauté',
             title: 'Retrouvez votre communauté et vos membres.',
             description:
-              'Connectez-vous rapidement pour acceder aux membres, departements, cultes.',
+              'Connectez-vous rapidement pour accéder aux membres, départements, cultes.',
           },
     [isRegisterPage]
   );
@@ -129,7 +129,7 @@ export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
                   <Box
                     component="img"
                     src={logoUrl}
-                    alt="Ma Communaute"
+                    alt="Ma Communauté"
                     sx={{ width: 56, height: 56, objectFit: 'contain' }}
                   />
                   <Typography variant="h3" sx={{ fontSize: 28, color: '#0f172a', fontWeight: 800 }}>

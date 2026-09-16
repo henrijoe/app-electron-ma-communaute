@@ -24,8 +24,8 @@ export function FicheCelluleVierge() {
             { label: 'Contact responsable cellule', size: 4 },
             { label: 'Responsable de visite', size: 8 },
             { label: 'Contact responsable visite', size: 4 },
-            { label: 'Adjoint / hote de cellule', size: 8 },
-            { label: 'Contact adjoint / hote', size: 4 },
+            { label: 'Adjoint / hôte de cellule', size: 8 },
+            { label: 'Contact adjoint / hôte', size: 4 },
           ],
         },
         {

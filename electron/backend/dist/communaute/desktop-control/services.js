@@ -44,12 +44,12 @@ const toUint8Array = (value) => Uint8Array.from(value);
 const buildExpirationDate = (days) => {
     // On part toujours de la date courante au moment de l'appel.
     const result = new Date();
-    // On impose au minimum 1 jour pour eviter une expiration immediate par erreur.
+    // On impose au minimum 1 jour pour éviter une expiration immédiate par erreur.
     result.setDate(result.getDate() + Math.max(1, days));
     // On retourne une date ISO pour faciliter le stockage et les comparaisons.
     return result.toISOString();
 };
-// Ajoute un forfait a l'expiration existante si elle est encore active, sinon repart d'aujourd'hui.
+// Ajoute un forfait à l'expiration existante si elle est encore active, sinon repart d'aujourd'hui.
 const buildExtendedExpirationDate = (currentExpiresAt, days) => {
     const currentExpirationTime = new Date(currentExpiresAt).getTime();
     const baseDate = currentExpiresAt && !Number.isNaN(currentExpirationTime) && currentExpirationTime > Date.now()
@@ -121,18 +121,18 @@ const getMachineBindingStatus = (config) => {
         boundAt: config.machineBinding.boundAt || null,
     };
 };
-// Normalise un nom utilisateur pour les comparaisons de securite.
+// Normalise un nom utilisateur pour les comparaisons de sécurité.
 const normalizeUsername = (value) => 
-// On vide les espaces et on passe en minuscule pour comparer toujours le meme format.
+// On vide les espaces et on passe en minuscule pour comparer toujours le même format.
 (value || "").trim().toLowerCase();
 // Normalise un code saisi par un client avant comparaison.
 const normalizeUnlockCode = (value) => (value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-// Hash irreversible d'un code de deblocage local.
+// Hash irreversible d'un code de déblocage local.
 const hashUnlockCode = (code) => crypto_1.default
     .createHmac("sha256", sqliteSecurity_1.SQLITE_REFERENCE_PASSWORD)
     .update(normalizeUnlockCode(code))
     .digest("hex");
-// Genere un segment lisible sans caracteres ambigus.
+// Génère un segment lisible sans caractères ambigus.
 const generateUnlockCodeSegment = (length = 4) => {
     let segment = "";
     for (let index = 0; index < length; index += 1) {
@@ -140,9 +140,9 @@ const generateUnlockCodeSegment = (length = 4) => {
     }
     return segment;
 };
-// Genere un code imprimable pour le client.
+// Génère un code imprimable pour le client.
 const generateUnlockCodeValue = () => `MC-${generateUnlockCodeSegment()}-${generateUnlockCodeSegment()}-${generateUnlockCodeSegment()}-${generateUnlockCodeSegment()}`;
-// Construit le pack complet de codes de deblocage offline.
+// Construit le pack complet de codes de déblocage offline.
 const buildDesktopUnlockCodePack = () => {
     const usedHashes = new Set();
     const records = [];
@@ -210,7 +210,7 @@ const normalizePendingPlainUnlockCodes = (codes) => {
     }))
         .filter((code) => code.id && normalizeUnlockCode(code.code) && code.durationDays > 0);
 };
-// Resume l'etat du stock de codes pour l'administration.
+// Résumé l'état du stock de codes pour l'administration.
 const getUnlockCodeStats = (config) => {
     const total = config.unlockCodes.length;
     const used = config.unlockCodes.filter((code) => Boolean(code.usedAt)).length;
@@ -221,11 +221,11 @@ const getUnlockCodeStats = (config) => {
         pendingExport: config.pendingPlainUnlockCodes.length,
     };
 };
-// Chiffre la configuration de licence avant de l'ecrire localement.
+// Chiffre la configuration de licence avant de l'écrire localement.
 const encryptDesktopLicenseConfig = (config) => {
-    // Chaque ecriture genere un IV aleatoire pour eviter un chiffrement trop previsible.
+    // Chaque écriture génère un IV aleatoire pour éviter un chiffrement trop prévisible.
     const iv = crypto_1.default.randomBytes(16);
-    // On cree le moteur de chiffrement avec l'algorithme choisi et la cle derivee du secret local.
+    // On cree le moteur de chiffrement avec l'algorithme choisi et la clé derivee du secret local.
     const cipher = crypto_1.default.createCipheriv(DESKTOP_LICENSE_ALGORITHM, toUint8Array(DESKTOP_LICENSE_KEY), toUint8Array(iv));
     // On serialise la configuration pour pouvoir la chiffrer comme un simple texte JSON.
     const serializedConfig = JSON.stringify(config);
@@ -234,54 +234,54 @@ const encryptDesktopLicenseConfig = (config) => {
         cipher.update(serializedConfig, "utf8"),
         cipher.final(),
     ]);
-    // On stocke l'IV et le contenu chiffre en hex afin de les ecrire facilement dans un fichier texte.
+    // On stocke l'IV et le contenu chiffre en hex afin de les écrire facilement dans un fichier texte.
     return JSON.stringify({
         iv: iv.toString("hex"),
         content: encryptedContent.toString("hex"),
     });
 };
-// Dechiffre le fichier local de licence pour retrouver les donnees internes.
+// Déchiffre le fichier local de licence pour retrouver les données internes.
 const decryptDesktopLicenseConfig = (rawContent) => {
     // On lit d'abord l'enveloppe JSON qui contient l'IV et le contenu chiffre.
     const parsedContent = JSON.parse(rawContent);
-    // On recree le moteur de dechiffrement avec le meme algorithme, la meme cle et l'IV stocke.
+    // On recrée le moteur de dechiffrement avec le même algorithme, la même clé et l'IV stocke.
     const decipher = crypto_1.default.createDecipheriv(DESKTOP_LICENSE_ALGORITHM, toUint8Array(DESKTOP_LICENSE_KEY), toUint8Array(Buffer.from(parsedContent.iv, "hex")));
-    // On dechiffre le contenu puis on le retransforme en texte JSON lisible.
+    // On déchiffre le contenu puis on le retransforme en texte JSON lisible.
     const decryptedContent = Buffer.concat([
         decipher.update(toUint8Array(Buffer.from(parsedContent.content, "hex"))),
         decipher.final(),
     ]).toString("utf8");
-    // On retourne enfin la configuration metier telle qu'elle avait ete stockee.
+    // On retourne enfin la configuration métier telle qu'elle avait été stockée.
     return JSON.parse(decryptedContent);
 };
-// Verifie si les identifiants recus correspondent au createur de l'application fixe du desktop.
+// Vérifie si les identifiants recus correspondent au créateur de l'application fixe du desktop.
 const isFixedDesktopSuperAdminCredentials = (nomUtilisateur, password) => {
-    // On compare le nom normalise au createur de l'application configure en dur dans le projet.
+    // On compare le nom normalise au créateur de l'application configure en dur dans le projet.
     const isMatchingUsername = normalizeUsername(nomUtilisateur) === normalizeUsername(sqliteSecurity_1.DESKTOP_SUPERADMIN_USERNAME);
-    // Le mot de passe est compare tel quel car il sert ici de cle d'acces speciale.
+    // Le mot de passe est compare tel quel car il sert ici de clé d'accès spéciale.
     const isMatchingPassword = (password || "") === sqliteSecurity_1.DESKTOP_SUPERADMIN_PASSWORD;
-    // Les deux informations doivent correspondre pour reconnaitre le createur de l'application fixe.
+    // Les deux informations doivent correspondre pour reconnaitre le créateur de l'application fixe.
     return isMatchingUsername && isMatchingPassword;
 };
 exports.isFixedDesktopSuperAdminCredentials = isFixedDesktopSuperAdminCredentials;
-// Cree la configuration de licence minimale si aucun fichier n'existe encore.
+// Crée la configuration de licence minimale si aucun fichier n'existe encore.
 const buildDefaultDesktopLicense = (seedSuperAdminUsername) => {
     const unlockCodePack = buildDesktopUnlockCodePack();
     const now = new Date().toISOString();
     return {
-        // La date de creation sert de point de depart historique pour la licence locale.
+        // La date de création sert de point de depart historique pour la licence locale.
         createdAt: now,
-        // L'expiration est automatiquement calculee sur la duree standard du desktop.
+        // L'expiration est automatiquement calculée sur la duree standard du desktop.
         expiresAt: buildExpirationDate(DEFAULT_DESKTOP_TRIAL_DAYS),
-        // Par defaut, on ne bloque pas manuellement une licence nouvellement creee.
+        // Par défaut, on ne bloque pas manuellement une licence nouvellement créée.
         manuallyBlocked: false,
-        // Ce message sera reutilise si un blocage manuel est active plus tard.
-        blockMessage: "Acces desktop temporairement bloque. Veuillez contacter le createur de l'application pour renouveler l'application.",
-        // Si un nom est fourni au premier lancement, on l'utilise comme createur de l'application initial de la licence.
+        // Ce message sera réutilise si un blocage manuel est active plus tard.
+        blockMessage: "Accès desktop temporairement bloqué. Veuillez contacter le créateur de l'application pour renouveler l'application.",
+        // Si un nom est fourni au premier lancement, on l'utilise comme créateur de l'application initial de la licence.
         superAdminUsers: seedSuperAdminUsername
             ? [normalizeUsername(seedSuperAdminUsername)]
             : DEFAULT_DESKTOP_SUPERADMINS,
-        // Aucun debloquage n'a encore eu lieu a la creation de la licence.
+        // Aucun déblocage n'a encore eu lieu à la création de la licence.
         lastUnlockedAt: null,
         lastUnlockedBy: null,
         // Les codes en clair ne sont gardes que jusqu'au premier export reserve au superadmin fixe.
@@ -294,7 +294,7 @@ const buildDefaultDesktopLicense = (seedSuperAdminUsername) => {
 };
 // S'assure que le dossier SQLite existe pour stocker aussi la licence locale.
 const ensureDesktopLicenseDirectory = () => __awaiter(void 0, void 0, void 0, function* () {
-    // On cree le dossier si besoin afin que l'ecriture du fichier de licence ne puisse pas echouer.
+    // On cree le dossier si besoin afin que l'écriture du fichier de licence ne puisse pas echouer.
     yield fs_1.default.promises.mkdir(sqliteDB_1.default.getSqliteDirectory(), { recursive: true });
 });
 // Lit la configuration locale de licence desktop en la creant au besoin.
@@ -302,17 +302,17 @@ const readDesktopLicenseConfig = (seedSuperAdminUsername) => __awaiter(void 0, v
     // Avant toute lecture, on s'assure que le dossier de stockage existe bien.
     yield ensureDesktopLicenseDirectory();
     if (!fs_1.default.existsSync(DESKTOP_LICENSE_FILE)) {
-        // Si aucun fichier n'existe, on cree une licence par defaut immediate.
+        // Si aucun fichier n'existe, on cree une licence par défaut immédiate.
         const defaultConfig = buildDefaultDesktopLicense(seedSuperAdminUsername);
-        // On ecrit aussitot cette licence sous forme chiffree pour initialiser le desktop local.
+        // On écrit aussitot cette licence sous forme chiffrée pour initialiser le desktop local.
         yield fs_1.default.promises.writeFile(DESKTOP_LICENSE_FILE, encryptDesktopLicenseConfig(defaultConfig), "utf-8");
         return defaultConfig;
     }
-    // Si le fichier existe deja, on lit son contenu chiffre depuis le disque.
+    // Si le fichier existe déjà, on lit son contenu chiffre depuis le disque.
     const rawContent = yield fs_1.default.promises.readFile(DESKTOP_LICENSE_FILE, "utf-8");
-    // On dechiffre ensuite ce contenu pour retrouver la configuration courante.
+    // On déchiffre ensuite ce contenu pour retrouver la configuration courante.
     const parsedContent = decryptDesktopLicenseConfig(rawContent);
-    // On garde une base par defaut pour completer les proprietes manquantes si besoin.
+    // On garde une base par défaut pour compléter les propriétés manquantes si besoin.
     const defaultConfig = buildDefaultDesktopLicense(seedSuperAdminUsername);
     const storedUnlockCodes = normalizeUnlockCodeRecords(parsedContent.unlockCodes);
     const hasStoredUnlockCodes = storedUnlockCodes.length > 0;
@@ -321,7 +321,7 @@ const readDesktopLicenseConfig = (seedSuperAdminUsername) => __awaiter(void 0, v
         : buildDesktopUnlockCodePack();
     const storedMachineBinding = normalizeMachineBinding(parsedContent.machineBinding);
     const config = Object.assign(Object.assign(Object.assign({}, defaultConfig), parsedContent), { 
-        // Enfin, on normalise toujours la liste des createur de l'applications pour garder des comparaisons fiables.
+        // Enfin, on normalise toujours la liste des créateur de l'applications pour garder des comparaisons fiables.
         superAdminUsers: Array.isArray(parsedContent.superAdminUsers)
             ? parsedContent.superAdminUsers.map((item) => normalizeUsername(item)).filter(Boolean)
             : defaultConfig.superAdminUsers, unlockCodes: unlockCodePack.records, pendingPlainUnlockCodes: unlockCodePack.plainCodes, lastUnlockCodesGeneratedAt: parsedContent.lastUnlockCodesGeneratedAt
@@ -334,20 +334,20 @@ const readDesktopLicenseConfig = (seedSuperAdminUsername) => __awaiter(void 0, v
     }
     return config;
 });
-// Ecrit la configuration de licence desktop apres modification.
+// Écrit la configuration de licence desktop après modification.
 const writeDesktopLicenseConfig = (config) => __awaiter(void 0, void 0, void 0, function* () {
-    // On recree le dossier si necessaire avant toute ecriture sur disque.
+    // On recrée le dossier si nécessaire avant toute écriture sur disque.
     yield ensureDesktopLicenseDirectory();
-    // On ecrit toujours la version chiffree, jamais la configuration brute.
+    // On écrit toujours la version chiffrée, jamais la configuration brute.
     yield fs_1.default.promises.writeFile(DESKTOP_LICENSE_FILE, encryptDesktopLicenseConfig(config), "utf-8");
 });
-// Indique si le nom utilisateur fourni fait partie des createur de l'applications autorises.
+// Indique si le nom utilisateur fourni fait partie des créateur de l'applications autorises.
 const isSuperAdminUser = (nomUtilisateur, config) => {
-    // On verifie d'abord la liste des createur de l'applications enregistres dans la licence locale.
+    // On verifie d'abord la liste des créateur de l'applications enregistrés dans la licence locale.
     const isListedInLicense = config.superAdminUsers.includes(normalizeUsername(nomUtilisateur));
-    // On garde aussi un acces de secours par le createur de l'application fixe du projet.
+    // On garde aussi un accès de secours par le créateur de l'application fixe du projet.
     const isFixedSuperAdmin = normalizeUsername(nomUtilisateur) === normalizeUsername(sqliteSecurity_1.DESKTOP_SUPERADMIN_USERNAME);
-    // Si l'une des deux conditions est vraie, l'utilisateur est traite comme createur de l'application.
+    // Si l'une des deux conditions est vraie, l'utilisateur est traite comme créateur de l'application.
     return isListedInLicense || isFixedSuperAdmin;
 };
 // Calcule le nombre de jours restants avant blocage automatique.
@@ -363,35 +363,35 @@ const computeDaysRemaining = (expiresAt) => {
     // Sinon, on arrondit au dessus pour afficher un nombre de jours restant plus parlant.
     return Math.ceil(difference / (1000 * 60 * 60 * 24));
 };
-// Retourne l'etat calcule de la licence desktop pour un utilisateur donne.
+// Retourne l'état calcule de la licence desktop pour un utilisateur donne.
 const getDesktopLicenseStatus = (nomUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
-    // On charge d'abord la licence actuellement stockee localement.
+    // On charge d'abord la licence actuellement stockée localement.
     const config = yield readDesktopLicenseConfig(nomUtilisateur);
-    // On determine si cet utilisateur a un droit createur de l'application.
+    // On détermine si cet utilisateur à un droit créateur de l'application.
     const isSuperAdmin = isSuperAdminUser(nomUtilisateur, config);
-    // On verifie si la date de fin a deja ete depassee.
+    // On verifie si la date de fin a déjà été depassee.
     const isExpired = new Date(config.expiresAt).getTime() <= Date.now();
     const machineBindingStatus = getMachineBindingStatus(config);
     const isMachineMismatch = !machineBindingStatus.isCurrentMachine;
-    // On combine le blocage manuel et l'expiration pour produire l'etat brut de blocage.
+    // On combine le blocage manuel et l'expiration pour produire l'état brut de blocage.
     const rawBlocked = config.manuallyBlocked || isExpired || isMachineMismatch;
     return {
-        // Un createur de l'application reste autorise a entrer meme si la licence est techniquement bloquee.
+        // Un créateur de l'application reste autorise a entrer même si la licence est techniquement bloquée.
         isBlocked: rawBlocked && !isSuperAdmin,
         isSuperAdmin,
         expiresAt: config.expiresAt,
         manuallyBlocked: config.manuallyBlocked,
-        // Si la licence a expire, on renvoie un message explicite prioritaire sur le message manuel.
+        // Si la licence a expiré, on renvoie un message explicite prioritaire sur le message manuel.
         blockMessage: isMachineMismatch
-            ? "Cette licence desktop est liee a un autre ordinateur. Contacte le developpeur pour rattacher la licence a ce poste."
+            ? "Cette licence desktop est liée à un autre ordinateur. Contacte le développeur pour rattacher la licence à ce poste."
             : isExpired
-                ? "La licence desktop a expire. Seul le createur de l'application peut renouveler l'acces."
+                ? "La licence desktop a expiré. Seul le créateur de l'application peut renouveler l'accès."
                 : config.blockMessage,
         // On calcule les jours restants pour l'affichage dans le front.
         daysRemaining: computeDaysRemaining(config.expiresAt),
         unlockCodeStats: getUnlockCodeStats(config),
         machineBinding: machineBindingStatus,
-        // On expose aussi la reference de securite locale pour information d'administration.
+        // On expose aussi la référence de sécurité locale pour information d'administration.
         sqliteReferencePassword: sqliteSecurity_1.SQLITE_REFERENCE_PASSWORD,
         sqliteSecurityNote: sqliteSecurity_1.SQLITE_SECURITY_NOTE,
     };
@@ -399,36 +399,36 @@ const getDesktopLicenseStatus = (nomUtilisateur) => __awaiter(void 0, void 0, vo
 exports.getDesktopLicenseStatus = getDesktopLicenseStatus;
 // Initialise explicitement la licence locale si elle n'existe pas encore.
 const ensureDesktopLicenseInitialized = (seedSuperAdminUsername) => __awaiter(void 0, void 0, void 0, function* () {
-    // Cette fonction reutilise simplement la lecture, qui sait deja creer la licence si besoin.
+    // Cette fonction réutilise simplement la lecture, qui sait déjà créer la licence si besoin.
     return readDesktopLicenseConfig(seedSuperAdminUsername);
 });
 exports.ensureDesktopLicenseInitialized = ensureDesktopLicenseInitialized;
-// Renouvelle l'acces desktop local apres verification du createur de l'application.
+// Renouvelle l'accès desktop local après vérification du créateur de l'application.
 const unlockDesktopLicense = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // On lit la licence actuelle avant toute modification.
     const config = yield readDesktopLicenseConfig(payload.nomUtilisateur);
     if (!(0, exports.isFixedDesktopSuperAdminCredentials)(payload.nomUtilisateur, payload.password)) {
         // Le renouvellement manuel n'est autorise qu'au superadmin fixe du projet.
-        throw new Error("Seul le superadmin fixe peut debloquer l'application desktop.");
+        throw new Error("Seul le superadmin fixe peut débloquer l'application desktop.");
     }
     const nextConfig = Object.assign(Object.assign({}, config), { 
-        // Le debloquage retire explicitement le blocage manuel.
+        // Le déblocage retire explicitement le blocage manuel.
         manuallyBlocked: false, 
-        // On recalcule une nouvelle date d'expiration a partir du nombre de jours demande.
+        // On recalcule une nouvelle date d'expiration à partir du nombre de jours demande.
         expiresAt: buildExpirationDate(payload.extendDays || DEFAULT_DESKTOP_TRIAL_DAYS), 
-        // On trace la date et l'auteur du dernier debloquage pour le suivi administratif.
+        // On trace la date et l'auteur du dernier déblocage pour le suivi administratif.
         lastUnlockedAt: new Date().toISOString(), lastUnlockedBy: payload.nomUtilisateur });
-    // On reecrit la licence mise a jour dans le fichier chiffre local.
+    // On reecrit la licence mise à jour dans le fichier chiffre local.
     yield writeDesktopLicenseConfig(nextConfig);
-    // On retourne ensuite le nouvel etat complet attendu par le front.
+    // On retourne ensuite le nouvel état complet attendu par le front.
     return (0, exports.getDesktopLicenseStatus)(payload.nomUtilisateur);
 });
 exports.unlockDesktopLicense = unlockDesktopLicense;
-// Rattache explicitement une licence au poste courant apres verification superadmin.
+// Rattache explicitement une licence au poste courant après vérification superadmin.
 const rebindDesktopLicenseMachine = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const config = yield readDesktopLicenseConfig(payload.nomUtilisateur);
     if (!(0, exports.isFixedDesktopSuperAdminCredentials)(payload.nomUtilisateur, payload.password)) {
-        throw new Error("Seul le superadmin fixe peut rattacher la licence a ce poste.");
+        throw new Error("Seul le superadmin fixe peut rattacher la licence à ce poste.");
     }
     yield writeDesktopLicenseConfig(Object.assign(Object.assign({}, config), { machineBinding: buildCurrentMachineBinding() }));
     return (0, exports.getDesktopLicenseStatus)(payload.nomUtilisateur);
@@ -438,17 +438,17 @@ exports.rebindDesktopLicenseMachine = rebindDesktopLicenseMachine;
 const unlockDesktopLicenseWithCode = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const normalizedCode = normalizeUnlockCode(payload.code);
     if (!normalizedCode) {
-        throw new Error("Le code de deblocage est requis.");
+        throw new Error("Le code de déblocage est requis.");
     }
     const config = yield readDesktopLicenseConfig(payload.nomUtilisateur);
     const machineBindingStatus = getMachineBindingStatus(config);
     if (!machineBindingStatus.isCurrentMachine) {
-        throw new Error("Ce code ne peut pas debloquer cette copie: la licence est liee a un autre ordinateur.");
+        throw new Error("Ce code ne peut pas débloquer cette copie: la licence est liée à un autre ordinateur.");
     }
     const codeHash = hashUnlockCode(normalizedCode);
     const matchingCode = config.unlockCodes.find((unlockCode) => unlockCode.codeHash === codeHash);
     if (!matchingCode || matchingCode.usedAt) {
-        throw new Error("Code de deblocage invalide ou deja utilise.");
+        throw new Error("Code de déblocage invalide ou déjà utilisé.");
     }
     const now = new Date().toISOString();
     const nextConfig = Object.assign(Object.assign({}, config), { manuallyBlocked: false, expiresAt: buildExtendedExpirationDate(config.expiresAt, matchingCode.durationDays), lastUnlockedAt: now, lastUnlockedBy: payload.nomUtilisateur || "code-client", unlockCodes: config.unlockCodes.map((unlockCode) => unlockCode.id === matchingCode.id
@@ -457,15 +457,15 @@ const unlockDesktopLicenseWithCode = (payload) => __awaiter(void 0, void 0, void
     return (0, exports.getDesktopLicenseStatus)(payload.nomUtilisateur);
 });
 exports.unlockDesktopLicenseWithCode = unlockDesktopLicenseWithCode;
-// Exporte une seule fois le pack initial genere avec la licence locale.
+// Exporte une seule fois le pack initial génère avec la licence locale.
 const exportPendingDesktopUnlockCodes = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const config = yield readDesktopLicenseConfig(payload.nomUtilisateur);
     if (!(0, exports.isFixedDesktopSuperAdminCredentials)(payload.nomUtilisateur, payload.password)) {
-        throw new Error("Seul le superadmin fixe peut exporter les codes de deblocage.");
+        throw new Error("Seul le superadmin fixe peut exporter les codes de déblocage.");
     }
     const pendingCodes = normalizePendingPlainUnlockCodes(config.pendingPlainUnlockCodes);
     if (pendingCodes.length === 0) {
-        throw new Error("Le pack initial a deja ete exporte. Genere un nouveau pack si necessaire.");
+        throw new Error("Le pack initial a déjà été exporté. Génère un nouveau pack si nécessaire.");
     }
     const exportedAt = new Date().toISOString();
     const nextConfig = Object.assign(Object.assign({}, config), { pendingPlainUnlockCodes: [], lastUnlockCodesExportedAt: exportedAt });
@@ -477,11 +477,11 @@ const exportPendingDesktopUnlockCodes = (payload) => __awaiter(void 0, void 0, v
     };
 });
 exports.exportPendingDesktopUnlockCodes = exportPendingDesktopUnlockCodes;
-// Genere un nouveau pack et remplace tous les codes non utilises.
+// Génère un nouveau pack et remplace tous les codes non utilisés.
 const generateDesktopUnlockCodes = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const config = yield readDesktopLicenseConfig(payload.nomUtilisateur);
     if (!(0, exports.isFixedDesktopSuperAdminCredentials)(payload.nomUtilisateur, payload.password)) {
-        throw new Error("Seul le superadmin fixe peut generer les codes de deblocage.");
+        throw new Error("Seul le superadmin fixe peut générer les codes de déblocage.");
     }
     const now = new Date().toISOString();
     const usedCodes = config.unlockCodes.filter((unlockCode) => Boolean(unlockCode.usedAt));
@@ -495,7 +495,7 @@ const generateDesktopUnlockCodes = (payload) => __awaiter(void 0, void 0, void 0
     };
 });
 exports.generateDesktopUnlockCodes = generateDesktopUnlockCodes;
-// Restaure une sauvegarde SQLite locale apres verification du superadmin fixe.
+// Restaure une sauvegarde SQLite locale après vérification du superadmin fixe.
 const restoreSqliteBackup = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     if (!(0, exports.isFixedDesktopSuperAdminCredentials)(payload.nomUtilisateur, payload.password)) {
         throw new Error("Seul le superadmin fixe peut restaurer une sauvegarde SQLite.");
@@ -506,16 +506,16 @@ const restoreSqliteBackup = (payload) => __awaiter(void 0, void 0, void 0, funct
     return sqliteDB_1.default.restoreSqliteBackupArchive(payload.backupFilePath);
 });
 exports.restoreSqliteBackup = restoreSqliteBackup;
-// Expose l'IP reseau du serveur pour que le front affiche une URL LAN meme en dev.
+// Expose l'IP réseau du serveur pour que le front affiche une URL LAN même en dev.
 const getServerNetworkInfo = () => {
-    // On detecte l'IP reseau courante de la machine qui heberge le backend.
+    // On détecte l'IP réseau courante de la machine qui héberge le backend.
     const ipAddress = (0, ip_1.address)();
-    // On reutilise le port du serveur actif, ou 49300 si rien n'est force dans l'environnement.
+    // On réutilise le port du serveur actif, ou 49300 si rien n'est force dans l'environnement.
     const port = Number(process.env.PORT || 49300);
     return {
         ipAddress,
         port,
-        // On prepare directement l'URL LAN complete attendue par le front et Electron.
+        // On prépare directement l'URL LAN complete attendue par le front et Electron.
         browserUrl: `http://${ipAddress}:${port}`,
     };
 };

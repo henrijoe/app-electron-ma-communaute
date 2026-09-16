@@ -44,7 +44,7 @@ export function ComptabiliteJournalDocument({ items, search, filterLabel }: Comp
 
       {items.length === 0 ? (
         <PrintEmptyState
-          title="Aucune ecriture"
+          title="Aucune écriture"
           message="Aucune écriture comptable ne correspond aux critères actuels."
         />
       ) : (
@@ -67,7 +67,7 @@ export function ComptabiliteJournalDocument({ items, search, filterLabel }: Comp
                 <TableRow key={item.idComptabilite || `${item.nomComptabilite}-${item.dateComptabilite}`}>
                   <TableCell>{formatComptabiliteDate(item.dateComptabilite)}</TableCell>
                   <TableCell>{item.nomComptabilite || '--'}</TableCell>
-                  <TableCell>{item.typeComptabilite === 'entree' ? 'Entree' : 'Sortie'}</TableCell>
+                  <TableCell>{item.typeComptabilite === 'entree' ? 'Entrée' : 'Sortie'}</TableCell>
                   <TableCell align="right">
                     {item.entreeComptabilite > 0 ? comptabiliteCurrencyFormatter.format(item.entreeComptabilite) : '--'}
                   </TableCell>

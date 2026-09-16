@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const services_1 = __importDefault(require("./services"));
 const functions_1 = require("../functions");
-// Retourne l'etat courant de la licence desktop pour l'utilisateur fourni.
+// Retourne l'état courant de la licence desktop pour l'utilisateur fourni.
 const getDesktopLicenseStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const nomUtilisateur = String(req.query.nomUtilisateur || "");
@@ -26,7 +26,7 @@ const getDesktopLicenseStatus = (req, res) => __awaiter(void 0, void 0, void 0, 
         res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) });
     }
 });
-// Debloque ou renouvelle l'application desktop a partir d'un compte superadmin.
+// Debloque ou renouvelle l'application desktop à partir d'un compte superadmin.
 const unlockDesktopLicense = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const result = yield services_1.default.unlockDesktopLicense(req.body);
@@ -36,7 +36,7 @@ const unlockDesktopLicense = (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) });
     }
 });
-// Rattache la licence locale a l'ordinateur courant.
+// Rattache la licence locale à l'ordinateur courant.
 const rebindDesktopLicenseMachine = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const result = yield services_1.default.rebindDesktopLicenseMachine(req.body);
@@ -46,7 +46,7 @@ const rebindDesktopLicenseMachine = (req, res) => __awaiter(void 0, void 0, void
         res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) });
     }
 });
-// Debloque l'application desktop avec un code offline a usage unique.
+// Debloque l'application desktop avec un code offline à usage unique.
 const unlockDesktopLicenseWithCode = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const result = yield services_1.default.unlockDesktopLicenseWithCode(req.body);
@@ -56,7 +56,7 @@ const unlockDesktopLicenseWithCode = (req, res) => __awaiter(void 0, void 0, voi
         res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) });
     }
 });
-// Exporte une seule fois le pack initial de codes genere a la creation de la licence.
+// Exporte une seule fois le pack initial de codes génère à la création de la licence.
 const exportPendingDesktopUnlockCodes = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const result = yield services_1.default.exportPendingDesktopUnlockCodes(req.body);
@@ -66,7 +66,7 @@ const exportPendingDesktopUnlockCodes = (req, res) => __awaiter(void 0, void 0, 
         res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) });
     }
 });
-// Genere un nouveau pack de codes et remplace les codes non utilises.
+// Génère un nouveau pack de codes et remplace les codes non utilisés.
 const generateDesktopUnlockCodes = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const result = yield services_1.default.generateDesktopUnlockCodes(req.body);
@@ -81,7 +81,7 @@ const restoreSqliteBackup = (req, res) => __awaiter(void 0, void 0, void 0, func
     const uploadedFile = req.file;
     try {
         if (!(uploadedFile === null || uploadedFile === void 0 ? void 0 : uploadedFile.path)) {
-            throw new Error("Veuillez selectionner un fichier de sauvegarde .zip.");
+            throw new Error("Veuillez sélectionner un fichier de sauvegarde .zip.");
         }
         const result = yield services_1.default.restoreSqliteBackup({
             nomUtilisateur: req.body.nomUtilisateur,
@@ -99,7 +99,7 @@ const restoreSqliteBackup = (req, res) => __awaiter(void 0, void 0, void 0, func
         }
     }
 });
-// Retourne les informations reseau du serveur pour construire l'URL LAN du navigateur.
+// Retourne les informations réseau du serveur pour construire l'URL LAN du navigateur.
 const getServerNetworkInfo = (req, res) => {
     try {
         const result = services_1.default.getServerNetworkInfo();

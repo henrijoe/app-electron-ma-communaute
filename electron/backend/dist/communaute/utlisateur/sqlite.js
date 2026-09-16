@@ -17,7 +17,7 @@ const sqliteDB_1 = __importDefault(require("../../db/sqliteDB"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 /**
- * Cree ou reutilise une base SQLite locale pour une communaute puis la rend active.
+ * Crée ou réutilise une base SQLite locale pour une communauté puis la rend active.
  */
 const createCommunauteDatabase = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const communityName = payload.nomEglise || payload.nomTemple || `communaute-${payload.idUtilisateur}`;

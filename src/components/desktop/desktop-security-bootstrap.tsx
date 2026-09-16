@@ -8,7 +8,7 @@ import {
 } from 'src/store/appSlice';
 import type { IReduxState } from 'src/store/store';
 
-// Synchronise l'etat de blocage desktop entre le backend local et Redux.
+// Synchronise l'état de blocage desktop entre le backend local et Redux.
 export function DesktopSecurityBootstrap() {
   const dispatch = useDispatch();
   const isLoggedIn = useSelector(

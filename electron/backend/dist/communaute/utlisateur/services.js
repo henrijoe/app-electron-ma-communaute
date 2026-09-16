@@ -46,7 +46,7 @@ const ALL_MODULE_PERMISSIONS = JSON.stringify([
     'comptabilite',
     'settings',
 ]);
-const PASSWORD_RESET_GENERIC_MESSAGE = 'Si ce compte existe, un code de reinitialisation a ete envoye par email.';
+const PASSWORD_RESET_GENERIC_MESSAGE = 'Si ce compte existe, un code de réinitialisation a été envoyé par email.';
 const PASSWORD_RESET_EXPIRATION_MINUTES = 15;
 const normalizeUtilisateurData = (data) => ({
     idUtilisateur: Number(data.idUtilisateur || 0),
@@ -117,7 +117,7 @@ const requestPasswordReset = (data) => {
                 return;
             }
             if (!(0, smtpMailer_1.isSmtpConfigured)()) {
-                reject(new Error('Le service email de reinitialisation n est pas configure. Renseignez SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD et SMTP_FROM.'));
+                reject(new Error('Le service email de réinitialisation n est pas configuré. Renseignez SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD et SMTP_FROM.'));
                 return;
             }
             const resetPasswordCode = generatePasswordResetCode();
@@ -125,14 +125,14 @@ const requestPasswordReset = (data) => {
             yield functions_2.default.enregistrerResetPasswordCode(Number(utilisateur.idUtilisateur), resetPasswordCode, resetPasswordExpiresAt);
             yield (0, smtpMailer_1.sendSmtpMail)({
                 to: email,
-                subject: 'Code de reinitialisation du mot de passe',
+                subject: 'Code de réinitialisation du mot de passe',
                 text: [
                     `Bonjour ${utilisateur.prenomUtilisateur || utilisateur.nomUtilisateur || ''},`,
                     '',
-                    `Votre code de reinitialisation est : ${resetPasswordCode}`,
+                    `Votre code de réinitialisation est : ${resetPasswordCode}`,
                     `Ce code expire dans ${PASSWORD_RESET_EXPIRATION_MINUTES} minutes.`,
                     '',
-                    "Si vous n'etes pas a l'origine de cette demande, ignorez simplement ce message.",
+                    "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.",
                 ].join('\n'),
             });
             resolve({ message: PASSWORD_RESET_GENERIC_MESSAGE });
@@ -151,7 +151,7 @@ const resetPassword = (data) => {
             const password = String(data.password || '');
             const confirmPassword = String(data.confirmPassword || '');
             if (!nomUtilisateur || !email || !code || !password || !confirmPassword) {
-                reject(new Error('Tous les champs sont requis pour reinitialiser le mot de passe.'));
+                reject(new Error('Tous les champs sont requis pour réinitialiser le mot de passe.'));
                 return;
             }
             if (password !== confirmPassword) {
@@ -161,13 +161,13 @@ const resetPassword = (data) => {
             const utilisateurRows = yield functions_2.default.recupUtilisateurForPasswordReset(nomUtilisateur, email);
             const utilisateur = Array.isArray(utilisateurRows) ? utilisateurRows[0] : null;
             if (!utilisateur) {
-                reject(new Error('Code de reinitialisation invalide ou expire.'));
+                reject(new Error('Code de réinitialisation invalide ou expiré.'));
                 return;
             }
             const storedCode = normalizeResetField(utilisateur.resetPasswordCode);
             const expiresAt = normalizeResetField(utilisateur.resetPasswordExpiresAt);
             if (!storedCode || storedCode !== code || !expiresAt || new Date(expiresAt).getTime() < Date.now()) {
-                reject(new Error('Code de reinitialisation invalide ou expire.'));
+                reject(new Error('Code de réinitialisation invalide ou expiré.'));
                 return;
             }
             const hashedConfirmPassword = yield bcrypt.hash(confirmPassword, 20);
@@ -187,7 +187,7 @@ const ajouterUtilisateur = (data) => {
             if (isSecondaryUser) {
                 const secondaryCount = yield functions_2.default.countSecondaryUsersByParentId(Number(normalizedData.idUtilisateurParent));
                 if (secondaryCount >= 5) {
-                    reject(new Error('Le nombre maximal de 5 utilisateurs secondaires a deja ete atteint.'));
+                    reject(new Error('Le nombre maximal de 5 utilisateurs secondaires a déjà été atteint.'));
                     return;
                 }
             }
@@ -255,7 +255,7 @@ const supprimerUtilisateur = (idUtilisateur) => {
                     resolve(true);
                 }
                 else {
-                    reject('utilisateur non trouve');
+                    reject('utilisateur non trouvé');
                 }
             }
         }
@@ -299,7 +299,7 @@ const connexionUtilisateur = (nomUtilisateur, motDePasse) => __awaiter(void 0, v
     try {
         const utilisateur = yield (0, db_1._selectSql)(`SELECT * FROM utilisateur WHERE nomUtilisateur = ?`, [nomUtilisateur]);
         if (!utilisateur || utilisateur.length === 0) {
-            throw new Error('Utilisateur non trouve');
+            throw new Error('Utilisateur non trouvé');
         }
         const isValidPassword = yield bcrypt.compare(motDePasse, utilisateur[0].password);
         if (!isValidPassword) {

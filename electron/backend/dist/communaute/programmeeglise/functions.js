@@ -10,9 +10,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const db_1 = require("../../db");
-// Ajoute une ligne de programme (un culte planifie) pour une eglise, a une date
-// precise. Refuse si un programme existe deja pour cette meme date (on demande
-// alors de modifier celui-ci plutot que d'en creer un deuxieme au meme endroit).
+// Ajoute une ligne de programme (un culte planifie) pour une église, à une date
+// précise. Refuse si un programme existe déjà pour cette même date (on demande
+// alors de modifier celui-ci plutôt que d'en créer un deuxième au même endroit).
 const ajouterProgrammeEglise = (data) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {
@@ -31,7 +31,7 @@ const ajouterProgrammeEglise = (data) => {
                 reject(new Error('La direction est requise.'));
                 return;
             }
-            // Un seul programme autorise par jour et par eglise : on verifie avant d'inserer.
+            // Un seul programme autorise par jour et par église : on verifie avant d'insérer.
             const existant = yield (0, db_1._selectSql)('SELECT idProgramme FROM programme_eglise WHERE idUtilisateur = ? AND dateProgramme = ? LIMIT 1', [idUtilisateur, dateProgramme]);
             if (Array.isArray(existant) && existant.length > 0) {
                 reject(new Error('Un programme est déjà prévu pour cette date. Modifiez-le plutôt.'));
@@ -50,7 +50,7 @@ const ajouterProgrammeEglise = (data) => {
                 data.annonces || '',
                 data.thematique || '',
             ]);
-            // On relit la ligne fraichement creee pour renvoyer un objet complet
+            // On relit la ligne fraîchement créée pour renvoyer un objet complet
             // (avec son idProgramme et sa dateCreation) au front.
             const inserted = yield (0, db_1._selectSql)('SELECT * FROM programme_eglise WHERE idProgramme = ?', [result.insertId]);
             resolve(inserted[0]);
@@ -60,8 +60,8 @@ const ajouterProgrammeEglise = (data) => {
         }
     }));
 };
-// Modifie une ligne de programme deja existante.
-// Meme regle qu'a l'ajout : pas deux programmes pour la meme date.
+// Modifie une ligne de programme déjà existante.
+// Même règle qu'à l'ajout : pas deux programmes pour la même date.
 const modifierProgrammeEglise = (data) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {
@@ -82,7 +82,7 @@ const modifierProgrammeEglise = (data) => {
                 return;
             }
             // On exclut la ligne qu'on est en train de modifier (idProgramme <> ?)
-            // pour ne pas se bloquer soi-meme si la date n'a pas change.
+            // pour ne pas se bloquer soi-même si la date n'a pas change.
             const doublon = yield (0, db_1._selectSql)('SELECT idProgramme FROM programme_eglise WHERE idUtilisateur = ? AND dateProgramme = ? AND idProgramme <> ? LIMIT 1', [idUtilisateur, dateProgramme, idProgramme]);
             if (Array.isArray(doublon) && doublon.length > 0) {
                 reject(new Error('Un autre programme est déjà prévu pour cette date.'));
@@ -109,8 +109,8 @@ const modifierProgrammeEglise = (data) => {
         }
     }));
 };
-// Retire une ligne de programme. Scope par idUtilisateur pour qu'une eglise
-// ne puisse jamais supprimer le programme d'une autre eglise.
+// Retire une ligne de programme. Scope par idUtilisateur pour qu'une église
+// ne puisse jamais supprimer le programme d'une autre église.
 const supprimerProgrammeEglise = (idProgramme, idUtilisateur) => {
     return new Promise((resolve, reject) => {
         (0, db_1._executeSql)('DELETE FROM programme_eglise WHERE idProgramme = ? AND idUtilisateur = ?', [idProgramme, idUtilisateur])
@@ -118,8 +118,8 @@ const supprimerProgrammeEglise = (idProgramme, idUtilisateur) => {
             .catch((error) => reject(error));
     });
 };
-// Recupere tout le programme d'une eglise, trie du plus ancien au plus recent
-// (l'ecran de gestion regroupe ensuite ces lignes par mois cote client).
+// Récupère tout le programme d'une église, trie du plus ancien au plus récent
+// (l'écran de gestion regroupe ensuite ces lignes par mois côté client).
 const recupProgrammesEgliseByUtilisateur = (idUtilisateur) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {

@@ -45,7 +45,7 @@ const recupDepartementByIdUtilsateur = (idUtilisateur) => {
             resolve(departementByUtilisateur);
         }
         catch (error) {
-            console.log("Erreur service departement :", error);
+            console.log("Erreur service département :", error);
             reject(error);
         }
     }));

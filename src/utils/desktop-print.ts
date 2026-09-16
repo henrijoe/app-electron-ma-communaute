@@ -9,9 +9,9 @@ type DesktopPrintPayload = {
   // Nom de fichier proposé lors de l'export PDF.
   fileName?: string;
   // Orientation voulue pour la feuille imprimée. Le process Electron s'appuie sur
-  // cette valeur (et pas seulement sur la regle CSS "@page") car plusieurs documents
-  // imprimables sont montes en meme temps dans la page (tous caches dans un
-  // <div style="display:none">), chacun avec sa propre regle "@page" : sans cette
+  // cette valeur (et pas seulement sur la règle CSS "@page") car plusieurs documents
+  // imprimables sont montes en même temps dans la page (tous caches dans un
+  // <div style="display:none">), chacun avec sa propre règle "@page" : sans cette
   // valeur explicite, Electron ne peut pas savoir laquelle correspond au document
   // qu'on est en train d'imprimer.
   orientation?: 'landscape' | 'portrait';
@@ -37,7 +37,7 @@ const getHeadHtml = (): string =>
     // Concatène tous les styles en une seule chaîne injectée dans le <head>.
     .join('\n');
 
-// Construit un document imprimable a partir d'un noeud deja rendu a l'ecran.
+// Construit un document imprimable à partir d'un nœud déjà rendu à l'écran.
 export const buildPrintablePayload = (
   element: HTMLElement,
   options: { title: string; fileName?: string; orientation?: 'landscape' | 'portrait' }
@@ -48,7 +48,7 @@ export const buildPrintablePayload = (
   fileName: options.fileName,
   // Par défaut portrait, comme le comportement historique de l'impression native.
   orientation: options.orientation || 'portrait',
-  // Sérialise le noeud HTML à imprimer avec tout son contenu.
+  // Sérialise le nœud HTML à imprimer avec tout son contenu.
   bodyHtml: element.outerHTML,
   // Récupère les styles de la page pour garder le même rendu dans l'aperçu.
   headHtml: getHeadHtml(),
@@ -75,12 +75,12 @@ export const openDesktopPrintPreview = async (
   await (window as any).desktopPrint.openPreview(payload);
 };
 
-// Exporte directement un noeud HTML en PDF via Electron.
+// Exporte directement un nœud HTML en PDF via Electron.
 export const exportDesktopPdf = async (
   element: HTMLElement | null,
   options: { title: string; fileName?: string; orientation?: 'landscape' | 'portrait' }
 ) : Promise<void> => {
-  // Si le noeud est absent ou si on n'est pas en desktop, on ne fait rien.
+  // Si le nœud est absent ou si on n'est pas en desktop, on ne fait rien.
   if (!element || !canUseDesktopPrint()) {
     return;
   }

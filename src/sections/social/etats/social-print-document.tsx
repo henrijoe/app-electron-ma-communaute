@@ -31,7 +31,7 @@ type SocialPrintDocumentProps = {
   identity?: PrintIdentity;
   type: SocialCaseType;
   rows: IDeces[] | IMaladieDraft[] | IMariage[] | INaissance[];
-  // Rappelle la periode et le nombre d'elements actifs au moment de l'impression
+  // Rappelle la période et le nombre d'éléments actifs au moment de l'impression
   // (sinon un document imprime plus tard serait indiscernable d'un autre).
   subtitle?: string;
 };

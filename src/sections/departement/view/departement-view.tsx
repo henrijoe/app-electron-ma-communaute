@@ -63,7 +63,7 @@ export function DepartementView() {
   const [membres, setMembres] = useState<IMembre[]>([]);
   const table = useDepartementTable();
 
-  // Destructurer les valeurs necessaires de useDepartementTable
+  // Destructurer les valeurs nécessaires de useDepartementTable
   const { selected, onSelectAllRows } = table;
 
   const [filterName, setFilterName] = useState('');
@@ -145,7 +145,7 @@ export function DepartementView() {
     try {
       setDeleteLoading(true);
       if (!currentUserId) {
-        showNotification('Utilisateur connecte introuvable pour la suppression', 'error');
+        showNotification('Utilisateur connecté introuvable pour la suppression', 'error');
         return;
       }
 
@@ -164,18 +164,18 @@ export function DepartementView() {
     }
   }, [canManageDepartement, currentUserId, dispatch, showNotification]);
 
-  // Fonction pour éditer un departement
+  // Fonction pour éditer un département
   const handleEditDepartement = useCallback((departementData: IDepartement) => {
     if (!canManageDepartement) return;
 
     setIsEditMode(true);
-    console.log('Donnees pour edition:', departementData);
+    console.log('Données pour édition:', departementData);
     setData({ ...departementData });
     reset({ ...departementData });
     setOpenDialog(true);
   }, [canManageDepartement, reset]);
 
-  // Fonction pour mettre à jour un departement
+  // Fonction pour mettre à jour un département
   const handleUpdateDepartement = useCallback(async (formData: IDepartement) => {
     try {
       setUpdateLoading(true);
@@ -365,7 +365,7 @@ export function DepartementView() {
       setDeleteLoading(true);
 
       if (!currentUserId) {
-        throw new Error('Utilisateur connecte introuvable pour la suppression');
+        throw new Error('Utilisateur connecté introuvable pour la suppression');
       }
 
       const summary = await selected.reduce(
@@ -382,7 +382,7 @@ export function DepartementView() {
 
             return { failures: failures + 1, successes };
           } catch (error) {
-            console.error(`Erreur suppression departement ${idDepartement}:`, error);
+            console.error(`Erreur suppression département ${idDepartement}:`, error);
             return { failures: failures + 1, successes };
           }
         }),
@@ -396,16 +396,16 @@ export function DepartementView() {
       }
 
       if (summary.failures === 0) {
-        showNotification(`${summary.successes} departement(s) supprime(s) avec succes`, 'success');
+        showNotification(`${summary.successes} département(s) supprimé(s) avec succès`, 'success');
       } else {
         showNotification(
-          `${summary.successes} supprime(s), ${summary.failures} erreur(s)`,
+          `${summary.successes} supprimé(s), ${summary.failures} erreur(s)`,
           summary.failures === selected.length ? 'error' : 'warning'
         );
       }
 
     } catch (error: any) {
-      console.error('Erreur generale lors de la suppression multiple:', error);
+      console.error('Erreur générale lors de la suppression multiple:', error);
       showNotification(`Erreur: ${error.message || 'Erreur lors de la suppression'}`, 'error');
     } finally {
       setDeleteLoading(false);
@@ -453,7 +453,7 @@ export function DepartementView() {
 
           {!isDesktopApp && canManageDepartement && (
           <>
-          <Tooltip title="Ajouter departement">
+          <Tooltip title="Ajouter département">
             <span>
               <IconButton
                 color="primary"
@@ -508,9 +508,9 @@ export function DepartementView() {
                       sx={{ p: 0.25 }}
                     />
                     <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>{row.libelleLongDepartement || 'Departement sans nom'}</Typography>
+                      <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>{row.libelleLongDepartement || 'Département sans nom'}</Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
-                        {row.libelleCourtDepartement || 'Sigle non renseigne'}
+                        {row.libelleCourtDepartement || 'Sigle non renseigné'}
                       </Typography>
                     </Box>
                   </Stack>
@@ -554,8 +554,8 @@ export function DepartementView() {
 
             {notFound && (
               <Card variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 2, boxShadow: 'none' }}>
-                <Typography variant="subtitle2">Aucun resultat</Typography>
-                <Typography variant="body2" color="text.secondary">Aucun departement ne correspond aux filtres.</Typography>
+                <Typography variant="subtitle2">Aucun résultat</Typography>
+                <Typography variant="body2" color="text.secondary">Aucun département ne correspond aux filtres.</Typography>
               </Card>
             )}
           </Stack>
@@ -577,11 +577,11 @@ export function DepartementView() {
                   )
                 }
                 headLabel={[
-                  { id: 'libelleLongDepartement', label: 'Departement' },
+                  { id: 'libelleLongDepartement', label: 'Département' },
                   { id: 'libelleCourtDepartement', label: 'Sigle' },
                   { id: 'sloganDepartement', label: 'Slogan' },
                   { id: 'responsableDepartement', label: 'Responsable' },
-                  { id: 'contactResponsableDepartement', label: 'Numero responsable' },
+                  { id: 'contactResponsableDepartement', label: 'Numéro responsable' },
                   { id: 'Action', label: 'Actions' },
                 ]}
               />
@@ -640,7 +640,7 @@ export function DepartementView() {
                   label="Département *"
                   variant="outlined"
                   value={data.libelleLongDepartement}
-                  {...register('libelleLongDepartement', { required: 'Le departement est requis' })}
+                  {...register('libelleLongDepartement', { required: 'Le département est requis' })}
                   onChange={handleChange}
                   error={!!errors.libelleLongDepartement}
                   helperText={errors.libelleLongDepartement?.message}
@@ -730,7 +730,7 @@ export function DepartementView() {
                   label="Contact du responsable"
                   value={selectedResponsableContact || ''}
                   InputProps={{ readOnly: true }}
-                  helperText={selectedResponsableContact ? 'Contact deja saisi sur la fiche membre' : 'Aucun contact trouve pour ce responsable'}
+                  helperText={selectedResponsableContact ? 'Contact déjà saisi sur la fiche membre' : 'Aucun contact trouvé pour ce responsable'}
                 />
               </Grid>
             </Grid>
@@ -769,8 +769,8 @@ export function DepartementView() {
 
       <ConfirmDialog
         open={confirmDeleteSelectedOpen}
-        title="Supprimer les departements selectionnes"
-        message={`Voulez-vous vraiment supprimer ${selected.length} departement(s) selectionne(s) ?`}
+        title="Supprimer les départements sélectionnés"
+        message={`Voulez-vous vraiment supprimer ${selected.length} département(s) sélectionné(s) ?`}
         confirmText="Supprimer"
         loading={deleteLoading}
         onClose={() => setConfirmDeleteSelectedOpen(false)}

@@ -6,7 +6,7 @@ export default function SettingsPage() {
   return (
     <>
       <Helmet>
-        <title> Parametres | Ma Communaute </title>
+        <title> Paramètres | Ma Communauté </title>
       </Helmet>
 
       <SettingsView />

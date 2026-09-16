@@ -24,7 +24,7 @@ export const ListeDesDepartements = () => {
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
   const membres = Array.isArray(listMembre) ? (listMembre as IMembre[]) : [];
 
-  // On trie les departements par nom long pour obtenir un etat alphabetique facile a lire.
+  // On trie les départements par nom long pour obtenir un état alphabétique facile à lire.
   const sortedDepartements = [...(listDepartement || [])].sort((a, b) =>
     (a.libelleLongDepartement || '').localeCompare(b.libelleLongDepartement || '')
   );
@@ -67,7 +67,7 @@ export const ListeDesDepartements = () => {
 
                 <TableCell>
                   <Typography variant="subtitle2" fontWeight={700}>
-                    {item.libelleLongDepartement || 'Non specifie'}
+                    {item.libelleLongDepartement || 'Non spécifié'}
                   </Typography>
                 </TableCell>
 
@@ -82,20 +82,20 @@ export const ListeDesDepartements = () => {
                 </TableCell>
 
                 <TableCell>
-                  <Typography variant="body2">{item.sloganDepartement || 'Non specifie'}</Typography>
+                  <Typography variant="body2">{item.sloganDepartement || 'Non spécifié'}</Typography>
                 </TableCell>
 
                 <TableCell>
                   <Box>
                     <Typography variant="body2" fontWeight={600}>
-                      {item.responsableDepartement || 'Non specifie'}
+                      {item.responsableDepartement || 'Non spécifié'}
                     </Typography>
                   </Box>
                 </TableCell>
 
                 <TableCell>
                   <Typography variant="body2" fontWeight={600}>
-                    {findResponsableContact(membres, item.responsableDepartement) || 'Non specifie'}
+                    {findResponsableContact(membres, item.responsableDepartement) || 'Non spécifié'}
                   </Typography>
                 </TableCell>
               </TableRow>

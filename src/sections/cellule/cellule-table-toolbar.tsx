@@ -64,7 +64,7 @@ export function UserTableToolbar({
       )}
 
       {numSelected > 0 ? (
-        <Tooltip title="Supprimer les cellules s�lectionn�es">
+        <Tooltip title="Supprimer les cellules sélectionnées">
           <IconButton onClick={onDelete} disabled={deleteLoading}>
             <Iconify icon="solar:trash-bin-trash-bold" />
           </IconButton>

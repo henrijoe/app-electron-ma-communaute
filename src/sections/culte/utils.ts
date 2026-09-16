@@ -167,14 +167,14 @@ export const getTypeCulteLabel = (type: string): string => {
   
   const types: Record<string, string> = {
     '1': 'Culte du dimanche',
-    '2': 'Reunion de mardi',
-    '3': 'Reunion de jeudi',
-    '4': 'Reunion de jeunesse',
-    '5': 'Culte special',
+    '2': 'Réunion de mardi',
+    '3': 'Réunion de jeudi',
+    '4': 'Réunion de jeunesse',
+    '5': 'Culte spécial',
     Dimanche: 'Culte du dimanche',
     Mardi: 'Culte de mardi',
     Jeudi: 'Culte de jeudi',
-    Vendredi: 'Reunion de jeunesse',
+    Vendredi: 'Réunion de jeunesse',
     Samedi: 'Culte du samedi',
     Spécial: 'Culte spécial',
   };

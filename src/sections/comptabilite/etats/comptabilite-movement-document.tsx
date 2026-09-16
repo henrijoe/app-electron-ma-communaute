@@ -41,10 +41,10 @@ export function ComptabiliteMovementDocument({
   const typedItems = filterComptabiliteByType(items, type);
   const totals = computeComptabiliteTotals(typedItems);
   const isEntree = type === 'entree';
-  const title = isEntree ? 'Etat des entrees' : 'Etat des sorties';
+  const title = isEntree ? 'État des entrées' : 'État des sorties';
   const description = isEntree
-    ? "Ce document regroupe les recettes enregistrees, avec leur detail, leur date et leur observation de caisse."
-    : "Ce document regroupe les depenses enregistrees, avec leur detail, leur date et leur observation de caisse.";
+    ? "Ce document regroupe les recettes enregistrées, avec leur détail, leur date et leur observation de caisse."
+    : "Ce document regroupe les dépenses enregistrées, avec leur détail, leur date et leur observation de caisse.";
 
   return (
     <PrintDocumentLayout
@@ -56,21 +56,21 @@ export function ComptabiliteMovementDocument({
 
       <ComptabiliteSummaryCards
         totals={totals}
-        highlightedLabel={isEntree ? 'Total encaisse' : 'Total decaisse'}
+        highlightedLabel={isEntree ? 'Total encaissé' : 'Total décaissé'}
         variant="plain"
       />
 
       {typedItems.length === 0 ? (
         <PrintEmptyState
           title={`Aucune ${isEntree ? 'entree' : 'sortie'}`}
-          message={`Aucune ${isEntree ? 'recette' : 'depense'} ne correspond aux criteres actuels.`}
+          message={`Aucune ${isEntree ? 'recette' : 'depense'} ne correspond aux critères actuels.`}
         />
       ) : (
         <PrintTable minWidth={860}>
           <TableHead>
             <TableRow>
               <TableCell sx={{ width: 120 }}>Date</TableCell>
-              <TableCell sx={{ width: 210 }}>Libelle</TableCell>
+              <TableCell sx={{ width: 210 }}>Libellé</TableCell>
               <TableCell sx={{ width: 140 }} align="right">Montant</TableCell>
               <TableCell sx={{ width: 140 }}>Nature</TableCell>
               <TableCell sx={{ width: 250 }}>Observation</TableCell>

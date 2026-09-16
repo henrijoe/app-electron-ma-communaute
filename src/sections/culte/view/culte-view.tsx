@@ -17,6 +17,7 @@ import {
   Grid, Chip, Dialog, Divider, MenuItem, TextField, DialogTitle, DialogActions,
   Stack, DialogContent, IconButton, Tooltip, InputAdornment
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import ChurchRounded from '@mui/icons-material/ChurchRounded';
 import GroupsRounded from '@mui/icons-material/GroupsRounded';
 import MaleRounded from '@mui/icons-material/MaleRounded';
@@ -53,8 +54,12 @@ import PrintEtatGlobal from '../etats/printEtats';
 import { CulteTableHead } from '../culte-table-head';
 import { IDataChoice } from '../../../store/membreSlice';
 
-// Petite carte de statistique affichee en tete de la liste des cultes
+// Petite carte de statistique affichée en tête de la liste des cultes
 // (nombre de cultes affiches, participants, offrandes, enfants Ecodim).
+// Même patron que SummaryCard dans pastoral-view.tsx : fond à base de la
+// couleur du thème (pas un token "lighter" fixe et pâle), pour rester bien
+// visible aussi bien en clair qu'en sombre (l'ancienne version, fond pâle
+// + badge blanc fixe, devenait illisible en mode sombre).
 function CulteStatCard({
   color,
   icon,
@@ -66,36 +71,38 @@ function CulteStatCard({
   label: string;
   value: number;
 }) {
+  const theme = useTheme();
+  const paletteColor = theme.palette[color].main;
+
   return (
     <Card
-      variant="outlined"
       sx={{
         p: 2,
-        borderRadius: 3,
+        height: 1,
+        borderRadius: 2,
         boxShadow: 'none',
-        borderColor: `${color}.light`,
-        bgcolor: `${color}.lighter`,
+        border: `1px solid ${alpha(paletteColor, 0.18)}`,
+        bgcolor: alpha(paletteColor, theme.palette.mode === 'dark' ? 0.12 : 0.06),
       }}
     >
       <Stack direction="row" spacing={1.5} alignItems="center">
         <Box
           sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            bgcolor: 'common.white',
-            color: `${color}.main`,
+            width: 42,
+            height: 42,
+            display: 'grid',
+            borderRadius: 1.5,
+            placeItems: 'center',
+            color: paletteColor,
+            bgcolor: alpha(paletteColor, theme.palette.mode === 'dark' ? 0.18 : 0.12),
             flexShrink: 0,
           }}
         >
           {icon}
         </Box>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h6" sx={{ lineHeight: 1.1 }}>{value}</Typography>
           <Typography variant="caption" color="text.secondary" noWrap>{label}</Typography>
+          <Typography variant="h5" sx={{ lineHeight: 1.1 }}>{value}</Typography>
         </Box>
       </Stack>
     </Card>
@@ -178,7 +185,7 @@ export function CulteView() {
     if (!canManageCulte) return;
 
     if (!currentUserId) {
-      showNotification('Session expiree: reconnectez-vous pour supprimer un culte', 'warning');
+      showNotification('Session expirée: reconnectez-vous pour supprimer un culte', 'warning');
       return;
     }
 
@@ -285,11 +292,11 @@ export function CulteView() {
           handleCloseDialog();
           showNotification('Culte créé avec succès', 'success');
         } else {
-          showNotification(response.error?.message || 'Erreur lors de la creation du culte', 'error');
+          showNotification(response.error?.message || 'Erreur lors de la création du culte', 'error');
         }
       } catch (error) {
         console.error('Error creating culte:', error);
-        showNotification(getApiErrorMessage(error, 'Erreur lors de la creation du culte'), 'error');
+        showNotification(getApiErrorMessage(error, 'Erreur lors de la création du culte'), 'error');
       } finally {
         setUpdateLoading(false);
       }
@@ -326,7 +333,7 @@ export function CulteView() {
   }, [fetchCultes]);
 
 
-  // On combine la recherche texte avec des crit�res m�tier plus pr�cis.
+  // On combine la recherche texte avec des critères métier plus précis.
   const baseFilteredData: any[] = useMemo(() => {
     const dataToFilter = Array.isArray(listCulte) ? listCulte : [];
     return applyFilter({
@@ -370,9 +377,9 @@ export function CulteView() {
   }),
     [dataFiltered, table.order]
   );
-  // Cartes-resume affichees en tete de page, calculees sur la liste actuellement
-  // filtree/recherchee (sortedData) : elles refletent donc la recherche et les
-  // filtres avances actifs, sans necessiter un filtre de periode supplementaire.
+  // Cartes-résumé affichées en tête de page, calculées sur la liste actuellement
+  // filtrée/recherchee (sortedData) : elles refletent donc la recherche et les
+  // filtres avancés actifs, sans necessiter un filtre de période supplémentaire.
   const culteStats = useMemo(() => {
     let totalParticipants = 0;
     let totalOffrandes = 0;
@@ -414,7 +421,7 @@ export function CulteView() {
 
     if (selected.length === 0) return;
     if (!currentUserId) {
-      showNotification('Session expiree: reconnectez-vous pour supprimer des cultes', 'warning');
+      showNotification('Session expirée: reconnectez-vous pour supprimer des cultes', 'warning');
       return;
     }
 
@@ -449,16 +456,16 @@ export function CulteView() {
       }
 
       if (summary.failures === 0) {
-        showNotification(`${summary.successes} culte(s) supprime(s) avec succes`, 'success');
+        showNotification(`${summary.successes} culte(s) supprimé(s) avec succès`, 'success');
       } else {
         showNotification(
-          `${summary.successes} supprime(s), ${summary.failures} erreur(s)`,
+          `${summary.successes} supprimé(s), ${summary.failures} erreur(s)`,
           summary.failures === selected.length ? 'error' : 'warning'
         );
       }
 
     } catch (error: any) {
-      console.error('Erreur generale lors de la suppression multiple:', error);
+      console.error('Erreur générale lors de la suppression multiple:', error);
       showNotification(`Erreur: ${error.message || 'Erreur lors de la suppression'}`, 'error');
     } finally {
       setDeleteLoading(false);
@@ -635,7 +642,7 @@ export function CulteView() {
                         {typeCulteOptions.find((option) => String(option.value) === String(row.typeCulte))?.label || row.typeCulte || 'Culte'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
-                        {row.dateCulte || 'Date non renseignee'} - {row.dirigeant || 'Dirigeant non renseigne'}
+                        {row.dateCulte || 'Date non renseignée'} - {row.dirigeant || 'Dirigeant non renseigné'}
                       </Typography>
                     </Box>
                   </Stack>
@@ -644,7 +651,7 @@ export function CulteView() {
 
                   <Grid container spacing={1.25}>
                     <Grid item xs={12}>
-                      <Typography variant="caption" color="text.secondary">Theme</Typography>
+                      <Typography variant="caption" color="text.secondary">Thème</Typography>
                       <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.themePredication || '-'}</Typography>
                     </Grid>
                     <Grid item xs={6}>
@@ -679,7 +686,7 @@ export function CulteView() {
 
             {notFound && (
               <Card variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 2, boxShadow: 'none' }}>
-                <Typography variant="subtitle2">Aucun resultat</Typography>
+                <Typography variant="subtitle2">Aucun résultat</Typography>
                 <Typography variant="body2" color="text.secondary">Aucun culte ne correspond aux filtres.</Typography>
               </Card>
             )}
@@ -1164,8 +1171,8 @@ export function CulteView() {
 
       <ConfirmDialog
         open={confirmDeleteSelectedOpen}
-        title="Supprimer les cultes selectionnes"
-        message={`Voulez-vous vraiment supprimer ${selected.length} culte(s) selectionne(s) ?`}
+        title="Supprimer les cultes sélectionnés"
+        message={`Voulez-vous vraiment supprimer ${selected.length} culte(s) sélectionné(s) ?`}
         confirmText="Supprimer"
         loading={deleteLoading}
         onClose={() => setConfirmDeleteSelectedOpen(false)}

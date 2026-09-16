@@ -51,7 +51,7 @@ type PrintIdentity = {
   nomEgliseCourt?: string;
 };
 
-// Meme logique de resolution de logo que les autres documents imprimables membres
+// Même logique de résolution de logo que les autres documents imprimables membres
 // (listeMembrePdf.tsx / member-profile-print.tsx), pour un rendu identique partout.
 const getLogoUrl = (identity: PrintIdentity): string | null => {
   const logoPath = identity.logoEglise || identity.logoUtilisateur;
@@ -74,13 +74,13 @@ const ComponentToPrint = forwardRef<
 
 type PrintCartesMembreProps = {
   membres: IMembre[];
-  // Libelle du bouton : personnalisable pour distinguer "Cartes de membre" (liste,
-  // plusieurs membres selectionnes) de "Imprimer sa carte" (fiche d'un seul membre).
+  // Libellé du bouton : personnalisable pour distinguer "Cartes de membre" (liste,
+  // plusieurs membres sélectionnés) de "Imprimer sa carte" (fiche d'un seul membre).
   label?: string;
 };
 
 // Bouton + menu d'impression des cartes de membre (photo + infos), 3 par feuille A4
-// portrait. Reutilisable depuis la liste des membres (selection multiple) ou depuis
+// portrait. Réutilisable depuis la liste des membres (sélection multiple) ou depuis
 // la fiche d'un membre (carte unique) — voir PrintCartesMembreProps.membres.
 export function PrintCartesMembre({ membres, label = 'Cartes de membre' }: PrintCartesMembreProps) {
   const printRef = useRef<HTMLDivElement>(null);

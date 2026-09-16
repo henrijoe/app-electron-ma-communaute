@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const functions_1 = __importDefault(require("./functions"));
 /**
  *
-Permet d'ajouter un responsabilite
+Permet d'ajouter un responsabilité
  * @returns
  */
 const ajouterResponsabilite = (data) => {
@@ -53,7 +53,7 @@ const supprimerResponsabilite = (idResponsabilite) => {
                     resolve(true);
                 }
                 else {
-                    return reject('Departement non trouvé');
+                    return reject('Département non trouvé');
                 }
             }
         }

@@ -45,7 +45,7 @@ export function UserTableToolbar({
     >
       {numSelected > 0 ? (
         <Typography component="div" variant="subtitle1">
-          {numSelected} selectionne(s)
+          {numSelected} sélectionné(s)
         </Typography>
       ) : (
         <Box sx={{ flex: '1 1 auto', minWidth: 0, maxWidth: { xs: 'none', sm: 320 } }}>

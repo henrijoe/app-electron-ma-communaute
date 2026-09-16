@@ -87,7 +87,7 @@ const emptyForm: ProgrammeFormState = {
 };
 
 // Regroupe les lignes par mois pour retrouver la mise en page du document papier
-// (une section "FEVRIER 2026", une section "MARS 2026", etc.).
+// (une section "FÉVRIER 2026", une section "MARS 2026", etc.).
 const groupByMonth = (programmes: ProgrammeEglise[]) => {
   const groups = new Map<string, ProgrammeEglise[]>();
 
@@ -137,9 +137,9 @@ export function ProgrammeEgliseManager({ idUtilisateur }: ProgrammeEgliseManager
   const [printMenuAnchor, setPrintMenuAnchor] = useState<null | HTMLElement>(null);
   const isDesktopPrint = canUseDesktopPrint();
 
-  // "Horaires" et "Thème de l'année" ne sont pas une donnee metier partagee entre
-  // postes (juste un rappel affiche en tete du document imprime) : on les garde
-  // en local plutot que d'alourdir le schema pour deux champs de texte libre.
+  // "Horaires" et "Thème de l'année" ne sont pas une donnée métier partagée entre
+  // postes (juste un rappel affiche en tête du document imprime) : on les garde
+  // en local plutôt que d'alourdir le schéma pour deux champs de texte libre.
   const horairesKey = `programme-eglise-horaires-${idUtilisateur}`;
   const themeKey = `programme-eglise-theme-${idUtilisateur}`;
   const [horaires, setHoraires] = useState('');
@@ -193,8 +193,8 @@ export function ProgrammeEgliseManager({ idUtilisateur }: ProgrammeEgliseManager
   const groupedProgrammes = useMemo(() => groupByMonth(programmes), [programmes]);
 
   const openAddDialog = () => {
-    // On propose par defaut le dimanche suivant la derniere ligne programmee,
-    // pour enchainer facilement plusieurs cultes d'affilee.
+    // On propose par défaut le dimanche suivant la dernière ligne programmée,
+    // pour enchainer facilement plusieurs cultes d'affilée.
     const lastDate = programmes.length ? programmes[programmes.length - 1].dateProgramme : null;
     const base = lastDate ? new Date(`${lastDate}T00:00:00`) : new Date();
     if (lastDate) {

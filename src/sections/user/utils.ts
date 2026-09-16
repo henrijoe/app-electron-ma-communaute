@@ -9,7 +9,7 @@ export const getPhotoUrl = (photoMembre: string) => {
     return null;
   }
 
-  // Les data URLs et URLs externes sont deja exploitables telles quelles.
+  // Les data URLs et URLs externes sont déjà exploitables telles quelles.
   if (photoMembre.startsWith('data:image/') || photoMembre.startsWith('http')) {
     return photoMembre;
   }
@@ -19,7 +19,7 @@ export const getPhotoUrl = (photoMembre: string) => {
     return resolveStaticAssetUrl(photoMembre);
   }
 
-  // Certains enregistrements stockent deja le prefixe /photos.
+  // Certains enregistrements stockent déjà le prefixe /photos.
   if (photoMembre.startsWith('/photos/')) {
     return buildPhotoUrl(photoMembre.replace(/^\/photos\//, ''));
   }
@@ -105,13 +105,13 @@ export function applyFilter({ inputData, comparator, filterName }: ApplyFilterPr
     const searchTerm = filterName?.toLowerCase();
     
     inputData = inputData.filter((user) => {
-      // Creez une fonction utilitaire pour convertir en chaine et verifier
+      // Creez une fonction utilitaire pour convertir en chaîne et vérifier
       const safeToString = (value: any): string => {
         if (value === null || value === undefined) return '';
         return String(value)?.toLowerCase();
       };
 
-      // Verifiez chaque champ de maniere securisee
+      // Vérifiez chaque champ de manière sécurisée
       return (
         safeToString(user.nomMembre)?.includes(searchTerm) ||
         safeToString(user.prenomMembre)?.includes(searchTerm) ||
@@ -199,30 +199,30 @@ const convertGenreField = (value: string | number | null | undefined): string =>
 
 const convertSituationMatrimonialeField = (value: string | number | null | undefined): string => {
   if (value === null || value === undefined || value === '') {
-    return 'Non renseigne'; // Valeur par defaut
+    return 'Non renseigné'; // Valeur par defaut
   }
   
   const stringValue = String(value);
   
   const map: Record<string, string> = {
-    '1': 'Celibataire',
-    '2': 'Celibataire sans enfant',
-    '3': 'Fiance(e)',
+    '1': 'Célibataire',
+    '2': 'Célibataire sans enfant',
+    '3': 'Fiancé(e)',
     '4': 'Concubinage',
-    '5': 'Marie(e)',
-    '6': 'Divorce(e)',
+    '5': 'Marié(e)',
+    '6': 'Divorcé(e)',
     '7': 'Veuve',
     '8': 'Veuf',
     '9': 'Copain/Copine',
     '10': 'Polygame',
   };
   
-  return map[stringValue] || stringValue || 'Non renseigne';
+  return map[stringValue] || stringValue || 'Non renseigné';
 };
 
 const convertCapaciteSpirituelleField = (value: string | number | null | undefined): string => {
   if (value === null || value === undefined || value === '') {
-    return 'Non renseignee'; // Valeur par defaut
+    return 'Non renseignée'; // Valeur par defaut
   }
   
   const stringValue = String(value);
@@ -231,10 +231,10 @@ const convertCapaciteSpirituelleField = (value: string | number | null | undefin
   if (stringValue === '2') return 'Moyenne';
   if (stringValue === '3') return 'Nouvellement convertie';
   
-  return stringValue || 'Non renseignee';
+  return stringValue || 'Non renseignée';
 };
 
-// Optionnel : fonction pour formater les champs numeriques optionnels (departement, cellule, groupe)
+// Optionnel : fonction pour formater les champs numériques optionnels (département, cellule, groupe)
 export const formatOptionalField = (value: number | string | null | undefined, options: IDataChoice[]): string => {
   if (value === null || value === undefined || value === '') {
     return '-';

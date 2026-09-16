@@ -43,7 +43,7 @@ export default function CelluleEditView() {
   );
 
   useEffect(() => {
-    // On r�hydrate le formulaire depuis le store pour �viter une requ�te inutile.
+    // On réhydrate le formulaire depuis le store pour éviter une requête inutile.
     const celluleId = Number(id);
     const found = listCellule.find((item: ICellule) => item.idCellule === celluleId);
     setFormData(found || null);
@@ -58,7 +58,7 @@ export default function CelluleEditView() {
       const response = await apiClient.updateCellule(payload);
       if (response.status === 1) {
         dispatch(setDataModifiesCellule(payload));
-        showNotification('Cellule modifi�e avec succ�s', 'success');
+        showNotification('Cellule modifiée avec succès', 'success');
         navigate(`/detailcellule/${id}`);
       }
     } catch (error: any) {
@@ -68,7 +68,7 @@ export default function CelluleEditView() {
     }
   }, [currentUserId, dispatch, formData, id, navigate, showNotification]);
 
-  if (!formData) return <DashboardContent><Container maxWidth="lg"><Typography variant="h5">Cellule non trouv�e</Typography></Container></DashboardContent>;
+  if (!formData) return <DashboardContent><Container maxWidth="lg"><Typography variant="h5">Cellule non trouvée</Typography></Container></DashboardContent>;
 
   return (
     <DashboardContent>

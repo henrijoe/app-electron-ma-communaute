@@ -58,7 +58,7 @@ const ajouterNouvelleAme = (data) => {
     }));
 };
 /**
- * recuperer les nouvelle_ames
+ * récupérer les nouvelles âmes (table nouvelle_ame)
  * @returns
  */
 const recupNouvelleAme = () => {
@@ -67,7 +67,7 @@ const recupNouvelleAme = () => {
             const sql = `SELECT * FROM nouvelleame ORDER BY idNouvelleAme ASC ;`;
             const nouvelleAme = yield (0, db_1._selectSql)(sql, []);
             if (!nouvelleAme.length)
-                return reject({ name: "Erreur_ame", message: "Aucune ame trouvée pour les paramètres fournis" });
+                return reject({ name: "Erreur_ame", message: "Aucune âme trouvée pour les paramètres fournis" });
             resolve(nouvelleAme);
         }
         catch (error) {
@@ -81,7 +81,7 @@ const recupNouvelleAmeById = (id) => {
             const sql = `SELECT * FROM nouvelleame WHERE idNouvelleAme = ? ;`;
             const nouvelleAme = yield (0, db_1._selectSql)(sql, [id]);
             if (!nouvelleAme.length)
-                return reject({ name: "Erreur_ame", message: "Aucune ame trouvée pour les paramètres fournis" });
+                return reject({ name: "Erreur_ame", message: "Aucune âme trouvée pour les paramètres fournis" });
             resolve(nouvelleAme);
         }
         catch (error) {

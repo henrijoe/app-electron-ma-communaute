@@ -43,7 +43,7 @@ export function DepartementTableRow({
   const navigate = useNavigate();
 
   const departementData = Array.isArray(row) ? row[0] : row;
-  // Validation defensive pour conserver le meme flux que les autres listes.
+  // Validation defensive pour conserver le même flux que les autres listes.
   formatDepartementForDisplay(departementData);
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -173,7 +173,7 @@ export function DepartementTableRow({
         >
           <MenuItem onClick={handleViewDetail}>
             <Iconify icon="solar:eye-bold" />
-            Detail
+            Détail
           </MenuItem>
 
           {canManage && (
@@ -195,8 +195,8 @@ export function DepartementTableRow({
       {canManage && (
         <ConfirmDialog
           open={openConfirm}
-          title="Suppression du departement"
-          message={`Voulez-vous vraiment supprimer le departement "${row.libelleLongDepartement}" (${row.libelleCourtDepartement}) ?`}
+          title="Suppression du département"
+          message={`Voulez-vous vraiment supprimer le département "${row.libelleLongDepartement}" (${row.libelleCourtDepartement}) ?`}
           confirmText="Supprimer"
           cancelText="Annuler"
           loading={isDeleting}

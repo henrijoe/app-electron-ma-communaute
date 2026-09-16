@@ -16,7 +16,7 @@ const ajouterMembre = (req, res) => {
         .catch((error) => res.status(400).send({
         status: 0,
         error,
-        message: (error === null || error === void 0 ? void 0 : error.message) || 'Erreur lors de la creation du membre',
+        message: (error === null || error === void 0 ? void 0 : error.message) || 'Erreur lors de la création du membre',
     }));
 };
 /**
@@ -75,9 +75,9 @@ const ajouterDemandeInscriptionMembre = (req, res) => {
         .ajouterDemandeInscriptionMembre(req.body)
         .then((result) => {
         req.io.emit("demandeInscriptionMembre", result);
-        // Si l'eglise a desactive la validation manuelle, la demande est
-        // deja marquee "validee" et un membre a ete cree : on previent
-        // aussi les postes connectes que la liste des membres a change.
+        // Si l'église a désactive la validation manuelle, la demande est
+        // déjà marquee "validée" et un membre a été créé : on prévient
+        // aussi les postes connectés que la liste des membres a change.
         if ((result === null || result === void 0 ? void 0 : result.statutDemande) === 'validee') {
             req.io.emit("ajouterMembre", result);
         }
@@ -110,7 +110,7 @@ const validerDemandeInscriptionMembre = (req, res) => {
         .catch((error) => res.status(400).send({
         status: 0,
         error,
-        message: (error === null || error === void 0 ? void 0 : error.message) || "La demande n'a pas pu etre validee",
+        message: (error === null || error === void 0 ? void 0 : error.message) || "La demande n'a pas pu être validée",
     }));
 };
 const rejeterDemandeInscriptionMembre = (req, res) => {
@@ -124,7 +124,7 @@ const rejeterDemandeInscriptionMembre = (req, res) => {
         .catch((error) => res.status(400).send({
         status: 0,
         error,
-        message: (error === null || error === void 0 ? void 0 : error.message) || "La demande n'a pas pu etre rejetee",
+        message: (error === null || error === void 0 ? void 0 : error.message) || "La demande n'a pas pu être rejetée",
     }));
 };
 exports.default = {

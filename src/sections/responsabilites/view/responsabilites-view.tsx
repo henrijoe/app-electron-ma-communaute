@@ -105,7 +105,7 @@ export function ResponsabilitesView() {
 
   const handleSaveResponsabilite = useCallback(async () => {
     if (!currentAccountId) {
-      showNotification('Utilisateur connecte introuvable.', 'warning');
+      showNotification('Utilisateur connecté introuvable.', 'warning');
       return;
     }
 
@@ -193,7 +193,7 @@ export function ResponsabilitesView() {
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField
                   fullWidth
-                  label="Libelle"
+                  label="Libellé"
                   value={responsabiliteForm.libelleResponsabilite}
                   onChange={(event) => handleChangeResponsabiliteField('libelleResponsabilite', event.target.value)}
                 />

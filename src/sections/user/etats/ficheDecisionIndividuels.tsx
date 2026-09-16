@@ -15,7 +15,7 @@ export const FicheDecisionIndividuelPDf = () => {
   const membreItem = useSelector((state: IReduxState) => state.membre.membreItem);
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
 
-  // On prepare une date lisible uniquement si la decision est bien renseignee.
+  // On prépare une date lisible uniquement si la décision est bien renseignée.
   const decisionDate = membreItem?.dateDecisionMembre
     ? moment(membreItem.dateDecisionMembre).format('DD/MM/YYYY')
     : '';
@@ -24,18 +24,18 @@ export const FicheDecisionIndividuelPDf = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       orientation="portrait"
-      title="Fiche de decision individuelle"
+      title="Fiche de décision individuelle"
     >
       <Stack spacing={2.25}>
-        <PrintFormSection title="Identite du membre">
+        <PrintFormSection title="Identité du membre">
           <PrintFieldLine label="Nom" value={membreItem?.nomMembre} />
-          <PrintFieldLine label="Prenoms" value={membreItem?.prenomMembre} />
+          <PrintFieldLine label="Prénoms" value={membreItem?.prenomMembre} />
           <PrintFieldLine label="Ethnie" value={membreItem?.ethnieMembre} />
-          <PrintFieldLine label="Age" value="" />
+          <PrintFieldLine label="Âge" value="" />
           <PrintFieldLine label="Profession" value={membreItem?.fonctionMembre} />
           <PrintFieldLine label="Lieu de travail" value="" />
           <PrintFieldLine label="Contact" value={membreItem?.contactMembre} />
-          <PrintFieldLine label="Quartier de residence" value={membreItem?.residenceMembre} />
+          <PrintFieldLine label="Quartier de résidence" value={membreItem?.residenceMembre} />
         </PrintFormSection>
 
         <PrintFormSection title="Situation personnelle">
@@ -45,7 +45,7 @@ export const FicheDecisionIndividuelPDf = () => {
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap">
               <PrintCheckboxItem
-                label="Marie(e)"
+                label="Marié(e)"
                 checked={membreItem?.situationMatrimonialeMembre === 'Marié(e)'}
               />
               <PrintCheckboxItem
@@ -53,7 +53,7 @@ export const FicheDecisionIndividuelPDf = () => {
                 checked={membreItem?.situationMatrimonialeMembre === 'Concubinage'}
               />
               <PrintCheckboxItem
-                label="Celibataire"
+                label="Célibataire"
                 checked={membreItem?.situationMatrimonialeMembre === 'Célibataire'}
               />
               <PrintCheckboxItem
@@ -65,7 +65,7 @@ export const FicheDecisionIndividuelPDf = () => {
 
           <Box>
             <Typography variant="body2" sx={{ fontWeight: 700, color: '#27415f', mb: 0.75 }}>
-              Savez-vous lire et ecrire ?
+              Savez-vous lire et écrire ?
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap">
               <PrintCheckboxItem
@@ -78,7 +78,7 @@ export const FicheDecisionIndividuelPDf = () => {
 
           <Box>
             <Typography variant="body2" sx={{ fontWeight: 700, color: '#27415f', mb: 0.75 }}>
-              Parlez-vous couramment francais ?
+              Parlez-vous couramment français ?
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap">
               <PrintCheckboxItem
@@ -91,7 +91,7 @@ export const FicheDecisionIndividuelPDf = () => {
         </PrintFormSection>
 
         <PrintFormSection title="Suivi et visitation">
-          <PrintFieldLine label="Nom d'un ami dans l'eglise" value="" />
+          <PrintFieldLine label="Nom d'un ami dans l'église" value="" />
 
           <Box>
             <Typography variant="body2" sx={{ fontWeight: 700, color: '#27415f', mb: 0.75 }}>
@@ -108,7 +108,7 @@ export const FicheDecisionIndividuelPDf = () => {
 
         <PrintFormSection title="Engagement spirituel">
           <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.8 }}>
-            NB : A remplir et a ramener a la prochaine reunion.
+            NB : À remplir et à ramener à la prochaine réunion.
           </Typography>
 
           <Box
@@ -120,10 +120,10 @@ export const FicheDecisionIndividuelPDf = () => {
             }}
           >
             <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f274a' }}>
-              Decision
+              Décision
             </Typography>
             <Typography variant="body2" sx={{ mt: 0.75, color: '#1e293b', fontStyle: 'italic' }}>
-              « Me reconnaissant(e) pecheur et perdu, je decide d&apos;accepter JESUS comme
+              « Me reconnaissant(e) pécheur et perdu, je décide d&apos;accepter JÉSUS comme
               Seigneur et Sauveur personnel »
             </Typography>
           </Box>
@@ -141,7 +141,7 @@ export const FicheDecisionIndividuelPDf = () => {
           }}
         >
           <Typography variant="body2" sx={{ fontWeight: 700, color: '#7a5b16' }}>
-            Les cours de base ont lieu tous les dimanches apres le culte a l&apos;eglise.
+            Les cours de base ont lieu tous les dimanches après le culte à l&apos;église.
           </Typography>
         </Box>
       </Stack>

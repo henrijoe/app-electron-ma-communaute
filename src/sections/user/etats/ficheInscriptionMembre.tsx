@@ -112,7 +112,7 @@ export function FicheInscriptionMembre() {
                   <Box
                     component="img"
                     src={logoUrl}
-                    alt="Logo eglise"
+                    alt="Logo église"
                     sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                 ) : (
@@ -122,7 +122,7 @@ export function FicheInscriptionMembre() {
 
               <Box>
                 <Typography sx={{ fontSize: 9.5, letterSpacing: 1.1, textTransform: 'uppercase' }}>
-                  {identity.nomEgliseCourt || identity.nomTemple || 'Ma Communaute'}
+                  {identity.nomEgliseCourt || identity.nomTemple || 'Ma Communauté'}
                 </Typography>
                 <Typography sx={{ fontSize: 17, fontWeight: 900, lineHeight: 1 }}>
                   Fiche d&apos;inscription membre
@@ -206,7 +206,7 @@ export function FicheInscriptionMembre() {
                 <Line label="Email" />
               </Grid>
               <Grid item xs={4}>
-                <Line label="Residence" />
+                <Line label="Résidence" />
               </Grid>
               <Grid item xs={6}>
                 <Line label="Lieu de travail" />

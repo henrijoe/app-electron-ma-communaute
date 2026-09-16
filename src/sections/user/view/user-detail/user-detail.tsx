@@ -122,7 +122,7 @@ export function MembreDetailView() {
   const isDesktopApp = isDesktopAppRuntime();
   const profilePrintRef = useRef<HTMLDivElement>(null);
 
-  // Le detail se base sur les listes deja chargees dans le store.
+  // Le détail se base sur les listes déjà chargees dans le store.
   const { listMembre, listResponsabilite } = useSelector((state: RootState) => state.membre);
   const listDepartement = useSelector((state: RootState) => state.departement.listDepartement);
   const listCellule = useSelector((state: RootState) => state.cellule.listCellule);
@@ -219,7 +219,11 @@ export function MembreDetailView() {
           </Button>
 
           <Stack direction="row" spacing={1.5}>
-            {membre && <PrintCartesMembre membres={[membre]} label="Imprimer sa carte" />}
+            {/* Comme "Imprimer la fiche", l'impression de la carte reste réservée au
+                navigateur : elle est masquée dans l'application desktop. */}
+            {membre && !isDesktopApp && (
+              <PrintCartesMembre membres={[membre]} label="Imprimer sa carte" />
+            )}
 
             {!isDesktopApp && (
               <ReactToPrint
@@ -687,7 +691,7 @@ interface InfoBlockProps {
   value: string;
 }
 
-// Carte interne reutilisable pour garder un rendu homogène sur tous les groupes d'infos.
+// Carte interne réutilisable pour garder un rendu homogène sur tous les groupes d'infos.
 function InfoBlock({ icon, title, value }: InfoBlockProps) {
   return (
     <Box

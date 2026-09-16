@@ -41,7 +41,7 @@ export const Mariage:any = {
   contactMariage: ""
 }
 
-// initialiation des states
+// initialisation des states
 const initialStates: IMariageSlice = {
   dataMariage: [],
   dataFilterMariage: [],
@@ -55,7 +55,7 @@ export const MariageSlice = createSlice({
   name: 'mariage',
   initialState: initialStates,
   reducers: {
-    // fonction pour ajouter un Departement
+    // fonction pour ajouter un Département
     addMariage: (state, action: PayloadAction<IMariage>) => {
       state.dataMariage.unshift(action.payload)
     },
@@ -69,7 +69,7 @@ export const MariageSlice = createSlice({
       state.listMariage.unshift(action.payload)
     },
 
-    // fonction pour suprimer un Departement
+    // fonction pour supprimer un Département
     deleteMariage: (state, action) => {
       state.dataMariage = state.dataMariage.filter(
         (item) => item.idMariage !== action.payload
@@ -79,16 +79,16 @@ export const MariageSlice = createSlice({
       );
     },
     
-    // fonction pour rechecher un Departement dans le tableau
+    // fonction pour rechercher un Département dans le tableau
     setListFilterMariage: (state, action) => {
       state.dataFilterMariage = action.payload
     },
-    // fonction pour voir les detail de chaque Departement enregister
+    // fonction pour voir les détail de chaque Département enregistrer
     setDetailItem: (state, action) => {
       state.detailItem = action.payload
     },
     
-    // fonction pour modifier chaque Departement enregister
+    // fonction pour modifier chaque Département enregistrer
     setDataModifiesMariage: (state, action) => {
       state.dataMariage = state.dataMariage?.map((item: any) =>
       item.idMariage === action.payload.idMariage ? action.payload : item

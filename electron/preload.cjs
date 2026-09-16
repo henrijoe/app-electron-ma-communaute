@@ -6,30 +6,30 @@ contextBridge.exposeInMainWorld("desktopApp", {
   isDesktop: true,
 });
 
-// API d'impression utilisee par le renderer principal.
+// API d'impression utilisée par le renderer principal.
 contextBridge.exposeInMainWorld("desktopPrint", {
   openPreview: (payload) => ipcRenderer.invoke("desktop-print:open-preview", payload),
   exportPdf: (payload) => ipcRenderer.invoke("desktop-print:export-pdf", payload),
 });
 
-// API reservee a la fenetre d'aper�u imprimee par Electron.
+// API réservée à la fenêtre d'aper�u imprimee par Electron.
 contextBridge.exposeInMainWorld("desktopPrintControls", {
   print: () => ipcRenderer.invoke("desktop-print:print-window"),
   savePdf: () => ipcRenderer.invoke("desktop-print:save-pdf-window"),
   close: () => ipcRenderer.invoke("desktop-print:close-window"),
 });
 
-// API simple pour ouvrir une URL dans le navigateur systeme depuis Electron.
+// API simple pour ouvrir une URL dans le navigateur système depuis Electron.
 contextBridge.exposeInMainWorld("desktopShell", {
   openExternal: (url) => ipcRenderer.invoke("desktop-shell:open-external", url),
 });
 
-// API reseau minimale pour permettre au renderer de lire l'adresse IP locale.
+// API réseau minimale pour permettre au renderer de lire l'adresse IP locale.
 contextBridge.exposeInMainWorld("desktopNetwork", {
   getLocalAddress: () => ipcRenderer.invoke("desktop-network:get-local-address"),
 });
 
-// API de sauvegarde locale des donnees SQLite et medias client.
+// API de sauvegarde locale des données SQLite et medias client.
 contextBridge.exposeInMainWorld("desktopBackup", {
   getInfo: () => ipcRenderer.invoke("desktop-backup:get-info"),
   create: () => ipcRenderer.invoke("desktop-backup:create"),
@@ -37,7 +37,7 @@ contextBridge.exposeInMainWorld("desktopBackup", {
   openFolder: () => ipcRenderer.invoke("desktop-backup:open-folder"),
 });
 
-// API de mise a jour automatique reservee au mode desktop installe.
+// API de mise à jour automatique réservée au mode desktop installe.
 contextBridge.exposeInMainWorld("desktopUpdater", {
   getStatus: () => ipcRenderer.invoke("desktop-update:get-status"),
   check: () => ipcRenderer.invoke("desktop-update:check"),

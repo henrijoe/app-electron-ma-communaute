@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
-// creer interface pour designer les differents fonction  du Departement du state
+// créer interface pour designer les différents fonction  du Département du state
 export interface ICelluleSlice {
   dataCellule: ICellule[]
   dataFilterCellule: ICellule[]
@@ -38,7 +38,7 @@ export interface IResponsable {
   idUtilisateur:number;
   }
   
-// initialiation des states
+// initialisation des states
 const initialStates: ICelluleSlice = {
   dataCellule: [],
   dataFilterCellule: [],
@@ -59,7 +59,7 @@ export const CelluleSlice = createSlice({
       state.listCellule = Array.isArray(state.listCellule) ? state.listCellule : []
       state.filterCellule = Array.isArray(state.filterCellule) ? state.filterCellule : []
     },
-    // fonction pour ajouter un Departement
+    // fonction pour ajouter un Département
     addCellule: (state, action: PayloadAction<ICellule>) => {
       state.dataCellule.unshift(action.payload)
       state.dataFilterCellule.unshift(action.payload)
@@ -75,7 +75,7 @@ export const CelluleSlice = createSlice({
       state.listCellule = Array.isArray(action.payload) ? action.payload : []
     },
 
-    // fonction pour suprimer un Departement
+    // fonction pour supprimer un Département
     deleteCellule: (state, action) => {
       state.dataCellule = state.dataCellule.filter(
         (item) => item.idCellule !== action.payload
@@ -88,16 +88,16 @@ export const CelluleSlice = createSlice({
       );
     },
     
-    // fonction pour rechecher un Departement dans le tableau
+    // fonction pour rechercher un Département dans le tableau
     setListFilterCellule: (state, action) => {
       state.dataFilterCellule = action.payload
     },
-    // fonction pour voir les detail de chaque Departement enregister
+    // fonction pour voir les détail de chaque Département enregistrer
     setDetailItem: (state, action) => {
       state.detailItem = action.payload
     },
     
-    // fonction pour modifier chaque Departement enregister
+    // fonction pour modifier chaque Département enregistrer
     setDataModifiesCellule: (state, action) => {
       state.dataCellule = state.dataCellule?.map((item: any) =>
       item.idCellule === action.payload.idCellule ? action.payload : item

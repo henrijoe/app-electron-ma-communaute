@@ -30,11 +30,11 @@ const ajouterCellule = (data) => {
             if (!cellule.nomCellule || !cellule.lieuCellule) {
                 return reject(new Error("Le nom et le lieu de la cellule sont requis."));
             }
-            // On limite la verification de doublon a l'utilisateur connecte.
+            // On limite la vérification de doublon à l'utilisateur connecte.
             const sqlCheck = `SELECT COUNT(*) as count FROM cellule WHERE idUtilisateur = ? AND nomCellule = ?`;
             const [result] = yield (0, db_1._selectSql)(sqlCheck, [cellule.idUtilisateur, cellule.nomCellule]);
             if (result.count > 0) {
-                return reject(new Error("Cette cellule existe deja."));
+                return reject(new Error("Cette cellule existe déjà."));
             }
             const nextCelluleId = cellule.idCellule || (yield getNextCelluleId());
             const values = [
@@ -85,7 +85,7 @@ const recupCelluleByIdUtilsateur = (idUtilisateur) => {
             const sql = `SELECT * FROM cellule WHERE idUtilisateur= ?;`;
             const cellule = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
             if (!cellule.length) {
-                return reject({ name: "Erreur_cellule", message: "Aucune cellule trouvee" });
+                return reject({ name: "Erreur_cellule", message: "Aucune cellule trouvée" });
             }
             resolve(cellule);
         }
@@ -94,7 +94,7 @@ const recupCelluleByIdUtilsateur = (idUtilisateur) => {
         }
     }));
 };
-// Quand l'ID utilisateur est fourni, on empeche la suppression hors perimetre.
+// Quand l'ID utilisateur est fourni, on empêche la suppression hors perimetre.
 const supprimerCellule = (idCellule, idUtilisateur) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {

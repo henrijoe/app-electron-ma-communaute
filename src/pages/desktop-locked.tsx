@@ -16,7 +16,7 @@ import type { IReduxState } from 'src/store/store';
 import { apiClient } from 'src/utils/apiClient';
 import { fDate } from 'src/utils/format-time';
 
-// Ecran simple affiche quand la licence desktop bloque l'utilisateur courant.
+// Écran simple affiche quand la licence desktop bloque l'utilisateur courant.
 export default function DesktopLockedPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ export default function DesktopLockedPage() {
     }
 
     if (!unlockCode.trim()) {
-      showNotification('Le code de deblocage est requis.', 'warning');
+      showNotification('Le code de déblocage est requis.', 'warning');
       return;
     }
 
@@ -73,10 +73,10 @@ export default function DesktopLockedPage() {
       );
 
       setUnlockCode('');
-      showNotification('Application desktop debloquee avec succes.', 'success');
+      showNotification('Application desktop débloquée avec succès.', 'success');
       navigate('/', { replace: true });
     } catch (error: any) {
-      showNotification(error?.message || 'Code de deblocage invalide.', 'error');
+      showNotification(error?.message || 'Code de déblocage invalide.', 'error');
     } finally {
       setIsUnlocking(false);
     }
@@ -85,10 +85,10 @@ export default function DesktopLockedPage() {
   return (
     <Box sx={{ py: 8, px: 3 }}>
       <Stack spacing={3} alignItems="center" textAlign="center">
-        <Typography variant="h3">Application desktop bloquee</Typography>
+        <Typography variant="h3">Application desktop bloquée</Typography>
 
         <Typography color="text.secondary" sx={{ maxWidth: 560 }}>
-          {desktopMessage || "L'application desktop est actuellement bloquee pour ce compte."}
+          {desktopMessage || "L'application desktop est actuellement bloquée pour ce compte."}
         </Typography>
 
         <Typography variant="body2" color="text.secondary">
@@ -107,24 +107,24 @@ export default function DesktopLockedPage() {
           }}
         >
           <Alert severity="info">
-            Renseigne ici le code de deblocage fourni par le developpeur.
+            Renseigne ici le code de déblocage fourni par le développeur.
           </Alert>
 
           <TextField
             fullWidth
-            label="Code de deblocage"
+            label="Code de déblocage"
             value={unlockCode}
             onChange={(event) => setUnlockCode(event.target.value.toUpperCase())}
             placeholder="MC-XXXX-XXXX-XXXX-XXXX"
           />
 
           <Button variant="contained" onClick={handleUnlockWithCode} disabled={isUnlocking}>
-            {isUnlocking ? 'Deblocage...' : "Debloquer l'application"}
+            {isUnlocking ? 'Déblocage...' : "Débloquer l'application"}
           </Button>
         </Stack>
 
         <Button variant="text" onClick={handleDisconnect}>
-          Se deconnecter
+          Se déconnecter
         </Button>
       </Stack>
 

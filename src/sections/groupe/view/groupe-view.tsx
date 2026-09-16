@@ -88,7 +88,7 @@ export function GroupeView() {
   }, []);
 
   const fetchGroupes = useCallback(async () => {
-    // On charge uniquement les groupes rattaches l'utilisateur courant.
+    // On charge uniquement les groupes rattachés l'utilisateur courant.
     try {
       setLoading(true);
       dispatch(ensureArray());
@@ -211,10 +211,10 @@ export function GroupeView() {
       }
 
       if (summary.failures === 0) {
-        showNotification(`${summary.successes} groupe(s) supprime(s) avec succes`, 'success');
+        showNotification(`${summary.successes} groupe(s) supprimé(s) avec succès`, 'success');
       } else {
         showNotification(
-          `${summary.successes} supprime(s), ${summary.failures} erreur(s)`,
+          `${summary.successes} supprimé(s), ${summary.failures} erreur(s)`,
           summary.failures === table.selected.length ? 'error' : 'warning'
         );
       }
@@ -394,7 +394,7 @@ export function GroupeView() {
                   <Box minWidth={0} flex={1}>
                     <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>{row.libelleGroupe || 'Groupe sans nom'}</Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
-                      {row.descriptionGroupe || 'Description non renseignee'}
+                      {row.descriptionGroupe || 'Description non renseignée'}
                     </Typography>
                   </Box>
                 </Box>
@@ -433,7 +433,7 @@ export function GroupeView() {
 
             {notFound && (
               <Card variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 2, boxShadow: 'none' }}>
-                <Typography variant="subtitle2">Aucun resultat</Typography>
+                <Typography variant="subtitle2">Aucun résultat</Typography>
                 <Typography variant="body2" color="text.secondary">Aucun groupe ne correspond aux filtres.</Typography>
               </Card>
             )}
@@ -454,7 +454,7 @@ export function GroupeView() {
                   { id: 'libelleGroupe', label: 'Groupe' },
                   { id: 'descriptionGroupe', label: 'Description' },
                   { id: 'responsableGroupe', label: 'Responsable' },
-                  { id: 'contactResponsableGroupe', label: 'Numero responsable' },
+                  { id: 'contactResponsableGroupe', label: 'Numéro responsable' },
                   { id: 'actions', label: 'Actions', align: 'center', width: 100 },
                 ]}
               />
@@ -515,7 +515,7 @@ export function GroupeView() {
                 label="Contact du responsable"
                 value={selectedResponsableContact || ''}
                 InputProps={{ readOnly: true }}
-                helperText={selectedResponsableContact ? 'Contact deja saisi sur la fiche membre' : 'Aucun contact trouve pour ce responsable'}
+                helperText={selectedResponsableContact ? 'Contact déjà saisi sur la fiche membre' : 'Aucun contact trouvé pour ce responsable'}
               />
             </Grid>
             <Grid item xs={12}>
@@ -543,8 +543,8 @@ export function GroupeView() {
 
       <ConfirmDialog
         open={confirmDeleteSelectedOpen}
-        title="Supprimer les groupes selectionnes"
-        message={`Voulez-vous vraiment supprimer ${table.selected.length} groupe(s) selectionne(s) ?`}
+        title="Supprimer les groupes sélectionnés"
+        message={`Voulez-vous vraiment supprimer ${table.selected.length} groupe(s) sélectionné(s) ?`}
         confirmText="Supprimer"
         loading={deleteLoading}
         onClose={() => setConfirmDeleteSelectedOpen(false)}

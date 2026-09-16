@@ -10,8 +10,8 @@ export type DashboardVerse = {
   text: string;
 };
 
-// Un verset programme par l'administrateur pour une date precise
-// (ex: "verset du jour" different pendant 1, 2 ou 6 mois).
+// Un verset programme par l'administrateur pour une date précise
+// (ex: "verset du jour" différent pendant 1, 2 ou 6 mois).
 export type ScheduledVerse = {
   idVersetProgramme: number;
   idUtilisateur: number;
@@ -152,7 +152,7 @@ export const normalizeDashboardVerseMode = (value: unknown): DashboardVerseMode 
 };
 
 // Formate une date en 'YYYY-MM-DD' (fuseau local) pour la comparer aux
-// dates programmees, qui sont stockees sous ce meme format simple.
+// dates programmées, qui sont stockées sous ce même format simple.
 export const formatIsoDate = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');

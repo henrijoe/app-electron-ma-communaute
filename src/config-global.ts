@@ -10,6 +10,6 @@ export type ConfigValue = {
 // ----------------------------------------------------------------------
 
 export const CONFIG: ConfigValue = {
-  appName: 'Ma-communaute',
+  appName: 'Ma Communauté',
   appVersion: packageJson.version,
 };

@@ -30,7 +30,7 @@ const supprimerNaissance = (req, res) => {
             res.status(200).send({ status: 1, data: result });
         }
         else {
-            res.status(400).send({ status: 0, errors: "Naissance non trouvee" });
+            res.status(400).send({ status: 0, errors: "Naissance non trouvée" });
         }
     })
         .catch((errors) => res.status(400).send({ status: 0, errors }));

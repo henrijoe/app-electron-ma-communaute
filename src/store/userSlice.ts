@@ -49,7 +49,7 @@ export interface IUtilisateur {
   roleUtilisateur: UserRole;
   permissionsUtilisateur: string;
   actifUtilisateur: number;
-  // 1 = les inscriptions envoyees par QR code doivent etre validees par un
+  // 1 = les inscriptions envoyées par QR code doivent être validées par un
   // responsable avant de devenir des membres ; 0 = ajout direct sans validation.
   validerInscriptionMembre: number;
   logoUtilisateur: string;

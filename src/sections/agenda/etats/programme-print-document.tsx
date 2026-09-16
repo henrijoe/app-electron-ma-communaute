@@ -21,7 +21,7 @@ type ProgrammePrintDocumentProps = {
 };
 
 // Regroupe les lignes par mois pour reproduire la mise en page du document papier
-// (une section "FEVRIER 2026", une section "MARS 2026", etc. — voir programme-eglise-manager.tsx).
+// (une section "FÉVRIER 2026", une section "MARS 2026", etc. — voir programme-eglise-manager.tsx).
 const groupByMonth = (programmes: ProgrammeEglise[]) => {
   const groups = new Map<string, ProgrammeEglise[]>();
 

@@ -11,7 +11,7 @@ export const comptabiliteCurrencyFormatter = new Intl.NumberFormat('fr-FR', {
 });
 
 export const getComptabiliteTypeLabel = (type: ComptabiliteType): string =>
-  type === 'entree' ? 'Entree' : 'Sortie';
+  type === 'entree' ? 'Entrée' : 'Sortie';
 
 export const formatComptabiliteDate = (value?: string | null): string => {
   const normalized = String(value || '').trim();
@@ -111,7 +111,7 @@ export function ComptabiliteSummaryCards({
   const isPlainVariant = variant === 'plain';
   const cards = [
     {
-      label: 'Entrees',
+      label: 'Entrées',
       value: comptabiliteCurrencyFormatter.format(totals.entree),
       color: '#16a34a',
       bg: 'rgba(22, 163, 74, 0.10)',

@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
-// creer interface pour designer les differents fonction  du Groupe du state
+// créer interface pour designer les différents fonction  du Groupe du state
 export interface IGroupeSlice {
   dataGroupe: IGroupe[]
   dataFilterGroupe: IGroupe[]
@@ -25,7 +25,7 @@ export const groupe:any = {
   responsableGroupe:"",
 }
 
-// initialiation des states
+// initialisation des states
 const initialStates: IGroupeSlice = {
   dataGroupe: [],
   dataFilterGroupe: [],
@@ -61,7 +61,7 @@ export const GroupeSlice = createSlice({
       state.listGroupe = Array.isArray(action.payload) ? action.payload : []
     },
 
-    // fonction pour suprimer un Groupe
+    // fonction pour supprimer un Groupe
     deleteGroupe: (state, action) => {
       state.dataGroupe = state.dataGroupe.filter(
         (item) => item.idGroupe !== action.payload
@@ -75,16 +75,16 @@ export const GroupeSlice = createSlice({
       );
     },
     
-    // fonction pour rechecher un Groupe dans le tableau
+    // fonction pour rechercher un Groupe dans le tableau
     setListFilterGroupe: (state, action) => {
       state.dataFilterGroupe = action.payload
     },
-    // fonction pour voir les detail de chaque Groupe enregister
+    // fonction pour voir les détail de chaque Groupe enregistrer
     setDetailItem: (state, action) => {
       state.detailItem = action.payload
     },
     
-    // fonction pour modifier chaque Groupe enregister
+    // fonction pour modifier chaque Groupe enregistrer
     setDataModifiesGroupe: (state, action) => {
       state.dataGroupe = state.dataGroupe?.map((item: any) =>
       item.idGroupe === action.payload.idGroupe ? action.payload : item

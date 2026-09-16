@@ -89,10 +89,10 @@ const resolveChoiceLabel = (choices: IDataChoice[], value: unknown): string => {
 // chaîne vide quand la valeur est absente (utilisé dans la vue mobile).
 const resolveOptionalChoiceLabel = (choices: IDataChoice[], value: unknown): string => {
   const rawValue = String(value ?? '').trim();
-  if (!rawValue || rawValue === '0') return 'Non renseigne';
+  if (!rawValue || rawValue === '0') return 'Non renseigné';
 
   const match = choices.find((choice) => String(choice.value) === rawValue);
-  return match?.label || 'Non renseigne';
+  return match?.label || 'Non renseigné';
 };
 
 // Même principe, mais pour les listes de référence (Cellule, Département,
@@ -151,7 +151,7 @@ export function UserView() {
     Number(appUserConnected?.idUtilisateurParent || appUserConnected?.idUtilisateur)
     || Number(authUtilisateurData?.idUtilisateurParent || authUtilisateurData?.idUtilisateur)
     || null;
-  // true si le rôle connecté a le droit de créer/modifier/supprimer des membres
+  // true si le rôle connecté à le droit de créer/modifier/supprimer des membres
   // (un simple "lecteur" verra la liste mais pas les boutons d'action).
   const canManageUsers = canManageModule(appUserConnected || authUtilisateurData, 'user');
   // true si on est dans l'app desktop (Electron) plutôt que dans un navigateur :
@@ -181,7 +181,7 @@ export function UserView() {
   ), [listResponsabilite]);
   const exportableMembres = useMemo(() => (Array.isArray(listMembre) ? listMembre : []), [listMembre]);
   // Nom de l'église affiché sur le QR code / l'affiche imprimable, avec
-  // repli sur "Ma Communaute" si rien n'est renseigné dans le profil.
+  // repli sur "Ma Communauté" si rien n'est renseigné dans le profil.
   const registrationChurchName = useMemo(() => (
     String(
       appUserConnected?.nomEgliseCourt ||
@@ -190,7 +190,7 @@ export function UserView() {
       authUtilisateurData?.nomEgliseCourt ||
       authUtilisateurData?.nomTemple ||
       authUtilisateurData?.nomEglise ||
-      'Ma Communaute'
+      'Ma Communauté'
     ).trim()
   ), [appUserConnected, authUtilisateurData]);
 
@@ -296,12 +296,12 @@ export function UserView() {
         setQrBrowserUrl(browserUrl);
       }
     } catch (error) {
-      console.warn('Impossible de recuperer l URL reseau pour le QR code:', error);
+      console.warn('Impossible de récupérer l URL réseau pour le QR code:', error);
     }
   }, [canManageUsers]);
 
   // Référence vers l'affiche imprimable (composant caché, voir le JSX plus
-  // bas) : c'est ce noeud HTML qui est envoyé à Electron ou au navigateur
+  // bas) : c'est ce nœud HTML qui est envoyé à Electron ou au navigateur
   // pour être transformé en PDF/impression.
   const qrPosterRef = useRef<HTMLDivElement>(null);
   // true si on est dans l'app desktop avec l'impression Electron disponible ;
@@ -325,7 +325,7 @@ export function UserView() {
   const handleCopyQrRegistrationUrl = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(qrRegistrationUrl);
-      showNotification('Lien inscription copie', 'success');
+      showNotification("Lien d’inscription copié", 'success');
     } catch (error) {
       showNotification('Impossible de copier le lien automatiquement', 'warning');
     }
@@ -386,7 +386,7 @@ export function UserView() {
       const response = await apiClient.getMemberRegistrationRequests(currentUserId);
       setPendingRegistrations(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      console.error('Impossible de recuperer les demandes inscription membre:', error);
+      console.error('Impossible de récupérer les demandes inscription membre:', error);
       setPendingRegistrations([]);
     } finally {
       setPendingRegistrationsLoading(false);
@@ -407,22 +407,22 @@ export function UserView() {
       );
 
       if (response.status !== 1) {
-        throw new Error(response.message || "La demande n'a pas pu etre validee.");
+        throw new Error(response.message || "La demande n'a pas pu être validée.");
       }
 
-      showNotification('Demande validee. Le membre a ete ajoute a la liste.', 'success');
+      showNotification('Demande validée. Le membre a été ajouté à la liste.', 'success');
       setSelectedRegistrationRequest(null);
       await Promise.all([fetchPendingRegistrations(), fetchMembres()]);
     } catch (error) {
       const message =
-        error instanceof ApiError ? error.message : (error as Error)?.message || "La demande n'a pas pu etre validee.";
+        error instanceof ApiError ? error.message : (error as Error)?.message || "La demande n'a pas pu être validée.";
       showNotification(message, 'error');
     } finally {
       setRegistrationActionLoading(false);
     }
   }, [currentUserId, fetchMembres, fetchPendingRegistrations, selectedRegistrationRequest, showNotification]);
 
-  // Rejette la demande sélectionnée : elle passe au statut "rejetee" côté
+  // Rejette la demande sélectionnée : elle passe au statut "rejetée" côté
   // backend (la ligne reste en base pour historique) mais aucun membre n'est créé.
   const handleRejectRegistrationRequest = useCallback(async () => {
     if (!selectedRegistrationRequest || !currentUserId) return;
@@ -435,15 +435,15 @@ export function UserView() {
       );
 
       if (response.status !== 1) {
-        throw new Error(response.message || "La demande n'a pas pu etre rejetee.");
+        throw new Error(response.message || "La demande n'a pas pu être rejetée.");
       }
 
-      showNotification('Demande rejetee.', 'info');
+      showNotification('Demande rejetée.', 'info');
       setSelectedRegistrationRequest(null);
       await fetchPendingRegistrations();
     } catch (error) {
       const message =
-        error instanceof ApiError ? error.message : (error as Error)?.message || "La demande n'a pas pu etre rejetee.";
+        error instanceof ApiError ? error.message : (error as Error)?.message || "La demande n'a pas pu être rejetée.";
       showNotification(message, 'error');
     } finally {
       setRegistrationActionLoading(false);
@@ -486,8 +486,8 @@ export function UserView() {
       const memberName = String(payload?.nomMembreDeces || '').trim();
       showNotification(
         memberName
-          ? `Le membre ${memberName} a ete retire des listes actives.`
-          : 'Un membre a ete retire des listes actives.',
+          ? `Le membre ${memberName} a été retiré des listes actives.`
+          : 'Un membre a été retiré des listes actives.',
         'info'
       );
     };
@@ -501,8 +501,8 @@ export function UserView() {
       const memberName = String(payload?.nomMembreDeces || '').trim();
       showNotification(
         memberName
-          ? `Le deces de ${memberName} a ete mis a jour et les listes actives ont ete synchronisees.`
-          : "Les listes actives ont ete synchronisees apres mise a jour d'un deces.",
+          ? `Le décès de ${memberName} a été mis à jour et les listes actives ont été synchronisées.`
+          : "Les listes actives ont été synchronisées après mise à jour d'un décès.",
         'info'
       );
     };
@@ -617,12 +617,12 @@ export function UserView() {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        showNotification('La photo ne doit pas depasser 5MB', 'warning'); // Remplacer alert
+        showNotification('La photo ne doit pas dépasser 5MB', 'warning'); // Remplacer alert
         return;
       }
 
       if (!file.type.startsWith('image/')) {
-        showNotification('Veuillez selectionner une image valide', 'warning'); // Remplacer alert
+        showNotification('Veuillez sélectionner une image valide', 'warning'); // Remplacer alert
         return;
       }
 
@@ -692,7 +692,7 @@ export function UserView() {
   const requestUserId = membreToDelete?.idUtilisateur || currentUserId;
 
   if (!requestUserId) {
-    showNotification('Session expiree: reconnectez-vous', 'warning');
+    showNotification('Session expirée: reconnectez-vous', 'warning');
     return;
   }
 
@@ -701,7 +701,7 @@ export function UserView() {
     const response = await apiClient.deleteMembre(idMembre, requestUserId);
     if (response.status === 1) {
       dispatch(deleteMembre(idMembre));
-      showNotification('Membre supprime avec succes', 'success');
+      showNotification('Membre supprimé avec succès', 'success');
     } else {
       console.error('Erreur lors de la suppression:', response.error);
       showNotification(
@@ -775,7 +775,7 @@ export function UserView() {
       }
     });
 
-    console.log("Donnees pour edition apres nettoyage:", formData);
+    console.log("Données pour édition après nettoyage:", formData);
 
     setData(formData);
     reset(formData);
@@ -807,7 +807,7 @@ export function UserView() {
     if (!canManageUsers) return;
 
     if (!currentUserId) {
-      showNotification('Session expiree: reconnectez-vous', 'warning');
+      showNotification('Session expirée: reconnectez-vous', 'warning');
       return;
     }
 
@@ -847,7 +847,7 @@ export function UserView() {
           return;
         }
 
-        console.log('Donnees preparees :', cleanedData);
+        console.log('Données préparées :', cleanedData);
 
         const response = await apiClient.updateMembre(cleanedData);
 
@@ -855,7 +855,7 @@ export function UserView() {
           dispatch(setDataModifiesMembre({ ...membreData, idMembre: data.idMembre }));
           await fetchMembres();
           handleCloseDialog();
-          showNotification('Membre modifie avec succes', 'success');
+          showNotification('Membre modifié avec succès', 'success');
         } else {
           showNotification('Erreur lors de la modification du membre', 'error');
         }
@@ -899,22 +899,22 @@ export function UserView() {
         return;
       }
 
-      console.log('Donnees preparees :', cleanedData);
+      console.log('Données préparées :', cleanedData);
 
       const response = await apiClient.createMembre(cleanedData);
 
       if (response.status === 1) {
         await fetchMembres();
         handleCloseDialog();
-        showNotification('Membre cree avec succes', 'success');
+        showNotification('Membre créé avec succès', 'success');
       } else {
-        showNotification('Erreur lors de la creation du membre', 'error');
+        showNotification('Erreur lors de la création du membre', 'error');
       }
     } catch (error) {
-      console.error('Erreur lors de lenregistrement du membre:', error);
+      console.error("Erreur lors de l'enregistrement du membre:", error);
       const errorMessage = error instanceof ApiError
         ? error.message
-        : 'Erreur lors de lenregistrement du membre';
+        : "Erreur lors de l'enregistrement du membre";
       showNotification(errorMessage, 'error');
     } finally {
       setUpdateLoading(false);
@@ -944,7 +944,7 @@ export function UserView() {
     }
 
     if (!exportableMembres.length) {
-      showNotification('Aucun membre a exporter', 'warning');
+      showNotification('Aucun membre à exporter', 'warning');
       return;
     }
 
@@ -985,7 +985,7 @@ export function UserView() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Membres');
     XLSX.writeFile(workbook, 'export-membres.xlsx');
-    showNotification(`${rows.length} membre(s) exporte(s)`, 'success');
+    showNotification(`${rows.length} membre(s) exporté(s)`, 'success');
   }, [
     celluleOptions,
     departementOptions,
@@ -1021,7 +1021,7 @@ export function UserView() {
       isYesValue(data.baptemeEauMembre || formData.baptemeEauMembre)
       && !String(data.dateBaptemeMembre || formData.dateBaptemeMembre || '').trim()
     ) {
-      showNotification("La date du bapteme d'eau est requise", 'warning');
+      showNotification("La date du baptême d'eau est requise", 'warning');
       setFocus('dateBaptemeMembre');
       return;
     }
@@ -1030,12 +1030,12 @@ export function UserView() {
       isYesValue(data.baptemeSaintEspritMembre || formData.baptemeSaintEspritMembre)
       && !String(data.dateBaptemeSaintEspritMembre || formData.dateBaptemeSaintEspritMembre || '').trim()
     ) {
-      showNotification('La date du bapteme du Saint-Esprit est requise', 'warning');
+      showNotification('La date du baptême du Saint-Esprit est requise', 'warning');
       setFocus('dateBaptemeSaintEspritMembre');
       return;
     }
 
-    console.log(isEditMode ? 'Membre a modifier :' : 'Membre a creer :', formData);
+    console.log(isEditMode ? 'Membre à modifier :' : 'Membre à créer :', formData);
 
     const membreData: IMembre = {
       ...formData,
@@ -1044,7 +1044,7 @@ export function UserView() {
       ...(isEditMode && data.idMembre && { idMembre: data.idMembre }),
     };
 
-    console.log('Donnees preparees :', membreData);
+    console.log('Données préparées :', membreData);
     handleCreateOrUpdateMembre(membreData);
   }, [
     data.baptemeEauMembre,
@@ -1095,8 +1095,8 @@ export function UserView() {
     [sortedData, table.page, table.rowsPerPage]
   );
 
-  // Membres correspondant aux lignes cochees dans le tableau, utilises pour
-  // imprimer une carte de membre par personne selectionnee.
+  // Membres correspondant aux lignes cochees dans le tableau, utilisés pour
+  // imprimer une carte de membre par personne sélectionnée.
   const selectedMembres = useMemo(
     () => (listMembre || []).filter((item: IMembre) => selected.includes(String(item.idMembre))),
     [listMembre, selected]
@@ -1107,8 +1107,8 @@ export function UserView() {
     let sanitizedValue = value;
 
     if (name === 'contactMembre') {
-      // Seuls des chiffres sont acceptes dans le telephone (on retire le reste
-      // au lieu de vider tout le champ, pour ne pas perdre ce qui est deja tape).
+      // Seuls des chiffres sont acceptes dans le téléphone (on retire le reste
+      // au lieu de vider tout le champ, pour ne pas perdre ce qui est déjà tape).
       sanitizedValue = String(value).replace(/\D/g, '');
     }
 
@@ -1203,15 +1203,15 @@ export function UserView() {
       }
 
       if (summary.failures === 0) {
-        showNotification(`${summary.successes} membre(s) supprimes avec succes`, 'success');
+        showNotification(`${summary.successes} membre(s) supprimés avec succès`, 'success');
       } else {
         showNotification(
-          `${summary.successes} supprimes, ${summary.failures} erreur(s)`,
+          `${summary.successes} supprimés, ${summary.failures} erreur(s)`,
           summary.failures === selected.length ? 'error' : 'warning'
         );
       }
     } catch (error: any) {
-      console.error('Erreur generale lors de la suppression multiple:', error);
+      console.error('Erreur générale lors de la suppression multiple:', error);
       showNotification(`Erreur: ${error.message || 'Erreur lors de la suppression'}`, 'error');
     } finally {
       setDeleteLoading(false);
@@ -1435,10 +1435,10 @@ export function UserView() {
                       >
                         <Box sx={{ minWidth: 0 }}>
                           <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
-                            {fullName || 'Nom non renseigne'}
+                            {fullName || 'Nom non renseigné'}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            {request.contactMembre || 'Contact non renseigne'}
+                            {request.contactMembre || 'Contact non renseigné'}
                           </Typography>
                         </Box>
                         <Button
@@ -1505,7 +1505,7 @@ export function UserView() {
                         <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
                           {row.nomMembre} {row.prenomMembre}
                         </Typography>
-                        <ContactPhoneLink fallback="Contact non renseigne" value={row.contactMembre} />
+                        <ContactPhoneLink fallback="Contact non renseigné" value={row.contactMembre} />
                       </Box>
                     </Stack>
 
@@ -1513,7 +1513,7 @@ export function UserView() {
 
                     <Grid container spacing={1.25}>
                       <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">Residence</Typography>
+                        <Typography variant="caption" color="text.secondary">Résidence</Typography>
                         <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{row.residenceMembre || '-'}</Typography>
                       </Grid>
                       <Grid item xs={6}>
@@ -1590,7 +1590,7 @@ export function UserView() {
                   { id: 'nomMembre', label: 'Nom et prénoms' },
                   { id: 'residenceMembre', label: "Lieu d'habitation" },
                   { id: 'baptemeEauMembre', label: 'Baptisé(e)' },
-                  { id: 'lieuBaptemeEauMembre', label: 'Lieu du bapteme' },
+                  { id: 'lieuBaptemeEauMembre', label: 'Lieu du baptême' },
                   { id: 'fonctionMembre', label: 'Fonction' },
                   { id: 'situationMatrimonialeMembre', label: 'Situation matrimoniale' },
                   { id: 'contactMembre', label: 'Contact' },
@@ -1652,15 +1652,15 @@ export function UserView() {
               <Grid container spacing={2}>
                 {[
                   ['Nom', selectedRegistrationRequest.payloadDemande?.nomMembre || selectedRegistrationRequest.nomMembre],
-                  ['Prenoms', selectedRegistrationRequest.payloadDemande?.prenomMembre || selectedRegistrationRequest.prenomMembre],
-                  ['Telephone', selectedRegistrationRequest.payloadDemande?.contactMembre || selectedRegistrationRequest.contactMembre],
+                  ['Prénoms', selectedRegistrationRequest.payloadDemande?.prenomMembre || selectedRegistrationRequest.prenomMembre],
+                  ['Téléphone', selectedRegistrationRequest.payloadDemande?.contactMembre || selectedRegistrationRequest.contactMembre],
                   ['Email', selectedRegistrationRequest.payloadDemande?.emailMembre],
-                  ['Residence', selectedRegistrationRequest.payloadDemande?.residenceMembre],
+                  ['Résidence', selectedRegistrationRequest.payloadDemande?.residenceMembre],
                   ['Date de naissance', selectedRegistrationRequest.payloadDemande?.dateNaissMembre],
                   ['Lieu de naissance', selectedRegistrationRequest.payloadDemande?.lieuNaissMembre],
                   ['Fonction', selectedRegistrationRequest.payloadDemande?.fonctionMembre],
-                  ["Eglise d'origine", selectedRegistrationRequest.payloadDemande?.egliseOrigineMembre],
-                  ['Envoyee le', selectedRegistrationRequest.dateCreation],
+                  ["Église d'origine", selectedRegistrationRequest.payloadDemande?.egliseOrigineMembre],
+                  ['Envoyée le', selectedRegistrationRequest.dateCreation],
                 ].map(([label, value]) => (
                   <Grid key={label} item xs={12} sm={6}>
                     <Typography variant="caption" color="text.secondary">
@@ -1744,7 +1744,7 @@ export function UserView() {
           <Stack spacing={2.5}>
             
             <Typography color="text.primary"  sx={{ textAlign: 'center', fontWeight: 500, fontSize: { xs: '0.95rem', sm: '1rem' } }}>
-              SCANNEZ CE QRCODE POUR VOUS ENREGISTRER. LE TELEPHONE DOIT ETRE CONNECTE SUR LE MEME RESEAU QUE LE POSTE PRINCIPAL.
+              SCANNEZ CE QRCODE POUR VOUS ENREGISTRER. LE TÉLÉPHONE DOIT ÊTRE CONNECTÉ SUR LE MÊME RÉSEAU QUE LE POSTE PRINCIPAL.
             </Typography>
 
             <Box
@@ -1879,7 +1879,7 @@ export function UserView() {
                   </Box>
 
                   <Typography variant="caption" color="text.secondary">
-                    Cliquez sur l&apos;icone appareil photo pour ajouter une photo
+                    Cliquez sur l&apos;icône appareil photo pour ajouter une photo
                   </Typography>
                 </Stack>
               </Grid>
@@ -1922,7 +1922,7 @@ export function UserView() {
                   size="small"
                   margin="dense"
                   select
-                  label="Civilite"
+                  label="Civilité"
                   variant="outlined"
                   value={data.civiliteMembre || ''}
                   {...register('civiliteMembre')}
@@ -2031,7 +2031,7 @@ export function UserView() {
                   size="small"
                   margin="dense"
                   select
-                  label="Niveau d'etude"
+                  label="Niveau d'étude"
                   variant="outlined"
                   value={data.idNiveauEtude || ''}
                   {...register('idNiveauEtude')}
@@ -2057,7 +2057,7 @@ export function UserView() {
                   margin="dense"
                   type="text"
                   variant="outlined"
-                  label="Residence"
+                  label="Résidence"
                   value={data.residenceMembre}
                   {...register('residenceMembre')}
                   onChange={handleChange}
@@ -2127,7 +2127,7 @@ export function UserView() {
                   margin="dense"
                   type="text"
                   variant="outlined"
-                  label="Nom fiance(e)"
+                  label="Nom fiancé(e)"
                   value={data.nomFiance}
                   {...register('nomFiance')}
                   onChange={handleChange}
@@ -2160,7 +2160,7 @@ export function UserView() {
                   margin="dense"
                   type="text"
                   variant="outlined"
-                  label="Eglise d'origine"
+                  label="Église d'origine"
                   value={data.egliseOrigineMembre}
                   {...register('egliseOrigineMembre')}
                   onChange={handleChange}
@@ -2192,7 +2192,7 @@ export function UserView() {
                   size="small"
                   margin="dense"
                   select
-                  label="Nouvelle ame"
+                  label="Nouvelle âme"
                   variant="outlined"
                   value={data.nouvelleAmeMembre || ''}
                   {...register('nouvelleAmeMembre')}
@@ -2214,7 +2214,7 @@ export function UserView() {
                   size="small"
                   margin="dense"
                   select
-                  label="Bapteme d'eau"
+                  label="Baptême d'eau"
                   variant="outlined"
                   value={data.baptemeEauMembre || ''}
                   {...register('baptemeEauMembre')}
@@ -2244,12 +2244,12 @@ export function UserView() {
                     margin="dense"
                     type="date"
                     variant="outlined"
-                    label="Date du bapteme d'eau *"
+                    label="Date du baptême d'eau *"
                     InputLabelProps={{ shrink: true }}
-                    helperText={errors.dateBaptemeMembre?.message || 'Date de bapteme'}
+                    helperText={errors.dateBaptemeMembre?.message || 'Date de baptême'}
                     value={data.dateBaptemeMembre || ''}
                     {...register('dateBaptemeMembre', {
-                      required: isWaterBaptismSelected ? "La date du bapteme d'eau est requise" : false,
+                      required: isWaterBaptismSelected ? "La date du baptême d'eau est requise" : false,
                     })}
                     onChange={handleChange}
                     error={!!errors.dateBaptemeMembre}
@@ -2272,7 +2272,7 @@ export function UserView() {
                     margin="dense"
                     type="text"
                     variant="outlined"
-                    label="Lieu du bapteme d'eau"
+                    label="Lieu du baptême d'eau"
                     value={data.lieuBaptemeEauMembre}
                     {...register('lieuBaptemeEauMembre')}
                     onChange={handleChange}
@@ -2296,7 +2296,7 @@ export function UserView() {
                   margin="dense"
                   select
                   type="text"
-                  label="Bapteme du Saint-Esprit"
+                  label="Baptême du Saint-Esprit"
                   variant="outlined"
                   value={data.baptemeSaintEspritMembre || ''}
                   {...register('baptemeSaintEspritMembre')}
@@ -2329,11 +2329,11 @@ export function UserView() {
                     margin="dense"
                     type="date"
                     variant="outlined"
-                    label="Date de bapteme du Saint-Esprit *"
+                    label="Date de baptême du Saint-Esprit *"
                     InputLabelProps={{ shrink: true }}
                     value={data.dateBaptemeSaintEspritMembre ||''}
                     {...register('dateBaptemeSaintEspritMembre', {
-                      required: isSpiritBaptismSelected ? 'La date du bapteme du Saint-Esprit est requise' : false,
+                      required: isSpiritBaptismSelected ? 'La date du baptême du Saint-Esprit est requise' : false,
                     })}
                     onChange={handleChange}
                     error={!!errors.dateBaptemeSaintEspritMembre}
@@ -2355,7 +2355,7 @@ export function UserView() {
                   margin="dense"
                   select
                   type="text"
-                  label="Capacite spirituelle"
+                  label="Capacité spirituelle"
                   variant="outlined"
                   value={data.capaciteSpirituelleMembre}
                   {...register('capaciteSpirituelleMembre')}
@@ -2386,7 +2386,7 @@ export function UserView() {
                     margin="dense"
                     select
                     type="text"
-                    label="Responsabilite dans l'eglise"
+                    label="Responsabilité dans l'église"
                     variant="outlined"
                     value={data.idResponsabilite || ''}
                     {...register('idResponsabilite')}
@@ -2570,7 +2570,7 @@ export function UserView() {
       {/* Confirmation avant suppression multiple (bouton corbeille de la barre d'outils) */}
       <ConfirmDialog
         open={confirmDeleteSelectedOpen}
-        title="Supprimer les membres selectionnes"
+        title="Supprimer les membres sélectionnés"
         message={`Voulez-vous vraiment supprimer ${selected.length} membre(s) selectionné(s) ?`}
         confirmText="Supprimer"
         loading={deleteLoading}

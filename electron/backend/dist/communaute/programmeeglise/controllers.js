@@ -5,11 +5,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const services_1 = __importDefault(require("./services"));
 // Ce fichier fait le lien entre les routes HTTP (voir routes.ts) et la
-// logique metier (services.ts -> functions.ts) : chaque fonction lit la
-// requete, appelle le service correspondant, puis renvoie une reponse
+// logique métier (services.ts -> functions.ts) : chaque fonction lit la
+// requête, appelle le service correspondant, puis renvoie une réponse
 // JSON standard { status, data } ou { status: 0, error }.
-// Ajoute une ligne de programme et previent les autres postes connectes
-// (evenement socket.io "programmeEgliseModifie") pour qu'ils rafraichissent
+// Ajoute une ligne de programme et prévient les autres postes connectés
+// (événement socket.io "programmeEgliseModifie") pour qu'ils rafraîchissent
 // leur liste sans avoir a recharger la page.
 const ajouterProgrammeEglise = (req, res) => {
     services_1.default
@@ -49,7 +49,7 @@ const supprimerProgrammeEglise = (req, res) => {
     })
         .catch((error) => res.status(400).send({ status: 0, error }));
 };
-// Renvoie tout le programme d'une eglise, trie par date.
+// Renvoie tout le programme d'une église, trie par date.
 const recupProgrammesEgliseByUtilisateur = (req, res) => {
     const { idUtilisateur } = req.params;
     services_1.default

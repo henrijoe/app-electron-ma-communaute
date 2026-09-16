@@ -6,8 +6,8 @@ const hasBackendFlag = process.argv.includes("--backend");
 const hasDevtoolsFlag = process.argv.includes("--devtools");
 const hasRendererFlag = process.argv.includes("--renderer");
 
-// On centralise ici le lancement desktop pour eviter d'ecrire des variables d'environnement
-// specifiques au shell Windows ou Unix dans les scripts package.json.
+// On centralise ici le lancement desktop pour éviter d'écrire des variables d'environnement
+// spécifiques au shell Windows ou Unix dans les scripts package.json.
 const electronCliPath = path.join(__dirname, "..", "node_modules", "electron", "cli.js");
 const viteCliPath = path.join(__dirname, "..", "node_modules", "vite", "bin", "vite.js");
 const projectRoot = path.join(__dirname, "..");
@@ -28,7 +28,7 @@ function waitForUrl(url, timeoutMs = 30000) {
 
       request.on("error", () => {
         if (Date.now() - startedAt >= timeoutMs) {
-          reject(new Error(`Le serveur renderer ne repond pas sur ${url}`));
+          reject(new Error(`Le serveur renderer ne répond pas sur ${url}`));
           return;
         }
 

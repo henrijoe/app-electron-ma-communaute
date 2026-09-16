@@ -2,7 +2,7 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 
 import { createSlice } from '@reduxjs/toolkit';
 
-// Interfaces pour les types de donnÃ©es
+// Interfaces pour les types de données
 export interface IDataChoice {
   value: number;
   label: string;
@@ -155,7 +155,7 @@ export const dataResponsabilite: IDataChoice[] = [
   { value: 5, label: 'Diacre' },
   { value: 6, label: 'Diaconesse' },
   { value: 7, label: 'Responsable de cellule' },
-  { value: 8, label: 'Responsable de departement' },
+  { value: 8, label: 'Responsable de département' },
   { value: 9, label: 'Responsable de groupe de prière' },
   { value: 10, label: 'Responsable AOC' },
   { value: 11, label: "Directeur/Directrice de l'ECODIM" },
@@ -164,7 +164,7 @@ export const dataResponsabilite: IDataChoice[] = [
   { value: 14, label: 'Responsable nettoyage du temple' },
   { value: 15, label: 'Responsable Scoot' },
   { value: 16, label: 'Responsable Témoin conseiller' },
-  { value: 17, label: 'Secretaire église' },
+  { value: 17, label: 'Secrétaire église' },
 ];
 
 export const dataDepartement: IDataChoice[] = [
@@ -264,7 +264,7 @@ const initialState: IMembreSlice = {
 
 // Reducers du module membre
 
-// Creation du slice
+// Création du slice
 export const MembreSlice = createSlice({
   name: 'membre',
   initialState,
@@ -313,13 +313,13 @@ export const MembreSlice = createSlice({
       state.dataDiacre = Array.isArray(state.dataDiacre) ? state.dataDiacre : [];
       state.dataResponsable = Array.isArray(state.dataResponsable) ? state.dataResponsable : [];
 
-      // Mettre a jour listMembre
+      // Mettre à jour listMembre
       state.listMembre = state.listMembre.filter((item) => item.idMembre !== action.payload);
 
-      // Mettre a jour dataFilterMembre
+      // Mettre à jour dataFilterMembre
       state.dataFilterMembre = state.dataFilterMembre.filter((item) => item.idMembre !== action.payload);
 
-      // Mettre a jour les autres listes si necessaire
+      // Mettre à jour les autres listes si nécessaire
       state.dataNouvelleAme = state.dataNouvelleAme.filter((item) => item.idMembre !== action.payload);
       state.dataAncien = state.dataAncien.filter((item) => item.idMembre !== action.payload);
       state.dataDiacre = state.dataDiacre.filter((item) => item.idMembre !== action.payload);
@@ -340,14 +340,14 @@ export const MembreSlice = createSlice({
       console.log("Mise Ã  jour du membre:", updatedMembre);
       console.log("ID du membre:", updatedMembre.idMembre);
 
-      // Creer une copie profonde pour forcer le re-render
+      // Créer une copie profonde pour forcer le re-render
       const updateMembreInArray = (array: IMembre[]) => {
         if (!Array.isArray(array)) {
           return [];
         }
         return array.map((item) => {
         if (item.idMembre === updatedMembre.idMembre) {
-          // Fusionner proprement les donnees
+          // Fusionner proprement les données
           return {
             ...item,
             ...updatedMembre,
@@ -370,7 +370,7 @@ export const MembreSlice = createSlice({
       });
       };
 
-      // Mettre a jour toutes les listes avec la nouvelle copie
+      // Mettre à jour toutes les listes avec la nouvelle copie
       state.listMembre = updateMembreInArray(state.listMembre);
       state.dataFilterMembre = updateMembreInArray(state.dataFilterMembre);
       state.dataNouvelleAme = updateMembreInArray(state.dataNouvelleAme);

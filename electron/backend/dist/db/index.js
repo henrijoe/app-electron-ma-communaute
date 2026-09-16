@@ -28,7 +28,7 @@ const _executeSql = (sql, param) => {
     });
 };
 exports._executeSql = _executeSql;
-// pour les requetes select
+// pour les requêtes select
 const _selectSql = (sql, param) => {
     return new Promise((resolve, reject) => {
         try {

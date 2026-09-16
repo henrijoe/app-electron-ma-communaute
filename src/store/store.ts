@@ -66,7 +66,7 @@ const persistConfig = {
   key: 'root',
   version: 1,
   storage,
-  // Les listes metier viennent toujours de la base active pour eviter les anciennes donnees en cache.
+  // Les listes métier viennent toujours de la base active pour éviter les anciennes données en cache.
   whitelist: ['application', 'authentification'],
   transforms: [sensitiveDataTransform],
   timeout: 1000,

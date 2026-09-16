@@ -29,7 +29,7 @@ export function ComptabiliteSummaryDocument({ items, search, filterLabel }: Comp
 
   return (
     <PrintDocumentLayout
-      title="Situation de tresorerie"
+      title="Situation de trésorerie"
       variant="plain"
       showDocumentMeta={false}
     >
@@ -37,8 +37,8 @@ export function ComptabiliteSummaryDocument({ items, search, filterLabel }: Comp
 
       {items.length === 0 ? (
         <PrintEmptyState
-          title="Aucune donnee comptable"
-          message="Aucune ecriture disponible pour produire la synthese de tresorerie."
+          title="Aucune donnée comptable"
+          message="Aucune écriture disponible pour produire la synthèse de trésorerie."
         />
       ) : (
         <>
@@ -54,13 +54,13 @@ export function ComptabiliteSummaryDocument({ items, search, filterLabel }: Comp
                   {comptabiliteCurrencyFormatter.format(totals.solde)}
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 1, color: '#4a5b70', maxWidth: 420 }}>
-                  Le solde correspond a la difference entre les encaissements et les decaissements visibles dans la periode ou la vue actuelle.
+                  Le solde correspond à la différence entre les encaissements et les décaissements visibles dans la période ou la vue actuelle.
                 </Typography>
               </Box>
 
               <Stack spacing={1.2} sx={{ flex: 1 }}>
                 <Typography variant="overline" sx={{ color: '#5c6f82', letterSpacing: 0.8 }}>
-                  Derniere ecriture observee
+                  Dernière écriture observée
                 </Typography>
                 <Typography variant="h6" sx={{ color: '#0f274a', fontWeight: 800 }}>
                   {latestOperation?.nomComptabilite || '--'}
@@ -69,7 +69,7 @@ export function ComptabiliteSummaryDocument({ items, search, filterLabel }: Comp
                   Date: {formatComptabiliteDate(latestOperation?.dateComptabilite)}
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#44556a' }}>
-                  Type: {latestOperation?.typeComptabilite === 'entree' ? 'Entree' : 'Sortie'}
+                  Type: {latestOperation?.typeComptabilite === 'entree' ? 'Entrée' : 'Sortie'}
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#44556a' }}>
                   Montant: {comptabiliteCurrencyFormatter.format(Number(latestOperation?.montantComptabilite || 0))}

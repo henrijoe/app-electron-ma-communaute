@@ -16,18 +16,18 @@ import type { IReduxState } from '../../../store/store';
 // pageStyle a fournir a <ReactToPrint> (impression navigateur, hors application desktop)
 // pour l'action "Liste des membres". A utiliser à la place de PRINT_LANDSCAPE_PAGE_STYLE.
 //
-// Pourquoi une regle "@page" nommee et pas juste "@page { size: A4 landscape }" ?
-// react-to-print (avec copyStyles, actif par defaut) recopie TOUTES les balises
+// Pourquoi une règle "@page" nommée et pas juste "@page { size: A4 landscape }" ?
+// react-to-print (avec copyStyles, actif par défaut) recopie TOUTES les balises
 // <style> du document principal dans l'iframe d'impression, une fois le pageStyle
-// deja injecte. Or printEtats.tsx garde en permanence 4 documents imprimables
-// montes en meme temps (juste caches), et chacun declare sa propre regle "@page"
-// generique via GlobalStyles (ex. FicheInscriptionMembre en @page portrait). Ces
-// regles generiques sont clonees APRES la notre et gagnent donc la cascade CSS
-// (a specificite egale, la derniere regle l'emporte) : le document imprime se
-// retrouvait toujours en portrait, quel que soit le document reellement cible.
-// Une regle "@page" NOMMEE, associee explicitement a la racine du document via la
-// propriete CSS "page", a une priorite superieure a n'importe quelle regle "@page"
-// generique/anonyme : elle reste donc fiable quel que soit l'ordre de clonage.
+// déjà injecte. Or printEtats.tsx garde en permanence 4 documents imprimables
+// montes en même temps (juste caches), et chacun déclare sa propre règle "@page"
+// générique via GlobalStyles (ex. FicheInscriptionMembre en @page portrait). Ces
+// règles génériques sont clonées APRÈS la notre et gagnent donc la cascade CSS
+// (a spécificité égale, la dernière règle l'emporte) : le document imprime se
+// retrouvait toujours en portrait, quel que soit le document réellement cible.
+// Une règle "@page" NOMMÉE, associée explicitement à la racine du document via la
+// propriété CSS "page", à une priorité supérieure a n'importe quelle règle "@page"
+// générique/anonyme : elle reste donc fiable quel que soit l'ordre de clonage.
 
 export const MEMBER_LIST_PRINT_PAGE_STYLE = `
 @page memberListLandscape {
@@ -47,7 +47,7 @@ export const MEMBER_LIST_PRINT_PAGE_STYLE = `
 }
 `;
 
-// Sous-ensemble des informations d'identite de l'eglise utilisees dans l'entete imprimable.
+// Sous-ensemble des informations d'identité de l'église utilisées dans l'en-tête imprimable.
 type PrintIdentity = {
   logoEglise?: string;
   logoUtilisateur?: string;
@@ -58,17 +58,17 @@ type PrintIdentity = {
   emailEglise?: string;
 };
 
-// Determine l'URL du logo a afficher dans l'entete.
-// Meme logique que les fiches de renseignement (ficheInscriptionMembre / blank-organisation-form)
+// Détermine l'URL du logo à afficher dans l'en-tête.
+// Même logique que les fiches de renseignement (ficheInscriptionMembre / blank-organisation-form)
 // afin de garder un rendu identique entre tous les documents imprimables.
 const getLogoUrl = (identity: PrintIdentity): string | null => {
   const logoPath = identity.logoEglise || identity.logoUtilisateur;
 
-  // Aucun logo renseigne : on affichera le badge "MC" a la place.
+  // Aucun logo renseigne : on affichera le badge "MC" à la place.
   if (!logoPath) return null;
-  // Le logo est deja une URL exploitable telle quelle (http, data, blob ou fichier local).
+  // Le logo est déjà une URL exploitable telle quelle (http, data, blob ou fichier local).
   if (/^(https?:|data:|blob:|file:)/i.test(logoPath)) return logoPath;
-  // Logo specifique a l'eglise : on passe par le builder d'URL dedie.
+  // Logo spécifique à l'église : on passe par le builder d'URL dédié.
   if (identity.logoEglise && logoPath === identity.logoEglise) return buildChurchLogoUrl(logoPath);
 
   // Sinon il s'agit d'un asset local classique (logo utilisateur).
@@ -83,10 +83,10 @@ const joinValues = (...values: Array<string | undefined>): string =>
     .join(' - ');
 
 // Styles inline reutilises par les cellules du tableau (equivalent d'un CSS classique en JS).
-// "overflow: hidden" + "wordBreak" evitent qu'un mot long (ex. "Responsabilité",
-// "Département") ne deborde visuellement sur la cellule voisine si la colonne
-// calculee est plus etroite que prevu (table-layout: fixed ne force pas ca tout seul :
-// par defaut une cellule laisse son contenu deborder au lieu de le couper).
+// "overflow: hidden" + "wordBreak" évitent qu'un mot long (ex. "Responsabilité",
+// "Département") ne déborde visuellement sur la cellule voisine si la colonne
+// calculée est plus étroite que prévu (table-layout: fixed ne force pas ca tout seul :
+// par défaut une cellule laisse son contenu déborder au lieu de le couper).
 const thStyle: React.CSSProperties = {
   border: "1px solid #000",
   padding: "8px",
@@ -149,28 +149,28 @@ const getBaptemeDisplay = (value: string | number | null | undefined) => {
 //
 export const ListeDesMembres = () => {
 
-  // Donnees brutes recuperees depuis le store Redux.
+  // Données brutes récupérées depuis le store Redux.
   const listMembre = useSelector((state: IReduxState) => state.membre.listMembre);
   const dataFilterDepartement = useSelector((state: IReduxState) => state.departement.dataFilterDepartement);
   const dataFilterCellule = useSelector((state: IReduxState) => state.cellule.dataFilterCellule);
-  // Informations d'identite de l'eglise (logo, nom, coordonnees) utilisees dans l'entete/pied de page.
+  // Informations d'identité de l'église (logo, nom, coordonnées) utilisées dans l'en-tête/pied de page.
   const userConnected = useSelector((state: IReduxState) => state.application.userConnected);
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
 
-  // On fusionne les deux sources d'identite : userConnected est prioritaire sur utilisateurData.
+  // On fusionne les deux sources d'identité : userConnected est prioritaire sur utilisateurData.
   const identity: PrintIdentity = {
     ...(utilisateurData || {}),
     ...(userConnected || {}),
   };
   const logoUrl = getLogoUrl(identity);
-  // Ligne de contact affichee dans le pied de page (lieu, telephone, email).
+  // Ligne de contact affichée dans le pied de page (lieu, téléphone, email).
   const contactLine = joinValues(
     identity.lieuEglise,
     identity.telephoneSecretariatEglise,
     identity.emailEglise
   );
 
-  // Correspondances id -> libelle pour afficher des noms lisibles au lieu des identifiants numeriques.
+  // Correspondances id -> libellé pour afficher des noms lisibles au lieu des identifiants numériques.
   const dataDepartement = formaterValueLabels(
     dataFilterDepartement,
     'idDepartement',
@@ -220,7 +220,7 @@ export const ListeDesMembres = () => {
               paddingBottom: '10mm',
             },
             // Le pied de page reste colle en bas de la feuille et se repete sur
-            // chaque page si la liste des membres deborde sur plusieurs pages.
+            // chaque page si la liste des membres déborde sur plusieurs pages.
             '.member-list-print-footer': {
               position: 'fixed',
               left: '5mm',
@@ -287,7 +287,7 @@ export const ListeDesMembres = () => {
                 <Box
                   component="img"
                   src={logoUrl}
-                  alt="Logo eglise"
+                  alt="Logo église"
                   sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
               ) : (
@@ -297,7 +297,7 @@ export const ListeDesMembres = () => {
 
             <Box sx={{ minWidth: 0 }}>
               <Typography sx={{ fontSize: 9.5, letterSpacing: 1.1, textTransform: 'uppercase' }}>
-                {identity.nomEgliseCourt || identity.nomTemple || 'Ma Communaute'}
+                {identity.nomEgliseCourt || identity.nomTemple || 'Ma Communauté'}
               </Typography>
               <Typography sx={{ fontSize: 17, fontWeight: 900, lineHeight: 1 }}>
                 Liste des membres
@@ -314,7 +314,7 @@ export const ListeDesMembres = () => {
             width: "100%",
             borderCollapse: "collapse",
             // Largeurs de colonnes fixees en % (voir width sur chaque <th> ci-dessous)
-            // plutot que calculees automatiquement, pour un rendu stable a l'impression.
+            // plutôt que calculées automatiquement, pour un rendu stable à l'impression.
             tableLayout: "fixed",
           }}
         >

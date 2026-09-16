@@ -17,19 +17,19 @@ export const FicheDecisionPDf = () => {
     <PrintDocumentLayout
       identity={utilisateurData}
       orientation="portrait"
-      title="Fiche de decision"
+      title="Fiche de décision"
     >
       <Stack spacing={2.25}>
-        <PrintFormSection title="Identite du decide">
+        <PrintFormSection title="Identité du décidé">
           <PrintFieldLine label="Nom" value="............................................................" />
-          <PrintFieldLine label="Prenoms" value=".............................................................................." />
+          <PrintFieldLine label="Prénoms" value=".............................................................................." />
           <PrintFieldLine label="Ethnie" value="............................................................" />
-          <PrintFieldLine label="Age" value="..........................................." />
+          <PrintFieldLine label="Âge" value="..........................................." />
           <PrintFieldLine label="Profession" value="............................................................" />
           <PrintFieldLine label="Lieu de travail" value="............................................................" />
           <PrintFieldLine label="Contact" value=".............................................................................." />
           <PrintFieldLine
-            label="Quartier de residence"
+            label="Quartier de résidence"
             value=".............................................................................."
           />
         </PrintFormSection>
@@ -40,16 +40,16 @@ export const FicheDecisionPDf = () => {
               Statut matrimonial
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap">
-              <PrintCheckboxItem label="Marie(e)" />
+              <PrintCheckboxItem label="Marié(e)" />
               <PrintCheckboxItem label="Concubinage" />
-              <PrintCheckboxItem label="Celibataire" />
+              <PrintCheckboxItem label="Célibataire" />
               <PrintCheckboxItem label="Copain / Copine" />
             </Stack>
           </Box>
 
           <Box>
             <Typography variant="body2" sx={{ fontWeight: 700, color: '#27415f', mb: 0.75 }}>
-              Savez-vous lire et ecrire ?
+              Savez-vous lire et écrire ?
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap">
               <PrintCheckboxItem label="Oui" />
@@ -59,7 +59,7 @@ export const FicheDecisionPDf = () => {
 
           <Box>
             <Typography variant="body2" sx={{ fontWeight: 700, color: '#27415f', mb: 0.75 }}>
-              Parlez-vous couramment francais ?
+              Parlez-vous couramment français ?
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap">
               <PrintCheckboxItem label="Oui" />
@@ -70,7 +70,7 @@ export const FicheDecisionPDf = () => {
 
         <PrintFormSection title="Suivi et visitation">
           <PrintFieldLine
-            label="Nom d'un ami dans l'eglise"
+            label="Nom d'un ami dans l'église"
             value=".............................................................................."
           />
 
@@ -92,7 +92,7 @@ export const FicheDecisionPDf = () => {
 
         <PrintFormSection title="Engagement spirituel">
           <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.8 }}>
-            NB : A remplir et a ramener a la prochaine reunion.
+            NB : À remplir et à ramener à la prochaine réunion.
           </Typography>
 
           <Box
@@ -104,10 +104,10 @@ export const FicheDecisionPDf = () => {
             }}
           >
             <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f274a' }}>
-              Decision
+              Décision
             </Typography>
             <Typography variant="body2" sx={{ mt: 0.75, color: '#1e293b', fontStyle: 'italic' }}>
-              « Me reconnaissant(e) pecheur et perdu, je decide d&apos;accepter JESUS comme
+              « Me reconnaissant(e) pécheur et perdu, je décide d&apos;accepter JÉSUS comme
               Seigneur et Sauveur personnel »
             </Typography>
           </Box>
@@ -125,7 +125,7 @@ export const FicheDecisionPDf = () => {
           }}
         >
           <Typography variant="body2" sx={{ fontWeight: 700, color: '#7a5b16' }}>
-            Les cours de base ont lieu tous les dimanches apres le culte a l&apos;eglise.
+            Les cours de base ont lieu tous les dimanches après le culte à l&apos;église.
           </Typography>
         </Box>
       </Stack>

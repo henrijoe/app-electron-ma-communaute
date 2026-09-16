@@ -161,25 +161,25 @@ const socialConfig: Record<SocialCaseType, SocialConfig> = {
     singularLabel: 'Mariage',
     color: 'secondary',
     icon: <FavoriteRoundedIcon />,
-    helperText: 'Cérémonies de mariage, reception et temoins de la communaute.',
+    helperText: 'Cérémonies de mariage, réception et témoins de la communauté.',
     emptyMessage: 'Aucun mariage enregistré pour le moment.',
     columns: [
-      { key: 'nomFrereMariage', label: 'Frere' },
-      { key: 'nomSoeurMariage', label: 'Soeur' },
+      { key: 'nomFrereMariage', label: 'Frère' },
+      { key: 'nomSoeurMariage', label: 'Sœur' },
       { key: 'dateMariage', label: 'Date' },
       { key: 'lieuMariage', label: 'Lieu' },
       { key: 'culteMariage', label: 'Culte' },
       { key: 'contactMariage', label: 'Contact' },
     ],
     fields: [
-      { name: 'nomFrereMariage', label: 'Nom du frere', required: true },
-      { name: 'nomSoeurMariage', label: 'Nom de la soeur', required: true },
+      { name: 'nomFrereMariage', label: 'Nom du frère', required: true },
+      { name: 'nomSoeurMariage', label: 'Nom de la sœur', required: true },
       { name: 'dateMariage', label: 'Date du mariage', type: 'date', required: true },
       { name: 'lieuMariage', label: 'Lieu du mariage', required: true },
-      { name: 'culteMariage', label: 'Culte / celebrant' },
-      { name: 'temoin1Mariage', label: 'Temoin 1' },
-      { name: 'temoin2Mariage', label: 'Temoin 2' },
-      { name: 'lieuReception', label: 'Lieu de reception' },
+      { name: 'culteMariage', label: 'Culte / célébrant' },
+      { name: 'temoin1Mariage', label: 'Témoin 1' },
+      { name: 'temoin2Mariage', label: 'Témoin 2' },
+      { name: 'lieuReception', label: 'Lieu de réception' },
       { name: 'contactMariage', label: 'Contact' },
     ],
   },
@@ -188,21 +188,21 @@ const socialConfig: Record<SocialCaseType, SocialConfig> = {
     singularLabel: 'Naissance',
     color: 'success',
     icon: <CakeRoundedIcon />,
-    helperText: 'Naissances, presentation des enfants et suivi des familles.',
+    helperText: 'Naissances, présentation des enfants et suivi des familles.',
     emptyMessage: 'Aucune naissance enregistrée pour le moment.',
     columns: [
       { key: 'nomEnfantNaissance', label: 'Enfant' },
       { key: 'nomCoupleNaissance', label: 'Parents' },
       { key: 'dateNaissance', label: 'Date de naissance' },
       { key: 'lieuNaissance', label: 'Lieu' },
-      { key: 'datePresentationNaissance', label: 'Presentation' },
+      { key: 'datePresentationNaissance', label: 'Présentation' },
     ],
     fields: [
       { name: 'nomCoupleNaissance', label: 'Nom du couple', required: true },
       { name: 'nomEnfantNaissance', label: "Nom de l'enfant", required: true },
       { name: 'dateNaissance', label: 'Date de naissance', type: 'date', required: true },
       { name: 'lieuNaissance', label: 'Lieu de naissance', required: true },
-      { name: 'datePresentationNaissance', label: 'Date de presentation', type: 'date' },
+      { name: 'datePresentationNaissance', label: 'Date de présentation', type: 'date' },
     ],
   },
   deces: {
@@ -242,7 +242,7 @@ const socialConfig: Record<SocialCaseType, SocialConfig> = {
       { name: 'nomMembreMaladie', label: 'Nom du membre', required: true },
       { name: 'typeMaladie', label: 'Maladie / situation', required: true },
       { name: 'dateMaladie', label: 'Date du signalement', type: 'date' },
-      { name: 'lieuHospitalisation', label: 'Lieu / hopital' },
+      { name: 'lieuHospitalisation', label: 'Lieu / hôpital' },
       { name: 'observationMaladie', label: 'Observations', type: 'textarea', minRows: 3 },
     ],
   },
@@ -282,9 +282,9 @@ const emptyFormState: SocialCaseFormState = {
 };
 
 const formatDisplayDate = (value?: string | null) => {
-  if (!value) return 'Non specifie';
+  if (!value) return 'Non spécifié';
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'Non specifie';
+  if (Number.isNaN(parsed.getTime())) return 'Non spécifié';
   return parsed.toLocaleDateString('fr-FR');
 };
 
@@ -361,7 +361,7 @@ export function SocialView() {
   const maleMembres = useMemo(() => availableMembres.filter(isMaleMembre), [availableMembres]);
   const femaleMembres = useMemo(() => availableMembres.filter(isFemaleMembre), [availableMembres]);
 
-  // Charge toutes les categories sociales rattachees au compte courant.
+  // Charge toutes les catégories sociales rattachées au compte courant.
   const fetchSocialCases = useCallback(async () => {
     if (!currentUserId) {
       setRecords(emptyStateByType);
@@ -429,7 +429,7 @@ export function SocialView() {
       showNotification(
         memberName
           ? `Décès enregistré: ${memberName} a été retiré des listes actives.`
-          : 'Un deces a été enregistré et les listes actives ont été mises à jour.',
+          : 'Un décès a été enregistré et les listes actives ont été mises à jour.',
         'info'
       );
     };
@@ -458,7 +458,7 @@ export function SocialView() {
       const memberName = String(payload?.nomMembreDeces || '').trim();
       showNotification(
         memberName
-          ? `Le décès de ${memberName} a été supprime et le membre redevient actif.`
+          ? `Le décès de ${memberName} a été supprimé et le membre redevient actif.`
           : 'Le décès a été supprimé et le membre concerne redevient actif.',
         'success'
       );
@@ -520,8 +520,8 @@ export function SocialView() {
   // une fois détaché de l'écran, à quelle période et quel onglet il correspond.
   const printSubtitle = `Période : ${periodLabel} — ${filteredRows.length} élément(s)`;
 
-  // type est optionnel : par defaut on ouvre le dialogue pour l'onglet actif,
-  // mais les icones "+" des cartes ci-dessous passent explicitement leur type
+  // type est optionnel : par défaut on ouvre le dialogue pour l'onglet actif,
+  // mais les icônes "+" des cartes ci-dessous passent explicitement leur type
   // pour ouvrir directement le bon formulaire (mariage, naissance...) sans
   // devoir d'abord cliquer sur la carte pour changer d'onglet.
   const openCreateDialog = (type: SocialCaseType = activeType) => {
@@ -558,8 +558,8 @@ export function SocialView() {
     }));
   };
 
-  // Rendu d'un champ du formulaire mariage a partir de son nom (evite de dupliquer
-  // la logique de saisie libre pour chaque section : couple / ceremonie / temoins / reception).
+  // Rendu d'un champ du formulaire mariage à partir de son nom (évite de dupliquer
+  // la logique de saisie libre pour chaque section : couple / cérémonie / témoins / réception).
   const renderMariageField = (fieldName: string) => {
     const field = socialConfig.mariage.fields.find((item) => item.name === fieldName);
     if (!field) return null;
@@ -678,7 +678,7 @@ export function SocialView() {
 
       await fetchSocialCases();
       closeDialog();
-      showNotification('Enregistrement effectue avec succes.', 'success');
+      showNotification('Enregistrement effectué avec succès.', 'success');
     } catch (error: any) {
       showNotification(error?.message || "Une erreur s'est produite pendant l'enregistrement.", 'error');
     } finally {
@@ -698,7 +698,7 @@ export function SocialView() {
       if (activeType === 'maladie') await apiClient.deleteMaladie(deleteTarget.id);
 
       await fetchSocialCases();
-      showNotification('Element supprime avec succes.', 'success');
+      showNotification('Élément supprimé avec succès.', 'success');
     } catch (error: any) {
       showNotification(error?.message || 'Suppression impossible pour le moment.', 'error');
     } finally {
@@ -720,7 +720,7 @@ export function SocialView() {
               Cas sociaux
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mt: 0.75 }}>
-              Mariages, naissances, deces et maladies au meme endroit.
+              Mariages, naissances, décès et maladies au même endroit.
             </Typography>
           </Box>
 
@@ -736,8 +736,8 @@ export function SocialView() {
             <PrintEtatSociaux
               activeType={activeType}
               identity={utilisateurData}
-              // Le filtrage (recherche + periode) ne change pas la forme des lignes,
-              // seulement leur nombre : on reaffirme le type precis perdu par .filter().
+              // Le filtrage (recherche + période) ne change pas la forme des lignes,
+              // seulement leur nombre : on réaffirme le type précis perdu par .filter().
               rows={filteredRows as typeof currentRows}
               subtitle={printSubtitle}
             />
@@ -783,7 +783,7 @@ export function SocialView() {
                           size="small"
                           color={socialConfig[type].color}
                           onClick={(event) => {
-                            // On empeche le clic de remonter jusqu'a la carte
+                            // On empêche le clic de remonter jusqu'à la carte
                             // (qui, elle, se contente de changer d'onglet).
                             event.stopPropagation();
                             openCreateDialog(type);
@@ -974,12 +974,12 @@ export function SocialView() {
                               </Typography>
                               <Box sx={{ textAlign: 'right', maxWidth: '62%' }}>
                                 {isContactColumn(column.key) ? (
-                                  <ContactPhoneLink fallback="Non specifie" value={row[column.key]} />
+                                  <ContactPhoneLink fallback="Non spécifié" value={row[column.key]} />
                                 ) : (
                                   <Typography variant="body2">
                                     {column.key.toLowerCase().includes('date')
                                       ? formatDisplayDate(row[column.key])
-                                      : row[column.key] || 'Non specifie'}
+                                      : row[column.key] || 'Non spécifié'}
                                   </Typography>
                                 )}
                               </Box>
@@ -1033,7 +1033,7 @@ export function SocialView() {
                             {column.key === 'nomMembreMaladie' && getLinkedMembreStatus(row.idMembre, availableMembres) ? (
                               <Stack spacing={0.75} alignItems="flex-start">
                                 <Typography variant="body2">
-                                  {row[column.key] || 'Non specifie'}
+                                  {row[column.key] || 'Non spécifié'}
                                 </Typography>
                                 <Chip
                                   size="small"
@@ -1045,7 +1045,7 @@ export function SocialView() {
                             ) : column.key === 'nomFrereMariage' && getLinkedMembreStatus(row.idFrereMembre, availableMembres) ? (
                               <Stack spacing={0.75} alignItems="flex-start">
                                 <Typography variant="body2">
-                                  {row[column.key] || 'Non specifie'}
+                                  {row[column.key] || 'Non spécifié'}
                                 </Typography>
                                 <Chip
                                   size="small"
@@ -1057,7 +1057,7 @@ export function SocialView() {
                             ) : column.key === 'nomSoeurMariage' && getLinkedMembreStatus(row.idSoeurMembre, availableMembres) ? (
                               <Stack spacing={0.75} alignItems="flex-start">
                                 <Typography variant="body2">
-                                  {row[column.key] || 'Non specifie'}
+                                  {row[column.key] || 'Non spécifié'}
                                 </Typography>
                                 <Chip
                                   size="small"
@@ -1069,7 +1069,7 @@ export function SocialView() {
                             ) : column.key.toLowerCase().includes('date') ? (
                               formatDisplayDate(row[column.key])
                             ) : (
-                              row[column.key] || 'Non specifie'
+                              row[column.key] || 'Non spécifié'
                             )}
                           </TableCell>
                         ))}
@@ -1122,12 +1122,12 @@ export function SocialView() {
                 <TextField
                   select
                   fullWidth
-                  label="Membre deja enregistre"
+                  label="Membre déjà enregistré"
                   value={formState.deces.idMembre || ''}
                   onChange={(event) => handleDecesMemberChange(event.target.value)}
                   helperText="Optionnel. Si tu choisis un membre, il quittera automatiquement la liste active."
                 >
-                  <MenuItem value="">Selectionner un membre</MenuItem>
+                  <MenuItem value="">Sélectionner un membre</MenuItem>
                   {availableMembres.map((membre) => (
                     <MenuItem key={membre.idMembre} value={membre.idMembre}>
                       {buildMembreLabel(membre)}
@@ -1235,7 +1235,7 @@ export function SocialView() {
                     Réception et contact
                   </Typography>
                   <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
-                    Contact unique à joindre pour toute question sur ce mariage (pas specifique au frère ou à la sœur).
+                    Contact unique à joindre pour toute question sur ce mariage (pas spécifique au frère ou à la sœur).
                   </Typography>
                 </Grid>
                 <Grid item xs={12} md={6}>{renderMariageField('lieuReception')}</Grid>
@@ -1376,7 +1376,7 @@ function getRowId(type: SocialCaseType, row: any) {
 function buildDeleteLabel(type: SocialCaseType, row: any) {
   if (type === 'mariage') return `${row.nomFrereMariage || ''} - ${row.nomSoeurMariage || ''}`.trim();
   if (type === 'naissance') return `${row.nomEnfantNaissance || ''} - ${row.nomCoupleNaissance || ''}`.trim();
-  if (type === 'deces') return row.nomMembreDeces || 'Deces';
+  if (type === 'deces') return row.nomMembreDeces || 'Décès';
   return row.nomMembreMaladie || 'Maladie';
 }
 

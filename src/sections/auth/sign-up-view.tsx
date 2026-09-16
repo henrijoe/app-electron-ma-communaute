@@ -109,7 +109,7 @@ export function SignUpView() {
 
     if (linkedBrowserContext) {
       showNotification(
-        'Ce navigateur est deja lie a une base existante. Connecte-toi avec le compte principal ou fais creer un utilisateur secondaire depuis Parametres.',
+        'Ce navigateur est déjà lié à une base existante. Connecte-toi avec le compte principal ou fais créer un utilisateur secondaire depuis Paramètres.',
         'warning'
       );
       return;
@@ -206,7 +206,7 @@ export function SignUpView() {
       showNotification(
         getApiErrorMessage(
           error,
-          'Inscription impossible. Verifiez les informations saisies puis reessayez.'
+          'Inscription impossible. Vérifiez les informations saisies puis réessayez.'
         ),
         'error'
       );
@@ -226,17 +226,17 @@ export function SignUpView() {
             variant="body1"
             sx={{ ...authBodyTextSx, maxWidth: 560, mx: { xs: 'auto', md: 0 } }}
           >
-            Ce navigateur est deja lie a {linkedBrowserContext.churchName || 'une eglise existante'}
+            Ce navigateur est déjà lié à {linkedBrowserContext.churchName || 'une église existante'}
             .
           </Typography>
         </Box>
 
         <Stack spacing={3}>
           <Alert severity="warning" sx={authWarningAlertSx}>
-            Pour eviter de créer plusieurs églises differentes pour les mêmes données, cette page
-            d&apos;inscription est bloquee sur ce navigateur. Connecte-toi avec{' '}
+            Pour éviter de créer plusieurs églises différentes pour les mêmes données, cette page
+            d&apos;inscription est bloquée sur ce navigateur. Connecte-toi avec{' '}
             {linkedBrowserContext.username || 'le compte principal'} ou demande la création
-            d&apos;un utilisateur secondaire dans parametres.
+            d&apos;un utilisateur secondaire dans Paramètres.
           </Alert>
 
           <Button
@@ -281,7 +281,7 @@ export function SignUpView() {
             <TextField
               fullWidth
               label="Nom de l'église *"
-              placeholder="Ex: Eglise de la Grâce"
+              placeholder="Ex: Église de la Grâce"
               value={form.nomEglise}
               onChange={onChange('nomEglise')}
               InputLabelProps={{ shrink: true }}
@@ -316,7 +316,7 @@ export function SignUpView() {
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Prenom *"
+              label="Prénom *"
               placeholder="Ex: Jean"
               value={form.prenomUtilisateur}
               onChange={onChange('prenomUtilisateur')}

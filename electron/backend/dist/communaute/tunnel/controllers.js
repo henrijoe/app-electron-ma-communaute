@@ -41,7 +41,7 @@ const getServerPort = () => {
 const respondError = (res, error) => {
     const message = (error === null || error === void 0 ? void 0 : error.code) === 'MODULE_NOT_FOUND'
         ? "Le module localtunnel n'est pas installe. Lance npm install dans le dossier server."
-        : (error === null || error === void 0 ? void 0 : error.message) || "Impossible de gerer le tunnel pour le moment.";
+        : (error === null || error === void 0 ? void 0 : error.message) || "Impossible de gérer le tunnel pour le moment.";
     res.status(500).json({
         status: 0,
         message,
@@ -78,7 +78,7 @@ const stopTunnel = (_req, res) => {
         res.json({
             status: 1,
             data: tunnel.getTunnelStatus(),
-            message: 'Tunnel arrete',
+            message: 'Tunnel arrêté',
         });
     }
     catch (error) {

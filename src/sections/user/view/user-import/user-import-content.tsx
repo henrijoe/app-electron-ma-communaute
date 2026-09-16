@@ -147,16 +147,16 @@ const buildInstructionsSheet = () => {
   const instructions = [
     { champ: 'nomMembre', regle: 'Obligatoire' },
     { champ: 'contactMembre', regle: 'Obligatoire - colonne a conserver en texte pour garder le 0 initial' },
-    { champ: 'sexeMembre', regle: 'Obligatoire - valeurs conseillees: M, Masculin, F, Feminin' },
-    { champ: 'dateNaissMembre', regle: 'Obligatoire - format recommande: JJ-MM-AAAA' },
+    { champ: 'sexeMembre', regle: 'Obligatoire - valeurs conseillées: M, Masculin, F, Féminin' },
+    { champ: 'dateNaissMembre', regle: 'Obligatoire - format recommandé: JJ-MM-AAAA' },
     { champ: 'residenceMembre', regle: 'Obligatoire - quartier ou lieu d habitation' },
     { champ: 'fonctionMembre', regle: 'Obligatoire' },
     { champ: 'prenomMembre', regle: 'Optionnel' },
     { champ: 'civiliteMembre', regle: 'Optionnel - exemples: Monsieur, Madame, Mademoiselle' },
-    { champ: 'departement', regle: 'Doit correspondre a un departement existant' },
-    { champ: 'cellule', regle: 'Doit correspondre a une cellule existante' },
-    { champ: 'groupe', regle: 'Doit correspondre a un groupe existant' },
-    { champ: 'responsabilite', regle: 'Doit correspondre a une responsabilite existante' },
+    { champ: 'departement', regle: 'Doit correspondre à un département existant' },
+    { champ: 'cellule', regle: 'Doit correspondre à une cellule existante' },
+    { champ: 'groupe', regle: 'Doit correspondre à un groupe existant' },
+    { champ: 'responsabilite', regle: 'Doit correspondre à une responsabilité existante' },
   ];
 
   const worksheet = XLSX.utils.json_to_sheet(instructions);
@@ -221,9 +221,9 @@ export const downloadMembreImportTemplate = (
   groupes: ReferenceItem[]
 ) => {
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, buildTemplateSheet(), 'Modele');
+  XLSX.utils.book_append_sheet(workbook, buildTemplateSheet(), 'Modèle');
   XLSX.utils.book_append_sheet(workbook, buildInstructionsSheet(), 'Instructions');
-  XLSX.utils.book_append_sheet(workbook, buildReferenceSheet(departements, cellules, groupes), 'References');
+  XLSX.utils.book_append_sheet(workbook, buildReferenceSheet(departements, cellules, groupes), 'Références');
   XLSX.writeFile(workbook, 'template-import-membres.xlsx');
 };
 
@@ -361,7 +361,7 @@ export function UserImportContent({
             : []
         );
       } catch (error) {
-        console.error('Erreur chargement references import membres:', error);
+        console.error('Erreur chargement références import membres:', error);
       } finally {
         if (active) setIsLoadingReferences(false);
       }
@@ -407,7 +407,7 @@ export function UserImportContent({
     if (!contactMembre) errors.push('Contact manquant');
     if (!normalizeText(sexeValue)) errors.push('Sexe manquant');
     if (!normalizeText(rawDateNaissance)) errors.push('Date de naissance manquante');
-    if (!residenceMembre) errors.push('Residence manquante');
+    if (!residenceMembre) errors.push('Résidence manquante');
     if (!fonctionMembre) errors.push('Fonction manquante');
 
     const dateNaissMembre = formatExcelDate(rawDateNaissance);
@@ -462,7 +462,7 @@ export function UserImportContent({
     };
 
     if (!payload.idUtilisateur) {
-      errors.push('Utilisateur non connecte');
+      errors.push('Utilisateur non connecté');
     }
 
     if (normalizeText(rawDateNaissance) && !dateNaissMembre) {
@@ -487,7 +487,7 @@ export function UserImportContent({
     }
 
     if (normalizeText(departementValue) && !payload.idDepartement) {
-      errors.push(`Departement introuvable: ${normalizeText(departementValue)}`);
+      errors.push(`Département introuvable: ${normalizeText(departementValue)}`);
     }
 
     if (normalizeText(celluleValue) && !payload.idCellule) {
@@ -499,7 +499,7 @@ export function UserImportContent({
     }
 
     if (normalizeText(responsabiliteValue) && !payload.idResponsabilite) {
-      errors.push(`Responsabilite introuvable: ${normalizeText(responsabiliteValue)}`);
+      errors.push(`Responsabilité introuvable: ${normalizeText(responsabiliteValue)}`);
     }
 
     return {
@@ -579,7 +579,7 @@ export function UserImportContent({
 
   const handleImport = useCallback(async () => {
     if (!validRows.length) {
-      showNotification('Aucune ligne valide a importer', 'warning');
+      showNotification('Aucune ligne valide à importer', 'warning');
       return;
     }
 
@@ -617,25 +617,25 @@ export function UserImportContent({
   return (
     <Stack spacing={3}>
       <Alert severity="info">
-        Utilise d&apos;abord le template, fais remplir les lignes, puis charge le fichier ici pour verifier avant import.
+        Utilise d&apos;abord le template, fais remplir les lignes, puis charge le fichier ici pour vérifier avant import.
       </Alert>
 
       <Card>
-        <CardHeader title="Etat du fichier" subheader={fileName ? `Fichier charge : ${fileName}` : 'Aucun fichier charge'} />
+        <CardHeader title="État du fichier" subheader={fileName ? `Fichier chargé : ${fileName}` : 'Aucun fichier chargé'} />
         <CardContent>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
             <Chip color="success" label={`${validRows.length} ligne(s) valide(s)`} />
             <Chip color={invalidRows.length ? 'warning' : 'default'} label={`${invalidRows.length} ligne(s) a corriger`} />
-            <Chip color={isLoadingReferences ? 'warning' : 'default'} label={isLoadingReferences ? 'Chargement references...' : 'References pretes'} />
+            <Chip color={isLoadingReferences ? 'warning' : 'default'} label={isLoadingReferences ? 'Chargement références...' : 'Références prêtes'} />
           </Stack>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader title="Previsualisation avant validation" subheader="Seules les lignes valides seront importees." />
+        <CardHeader title="Prévisualisation avant validation" subheader="Seules les lignes valides seront importées." />
         <CardContent>
           {!previewRows.length ? (
-            <Alert severity="warning">Charge un fichier Excel pour afficher le tableau de previsualisation.</Alert>
+            <Alert severity="warning">Charge un fichier Excel pour afficher le tableau de prévisualisation.</Alert>
           ) : (
             <TableContainer>
               <Table size="small">
@@ -645,11 +645,11 @@ export function UserImportContent({
                     <TableCell>Nom</TableCell>
                     <TableCell>Prénoms</TableCell>
                     <TableCell>Contact</TableCell>
-                    <TableCell>Departement</TableCell>
+                    <TableCell>Département</TableCell>
                     <TableCell>Cellule</TableCell>
                     <TableCell>Groupe</TableCell>
                     <TableCell>Statut</TableCell>
-                    <TableCell>Details</TableCell>
+                    <TableCell>Détails</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -666,7 +666,7 @@ export function UserImportContent({
                         <Chip size="small" color={row.errors.length ? 'warning' : 'success'} label={row.errors.length ? 'A corriger' : 'Valide'} />
                       </TableCell>
                       <TableCell>
-                        {row.errors.length ? row.errors.join(', ') : 'Pret pour import'}
+                        {row.errors.length ? row.errors.join(', ') : 'Prêt pour import'}
                       </TableCell>
                     </TableRow>
                   ))}

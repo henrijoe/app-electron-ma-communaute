@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const db_1 = require("../../db");
-// Ajoute une eglise pour un utilisateur donne.
+// Ajoute une église pour un utilisateur donne.
 const ajouterEglise = (data) => {
     const values = [data.nomEglise, data.idComptabilite, data.idUtilisateur];
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
@@ -25,7 +25,7 @@ const ajouterEglise = (data) => {
     }));
 };
 /**
- * Recupere toutes les eglises.
+ * Récupère toutes les églises.
  */
 const recupEglise = () => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
@@ -40,7 +40,7 @@ const recupEglise = () => {
     }));
 };
 /**
- * Recupere une eglise par son identifiant.
+ * Récupère une église par son identifiant.
  */
 const recupEgliseById = (id) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
@@ -55,7 +55,7 @@ const recupEgliseById = (id) => {
     }));
 };
 /**
- * Recupere l'eglise rattachee a un utilisateur.
+ * Récupère l'église rattachée à un utilisateur.
  */
 const recupEgliseByUtilisateur = (idUtilisateur) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
@@ -69,7 +69,7 @@ const recupEgliseByUtilisateur = (idUtilisateur) => {
         }
     }));
 };
-// Supprime l'eglise. Quand idUtilisateur est fourni, on verrouille la suppression.
+// Supprime l'église. Quand idUtilisateur est fourni, on verrouille la suppression.
 const supprimerEglise = (idEglise, idUtilisateur) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {
@@ -86,7 +86,7 @@ const supprimerEglise = (idEglise, idUtilisateur) => {
         }
     }));
 };
-// Modifie l'eglise de l'utilisateur cible sans toucher aux autres eglises.
+// Modifie l'église de l'utilisateur cible sans toucher aux autres églises.
 const modifierEglise = (data) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {

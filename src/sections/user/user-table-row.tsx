@@ -80,27 +80,27 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, can
 
   const getSituationMatrimonial = (value: string | number | null | undefined) => {
     if (value === null || value === undefined || value === '' || value === 0 || value === '0') {
-      return 'Non renseigne';
+      return 'Non renseigné';
     }
 
-    if (value === 1 || value === '1') return 'Celibataire';
-    if (value === 2 || value === '2') return 'Celibataire sans enfant';
-    if (value === 3 || value === '3') return 'Fiance(e)';
+    if (value === 1 || value === '1') return 'Célibataire';
+    if (value === 2 || value === '2') return 'Célibataire sans enfant';
+    if (value === 3 || value === '3') return 'Fiancé(e)';
     if (value === 4 || value === '4') return 'Concubinage';
-    if (value === 5 || value === '5') return 'Marie(e)';
-    if (value === 6 || value === '6') return 'Divorce(e)';
+    if (value === 5 || value === '5') return 'Marié(e)';
+    if (value === 6 || value === '6') return 'Divorcé(e)';
     if (value === 7 || value === '7') return 'Veuve';
     if (value === 8 || value === '8') return 'Veuf';
     if (value === 9 || value === '9') return 'Copain / Copine';
     if (value === 10 || value === '10') return 'Polygame';
-    return 'Non renseigne';
+    return 'Non renseigné';
   };
 
   const photoUrl = getPhotoUrl(row.photoMembre);
 
   const getBaptemeDisplay = (value: string | number | null | undefined) => {
     if (value === null || value === undefined || value === '') {
-      return { color: 'default' as const, label: 'Non renseigne' };
+      return { color: 'default' as const, label: 'Non renseigné' };
     }
 
     const normalizedValue = String(value).trim();
@@ -204,7 +204,7 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, can
         >
           <MenuItem onClick={handleViewDetail}>
             <Iconify icon="solar:eye-bold" />
-            Detail
+            Détail
           </MenuItem>
 
           {canManage && (

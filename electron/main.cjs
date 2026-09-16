@@ -129,7 +129,7 @@ function runPowerShellUnzip(sourcePath, destinationDir) {
 async function createDesktopBackupArchive() {
   const dataDir = resolveDesktopSqliteDbDir();
   if (!fs.existsSync(dataDir)) {
-    throw new Error("Le dossier de donnees local est introuvable.");
+    throw new Error("Le dossier de données local est introuvable.");
   }
 
   const backupDir = path.join(dataDir, "sauvegardes");
@@ -141,7 +141,7 @@ async function createDesktopBackupArchive() {
       backupDir,
       `ma-communaute-sauvegarde-${formatBackupTimestamp()}.zip`
     ),
-    filters: [{ name: "Sauvegarde Ma Communaute", extensions: ["zip"] }],
+    filters: [{ name: "Sauvegarde Ma Communauté", extensions: ["zip"] }],
   });
 
   if (saveResult.canceled || !saveResult.filePath) {
@@ -172,7 +172,7 @@ async function createDesktopBackupArchive() {
     });
 
     if (!copiedEntries) {
-      throw new Error("Aucune donnee locale a sauvegarder.");
+      throw new Error("Aucune donnée locale à sauvegarder.");
     }
 
     await runPowerShellZip(stagingDir, saveResult.filePath);
@@ -194,8 +194,8 @@ async function restoreDesktopBackupArchive() {
   fs.mkdirSync(dataDir, { recursive: true });
 
   const openResult = await dialog.showOpenDialog(mainWindowRef || undefined, {
-    title: "Restaurer une sauvegarde Ma Communaute",
-    filters: [{ name: "Sauvegarde Ma Communaute", extensions: ["zip"] }],
+    title: "Restaurer une sauvegarde Ma Communauté",
+    filters: [{ name: "Sauvegarde Ma Communauté", extensions: ["zip"] }],
     properties: ["openFile"],
   });
 
@@ -222,7 +222,7 @@ async function restoreDesktopBackupArchive() {
     );
 
     if (!hasDatabase) {
-      throw new Error("Cette archive ne contient aucune base de donnees .db restaurable.");
+      throw new Error("Cette archive ne contient aucune base de données .db restaurable.");
     }
 
     await createDesktopBackupArchiveForPath(safetyBackupPath);
@@ -288,7 +288,7 @@ async function createDesktopBackupArchiveForPath(destinationPath) {
   }
 }
 
-// Determine si l'adresse appartient a un reseau local classique utile pour le LAN client.
+// Détermine si l'adresse appartient à un réseau local classique utile pour le LAN client.
 function isPrivateIpv4Address(address) {
   return (
     address.startsWith("10.") ||
@@ -333,12 +333,12 @@ function scoreLocalIpv4Candidate(candidate) {
   return score;
 }
 
-// Recupere la meilleure IPv4 de la machine qui lance l'application desktop.
+// Récupère la meilleure IPv4 de la machine qui lance l'application desktop.
 function resolveLocalIpv4Address() {
   const networkInterfaces = os.networkInterfaces();
   const candidates = [];
 
-  // On inspecte toutes les interfaces reseau exposees par le systeme.
+  // On inspecte toutes les interfaces réseau exposees par le système.
   Object.entries(networkInterfaces).forEach(([name, entries]) => {
     (entries || []).forEach((entry) => {
       // On ignore les interfaces internes, IPv6 ou incompletes.
@@ -368,12 +368,12 @@ function resolveLocalIpv4Address() {
     return privateCandidates[0].address;
   }
 
-  // Sinon, on retourne la premiere IPv4 externe disponible.
+  // Sinon, on retourne la première IPv4 externe disponible.
   return candidates.sort((left, right) => right.score - left.score)[0]?.address || null;
 }
 
 function escapeHtml(value) {
-  // On force une chaine pour pouvoir echapper proprement meme si la valeur est absente.
+  // On force une chaîne pour pouvoir echapper proprement même si la valeur est absente.
   return String(value || "")
     // On echappe les caracteres speciaux pour eviter qu'un titre injecte casse le HTML.
     .replace(/&/g, "&amp;")
@@ -384,14 +384,14 @@ function escapeHtml(value) {
 }
 
 function buildPrintableDocument(payload) {
-  // On recupere les informations minimales du document a imprimer.
-  const title = payload?.title || "Apercu impression";
+  // On récupère les informations minimales du document à imprimer.
+  const title = payload?.title || "Aperçu impression";
   const headHtml = payload?.headHtml || "";
   const bodyHtml = payload?.bodyHtml || "";
-  // Portrait par defaut si l'appelant ne precise rien (comportement historique).
+  // Portrait par défaut si l'appelant ne précise rien (comportement historique).
   const orientation = payload?.orientation === "landscape" ? "landscape" : "portrait";
 
-  // On reconstruit une page HTML complete pour obtenir un apercu stable dans Electron.
+  // On reconstruit une page HTML complete pour obtenir un aperçu stable dans Electron.
   return `<!DOCTYPE html>
 <html lang="fr">
   <head>
@@ -401,14 +401,14 @@ function buildPrintableDocument(payload) {
     ${headHtml}
     <style>
       /*
-        Cette regle @page est volontairement placee APRES le headHtml recopie
+        Cette règle @page est volontairement placee APRÈS le headHtml recopie
         depuis l'application : le renderer garde toujours plusieurs documents
-        imprimables montes en meme temps (caches via display:none), et chacun
-        declare sa propre regle @page (portrait ou paysage). En CSS, quand
-        plusieurs regles @page ont la meme specificite, c'est la derniere du
+        imprimables montes en même temps (caches via display:none), et chacun
+        déclare sa propre règle @page (portrait ou paysage). En CSS, quand
+        plusieurs règles @page ont la même spécificité, c'est la dernière du
         document qui l'emporte : on s'assure ainsi que l'orientation demandee
         explicitement par payload.orientation est toujours celle qui s'applique
-        reellement, peu importe l'ordre de montage des composants React.
+        réellement, peu importe l'ordre de montage des composants React.
       */
       @page {
         size: A4 ${orientation};
@@ -514,10 +514,10 @@ function buildPrintableDocument(payload) {
         }
 
         .desktop-print-shell {
-          /* Sans ce reset, le "min-height: 100vh" defini plus haut reste base sur la
-             hauteur de la fenetre d'apercu (ecran) et non sur la page imprimee. Comme
-             cette hauteur ecran depasse souvent la hauteur imprimable d'une page A4
-             (surtout en paysage), Chromium ajoutait une 2e page quasi vide meme pour
+          /* Sans ce reset, le "min-height: 100vh" défini plus haut reste base sur la
+             hauteur de la fenêtre d'aperçu (écran) et non sur la page imprimee. Comme
+             cette hauteur écran depasse souvent la hauteur imprimable d'une page A4
+             (surtout en paysage), Chromium ajoutait une 2e page quasi vide même pour
              un document tenant sur une seule ligne. */
           min-height: 0;
         }
@@ -543,7 +543,7 @@ function buildPrintableDocument(payload) {
 }
 
 function createPrintPreviewWindow(payload) {
-  // Cette fenetre isolee sert uniquement a afficher l'aperçu du document a imprimer.
+  // Cette fenêtre isolee sert uniquement à afficher l'aperçu du document à imprimer.
   const previewWindow = new BrowserWindow({
     width: 1240,
     height: 920,
@@ -558,12 +558,12 @@ function createPrintPreviewWindow(payload) {
     },
   });
 
-  // On memorise l'orientation demandee sur la fenetre elle-meme : les handlers
+  // On mémorise l'orientation demandee sur la fenêtre elle-même : les handlers
   // "print-window" et "save-pdf-window" (declenches plus tard par les boutons de
-  // la fenetre d'apercu) en ont besoin pour forcer le bon format de feuille.
+  // la fenêtre d'aperçu) en ont besoin pour forcer le bon format de feuille.
   previewWindow.isLandscapePrint = payload?.orientation === "landscape";
 
-  // On charge le HTML genere directement en memoire pour ne pas dependre d'un fichier temporaire.
+  // On charge le HTML génère directement en memoire pour ne pas dépendre d'un fichier temporaire.
   const printableHtml = buildPrintableDocument(payload);
   previewWindow.once("ready-to-show", () => previewWindow.show());
   previewWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(printableHtml)}`);
@@ -572,7 +572,7 @@ function createPrintPreviewWindow(payload) {
 }
 
 async function exportPdfFromPayload(payload) {
-  // On reutilise la meme fenetre d'aperçu afin que le rendu PDF corresponde a l'impression.
+  // On réutilise la même fenêtre d'aperçu afin que le rendu PDF corresponde à l'impression.
   const exportWindow = createPrintPreviewWindow(payload);
 
   try {
@@ -581,7 +581,7 @@ async function exportPdfFromPayload(payload) {
       exportWindow.webContents.once("did-finish-load", resolve);
     });
 
-    // On propose un nom de fichier par defaut base sur le titre du document.
+    // On propose un nom de fichier par défaut base sur le titre du document.
     const defaultPath = `${payload?.fileName || payload?.title || "document"}.pdf`;
     const saveResult = await dialog.showSaveDialog(exportWindow, {
       title: "Enregistrer le PDF",
@@ -590,11 +590,11 @@ async function exportPdfFromPayload(payload) {
     });
 
     if (saveResult.canceled || !saveResult.filePath) {
-      // Si l'utilisateur annule, on retourne simplement un resultat neutre.
+      // Si l'utilisateur annule, on retourne simplement un résultat neutre.
       return { canceled: true };
     }
 
-    // Electron genere le contenu PDF a partir du rendu HTML de la fenetre.
+    // Electron génère le contenu PDF à partir du rendu HTML de la fenêtre.
     // "landscape" est passe explicitement en plus de preferCSSPageSize : voir le
     // commentaire sur previewWindow.isLandscapePrint pour l'explication complete.
     const pdfBuffer = await exportWindow.webContents.printToPDF({
@@ -603,18 +603,18 @@ async function exportPdfFromPayload(payload) {
       landscape: Boolean(exportWindow.isLandscapePrint),
     });
 
-    // On ecrit le PDF sur disque uniquement apres validation du chemin par l'utilisateur.
+    // On écrit le PDF sur disque uniquement après validation du chemin par l'utilisateur.
     fs.writeFileSync(saveResult.filePath, pdfBuffer);
     return { canceled: false, filePath: saveResult.filePath };
   } finally {
-    // La fenetre d'export n'est utile que temporairement, on la ferme toujours.
+    // La fenêtre d'export n'est utile que temporairement, on la ferme toujours.
     if (!exportWindow.isDestroyed()) {
       exportWindow.close();
     }
   }
 }
 
-// Ecrit une trace simple dans le log desktop pour faciliter le diagnostic client.
+// Écrit une trace simple dans le log desktop pour faciliter le diagnostic client.
 function writeDesktopLog(message) {
   const line = `[${new Date().toISOString()}] ${message}\n`;
 
@@ -624,7 +624,7 @@ function writeDesktopLog(message) {
       fs.appendFileSync(logPath, line, "utf8");
     }
   } catch (error) {
-    console.error("[desktop] Impossible d'ecrire le log:", error);
+    console.error("[desktop] Impossible d'écrire le log:", error);
   }
 
   console.log(line.trim());
@@ -666,20 +666,20 @@ function publishDesktopUpdateStatus(patch = {}) {
 
 // Traduit une erreur technique d'electron-updater (souvent une trace HTTP complete,
 // illisible pour un utilisateur non technique) en un message court et comprehensible.
-// Le detail brut reste disponible dans le fichier de log (voir writeDesktopLog) pour
+// Le détail brut reste disponible dans le fichier de log (voir writeDesktopLog) pour
 // le diagnostic, mais ne doit jamais s'afficher tel quel dans l'application.
 function formatUpdateErrorMessage(rawMessage) {
   const message = String(rawMessage || "");
 
   if (/ERR_INTERNET_DISCONNECTED|ENOTFOUND|ETIMEDOUT|ECONNREFUSED|net::/i.test(message)) {
-    return "Pas de connexion internet. Reessayez une fois connecte au reseau.";
+    return "Pas de connexion internet. Réessayez une fois connecté au réseau.";
   }
 
   if (/404/.test(message) && /latest\.yml|releases/i.test(message)) {
-    return "Aucune mise a jour disponible pour le moment. Reessayez plus tard.";
+    return "Aucune mise à jour disponible pour le moment. Réessayez plus tard.";
   }
 
-  return "Impossible de verifier les mises a jour pour le moment.";
+  return "Impossible de vérifier les mises à jour pour le moment.";
 }
 
 function configureDesktopAutoUpdater() {
@@ -687,7 +687,7 @@ function configureDesktopAutoUpdater() {
     publishDesktopUpdateStatus({
       supported: false,
       checking: false,
-      message: "Le module de mise a jour automatique n'est pas disponible.",
+      message: "Le module de mise à jour automatique n'est pas disponible.",
     });
     return;
   }
@@ -696,7 +696,7 @@ function configureDesktopAutoUpdater() {
     publishDesktopUpdateStatus({
       supported: false,
       checking: false,
-      message: "La mise a jour automatique sera disponible dans l'executable installe.",
+      message: "La mise à jour automatique sera disponible dans l'exécutable installé.",
     });
     return;
   }
@@ -706,39 +706,39 @@ function configureDesktopAutoUpdater() {
 
   publishDesktopUpdateStatus({
     supported: true,
-    message: "Pret a verifier les mises a jour.",
+    message: "Prêt à vérifier les mises à jour.",
   });
 
   autoUpdater.on("checking-for-update", () => {
-    writeDesktopLog("Recherche d'une mise a jour desktop.");
+    writeDesktopLog("Recherche d'une mise à jour desktop.");
     publishDesktopUpdateStatus({
       checking: true,
       error: "",
-      message: "Recherche d'une mise a jour en cours...",
+      message: "Recherche d'une mise à jour en cours...",
       lastCheckedAt: new Date().toISOString(),
     });
   });
 
   autoUpdater.on("update-available", (info) => {
-    writeDesktopLog(`Mise a jour disponible: ${info?.version || "version inconnue"}.`);
+    writeDesktopLog(`Mise à jour disponible: ${info?.version || "version inconnue"}.`);
     publishDesktopUpdateStatus({
       checking: false,
       available: true,
       downloaded: false,
       latestVersion: info?.version || "",
-      message: "Une nouvelle version est disponible. Telechargement en cours...",
+      message: "Une nouvelle version est disponible. Téléchargement en cours...",
     });
   });
 
   autoUpdater.on("update-not-available", (info) => {
-    writeDesktopLog("Aucune mise a jour desktop disponible.");
+    writeDesktopLog("Aucune mise à jour desktop disponible.");
     publishDesktopUpdateStatus({
       checking: false,
       available: false,
       downloaded: false,
       latestVersion: info?.version || app.getVersion(),
       progress: null,
-      message: "Cette application est deja a jour.",
+      message: "Cette application est déjà à jour.",
       lastCheckedAt: new Date().toISOString(),
     });
   });
@@ -750,19 +750,19 @@ function configureDesktopAutoUpdater() {
         transferred: Number(progress?.transferred || 0),
         total: Number(progress?.total || 0),
       },
-      message: "Telechargement de la mise a jour en cours...",
+      message: "Téléchargement de la mise à jour en cours...",
     });
   });
 
   autoUpdater.on("update-downloaded", (info) => {
-    writeDesktopLog(`Mise a jour telechargee: ${info?.version || "version inconnue"}.`);
+    writeDesktopLog(`Mise à jour téléchargée: ${info?.version || "version inconnue"}.`);
     publishDesktopUpdateStatus({
       checking: false,
       available: true,
       downloaded: true,
       latestVersion: info?.version || "",
       progress: null,
-      message: "Mise a jour telechargee. Redemarre pour l'installer.",
+      message: "Mise à jour téléchargée. Redémarre pour l'installer.",
     });
   });
 
@@ -771,12 +771,12 @@ function configureDesktopAutoUpdater() {
     // Le message brut d'electron-updater (trace complete, en-tetes HTTP, URL de
     // Github...) est illisible pour un utilisateur final. On le garde dans le
     // fichier de log pour le diagnostic, mais on n'affiche qu'un message clair
-    // et en francais dans l'interface (voir formatUpdateErrorMessage ci-dessous).
-    writeDesktopLog(`Erreur mise a jour desktop: ${rawMessage}`);
+    // et en français dans l'interface (voir formatUpdateErrorMessage ci-dessous).
+    writeDesktopLog(`Erreur mise à jour desktop: ${rawMessage}`);
     publishDesktopUpdateStatus({
       checking: false,
       error: formatUpdateErrorMessage(rawMessage),
-      message: "La verification de mise a jour a echoue.",
+      message: "La vérification de mise à jour a échoué.",
     });
   });
 }
@@ -789,18 +789,18 @@ function checkForDesktopUpdates() {
   return autoUpdater.checkForUpdates();
 }
 
-// Attend simplement un petit delai entre deux tentatives de verification.
+// Attend simplement un petit delai entre deux tentatives de vérification.
 function wait(delayMs) {
   return new Promise((resolve) => {
-    // Ce delai sert a laisser au backend le temps de demarrer avant une nouvelle verification.
+    // Ce delai sert a laisser au backend le temps de démarrer avant une nouvelle vérification.
     setTimeout(resolve, delayMs);
   });
 }
 
-// Verifie si un service HTTP repond deja sur le port local du backend desktop.
+// Vérifie si un service HTTP répond déjà sur le port local du backend desktop.
 function pingDesktopBackend() {
   return new Promise((resolve) => {
-    // On appelle un endpoint simple pour verifier qu'un vrai backend HTTP repond sur ce port.
+    // On appelle un endpoint simple pour vérifier qu'un vrai backend HTTP répond sur ce port.
     const request = http.request(
       {
         host: "127.0.0.1",
@@ -810,16 +810,16 @@ function pingDesktopBackend() {
         timeout: 1500,
       },
       (response) => {
-        // On ne lit pas le corps en detail, seule la disponibilite du serveur nous interesse ici.
+        // On ne lit pas le corps en détail, seule la disponibilite du serveur nous interesse ici.
         response.resume();
         resolve(Boolean(response.statusCode && response.statusCode < 500));
       }
     );
 
-    // Toute erreur reseau signifie que le backend n'est pas disponible.
+    // Toute erreur réseau signifie que le backend n'est pas disponible.
     request.on("error", () => resolve(false));
     request.on("timeout", () => {
-      // En cas de timeout, on coupe proprement la requete puis on signale l'echec.
+      // En cas de timeout, on coupe proprement la requête puis on signale l'echec.
       request.destroy();
       resolve(false);
     });
@@ -827,7 +827,7 @@ function pingDesktopBackend() {
   });
 }
 
-// Detecte si le port est deja reserve, meme si le service qui l'occupe n'est pas notre backend.
+// Détecte si le port est déjà réservé, même si le service qui l'occupe n'est pas notre backend.
 function isDesktopBackendPortBusy() {
   return new Promise((resolve) => {
     // Ici on teste seulement si le port accepte une connexion TCP, sans exiger notre backend.
@@ -837,30 +837,30 @@ function isDesktopBackendPortBusy() {
         port: DESKTOP_BACKEND_PORT,
       },
       () => {
-        // Si la connexion reussit, cela veut dire qu'un processus occupe deja le port.
+        // Si la connexion reussit, cela veut dire qu'un processus occupe déjà le port.
         socket.destroy();
         resolve(true);
       }
     );
 
-    // Si la connexion echoue, on considere que le port est libre.
+    // Si la connexion échoue, on considere que le port est libre.
     socket.on("error", () => resolve(false));
   });
 }
 
-// Attend que le backend soit reelement joignable avant de laisser le renderer faire ses appels.
+// Attend que le backend soit réellement joignable avant de laisser le renderer faire ses appels.
 async function waitForDesktopBackendReady(maxAttempts = 20, delayMs = 500) {
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    // A chaque tentative, on verifie si le backend repond enfin a /test.
+    // A chaque tentative, on verifie si le backend répond enfin a /test.
     if (await pingDesktopBackend()) {
       return true;
     }
 
-    // Si le backend n'est pas encore pret, on attend un peu avant de retester.
+    // Si le backend n'est pas encore prêt, on attend un peu avant de retester.
     await wait(delayMs);
   }
 
-  // Si toutes les tentatives echouent, on signale que le backend n'est pas pret.
+  // Si toutes les tentatives échouent, on signale que le backend n'est pas prêt.
   return false;
 }
 
@@ -874,12 +874,12 @@ function getDevServerUrl() {
   return process.env.ELECTRON_RENDERER_URL || "http://127.0.0.1:5173";
 }
 
-// Retourne le chemin du build web genere par Vite.
+// Retourne le chemin du build web génère par Vite.
 function getRendererBuildPath() {
   return path.join(__dirname, "..", "dist", "index.html");
 }
 
-// Indique si le backend local doit etre lance automatiquement.
+// Indique si le backend local doit être lance automatiquement.
 function shouldStartEmbeddedBackend() {
   if (app.isPackaged) {
     return true;
@@ -898,19 +898,19 @@ function getServerDistEntryPath() {
   return path.join(getServerRootPath(), "dist", "app.js");
 }
 
-// Retourne le backend prepare pour l'executable desktop.
+// Retourne le backend prépare pour l'exécutable desktop.
 function getPackagedBackendRootPath() {
   return path.join(process.resourcesPath, "backend");
 }
 
-// Cherche un backend local deja compile que l'application desktop pourra lancer.
+// Cherche un backend local déjà compile que l'application desktop pourra lancer.
 function resolveBackendEntry() {
   const serverDistEntry = getServerDistEntryPath();
   const packagedBackendRoot = getPackagedBackendRootPath();
   const packagedBackendExe = path.join(packagedBackendRoot, "ma-communaute-server.exe");
   const packagedBackendScript = path.join(packagedBackendRoot, "dist", "app.js");
 
-  // En mode package, on privilegie un executable backend embarque.
+  // En mode package, on privilégie un exécutable backend embarque.
   if (app.isPackaged && fs.existsSync(packagedBackendExe)) {
     return {
       command: packagedBackendExe,
@@ -919,7 +919,7 @@ function resolveBackendEntry() {
     };
   }
 
-  // Si on n'a pas d'executable backend, on reutilise le build JS embarque
+  // Si on n'a pas d'exécutable backend, on réutilise le build JS embarque
   // en demandant au binaire Electron de se comporter comme un runtime Node.
   if (app.isPackaged && fs.existsSync(packagedBackendScript)) {
     return {
@@ -942,43 +942,43 @@ function resolveBackendEntry() {
   return null;
 }
 
-// Demarre le backend local si on a explicitement demande ce comportement.
+// Démarre le backend local si on a explicitement demande ce comportement.
 async function startEmbeddedBackend() {
   if (!shouldStartEmbeddedBackend()) {
-    writeDesktopLog("Backend local desactive pour ce lancement.");
+    writeDesktopLog("Backend local désactivé pour ce lancement.");
     return { available: false, reused: false, reason: "disabled" };
   }
 
-  // On evite de lancer deux fois le backend local.
+  // On évite de lancer deux fois le backend local.
   if (backendProcess) {
-    // Si on a deja un processus en memoire, on le reutilise tel quel.
+    // Si on a déjà un processus en memoire, on le réutilise tel quel.
     return { available: true, reused: true, reason: "already-started" };
   }
 
-  // Si un backend local repond deja, on le reutilise au lieu de lancer un second processus.
+  // Si un backend local répond déjà, on le réutilise au lieu de lancer un second processus.
   if (await pingDesktopBackend()) {
-    writeDesktopLog("Backend local deja joignable sur le port 49300. Reutilisation de l'instance existante.");
+    writeDesktopLog("Backend local déjà joignable sur le port 49300. Réutilisation de l'instance existante.");
     return { available: true, reused: true, reason: "existing-backend" };
   }
 
-  // Si le port est reserve mais qu'aucun backend ne repond, l'application ne pourra pas fonctionner correctement.
+  // Si le port est reserve mais qu'aucun backend ne répond, l'application ne pourra pas fonctionner correctement.
   if (await isDesktopBackendPortBusy()) {
     writeDesktopLog(
-      "Le port 49300 est deja occupe par un autre processus et aucun backend valide ne repond."
+      "Le port 49300 est déjà occupé par un autre processus et aucun backend valide ne répond."
     );
     return { available: false, reused: false, reason: "port-busy" };
   }
 
   const backendEntry = resolveBackendEntry();
 
-  // Si aucun backend n'est pret, on journalise simplement l'information.
+  // Si aucun backend n'est prêt, on journalise simplement l'information.
   if (!backendEntry) {
     writeDesktopLog("Backend local introuvable. Le front desktop continue sans backend embarque.");
     return { available: false, reused: false, reason: "missing-entry" };
   }
 
   // On transmet l'environnement au backend pour qu'il tourne en SQLite local.
-  writeDesktopLog(`Demarrage du backend local: ${backendEntry.command} ${backendEntry.args.join(" ")}`);
+  writeDesktopLog(`Démarrage du backend local: ${backendEntry.command} ${backendEntry.args.join(" ")}`);
   backendProcess = spawn(backendEntry.command, backendEntry.args, {
     cwd: backendEntry.cwd,
     env: {
@@ -986,11 +986,11 @@ async function startEmbeddedBackend() {
       // On force le mode SQLite local pour le desktop client.
       DB_MODE: process.env.DB_MODE || "sqlite",
       DESKTOP_APP: "1",
-      // Cette variable permet au binaire Electron d'executer un script Node emballe.
+      // Cette variable permet au binaire Electron d'exécuter un script Node emballe.
       ELECTRON_RUN_AS_NODE: backendEntry.useElectronAsNode ? "1" : process.env.ELECTRON_RUN_AS_NODE,
       // Ce dossier centralise les bases SQLite desktop sur la machine cliente.
       SQLITE_DB_DIR: resolveDesktopSqliteDbDir(),
-      // Le backend doit etre accessible depuis les autres postes du meme reseau.
+      // Le backend doit être accessible depuis les autres postes du même réseau.
       HOST: process.env.HOST || "0.0.0.0",
       BIND_HOST: process.env.BIND_HOST || "0.0.0.0",
     },
@@ -1010,7 +1010,7 @@ async function startEmbeddedBackend() {
     });
   }
 
-  // Si le backend s'arrete, on nettoie simplement la reference locale.
+  // Si le backend s'arrete, on nettoie simplement la référence locale.
   backendProcess.on("exit", (code) => {
     writeDesktopLog(`Backend local arrete avec le code ${code ?? 0}.`);
     backendProcess = null;
@@ -1024,17 +1024,17 @@ async function startEmbeddedBackend() {
   const backendReady = await waitForDesktopBackendReady();
 
   if (backendReady) {
-    writeDesktopLog("Backend local pret et joignable sur http://127.0.0.1:49300.");
+    writeDesktopLog("Backend local prêt et joignable sur http://127.0.0.1:49300.");
     return { available: true, reused: false, reason: "started" };
   }
 
-  writeDesktopLog("Le backend local n'a pas repondu a temps apres son lancement.");
+  writeDesktopLog("Le backend local n'a pas répondu à temps après son lancement.");
   return { available: false, reused: false, reason: "startup-timeout" };
 }
 
-// Cree la fenetre principale du desktop.
+// Crée la fenêtre principale du desktop.
 function createMainWindow() {
-  // Cette fenetre porte toute l'application React du mode desktop.
+  // Cette fenêtre porte toute l'application React du mode desktop.
   const mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -1049,9 +1049,9 @@ function createMainWindow() {
     },
   });
 
-  // On affiche la fenetre seulement quand le rendu principal est pret.
+  // On affiche la fenêtre seulement quand le rendu principal est prêt.
   mainWindow.once("ready-to-show", () => {
-    writeDesktopLog("Fenetre principale prete a etre affichee.");
+    writeDesktopLog("Fenêtre principale prête à être affichée.");
     mainWindow.show();
   });
 
@@ -1115,12 +1115,12 @@ function createMainWindow() {
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
 if (!gotSingleInstanceLock) {
-  // Si une instance existe deja, on quitte pour eviter deux frontends et deux backends concurrents.
+  // Si une instance existe déjà, on quitte pour éviter deux frontends et deux backends concurrents.
   app.quit();
 } else {
   app.on("second-instance", () => {
     if (mainWindowRef) {
-      // Si l'utilisateur relance l'app, on remet simplement la fenetre deja ouverte au premier plan.
+      // Si l'utilisateur relance l'app, on remet simplement la fenêtre déjà ouverte au premier plan.
       if (mainWindowRef.isMinimized()) {
         mainWindowRef.restore();
       }
@@ -1129,7 +1129,7 @@ if (!gotSingleInstanceLock) {
   });
 
   app.whenReady().then(async () => {
-  writeDesktopLog("Application desktop prete.");
+  writeDesktopLog("Application desktop prête.");
   configureDesktopAutoUpdater();
   const backendState = await startEmbeddedBackend();
 
@@ -1137,7 +1137,7 @@ if (!gotSingleInstanceLock) {
     // On affiche un message clair car l'application ne pourra pas utiliser son backend local.
     dialog.showErrorBox(
       "Backend local indisponible",
-      "Le port 49300 est deja utilise par un autre processus. Ferme ce processus puis relance l'application desktop."
+      "Le port 49300 est déjà utilisé par un autre processus. Ferme ce processus puis relance l'application desktop."
     );
   }
 
@@ -1146,7 +1146,7 @@ if (!gotSingleInstanceLock) {
   if (autoUpdater && app.isPackaged) {
     setTimeout(() => {
       checkForDesktopUpdates().catch((error) => {
-        writeDesktopLog(`Verification automatique des mises a jour impossible: ${error.message}`);
+        writeDesktopLog(`Vérification automatique des mises à jour impossible: ${error.message}`);
       });
     }, 8000);
   }
@@ -1160,7 +1160,7 @@ if (!gotSingleInstanceLock) {
 }
 
 ipcMain.handle("desktop-print:open-preview", async (_event, payload) => {
-  // Le renderer envoie seulement le payload, Electron cree la fenetre native d'aperçu.
+  // Le renderer envoie seulement le payload, Electron cree la fenêtre native d'aperçu.
   createPrintPreviewWindow(payload);
   return { ok: true };
 });
@@ -1173,7 +1173,7 @@ ipcMain.handle("desktop-print:print-window", async (event) => {
   const currentWindow = BrowserWindow.fromWebContents(event.sender);
 
   if (!currentWindow) {
-    // Sans fenetre source, on ne peut pas lancer l'impression.
+    // Sans fenêtre source, on ne peut pas lancer l'impression.
     return { ok: false };
   }
 
@@ -1181,8 +1181,8 @@ ipcMain.handle("desktop-print:print-window", async (event) => {
     currentWindow.webContents.print(
       {
         printBackground: true,
-        // Sans ce flag explicite, la boite de dialogue d'impression native ignore
-        // la regle CSS "@page: landscape" et imprime toujours en portrait (voir
+        // Sans ce flag explicite, la boîte de dialogue d'impression native ignore
+        // la règle CSS "@page: landscape" et imprime toujours en portrait (voir
         // previewWindow.isLandscapePrint pour le contexte complet).
         landscape: Boolean(currentWindow.isLandscapePrint),
       },
@@ -1202,7 +1202,7 @@ ipcMain.handle("desktop-print:save-pdf-window", async (event) => {
   const currentWindow = BrowserWindow.fromWebContents(event.sender);
 
   if (!currentWindow) {
-    // Sans fenetre active, il n'y a rien a exporter.
+    // Sans fenêtre active, il n'y a rien à exporter.
     return { ok: false };
   }
 
@@ -1213,7 +1213,7 @@ ipcMain.handle("desktop-print:save-pdf-window", async (event) => {
   });
 
   if (saveResult.canceled || !saveResult.filePath) {
-    // L'utilisateur peut fermer la boite sans erreur, on retourne un statut neutre.
+    // L'utilisateur peut fermer la boîte sans erreur, on retourne un statut neutre.
     return { canceled: true };
   }
 
@@ -1230,14 +1230,14 @@ ipcMain.handle("desktop-print:save-pdf-window", async (event) => {
 ipcMain.handle("desktop-print:close-window", async (event) => {
   const currentWindow = BrowserWindow.fromWebContents(event.sender);
   if (currentWindow && !currentWindow.isDestroyed()) {
-    // On ferme explicitement la fenetre d'impression quand le renderer le demande.
+    // On ferme explicitement la fenêtre d'impression quand le renderer le demande.
     currentWindow.close();
   }
   return { ok: true };
 });
 
 
-// Expose au renderer l'adresse IP locale detectee pour construire automatiquement l'URL web.
+// Expose au renderer l'adresse IP locale détectée pour construire automatiquement l'URL web.
 ipcMain.handle("desktop-network:get-local-address", async () => {
   try {
     const backendReady = await pingDesktopBackend();
@@ -1246,17 +1246,17 @@ ipcMain.handle("desktop-network:get-local-address", async () => {
       return {
         success: false,
         error:
-          "Le backend local ne repond pas sur le port 49300. Relance l'application desktop puis verifie le journal desktop si le probleme continue.",
+          "Le backend local ne répond pas sur le port 49300. Relance l'application desktop puis vérifie le journal desktop si le problème continue.",
       };
     }
 
     const ipAddress = resolveLocalIpv4Address();
 
-    // Si aucune IPv4 exploitable n'est trouvee, on le signale clairement au front.
+    // Si aucune IPv4 exploitable n'est trouvée, on le signale clairement au front.
     if (!ipAddress) {
       return {
         success: false,
-        error: "Aucune adresse IPv4 locale n'a ete detectee sur cette machine",
+        error: "Aucune adresse IPv4 locale n'a été détectée sur cette machine",
       };
     }
 
@@ -1274,10 +1274,10 @@ ipcMain.handle("desktop-network:get-local-address", async () => {
   }
 });
 
-// Ouvre une URL externe dans le navigateur par defaut du systeme.
+// Ouvre une URL externe dans le navigateur par défaut du système.
 ipcMain.handle("desktop-shell:open-external", async (_event, url) => {
   try {
-    // Electron delegue l'ouverture au navigateur par defaut du systeme.
+    // Electron delegue l'ouverture au navigateur par défaut du système.
     await shell.openExternal(url);
     return { success: true };
   } catch (error) {
@@ -1294,7 +1294,7 @@ ipcMain.handle("desktop-backup:create", async () => {
   try {
     return await createDesktopBackupArchive();
   } catch (error) {
-    return { success: false, error: error?.message || "Impossible de creer la sauvegarde." };
+    return { success: false, error: error?.message || "Impossible de créer la sauvegarde." };
   }
 });
 
@@ -1329,7 +1329,7 @@ ipcMain.handle("desktop-update:check", async () => {
     return publishDesktopUpdateStatus({
       supported: false,
       checking: false,
-      message: "Le module de mise a jour automatique n'est pas disponible.",
+      message: "Le module de mise à jour automatique n'est pas disponible.",
     });
   }
 
@@ -1337,23 +1337,23 @@ ipcMain.handle("desktop-update:check", async () => {
     return publishDesktopUpdateStatus({
       supported: false,
       checking: false,
-      message: "La mise a jour automatique sera disponible dans l'executable installe.",
+      message: "La mise à jour automatique sera disponible dans l'exécutable installé.",
     });
   }
 
   try {
     await checkForDesktopUpdates();
   } catch (error) {
-    // "autoUpdater" emet deja son propre evenement "error" (gere plus haut par
+    // "autoUpdater" emet déjà son propre événement "error" (gere plus haut par
     // formatUpdateErrorMessage), mais checkForUpdates() rejette AUSSI la promesse
-    // pour le meme echec : sans reprendre le meme formatage ici, ce catch ecrasait
-    // le message convivial avec le message brut (trace complete) juste apres.
+    // pour le même echec : sans reprendre le même formatage ici, ce catch ecrasait
+    // le message convivial avec le message brut (trace complete) juste après.
     const rawMessage = error?.message || String(error);
-    writeDesktopLog(`Erreur mise a jour desktop (verification manuelle): ${rawMessage}`);
+    writeDesktopLog(`Erreur mise à jour desktop (vérification manuelle): ${rawMessage}`);
     publishDesktopUpdateStatus({
       checking: false,
       error: formatUpdateErrorMessage(rawMessage),
-      message: "La verification de mise a jour a echoue.",
+      message: "La vérification de mise à jour a échoué.",
     });
   }
 
@@ -1364,7 +1364,7 @@ ipcMain.handle("desktop-update:install", async () => {
   if (!autoUpdater || !desktopUpdateState.downloaded) {
     return {
       success: false,
-      error: "Aucune mise a jour telechargee n'est prete a etre installee.",
+      error: "Aucune mise à jour téléchargée n'est prête à être installée.",
     };
   }
 
@@ -1379,7 +1379,7 @@ process.on("uncaughtException", (error) => {
 });
 
 process.on("unhandledRejection", (reason) => {
-  writeDesktopLog(`Promesse rejetee sans gestionnaire: ${String(reason)}`);
+  writeDesktopLog(`Promesse rejetée sans gestionnaire: ${String(reason)}`);
 });
 
 app.on("window-all-closed", () => {

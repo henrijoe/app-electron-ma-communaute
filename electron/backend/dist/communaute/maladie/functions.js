@@ -25,7 +25,7 @@ const ajouterMaladie = (data) => {
             const sqlCheck = `SELECT COUNT(*) as count FROM maladie WHERE nomMembreMaladie = ? AND dateMaladie = ?`;
             const [result] = yield (0, db_1._selectSql)(sqlCheck, [data.nomMembreMaladie, data.dateMaladie]);
             if ((result === null || result === void 0 ? void 0 : result.count) > 0) {
-                return reject(new Error('Ce cas de maladie existe deja.'));
+                return reject(new Error('Ce cas de maladie existe déjà.'));
             }
             const sql = `INSERT INTO maladie(idMembre,nomMembreMaladie,typeMaladie,dateMaladie,lieuHospitalisation,observationMaladie,idUtilisateur) VALUES (?,?,?,?,?,?,?)`;
             const maladieData = yield (0, db_1._executeSql)(sql, values);
@@ -61,7 +61,7 @@ const recupMaladieByIdUtilsateur = (idUtilisateur) => new Promise((resolve, reje
         const sql = `SELECT * FROM maladie WHERE idUtilisateur = ?;`;
         const maladie = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
         if (!maladie.length)
-            return reject({ name: 'Erreur_maladie', message: 'Aucune maladie trouvee' });
+            return reject({ name: 'Erreur_maladie', message: 'Aucune maladie trouvée' });
         resolve(maladie);
     }
     catch (error) {

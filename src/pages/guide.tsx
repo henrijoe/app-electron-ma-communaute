@@ -6,7 +6,7 @@ export default function GuidePage() {
   return (
     <>
       <Helmet>
-        <title> Guide d&apos;utilisation | Ma Communaute </title>
+        <title> Guide d&apos;utilisation | Ma Communauté </title>
       </Helmet>
 
       <GuideView />

@@ -15,7 +15,7 @@ const ajouterResponsabilite = (req, res) => {
         .catch((error) => res.status(400).send({ status: 0, error }));
 };
 /**
- * Récupérer une departement
+ * Récupérer une département
  * @returns
  */
 const recupResponsabilite = (req, res) => {

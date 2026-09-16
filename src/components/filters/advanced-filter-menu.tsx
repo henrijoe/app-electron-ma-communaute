@@ -123,7 +123,7 @@ export function AdvancedFilterMenu({
                 setAnchorEl(null);
               }}
             >
-              Reinitialiser
+              Réinitialiser
             </Button>
             <Button
               variant="contained"

@@ -20,7 +20,7 @@ const ajouterDepartement = (data) => {
     ];
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            // La verification de doublon reste locale a l'utilisateur pour ne pas bloquer une autre eglise.
+            // La vérification de doublon reste locale à l'utilisateur pour ne pas bloquer une autre église.
             const sqlCheck = `SELECT COUNT(*) as count FROM departement WHERE idUtilisateur = ? AND (libelleLongDepartement = ? OR libelleCourtDepartement = ?)`;
             const [result] = yield (0, db_1._selectSql)(sqlCheck, [
                 data.idUtilisateur,
@@ -28,7 +28,7 @@ const ajouterDepartement = (data) => {
                 data.libelleCourtDepartement,
             ]);
             if (result.count > 0) {
-                return reject(new Error("Ce departement existe déjà."));
+                return reject(new Error("Ce département existe déjà."));
             }
             const sqlInsert = `INSERT INTO departement(libelleLongDepartement,libelleCourtDepartement,sloganDepartement,responsableDepartement,idUtilisateur) VALUES (?,?,?,?,?)`;
             const departement = yield (0, db_1._executeSql)(sqlInsert, values);
@@ -69,7 +69,7 @@ const recupDepartementByIdUtilsateur = (idUtilisateur) => {
             const sql = `SELECT * FROM departement WHERE idUtilisateur= ?;`;
             const departements = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
             if (!departements.length) {
-                return reject({ name: "Erreur_departement", message: "Aucun departement trouve" });
+                return reject({ name: "Erreur_departement", message: "Aucun département trouvé" });
             }
             resolve(departements);
         }

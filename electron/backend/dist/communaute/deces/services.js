@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const functions_1 = __importDefault(require("./functions"));
 /**
  *
-Permet d'ajouter une deces
+Permet d'ajouter une décès
  * @returns
  */
 const ajouterDeces = (data) => {

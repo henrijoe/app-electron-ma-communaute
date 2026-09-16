@@ -74,8 +74,8 @@ const MYSQL_UTILISATEUR_TEXT_COLUMNS = {
 const MYSQL_UTILISATEUR_NUMBER_COLUMNS = {
     idUtilisateurParent: 'INT NULL',
     actifUtilisateur: 'INT NOT NULL DEFAULT 1',
-    // 1 = une demande d'inscription QR code doit etre validee par un responsable (comportement historique).
-    // 0 = le membre est ajoute directement a la liste, sans validation (utile pour les grandes eglises).
+    // 1 = une demande d'inscription QR code doit être validée par un responsable (comportement historique).
+    // 0 = le membre est ajoute directement à la liste, sans validation (utile pour les grandes églises).
     validerInscriptionMembre: 'INT NOT NULL DEFAULT 1',
 };
 const SQLITE_UTILISATEUR_TEXT_COLUMNS = {
@@ -131,7 +131,7 @@ const normalizeUtilisateurData = (data) => ({
         : 'admin',
     permissionsUtilisateur: data.permissionsUtilisateur || ALL_MODULE_PERMISSIONS,
     actifUtilisateur: Number(data.actifUtilisateur || 1),
-    // Par defaut (undefined/absent) on garde le comportement historique : validation obligatoire.
+    // Par défaut (undefined/absent) on garde le comportement historique : validation obligatoire.
     validerInscriptionMembre: Number(data.validerInscriptionMembre) === 0 ? 0 : 1,
     logoUtilisateur: data.logoUtilisateur || '',
     logoEglise: data.logoEglise || '',

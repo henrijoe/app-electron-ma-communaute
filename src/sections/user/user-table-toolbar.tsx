@@ -15,8 +15,8 @@ type UserTableToolbarProps = {
   onFilterName: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onDelete?: () => void;
   deleteLoading?: boolean;
-  // Action supplementaire affichee a cote de "Supprimer" quand des lignes sont
-  // selectionnees (ex : bouton d'impression des cartes de membre).
+  // Action supplémentaire affichée a côté de "Supprimer" quand des lignes sont
+  // sélectionnées (ex : bouton d'impression des cartes de membre).
   extraAction?: React.ReactNode;
 };
 
@@ -44,7 +44,7 @@ export function UserTableToolbar({
     >
       {numSelected > 0 ? (
         <Typography component="div" variant="subtitle1">
-          {numSelected} selectionne(s)
+          {numSelected} sélectionné(s)
         </Typography>
       ) : (
         <Box sx={{ flex: '1 1 auto', minWidth: 0, maxWidth: { xs: 'none', sm: 320 } }}>

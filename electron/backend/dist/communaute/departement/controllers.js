@@ -9,6 +9,9 @@ const ajouterDepartement = (req, res) => {
     services_1.default
         .ajouterDepartement(data)
         .then((result) => {
+        var _a;
+        // Signale la création aux clients connectés (tableau de bord, listes ouvertes).
+        (_a = req.io) === null || _a === void 0 ? void 0 : _a.emit("ajouterDepartement", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur, data: result });
         res.status(200).send({ status: 1, data: result });
     })
         .catch((error) => {
@@ -22,7 +25,7 @@ const ajouterDepartement = (req, res) => {
     });
 };
 /**
- * RÃ©cupÃ©rer une departement
+ * Récupérer une département
  * @returns
  */
 const recupDepartement = (req, res) => {
@@ -50,11 +53,13 @@ const supprimerDepartement = (req, res) => {
     services_1.default
         .supprimerDepartement(idDepartement, idUtilisateur)
         .then((result) => {
+        var _a;
         if (result) {
+            (_a = req.io) === null || _a === void 0 ? void 0 : _a.emit("supprimerDepartement", { idUtilisateur, idDepartement, data: result });
             res.status(200).send({ status: 1, data: result });
         }
         else {
-            res.status(400).send({ status: 0, error: 'Departement non trouve' });
+            res.status(400).send({ status: 0, error: 'Département non trouvé' });
         }
     })
         .catch((error) => res.status(400).send({ status: 0, error }));
@@ -65,6 +70,8 @@ const modifierDepartement = (req, res) => {
     services_1.default
         .modifierDepartement(data)
         .then((result) => {
+        var _a;
+        (_a = req.io) === null || _a === void 0 ? void 0 : _a.emit("modifierDepartement", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur, data: result });
         res.status(200).send({ status: 1, data: result });
     })
         .catch((error) => res.status(400).send({ status: 0, error }));

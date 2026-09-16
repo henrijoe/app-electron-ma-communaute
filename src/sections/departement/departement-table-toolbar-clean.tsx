@@ -43,7 +43,7 @@ export function UserTableToolbar({
     >
       {numSelected > 0 ? (
         <Typography component="div" variant="subtitle1">
-          {numSelected} departement(s) selectionne(s)
+          {numSelected} département(s) sélectionné(s)
         </Typography>
       ) : (
         <Box sx={{ flex: '1 1 auto', minWidth: 0, maxWidth: { xs: 'none', sm: 320 } }}>
@@ -51,7 +51,7 @@ export function UserTableToolbar({
             fullWidth
             value={filterName}
             onChange={onFilterName}
-            placeholder="Rechercher un departement..."
+            placeholder="Rechercher un département..."
             startAdornment={
               <InputAdornment position="start">
                 <Iconify width={20} icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
@@ -62,7 +62,7 @@ export function UserTableToolbar({
       )}
 
       {numSelected > 0 ? (
-        <Tooltip title="Supprimer les departements selectionnes">
+        <Tooltip title="Supprimer les départements sélectionnés">
           <IconButton onClick={onDelete} disabled={deleteLoading}>
             <Iconify icon="solar:trash-bin-trash-bold" />
           </IconButton>

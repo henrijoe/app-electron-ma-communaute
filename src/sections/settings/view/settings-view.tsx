@@ -142,8 +142,8 @@ type ProfileFormState = {
   modeVersetDashboard: DashboardVerseMode;
   versetDashboardReference: string;
   versetDashboardTexte: string;
-  // 1 = un responsable doit valider chaque inscription envoyee par QR code
-  // (par defaut) ; 0 = les inscriptions sont ajoutees directement aux membres.
+  // 1 = un responsable doit valider chaque inscription envoyée par QR code
+  // (par défaut) ; 0 = les inscriptions sont ajoutées directement aux membres.
   // Type number (et non boolean) pour rester compatible avec IUtilisateur.
   validerInscriptionMembre: number;
   email: string;
@@ -365,7 +365,7 @@ const buildDesktopUnlockCodesText = (codes: DesktopUnlockCode[], churchName: str
     `Généré le : ${new Date().toLocaleString('fr-FR')}`,
     '',
     'Important:',
-    '- Chaque code est a usage unique.',
+    '- Chaque code est à usage unique.',
     '- Donne un seul code au client quand il faut renouveler son accès.',
     "- Après utilisation, le même code ne pourra plus débloquer l'application.",
     '',
@@ -537,28 +537,28 @@ export function SettingsView() {
     if (desktopDaysRemaining <= 1) {
       return {
         severity: 'warning',
-        message: `L'application sera bloquée dans ${desktopDaysRemaining || 1} jour. Veuillez contacter le developpeur.`,
+        message: `L'application sera bloquée dans ${desktopDaysRemaining || 1} jour. Veuillez contacter le développeur.`,
       } as const;
     }
 
     if (desktopDaysRemaining <= 3) {
       return {
         severity: 'warning',
-        message: `L'application sera bloquée dans ${desktopDaysRemaining} jours. Veuillez contacter le developpeur.`,
+        message: `L'application sera bloquée dans ${desktopDaysRemaining} jours. Veuillez contacter le développeur.`,
       } as const;
     }
 
     if (desktopDaysRemaining <= 7) {
       return {
         severity: 'info',
-        message: `L'application sera bloquée dans ${desktopDaysRemaining} jours. Pense a contacter le developpeur pour eviter une interruption.`,
+        message: `L'application sera bloquée dans ${desktopDaysRemaining} jours. Pense à contacter le développeur pour éviter une interruption.`,
       } as const;
     }
 
     if (desktopDaysRemaining <= 15) {
       return {
         severity: 'info',
-        message: `L'application arrivera a expiration dans ${desktopDaysRemaining} jours.`,
+        message: `L'application arrivera à expiration dans ${desktopDaysRemaining} jours.`,
       } as const;
     }
 
@@ -599,7 +599,7 @@ export function SettingsView() {
       versetDashboardReference: source?.versetDashboardReference || '',
       versetDashboardTexte: source?.versetDashboardTexte || '',
       // Absent en base (compte jamais enregistre depuis cet ajout) = validation
-      // obligatoire par defaut, pour ne rien changer au comportement existant.
+      // obligatoire par défaut, pour ne rien changer au comportement existant.
       validerInscriptionMembre: Number(source?.validerInscriptionMembre) === 0 ? 0 : 1,
       email: source?.email || '',
       password: '',
@@ -1435,7 +1435,7 @@ export function SettingsView() {
     }
 
     if (!secondaryUserForm.prenomUtilisateur.trim()) {
-      showNotification("Le prenom de l'utilisateur est requis.", 'warning');
+      showNotification("Le prénom de l'utilisateur est requis.", 'warning');
       return;
     }
 
@@ -1561,7 +1561,7 @@ export function SettingsView() {
       setResetPasswordForm(emptyResetSecondaryPasswordForm);
       await loadSecondaryUsers();
     } catch (error: any) {
-      showNotification(error?.message || 'Impossible de reinitialiser ce mot de passe.', 'error');
+      showNotification(error?.message || 'Impossible de réinitialiser ce mot de passe.', 'error');
     } finally {
       setIsResettingSecondaryPassword(false);
     }
@@ -1622,9 +1622,9 @@ export function SettingsView() {
             <CardContent>
               <Stack spacing={2}>
                 <Box>
-                  <Typography variant="h6">Compte a rebours avant blocage</Typography>
+                  <Typography variant="h6">Compte à rebours avant blocage</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Visible uniquement pour le superadmin fixe connecte.
+                    Visible uniquement pour le superadmin fixe connecté.
                   </Typography>
                 </Box>
 
@@ -1660,14 +1660,14 @@ export function SettingsView() {
 
                     {desktopCountdown.isExpired && (
                       <Alert severity="warning">
-                        La licence est arrivee a expiration. Debloque le desktop pour relancer une
-                        nouvelle periode.
+                        La licence est arrivée à expiration. Débloque le desktop pour relancer une
+                        nouvelle période.
                       </Alert>
                     )}
                   </>
                 ) : (
                   <Alert severity="info">
-                    Chargement du compte a rebours de la licence desktop...
+                    Chargement du compte à rebours de la licence desktop...
                   </Alert>
                 )}
               </Stack>
@@ -1693,12 +1693,12 @@ export function SettingsView() {
                   }
                   disabled={isFixedDesktopSuperAdmin}
                   helperText={
-                    isFixedDesktopSuperAdmin ? 'Le superadmin fixe se configure cote serveur.' : ''
+                    isFixedDesktopSuperAdmin ? 'Le superadmin fixe se configure côté serveur.' : ''
                   }
                 />
                 <TextField
                   fullWidth
-                  label="Prenom"
+                  label="Prénom"
                   value={profileForm.prenomUtilisateur}
                   onChange={(event) =>
                     handleChangeProfileField('prenomUtilisateur', event.target.value)
@@ -1721,7 +1721,7 @@ export function SettingsView() {
                   label="Email"
                   value={profileForm.email}
                   onChange={(event) => handleChangeProfileField('email', event.target.value)}
-                  helperText="Cet email servira a recuperer votre mot de passe en cas d'oubli."
+                  helperText="Cet email servira à récupérer votre mot de passe en cas d'oubli."
                 />
               </Stack>
 
@@ -1828,7 +1828,7 @@ export function SettingsView() {
                           startIcon={<UploadRounded />}
                           sx={{ width: '100%' }}
                         >
-                          Telecharger le logo
+                          Télécharger le logo
                           <input
                             hidden
                             accept="image/*"
@@ -1962,7 +1962,7 @@ export function SettingsView() {
                   <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                     <TextField
                       fullWidth
-                      label="Boite postale"
+                      label="Boîte postale"
                       value={profileForm.boitePostaleEglise}
                       onChange={(event) =>
                         handleChangeProfileField('boitePostaleEglise', event.target.value)
@@ -1971,7 +1971,7 @@ export function SettingsView() {
                     <TextField
                       fullWidth
                       type="date"
-                      label="Date de creation"
+                      label="Date de création"
                       value={profileForm.dateCreationEglise}
                       onChange={(event) =>
                         handleChangeProfileField('dateCreationEglise', event.target.value)
@@ -1984,7 +1984,7 @@ export function SettingsView() {
                     <TextField
                       fullWidth
                       type="number"
-                      label="Capacite estimee de membres"
+                      label="Capacité estimée de membres"
                       value={profileForm.capaciteAccueilEglise}
                       onChange={(event) =>
                         handleChangeProfileField('capaciteAccueilEglise', event.target.value)
@@ -2115,7 +2115,7 @@ export function SettingsView() {
                 <CardHeader
                   avatar={<HowToRegRounded color="primary" />}
                   title="Validation des inscriptions QR code"
-                  subheader="Decidez si les inscriptions envoyées par QR code doivent d'abord etre validées."
+                  subheader="Décidez si les inscriptions envoyées par QR code doivent d'abord être validées."
                 />
                 <CardContent>
                   <Stack spacing={2}>
@@ -2130,22 +2130,22 @@ export function SettingsView() {
                       }
                       label={
                         profileForm.validerInscriptionMembre !== 0
-                          ? 'Un responsable doit valider chaque inscription (par defaut)'
+                          ? 'Un responsable doit valider chaque inscription (par défaut)'
                           : 'Ajout automatique, sans validation'
                       }
                     />
 
                     {profileForm.validerInscriptionMembre !== 0 ? (
                       <Alert severity="info">
-                        Chaque fiche envoyee par le QR code apparait dans « Demandes d&apos;inscription »
+                        Chaque fiche envoyée par le QR code apparaît dans « Demandes d&apos;inscription »
                         (page Membre) en attente qu&apos;un responsable clique « Valider et ajouter ».
                       </Alert>
                     ) : (
                       <Alert severity="warning">
-                        Les fiches envoyees par le QR code sont ajoutees directement a la liste des
-                        membres, sans relecture prealable. Recommande pour les eglises avec beaucoup
-                        d&apos;inscriptions, ou personne n&apos;a le temps de toutes les valider une par une.
-                        Un anti-doublon (nom + telephone) reste actif dans tous les cas.
+                        Les fiches envoyées par le QR code sont ajoutées directement à la liste des
+                        membres, sans relecture préalable. Recommande pour les églises avec beaucoup
+                        d&apos;inscriptions, ou personne n&apos;à le temps de toutes les valider une par une.
+                        Un anti-doublon (nom + téléphone) reste actif dans tous les cas.
                       </Alert>
                     )}
                   </Stack>
@@ -2192,7 +2192,7 @@ export function SettingsView() {
                       />
                       <TextField
                         fullWidth
-                        label="Prenom"
+                        label="Prénom"
                         value={secondaryUserForm.prenomUtilisateur}
                         onChange={(event) =>
                           handleChangeSecondaryUserField('prenomUtilisateur', event.target.value)
@@ -2217,7 +2217,7 @@ export function SettingsView() {
                         onChange={(event) =>
                           handleChangeSecondaryUserField('email', event.target.value)
                         }
-                        helperText="Utile si un flux de recuperation par email est active pour cet utilisateur."
+                        helperText="Utile si un flux de récupération par email est activé pour cet utilisateur."
                       />
                     </Stack>
 
@@ -2330,7 +2330,7 @@ export function SettingsView() {
                         onClick={handleResetSecondaryUserForm}
                         disabled={isSavingSecondaryUser}
                       >
-                        Reinitialiser
+                        Réinitialiser
                       </Button>
                     </Stack>
                   </Stack>
@@ -2474,7 +2474,7 @@ export function SettingsView() {
                   label="Mode de connexion"
                   value={connectionMode}
                   onChange={(event) => setConnectionModeInput(event.target.value as ConnectionMode)}
-                  helperText="Le mode est enregistre pour les futurs lancements de l'application."
+                  helperText="Le mode est enregistré pour les futurs lancements de l'application."
                 >
                   <MenuItem value="local">Local</MenuItem>
                   <MenuItem value="online">Online</MenuItem>
@@ -2531,7 +2531,7 @@ export function SettingsView() {
                       onClick={handleStopTunnel}
                       disabled={isTunnelLoading}
                     >
-                      Desactiver tunnel
+                      Désactiver tunnel
                     </Button>
                   ) : (
                     <Button
@@ -2602,14 +2602,14 @@ export function SettingsView() {
             <CardHeader
               avatar={<StorageRounded color="primary" />}
               title="Blocage desktop"
-              subheader="Le renouvellement est reservé au developpeur de l&apos;application."
+              subheader="Le renouvellement est reservé au développeur de l&apos;application."
             />
             <CardContent>
               <Stack spacing={3}>
                 <Box>
                   <Chip
                     color={isDesktopBlocked ? 'warning' : 'success'}
-                    label={isDesktopBlocked ? 'Desktop bloque' : 'Desktop actif'}
+                    label={isDesktopBlocked ? 'Desktop bloqué' : 'Desktop actif'}
                     variant="filled"
                   />
                 </Box>
@@ -2636,13 +2636,13 @@ export function SettingsView() {
                 {isFixedDesktopSuperAdmin ? (
                   <>
                     <Alert severity="info">
-                      Cette section de renouvellement est reservée au developpeur de
+                      Cette section de renouvellement est réservée au développeur de
                       l&apos;application.
                     </Alert>
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                       <TextField
-                        label="Jours a ajouter"
+                        label="Jours à ajouter"
                         value={extendDays}
                         onChange={(event) => setExtendDays(event.target.value)}
                         sx={{ maxWidth: 220 }}
@@ -2657,7 +2657,7 @@ export function SettingsView() {
                       />
 
                       <Button variant="contained" onClick={handleUnlockDesktop}>
-                        Debloquer le desktop
+                        Débloquer le desktop
                       </Button>
 
                       <Button
@@ -2953,7 +2953,7 @@ export function SettingsView() {
           fullWidth
           maxWidth="xs"
         >
-          <DialogTitle>Reinitialiser le mot de passe</DialogTitle>
+          <DialogTitle>Réinitialiser le mot de passe</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
               <Alert severity="info">
@@ -3008,7 +3008,7 @@ export function SettingsView() {
               onClick={handleResetSecondaryPassword}
               disabled={isResettingSecondaryPassword}
             >
-              {isResettingSecondaryPassword ? 'Reinitialisation...' : 'Reinitialiser'}
+              {isResettingSecondaryPassword ? 'Réinitialisation...' : 'Réinitialiser'}
             </Button>
           </DialogActions>
         </Dialog>

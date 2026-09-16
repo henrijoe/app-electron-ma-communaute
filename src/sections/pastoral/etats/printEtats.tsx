@@ -1,9 +1,9 @@
 // ============================================================================
 // printEtats.tsx (pastoral)
-// Bouton "Imprimer" du suivi pastoral : genere un etat PDF/imprimable a partir
-// de la liste deja filtree par la page (categorie, priorite, recherche, periode).
+// Bouton "Imprimer" du suivi pastoral : génère un état PDF/imprimable à partir
+// de la liste déjà filtrée par la page (catégorie, priorité, recherche, période).
 // Fonctionne aussi bien dans l'app desktop (export PDF direct via Electron) que
-// dans un navigateur (boite d'impression native), contrairement a certains
+// dans un navigateur (boîte d'impression native), contrairement à certains
 // boutons d'impression plus anciens du projet qui ne marchent qu'au navigateur.
 // ============================================================================
 import { useRef, useState } from 'react';

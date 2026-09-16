@@ -59,7 +59,7 @@ const supprimerUtilisateur = (req, res) => {
             res.status(200).send({ status: 1, data: result });
         }
         else {
-            res.status(400).send({ status: 0, errors: 'Utilisateur non trouve' });
+            res.status(400).send({ status: 0, errors: 'Utilisateur non trouvé' });
         }
     })
         .catch((errors) => res.status(400).send({ status: 0, errors }));

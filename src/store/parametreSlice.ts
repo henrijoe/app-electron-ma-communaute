@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
-// creer interface pour designer les differents fonction  du Departement du state
+// créer interface pour designer les différents fonction  du Département du state
 export interface IResponsabiliteSlice {
   dataResponsabilite: IResponsable[]
   dataFilterResponsabilite: IResponsable[]
@@ -9,7 +9,7 @@ export interface IResponsabiliteSlice {
   ResponsabiliteItem: IResponsable
 }
 
-// creer interface comportant des differents entités  du Departement
+// créer interface comportant des différents entités  du Département
   export interface IResponsable {
     idResponsabilite:number;
     idUtilisateur:number;
@@ -24,7 +24,7 @@ export const responsabilite:any = {
   descriptionResponsabilite:"",
 }
 
-// initialiation des states
+// initialisation des states
 const initialStates: IResponsabiliteSlice = {
   dataResponsabilite: [],
   dataFilterResponsabilite: [],
@@ -38,7 +38,7 @@ export const ResponsableSlice = createSlice({
   name: 'parametre',
   initialState: initialStates,
   reducers: {
-    // fonction pour ajouter un Departement
+    // fonction pour ajouter un Département
     addResponsabilite: (state, action: PayloadAction<IResponsable>) => {
       state.dataResponsabilite.unshift(action.payload)
     },
@@ -52,7 +52,7 @@ export const ResponsableSlice = createSlice({
       state.listResponsabilite = action.payload
     },
 
-    // fonction pour suprimer un Departement
+    // fonction pour supprimer un Département
     deleteResponsabilite: (state, action) => {
       state.dataResponsabilite = state.dataResponsabilite.filter(
         (item) => item.idResponsabilite !== action.payload
@@ -63,16 +63,16 @@ export const ResponsableSlice = createSlice({
       );
     },
     
-    // fonction pour rechecher un Departement dans le tableau
+    // fonction pour rechercher un Département dans le tableau
     setListFilterResponsabilite: (state, action) => {
       state.dataFilterResponsabilite = action.payload
     },
-    // fonction pour voir les detail de chaque Departement enregister
+    // fonction pour voir les détail de chaque Département enregistrer
     setDetailItem: (state, action) => {
       state.detailItem = action.payload
     },
 
-    // fonction pour modifier chaque Departement enregister
+    // fonction pour modifier chaque Département enregistrer
     setDataModifiesResponsabilite: (state, action) => {
       state.dataResponsabilite = state.dataResponsabilite?.map((item: any) =>
         item.idResponsabilite === action.payload.idResponsabilite ? action.payload : item

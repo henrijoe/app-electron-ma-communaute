@@ -19,19 +19,19 @@ export function TableNoData({ searchQuery, ...other }: TableNoDataProps) {
       <TableCell align="center" colSpan={7}>
         <Box sx={{ py: 15, textAlign: 'center' }}>
           <Typography variant="h6" sx={{ mb: 1 }}>
-            Aucun resultat
+            Aucun résultat
           </Typography>
 
           <Typography variant="body2">
             {hasSearchQuery ? (
               <>
-                Aucun resultat trouve pour <strong>&quot;{searchQuery}&quot;</strong>.
-                <br /> Verifie l&apos;orthographe ou essaie un terme plus complet.
+                Aucun résultat trouvé pour <strong>&quot;{searchQuery}&quot;</strong>.
+                <br /> Vérifie l&apos;orthographe ou essaie un terme plus complet.
               </>
             ) : (
               <>
                 Aucun membre ne correspond aux filtres appliques.
-                <br /> Modifie ou reinitialise les filtres pour afficher des resultats.
+                <br /> Modifie ou réinitialise les filtres pour afficher des résultats.
               </>
             )}
           </Typography>

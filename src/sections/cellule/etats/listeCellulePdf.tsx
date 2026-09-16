@@ -50,12 +50,12 @@ export const ListeDesCellules = () => {
             {sortedCellules.map((item, index) => (
               <TableRow key={item.idCellule || index}>
                 <TableCell align="center"><Typography fontWeight={700}>{index + 1}</Typography></TableCell>
-                <TableCell><Typography fontWeight={700}>{normalizeText(item.nomCellule) || 'Non definie'}</Typography></TableCell>
-                <TableCell>{normalizeText(item.lieuCellule) || 'Non defini'}</TableCell>
+                <TableCell><Typography fontWeight={700}>{normalizeText(item.nomCellule) || 'Non définie'}</Typography></TableCell>
+                <TableCell>{normalizeText(item.lieuCellule) || 'Non défini'}</TableCell>
                 <TableCell align="center">{item.nombreMembreCellule || ''}</TableCell>
-                <TableCell>{normalizeText(item.responsableCellule) || 'Non defini'}</TableCell>
-                <TableCell>{findResponsableContact(membres, item.responsableCellule) || 'Non defini'}</TableCell>
-                <TableCell>{normalizeText(item.responsableVisiteCellule) || 'Non defini'}</TableCell>
+                <TableCell>{normalizeText(item.responsableCellule) || 'Non défini'}</TableCell>
+                <TableCell>{findResponsableContact(membres, item.responsableCellule) || 'Non défini'}</TableCell>
+                <TableCell>{normalizeText(item.responsableVisiteCellule) || 'Non défini'}</TableCell>
               </TableRow>
             ))}
           </TableBody>

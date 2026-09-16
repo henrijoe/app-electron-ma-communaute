@@ -121,9 +121,9 @@ const worstPriority = (situations: PastoralSituation[]): 'haute' | 'normale' | '
     'suivi'
   );
 
-// Date la plus ancienne parmi les situations datées d'une carte (nouvelle-ame/maladie/deces).
+// Date la plus ancienne parmi les situations datées d'une carte (nouvelle-âme/maladie/deces).
 // Sert a faire remonter en premier les cas non traites depuis le plus longtemps. Une carte
-// sans aucune date (visite/bapteme, qui sont des statuts en cours sans evenement daté)
+// sans aucune date (visite/bapteme, qui sont des statuts en cours sans événement daté)
 // reçoit +Infinity : elle reste dans son palier de priorité mais après les cas dates.
 const oldestSituationDate = (item: PastoralItem): number => {
   const timestamps = item.situations
@@ -133,8 +133,8 @@ const oldestSituationDate = (item: PastoralItem): number => {
   return timestamps.length > 0 ? Math.min(...timestamps) : Number.POSITIVE_INFINITY;
 };
 
-// Trie par urgence reelle : d'abord le palier de priorité (haute > normale > suivi),
-// puis, a priorité egale, le cas non traité depuis le plus longtemps en premier.
+// Trie par urgence réelle : d'abord le palier de priorité (haute > normale > suivi),
+// puis, a priorité égale, le cas non traité depuis le plus longtemps en premier.
 const sortByUrgency = (items: PastoralItem[]): PastoralItem[] =>
   [...items].sort((a, b) => {
     const priorityDiff = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
@@ -142,7 +142,7 @@ const sortByUrgency = (items: PastoralItem[]): PastoralItem[] =>
   });
 
 // Catégories qui portent une date d'événement réelle (conversion, maladie, décès).
-// "visite" et "bapteme" décrivent un statut en cours (pas encore fait), sans date
+// "visite" et "baptême" décrivent un statut en cours (pas encore fait), sans date
 // d'événement : ils ne peuvent donc pas être rattachés de façon fiable à une
 // période précise, et ne s'affichent que lorsque la période est "Toute la période".
 const DATED_CATEGORIES = new Set<PastoralSituation['category']>(['nouvelle-ame', 'maladie', 'deces']);
@@ -630,8 +630,8 @@ export function PastoralView() {
       return matchesFilter && matchesPriority && (!normalizedSearch || haystack.includes(normalizedSearch));
     });
 
-    // Classement par urgence reelle plutot que par ordre d'insertion (maladies, puis
-    // membres, puis deces) : le pasteur voit d'abord les cas prioritaires les plus
+    // Classement par urgence réelle plutôt que par ordre d'insertion (maladies, puis
+    // membres, puis décès) : le pasteur voit d'abord les cas prioritaires les plus
     // anciens, sans avoir a parcourir manuellement toute la liste.
     return sortByUrgency(matched);
   }, [filter, periodItems, priority, search]);

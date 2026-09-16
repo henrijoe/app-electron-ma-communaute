@@ -95,12 +95,12 @@ const PrintEtatGlobal = () => {
   }
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    // On memorise l'origine du clic pour positionner le menu d'impression.
+    // On mémorise l'origine du clic pour positionner le menu d'impression.
     setAnchorEl(event.currentTarget);
   };
 
   const handleClose = () => {
-    // On ferme le menu a la fin de chaque action.
+    // On ferme le menu à la fin de chaque action.
     setAnchorEl(null);
   };
 
@@ -108,10 +108,10 @@ const PrintEtatGlobal = () => {
     ref: React.RefObject<HTMLDivElement>,
     title: string,
     fileName: string,
-    // Orientation reelle du document : elle est envoyee explicitement a Electron
-    // (voir src/utils/desktop-print.ts) plutot que deduite de la regle CSS "@page",
-    // car tous les documents imprimables de ce menu sont montes en meme temps
-    // (caches) et n'ont donc pas chacun une regle "@page" isolee et fiable.
+    // Orientation réelle du document : elle est envoyée explicitement a Electron
+    // (voir src/utils/desktop-print.ts) plutôt que deduite de la règle CSS "@page",
+    // car tous les documents imprimables de ce menu sont montes en même temps
+    // (caches) et n'ont donc pas chacun une règle "@page" isolee et fiable.
     orientation: 'landscape' | 'portrait' = 'portrait'
   ) => ({
     preview: async () => {
@@ -134,7 +134,7 @@ const PrintEtatGlobal = () => {
   );
   const ficheHandlers = buildDesktopHandlers(
     ficheDecisionRef,
-    'Fiche de decision',
+    'Fiche de décision',
     'fiche-decision',
     'portrait'
   );
@@ -234,7 +234,7 @@ const PrintEtatGlobal = () => {
               <ReactToPrint
                 trigger={() => <div>Liste des membres</div>}
                 content={() => membreRef.current}
-                // pageStyle dedie (page CSS nommee) plutot que PRINT_LANDSCAPE_PAGE_STYLE :
+                // pageStyle dédié (page CSS nommée) plutôt que PRINT_LANDSCAPE_PAGE_STYLE :
                 // voir le commentaire de MEMBER_LIST_PRINT_PAGE_STYLE dans listeMembrePdf.tsx.
                 pageStyle={MEMBER_LIST_PRINT_PAGE_STYLE}
               />
@@ -243,7 +243,7 @@ const PrintEtatGlobal = () => {
             <MenuItem key="print-fiche" onClick={handleClose}>
               <PrintIcon />
               <ReactToPrint
-                trigger={() => <div>Fiche de decision</div>}
+                trigger={() => <div>Fiche de décision</div>}
                 content={() => ficheDecisionRef.current}
                 pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
               />

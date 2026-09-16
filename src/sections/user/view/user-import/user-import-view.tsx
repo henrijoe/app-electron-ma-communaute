@@ -64,7 +64,7 @@ export function UserImportView() {
               Importer les membres depuis Excel
             </Typography>
             <Typography color="text.secondary">
-              Charge un fichier Excel, verifie les lignes puis valide l&apos;import dans la base.
+              Charge un fichier Excel, vérifie les lignes puis valide l&apos;import dans la base.
             </Typography>
           </Box>
 
@@ -73,7 +73,7 @@ export function UserImportView() {
               Retour aux membres
             </Button>
             <Button variant="outlined" startIcon={<DownloadRounded />} onClick={handleDownloadTemplate}>
-              Telecharger le template
+              Télécharger le template
             </Button>
             <Button component="label" variant="contained" startIcon={<FileUploadRounded />}>
               Charger un fichier Excel

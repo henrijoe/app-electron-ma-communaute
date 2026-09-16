@@ -302,7 +302,7 @@ export function GalerieView() {
     loadGaleries(false);
   }, [loadGaleries]);
 
-  // Le tri passe apres le filtre texte pour garder une liste previsible pour l'utilisateur.
+  // Le tri passe après le filtre texte pour garder une liste prévisible pour l'utilisateur.
   const filteredEvents = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     const byType = typeFilter === 'all'
@@ -545,8 +545,8 @@ export function GalerieView() {
       setCaptionDialogImage(null);
       setCaptionValue('');
     } catch (error: any) {
-      console.error('Erreur modification legende galerie:', error);
-      showNotificationRef.current(error.message || 'Impossible de modifier cette legende', 'error');
+      console.error('Erreur modification légende galerie:', error);
+      showNotificationRef.current(error.message || 'Impossible de modifier cette légende', 'error');
     } finally {
       setSavingCaption(false);
     }
@@ -569,12 +569,12 @@ export function GalerieView() {
       await loadGaleries();
       showNotificationRef.current('Couverture mise à jour avec succès.', 'success');
     } catch (error: any) {
-      console.error('Erreur definition couverture galerie:', error);
-      showNotificationRef.current(error.message || 'Impossible de definir cette image comme couverture', 'error');
+      console.error('Erreur définition couverture galerie:', error);
+      showNotificationRef.current(error.message || 'Impossible de définir cette image comme couverture', 'error');
     }
   };
 
-  // La navigation est partagee entre l'apercu simple et le mode slideshow plein ecran.
+  // La navigation est partagée entre l'aperçu simple et le mode slideshow plein écran.
   const openPreviewAtIndex = useCallback((index: number) => {
     if (index >= 0 && index < galerieImages.length) {
       setPreviewImage(galerieImages[index]);
@@ -881,19 +881,19 @@ export function GalerieView() {
                         )}
                         {!isDesktopApp && (
                           <>
-                            <Tooltip title="Telecharger le dossier">
+                            <Tooltip title="Télécharger le dossier">
                               <IconButton component="a" href={buildGalerieDownloadUrl(selectedEvent.idGalerie || 0, currentUserId)} sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
                                 <DownloadRounded />
                               </IconButton>
                             </Tooltip>
                             <Button component="a" href={buildGalerieDownloadUrl(selectedEvent.idGalerie || 0, currentUserId)} variant="outlined" sx={{ ...secondaryActionButtonSx, display: { xs: 'none', sm: 'inline-flex' } }} startIcon={<DownloadRounded />}>
-                              Telecharger le dossier
+                              Télécharger le dossier
                             </Button>
                             <PrintEtatGalerie event={selectedEvent} images={galerieImages} />
                           </>
                         )}
                         <Typography variant="body2" color="text.secondary">
-                          Depose aussi tes images ici par glisser-deposer. Les gros lots sont envoyes progressivement.
+                          Dépose aussi tes images ici par glisser-déposer. Les gros lots sont envoyés progressivement.
                         </Typography>
                       </Stack>
                     </Box>
@@ -906,7 +906,7 @@ export function GalerieView() {
               <Box>
                 <Typography variant="h5">Photos de l&apos;évènement</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Ouvre une image pour lancer le slideshow plein ecran et naviguer rapidement.
+                  Ouvre une image pour lancer le slideshow plein écran et naviguer rapidement.
                 </Typography>
               </Box>
               <Button
@@ -945,12 +945,12 @@ export function GalerieView() {
                       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 2 }}>
                         <Box sx={{ minWidth: 0 }}>
                           <Typography variant="subtitle2" noWrap>{image.legendeImage || image.nomFichier}</Typography>
-                          <Typography variant="caption" color="text.secondary" noWrap>{image.dateAjout || 'Ajoutee recemment'}</Typography>
+                          <Typography variant="caption" color="text.secondary" noWrap>{image.dateAjout || 'Ajoutée récemment'}</Typography>
                         </Box>
 
                         <Stack direction="row" spacing={0.5}>
                           {canManageGalerie && (
-                            <Tooltip title={isCover ? 'Image de couverture' : 'Definir comme couverture'}>
+                            <Tooltip title={isCover ? 'Image de couverture' : 'Définir comme couverture'}>
                               <span>
                                 <IconButton color={isCover ? 'warning' : 'default'} disabled={isCover} onClick={() => handleSetCover(image)}>
                                   <StarRounded fontSize="small" />
@@ -961,12 +961,12 @@ export function GalerieView() {
                           <Tooltip title="Voir">
                             <IconButton onClick={() => setPreviewImage(image)}><VisibilityRounded fontSize="small" /></IconButton>
                           </Tooltip>
-                          <Tooltip title="Slideshow plein ecran">
+                          <Tooltip title="Slideshow plein écran">
                             <IconButton onClick={() => openSlideshow(image)}><FullscreenRounded fontSize="small" /></IconButton>
                           </Tooltip>
                           {canManageGalerie && (
                             <>
-                              <Tooltip title="Modifier la legende">
+                              <Tooltip title="Modifier la légende">
                                 <IconButton onClick={() => handleOpenCaptionDialog(image)}><EditRounded fontSize="small" /></IconButton>
                               </Tooltip>
                               <Tooltip title="Supprimer">
@@ -1013,9 +1013,9 @@ export function GalerieView() {
       </Dialog>
 
       <Dialog open={Boolean(captionDialogImage)} onClose={() => setCaptionDialogImage(null)} fullWidth maxWidth="sm">
-        <DialogTitle>Modifier la legende</DialogTitle>
+        <DialogTitle>Modifier la légende</DialogTitle>
         <DialogContent>
-          <TextField fullWidth autoFocus label="Legende de l'image" value={captionValue} onChange={(event) => setCaptionValue(event.target.value)} sx={{ mt: 1 }} />
+          <TextField fullWidth autoFocus label="Légende de l'image" value={captionValue} onChange={(event) => setCaptionValue(event.target.value)} sx={{ mt: 1 }} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCaptionDialogImage(null)}>Annuler</Button>
@@ -1024,7 +1024,7 @@ export function GalerieView() {
       </Dialog>
 
       <Dialog open={Boolean(previewImage) && !slideshowOpen} onClose={() => setPreviewImage(null)} maxWidth="lg" fullWidth>
-        <DialogTitle>{previewImage?.legendeImage || previewImage?.nomFichier || 'Apercu image'}</DialogTitle>
+        <DialogTitle>{previewImage?.legendeImage || previewImage?.nomFichier || 'Aperçu image'}</DialogTitle>
         <DialogContent>
           {previewImage && (
             <Stack direction="row" spacing={1} alignItems="center">
@@ -1059,7 +1059,7 @@ export function GalerieView() {
             <Box>
               <Typography variant="h5">{selectedEvent?.titreGalerie || 'Slideshow galerie'}</Typography>
               <Typography variant="body2" sx={{ color: alpha('#ffffff', 0.72) }}>
-                {currentPreviewImage?.legendeImage || currentPreviewImage?.nomFichier || 'Apercu plein ecran'}
+                {currentPreviewImage?.legendeImage || currentPreviewImage?.nomFichier || 'Aperçu plein écran'}
               </Typography>
             </Box>
             <Stack direction="row" spacing={1} alignItems="center">

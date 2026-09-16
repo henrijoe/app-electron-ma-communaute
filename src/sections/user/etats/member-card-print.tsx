@@ -6,9 +6,9 @@ import type { IMembre } from 'src/store/membreSlice';
 import { getPhotoUrl } from '../utils';
 
 // pageStyle a fournir a <ReactToPrint> (impression navigateur, hors application desktop).
-// Regle "@page" NOMMEE : voir le commentaire detaille dans listeMembrePdf.tsx
+// Règle "@page" NOMMÉE : voir le commentaire detaille dans listeMembrePdf.tsx
 // (MEMBER_LIST_PRINT_PAGE_STYLE) — plusieurs documents imprimables restent montes
-// en meme temps (caches) dans cette page, une regle "@page" anonyme serait donc
+// en même temps (caches) dans cette page, une règle "@page" anonyme serait donc
 // ecrasee par celle d'un autre document lors de la copie des styles par react-to-print.
 export const MEMBER_CARD_PRINT_PAGE_STYLE = `
 @page memberCardPortrait {
@@ -69,7 +69,7 @@ type MemberCardSheetProps = {
 };
 
 // Feuille A4 portrait avec 3 cartes de membre empilees, 3 par page (page-break-after
-// entre chaque groupe de 3 s'il y a plus de membres a imprimer).
+// entre chaque groupe de 3 s'il y a plus de membres à imprimer).
 export function MemberCardSheet({ cards, identity, logoUrl }: MemberCardSheetProps) {
   const pages = chunk(cards, 3);
 
@@ -118,8 +118,8 @@ function MemberCard({
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase())
     .join('');
-  // A defaut de date d'adhesion dediee, on utilise la conversion ou le bapteme comme
-  // repere de "membre depuis" (les deux champs les plus proches de cette notion sur IMembre).
+  // A défaut de date d'adhésion dédiée, on utilise la conversion ou le baptême comme
+  // repère de "membre depuis" (les deux champs les plus proches de cette notion sur IMembre).
   const memberSinceDate = membre.dateConversionMembre || membre.dateBaptemeMembre || null;
 
   return (

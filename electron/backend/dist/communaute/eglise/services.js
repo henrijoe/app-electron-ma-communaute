@@ -14,7 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const functions_1 = __importDefault(require("./functions"));
 /**
- * Permet d'ajouter une eglise.
+ * Permet d'ajouter une église.
  */
 const ajouterEglise = (data) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
@@ -39,7 +39,7 @@ const recupEglise = () => {
         }
     }));
 };
-// Renvoie l'eglise de l'utilisateur connecte.
+// Renvoie l'église de l'utilisateur connecte.
 const recupEgliseByUtilisateur = (idUtilisateur) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {

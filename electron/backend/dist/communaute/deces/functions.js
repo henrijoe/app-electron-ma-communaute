@@ -40,7 +40,7 @@ const ajouterDeces = (data) => {
                 : [data.nomMembreDeces, data.idUtilisateur];
             const [result] = yield (0, db_1._selectSql)(duplicateSql, duplicateParams);
             if ((result === null || result === void 0 ? void 0 : result.count) > 0) {
-                return reject(new Error('Ce deces est deja enregistre.'));
+                return reject(new Error('Ce décès est déjà enregistré.'));
             }
             const sql = 'INSERT INTO deces(idMembre, nomMembreDeces, dateDeces, lieuDeces, causeDeces, idUtilisateur) VALUES (?,?,?,?,?,?)';
             const decesData = yield (0, db_1._executeSql)(sql, values);
@@ -82,7 +82,7 @@ const recupDecesByIdUtilsateur = (idUtilisateur) => {
             const sql = 'SELECT * FROM deces WHERE idUtilisateur = ?;';
             const deces = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
             if (!deces.length)
-                return reject({ name: 'Erreur_deces', message: 'Aucun deces trouve' });
+                return reject({ name: 'Erreur_deces', message: 'Aucun décès trouvé' });
             resolve(deces);
         }
         catch (error) {

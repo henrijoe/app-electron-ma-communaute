@@ -9,11 +9,14 @@ const ajouterCellule = (req, res) => {
     services_1.default
         .ajouterCellule(data)
         .then((result) => {
+        var _a;
+        // Signale la création aux clients connectés (tableau de bord, listes ouvertes).
+        (_a = req.io) === null || _a === void 0 ? void 0 : _a.emit("ajouterCellule", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur, data: result });
         res.status(200).send({ status: 1, data: result });
     })
         .catch((error) => {
         var _a;
-        if ((_a = error.message) === null || _a === void 0 ? void 0 : _a.includes("Cette cellule existe deja.")) {
+        if ((_a = error.message) === null || _a === void 0 ? void 0 : _a.includes("Cette cellule existe déjà.")) {
             res.status(400).send({ status: 0, error: error.message });
         }
         else {
@@ -34,11 +37,13 @@ const supprimerCellule = (req, res) => {
     services_1.default
         .supprimerCellule(idCellule, idUtilisateur)
         .then((result) => {
+        var _a;
         if (result) {
+            (_a = req.io) === null || _a === void 0 ? void 0 : _a.emit("supprimerCellule", { idUtilisateur, idCellule, data: result });
             res.status(200).send({ status: 1, data: result });
         }
         else {
-            res.status(400).send({ status: 0, errors: "Cellule non trouvee" });
+            res.status(400).send({ status: 0, errors: "Cellule non trouvée" });
         }
     })
         .catch((errors) => res.status(400).send({ status: 0, errors }));
@@ -48,6 +53,8 @@ const modifierCellule = (req, res) => {
     services_1.default
         .modifierCellule(data)
         .then((result) => {
+        var _a;
+        (_a = req.io) === null || _a === void 0 ? void 0 : _a.emit("modifierCellule", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur, data: result });
         res.status(200).send({ status: 1, data: result });
     })
         .catch((errors) => res.status(400).send({ status: 0, errors }));

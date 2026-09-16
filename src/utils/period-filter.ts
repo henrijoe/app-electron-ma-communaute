@@ -1,13 +1,13 @@
 // ============================================================================
 // period-filter.ts
-// Logique partagee de filtrage par periode, utilisee par "Suivi pastoral" et
-// "Cas sociaux" : calcule une plage de dates [debut, fin] a partir d'un mode
-// choisi par l'utilisateur (ce mois-ci, mois dernier, periode personnalisee...),
-// et verifie si une date donnee tombe dans cette plage. Centralise ici pour que
-// les deux pages se comportent exactement de la meme facon.
+// Logique partagée de filtrage par période, utilisée par "Suivi pastoral" et
+// "Cas sociaux" : calcule une plage de dates [début, fin] à partir d'un mode
+// choisi par l'utilisateur (ce mois-ci, mois dernier, période personnalisée...),
+// et verifie si une date donnée tombe dans cette plage. Centralise ici pour que
+// les deux pages se comportent exactement de la même facon.
 // ============================================================================
 
-// Tous les modes de periode geres par l'application. Chaque page n'affiche
+// Tous les modes de période geres par l'application. Chaque page n'affiche
 // que le sous-ensemble d'options qui lui est utile (voir periodOptions dans
 // chaque vue), mais resolvePeriodRange sait tous les traiter.
 export type PeriodMode =
@@ -22,9 +22,9 @@ export type PeriodMode =
 
 export type DateRange = { start: Date; end: Date };
 
-// Parametres additionnels necessaires selon le mode choisi :
-// - month : 'YYYY-MM' pour le mode "un mois precis"
-// - customStart / customEnd : 'YYYY-MM-DD' pour le mode "periode personnalisee"
+// Paramètres additionnels nécessaires selon le mode choisi :
+// - month : 'YYYY-MM' pour le mode "un mois précis"
+// - customStart / customEnd : 'YYYY-MM-DD' pour le mode "période personnalisée"
 export type PeriodParams = {
   month?: string;
   customStart?: string;
@@ -45,7 +45,7 @@ export const endOfDay = (date: Date): Date => {
   return next;
 };
 
-// Le lundi de la semaine contenant "reference".
+// Le lundi de la semaine contenant "référence".
 const getThisMonday = (reference: Date): Date => {
   const date = startOfDay(reference);
   const dayIndex = date.getDay(); // 0 = dimanche, 1 = lundi, ...
@@ -54,8 +54,8 @@ const getThisMonday = (reference: Date): Date => {
   return date;
 };
 
-// Le dimanche de la semaine contenant "reference" (aujourd'hui inclus si on
-// est deja dimanche) : c'est ce qu'on entend par "le dimanche dernier/passe".
+// Le dimanche de la semaine contenant "référence" (aujourd'hui inclus si on
+// est déjà dimanche) : c'est ce qu'on entend par "le dimanche dernier/passe".
 const getLastSunday = (reference: Date): Date => {
   const date = startOfDay(reference);
   date.setDate(date.getDate() - date.getDay());
@@ -69,7 +69,7 @@ const monthRange = (year: number, monthIndex0: number): DateRange => ({
   end: new Date(year, monthIndex0 + 1, 0, 23, 59, 59, 999),
 });
 
-// Calcule la plage [debut, fin] correspondant au mode de periode choisi.
+// Calcule la plage [début, fin] correspondant au mode de période choisi.
 // Retourne null pour "all" (= pas de restriction de date).
 export const resolvePeriodRange = (
   mode: PeriodMode,
@@ -119,7 +119,7 @@ export const resolvePeriodRange = (
     if (Number.isNaN(rawStart.getTime()) || Number.isNaN(rawEnd.getTime())) return null;
 
     // Si l'utilisateur inverse les deux dates par erreur, on les remet dans
-    // l'ordre plutot que de renvoyer une plage vide.
+    // l'ordre plutôt que de renvoyer une plage vide.
     if (rawStart.getTime() > rawEnd.getTime()) {
       return { start: startOfDay(rawEnd), end: endOfDay(rawStart) };
     }
@@ -131,7 +131,7 @@ export const resolvePeriodRange = (
 };
 
 // Une date (chaîne ISO/DB) tombe-t-elle dans la plage donnée ? Sans plage
-// (mode "all" ou parametres incomplets), tout est considéré comme valide.
+// (mode "all" ou paramètres incomplets), tout est considéré comme valide.
 export const isDateWithinRange = (value: string | null | undefined, range: DateRange | null): boolean => {
   if (!range) return true;
   if (!value) return false;
@@ -142,7 +142,7 @@ export const isDateWithinRange = (value: string | null | undefined, range: DateR
   return parsed.getTime() >= range.start.getTime() && parsed.getTime() <= range.end.getTime();
 };
 
-// Libelle lisible de la periode active, repris a l'ecran et dans les documents imprimes.
+// Libellé lisible de la période active, repris à l'écran et dans les documents imprimes.
 export const formatPeriodLabel = (mode: PeriodMode, range: DateRange | null): string => {
   if (mode === 'all' || !range) {
     return 'Toute la période';

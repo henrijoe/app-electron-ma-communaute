@@ -10,9 +10,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const db_1 = require("../../db");
-// Ajoute un nouveau verset programme pour une eglise, a une date precise.
-// Refuse si un verset existe deja pour cette meme date (on demande alors
-// de modifier celui-ci plutot que d'en creer un deuxieme au meme endroit).
+// Ajoute un nouveau verset programme pour une église, à une date précise.
+// Refuse si un verset existe déjà pour cette même date (on demande alors
+// de modifier celui-ci plutôt que d'en créer un deuxième au même endroit).
 const ajouterVersetProgramme = (data) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {
@@ -31,7 +31,7 @@ const ajouterVersetProgramme = (data) => {
                 reject(new Error('Le texte du verset est requis.'));
                 return;
             }
-            // Un seul verset autorise par jour et par eglise : on verifie avant d'inserer.
+            // Un seul verset autorise par jour et par église : on verifie avant d'insérer.
             const existant = yield (0, db_1._selectSql)('SELECT idVersetProgramme FROM verset_programme WHERE idUtilisateur = ? AND dateAffichage = ? LIMIT 1', [idUtilisateur, dateAffichage]);
             if (Array.isArray(existant) && existant.length > 0) {
                 reject(new Error('Un verset est déjà programmé pour cette date. Modifiez-le plutôt.'));
@@ -39,7 +39,7 @@ const ajouterVersetProgramme = (data) => {
             }
             const sql = 'INSERT INTO verset_programme(idUtilisateur, dateAffichage, reference, texte) VALUES (?,?,?,?)';
             const result = yield (0, db_1._executeSql)(sql, [idUtilisateur, dateAffichage, data.reference || '', texte]);
-            // On relit la ligne fraichement creee pour renvoyer un objet complet
+            // On relit la ligne fraîchement créée pour renvoyer un objet complet
             // (avec son idVersetProgramme et sa dateCreation) au front.
             const inserted = yield (0, db_1._selectSql)('SELECT * FROM verset_programme WHERE idVersetProgramme = ?', [result.insertId]);
             resolve(inserted[0]);
@@ -49,8 +49,8 @@ const ajouterVersetProgramme = (data) => {
         }
     }));
 };
-// Modifie un verset deja programme (date, reference ou texte).
-// Meme regle qu'a l'ajout : pas deux versets pour la meme date.
+// Modifie un verset déjà programme (date, référence ou texte).
+// Même règle qu'à l'ajout : pas deux versets pour la même date.
 const modifierVersetProgramme = (data) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {
@@ -71,7 +71,7 @@ const modifierVersetProgramme = (data) => {
                 return;
             }
             // On exclut le verset qu'on est en train de modifier (idVersetProgramme <> ?)
-            // pour ne pas se bloquer soi-meme si la date n'a pas change.
+            // pour ne pas se bloquer soi-même si la date n'a pas change.
             const doublon = yield (0, db_1._selectSql)('SELECT idVersetProgramme FROM verset_programme WHERE idUtilisateur = ? AND dateAffichage = ? AND idVersetProgramme <> ? LIMIT 1', [idUtilisateur, dateAffichage, idVersetProgramme]);
             if (Array.isArray(doublon) && doublon.length > 0) {
                 reject(new Error('Un autre verset est déjà programmé pour cette date.'));
@@ -86,8 +86,8 @@ const modifierVersetProgramme = (data) => {
         }
     }));
 };
-// Retire un verset programme. Scope par idUtilisateur pour qu'une eglise
-// ne puisse jamais supprimer le verset d'une autre eglise.
+// Retire un verset programme. Scope par idUtilisateur pour qu'une église
+// ne puisse jamais supprimer le verset d'une autre église.
 const supprimerVersetProgramme = (idVersetProgramme, idUtilisateur) => {
     return new Promise((resolve, reject) => {
         (0, db_1._executeSql)('DELETE FROM verset_programme WHERE idVersetProgramme = ? AND idUtilisateur = ?', [idVersetProgramme, idUtilisateur])
@@ -95,8 +95,8 @@ const supprimerVersetProgramme = (idVersetProgramme, idUtilisateur) => {
             .catch((error) => reject(error));
     });
 };
-// Recupere tous les versets programmes d'une eglise, tries du plus ancien
-// au plus recent (utilise a la fois par l'ecran de gestion dans Parametres
+// Récupère tous les versets programmes d'une église, tries du plus ancien
+// au plus récent (utilise à la fois par l'écran de gestion dans Paramètres
 // et par le tableau de bord pour trouver le verset du jour).
 const recupVersetsProgrammeByUtilisateur = (idUtilisateur) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {

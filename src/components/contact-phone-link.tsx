@@ -9,7 +9,7 @@ type ContactPhoneLinkProps = {
 
 const normalizePhoneHref = (value: string) => value.replace(/[^\d+]/g, '');
 
-export function ContactPhoneLink({ fallback = 'Non renseigne', value }: ContactPhoneLinkProps) {
+export function ContactPhoneLink({ fallback = 'Non renseigné', value }: ContactPhoneLinkProps) {
   const phone = String(value || '').trim();
 
   if (!phone) {

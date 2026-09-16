@@ -171,7 +171,7 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
           <Box
             component="img"
             src={logoUrl}
-            alt="Logo eglise"
+            alt="Logo église"
             sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
         ) : (

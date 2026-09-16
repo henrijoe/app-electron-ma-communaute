@@ -144,10 +144,10 @@ CREATE TABLE `domaine_activite` (
 
 INSERT INTO `domaine_activite` (`idDomaineActivite`, `libelleDomaineActivite`) VALUES
 (1, 'Professeur'),
-(2, 'Mecanicien'),
+(2, 'Mécanicien'),
 (3, 'couturier'),
 (4, 'Informaticien'),
-(6, 'Menusieur'),
+(6, 'Menuisier'),
 (9, 'Plombiers'),
 (10, 'Zonnier');
 
@@ -389,9 +389,9 @@ CREATE TABLE `niveau_etude` (
 
 INSERT INTO `niveau_etude` (`idNiveauEtude`, `libelleNiveauEtude`) VALUES
 (1, 'Primaire'),
-(2, 'College'),
+(2, 'Collège'),
 (3, 'BEPC'),
-(4, 'Lycee'),
+(4, 'Lycée'),
 (5, 'BAC'),
 (6, 'Bac+1'),
 (7, 'Bac+2'),
@@ -438,18 +438,18 @@ CREATE TABLE `responsabilite` (
 --
 
 INSERT INTO `responsabilite` (`idResponsabilite`, `libelleResponsabilite`, `descriptionResponsabilite`, `idUtilisateur`) VALUES
-(1, 'Pasteur principal', 'Premier responsable de l\'eglise', 1),
-(2, 'Pasteur second', 'Deuxieme responsable de l\'eglise', 1),
-(3, 'Pasteur', 'responsable eglise', 1),
-(4, 'Ancien', 'subtitut du pasteur', 1),
-(5, 'Diacre', 'charge de la propriete du temple', 1),
-(6, 'Diaconesse', 'charge de la propriete du temple', 1),
-(7, 'Responsable de cellule', 'charge des courses', 1),
-(8, 'Responsable de departement', 'charge de veillee sur le temple', 1),
-(9, 'Responsable de groupe ethnique', 'premier responsable de groupe ethnique', 1),
-(10, 'Responsable AOC', 'Premiere responsable du AOC', 1),
-(11, 'Directeur/Diretrice de l\'ECODIM', 'Premier(e) responsable ECODIM', 1),
-(12, 'President de Jeunesse', 'premier responsable de la jeunesse', 1);
+(1, 'Pasteur principal', 'Premier responsable de l\'église', 1),
+(2, 'Pasteur second', 'Deuxième responsable de l\'église', 1),
+(3, 'Pasteur', 'Responsable église', 1),
+(4, 'Ancien', 'Substitut du pasteur', 1),
+(5, 'Diacre', 'Chargé de la propriété du temple', 1),
+(6, 'Diaconesse', 'Chargé de la propriété du temple', 1),
+(7, 'Responsable de cellule', 'Chargé des courses', 1),
+(8, 'Responsable de département', 'Chargé de veillée sur le temple', 1),
+(9, 'Responsable de groupe ethnique', 'Premier responsable de groupe ethnique', 1),
+(10, 'Responsable AOC', 'Première responsable de l\'AOC', 1),
+(11, 'Directeur/Directrice de l\'ECODIM', 'Premier(e) responsable ECODIM', 1),
+(12, 'Président de Jeunesse', 'Premier responsable de la jeunesse', 1);
 
 -- --------------------------------------------------------
 

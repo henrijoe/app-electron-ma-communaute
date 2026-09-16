@@ -11,16 +11,16 @@ const ajvValidator = (schema) => {
         const validate = ajvInstance.compile(schema);
         const valid = validate(req.body);
         if (!valid) {
-            // it is imperative that the reference to the error is copied
+            // it is imperative that the référence to the error is copied
             // the next time ajv runs the error object could be overridden
             // because under the hood it is just a pointer
-            // that's why the reference needs to be copied in the same execution
+            // that's why the référence needs to be copied in the same execution
             // block. Note that Node is single-threaded and you do not have
             // concurrency
             // in this simple example it would work without copying
             // simply because we are directly terminating the request with
             // res.status(400).json(...)
-            // but in general copying the error reference is crucial
+            // but in général copying the error référence is crucial
             const error = validate.errors;
             localize.fr(validate.error);
             return res.status(400).send({ status: 0, error });
@@ -30,9 +30,9 @@ const ajvValidator = (schema) => {
 };
 exports.ajvValidator = ajvValidator;
 /**
- * Valider un schema en renvoyant un boolean
- * @param schema le schema de validation
- * @param data le payload a valider
+ * Valider un schéma en renvoyant un boolean
+ * @param schema le schéma de validation
+ * @param data le payload à valider
  * @returns
  */
 const ajvValidateSchema = (schema, data) => {

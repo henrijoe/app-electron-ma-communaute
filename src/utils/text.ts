@@ -7,7 +7,7 @@ export const normalizeText = (value: unknown): string => {
 
   let fixed = raw;
 
-  // Tentative de re-decoder les chaines UTF-8 lues en latin1.
+  // Tentative de re-decoder les chaînes UTF-8 lues en latin1.
   try {
     const decoded = decodeURIComponent(escape(raw));
     const mojibakeScore = (input: string) => (input.match(/[ÃÂâ�]/g) || []).length;

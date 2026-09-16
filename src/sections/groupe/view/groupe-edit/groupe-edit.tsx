@@ -39,7 +39,7 @@ export default function GroupeEditView() {
   );
 
   useEffect(() => {
-    // On r�hydrate le formulaire depuis le store pour �viter une requ�te inutile.
+    // On réhydrate le formulaire depuis le store pour éviter une requête inutile.
     const groupeId = Number(id);
     const found = listGroupe.find((item: IGroupe) => item.idGroupe === groupeId);
     setFormData(found || null);
@@ -54,7 +54,7 @@ export default function GroupeEditView() {
       const response = await apiClient.updateGroupe(payload);
       if (response.status === 1) {
         dispatch(setDataModifiesGroupe(payload));
-        showNotification('Groupe modifi� avec succ�s', 'success');
+        showNotification('Groupe modifié avec succès', 'success');
         navigate(`/detailgroupe/${id}`);
       }
     } catch (error: any) {
@@ -64,7 +64,7 @@ export default function GroupeEditView() {
     }
   }, [currentUserId, dispatch, formData, id, navigate, showNotification]);
 
-  if (!formData) return <DashboardContent><Container maxWidth="lg"><Typography variant="h5">Groupe non trouv�</Typography></Container></DashboardContent>;
+  if (!formData) return <DashboardContent><Container maxWidth="lg"><Typography variant="h5">Groupe non trouvé</Typography></Container></DashboardContent>;
 
   return (
     <DashboardContent>
@@ -76,7 +76,7 @@ export default function GroupeEditView() {
         <Card sx={{ p: 4 }}>
           <Typography variant="h4" sx={{ mb: 3 }}>Modifier le groupe</Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}><TextField fullWidth label="Libell� du groupe" value={formData.libelleGroupe || ''} onChange={(event) => setFormData((prev: any) => ({ ...prev, libelleGroupe: event.target.value }))} /></Grid>
+            <Grid item xs={12} md={6}><TextField fullWidth label="Libellé du groupe" value={formData.libelleGroupe || ''} onChange={(event) => setFormData((prev: any) => ({ ...prev, libelleGroupe: event.target.value }))} /></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth label="Responsable" value={formData.responsableGroupe || ''} onChange={(event) => setFormData((prev: any) => ({ ...prev, responsableGroupe: event.target.value }))} /></Grid>
             <Grid item xs={12} md={6}><TextField fullWidth label="Contact du responsable" value={responsableContact || ''} InputProps={{ readOnly: true }} /></Grid>
             <Grid item xs={12}><TextField fullWidth multiline minRows={4} label="Description" value={formData.descriptionGroupe || ''} onChange={(event) => setFormData((prev: any) => ({ ...prev, descriptionGroupe: event.target.value }))} /></Grid>

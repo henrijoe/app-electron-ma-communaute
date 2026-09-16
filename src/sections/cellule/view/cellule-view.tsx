@@ -90,7 +90,7 @@ export function CelluleView() {
 
   const fetchCellules = useCallback(async () => {
     try {
-      // On charge uniquement les cellules rattachees  l'utilisateur courant.
+      // On charge uniquement les cellules rattachées  l'utilisateur courant.
       setLoading(true);
       dispatch(ensureArray());
       const response = currentUserId
@@ -157,7 +157,7 @@ export function CelluleView() {
   const handleEditCellule = useCallback((celluleData: ICellule) => {
     if (!canManageCellule) return;
 
-    // On prepare le formulaire avec les donnees completes de la cellule selectionnee.
+    // On prépare le formulaire avec les données complètes de la cellule sélectionnée.
     setData({ ...celluleData });
     setIsEditMode(true);
     setOpenDialog(true);
@@ -221,10 +221,10 @@ export function CelluleView() {
       }
 
       if (summary.failures === 0) {
-        showNotification(`${summary.successes} cellule(s) supprimee(s) avec succes`, 'success');
+        showNotification(`${summary.successes} cellule(s) supprimée(s) avec succès`, 'success');
       } else {
         showNotification(
-          `${summary.successes} supprimee(s), ${summary.failures} erreur(s)`,
+          `${summary.successes} supprimée(s), ${summary.failures} erreur(s)`,
           summary.failures === table.selected.length ? 'error' : 'warning'
         );
       }
@@ -420,7 +420,7 @@ export function CelluleView() {
                   <Box minWidth={0} flex={1}>
                     <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>{row.nomCellule || 'Cellule sans nom'}</Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
-                      {row.lieuCellule || 'Lieu non renseigne'}
+                      {row.lieuCellule || 'Lieu non renseigné'}
                     </Typography>
                   </Box>
                 </Box>
@@ -471,7 +471,7 @@ export function CelluleView() {
 
             {notFound && (
               <Card variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 2, boxShadow: 'none' }}>
-                <Typography variant="subtitle2">Aucun resultat</Typography>
+                <Typography variant="subtitle2">Aucun résultat</Typography>
                 <Typography variant="body2" color="text.secondary">Aucune cellule ne correspond aux filtres.</Typography>
               </Card>
             )}
@@ -493,9 +493,9 @@ export function CelluleView() {
                   { id: 'lieuCellule', label: 'Lieu' },
                   { id: 'nombreMembreCellule', label: 'Effectif' },
                   { id: 'responsableCellule', label: 'Responsable' },
-                  { id: 'contactResponsableCellule', label: 'Numero responsable' },
+                  { id: 'contactResponsableCellule', label: 'Numéro responsable' },
                   { id: 'responsableVisiteCellule', label: 'Responsable visite' },
-                  { id: 'contactResponsableVisiteCellule', label: 'Numero visite' },
+                  { id: 'contactResponsableVisiteCellule', label: 'Numéro visite' },
                   { id: 'actions', label: 'Actions', align: 'center', width: 100 },
                 ]}
               />
@@ -563,7 +563,7 @@ export function CelluleView() {
                 label="Contact responsable cellule"
                 value={selectedResponsableCelluleContact || ''}
                 InputProps={{ readOnly: true }}
-                helperText={selectedResponsableCelluleContact ? 'Contact deja saisi sur la fiche membre' : 'Aucun contact trouve pour ce responsable'}
+                helperText={selectedResponsableCelluleContact ? 'Contact déjà saisi sur la fiche membre' : 'Aucun contact trouvé pour ce responsable'}
               />
             </Grid>
             <Grid item xs={12} md={4}>
@@ -576,7 +576,7 @@ export function CelluleView() {
                 label="Contact responsable visite"
                 value={selectedResponsableVisiteContact || ''}
                 InputProps={{ readOnly: true }}
-                helperText={selectedResponsableVisiteContact ? 'Contact deja saisi sur la fiche membre' : 'Aucun contact trouve pour ce responsable'}
+                helperText={selectedResponsableVisiteContact ? 'Contact déjà saisi sur la fiche membre' : 'Aucun contact trouvé pour ce responsable'}
               />
             </Grid>
           </Grid>
@@ -601,8 +601,8 @@ export function CelluleView() {
 
       <ConfirmDialog
         open={confirmDeleteSelectedOpen}
-        title="Supprimer les cellules selectionnees"
-        message={`Voulez-vous vraiment supprimer ${table.selected.length} cellule(s) selectionnee(s) ?`}
+        title="Supprimer les cellules sélectionnées"
+        message={`Voulez-vous vraiment supprimer ${table.selected.length} cellule(s) sélectionnée(s) ?`}
         confirmText="Supprimer"
         loading={deleteLoading}
         onClose={() => setConfirmDeleteSelectedOpen(false)}

@@ -88,7 +88,7 @@ const assertCanManageModule = (permission: ModulePermissionKey, actionLabel?: st
 
   if (!canManageModule(currentUser, permission)) {
     throw new ApiError(
-      actionLabel || "Vous avez uniquement un acces en lecture sur ce module.",
+      actionLabel || "Vous avez uniquement un accès en lecture sur ce module.",
       403,
       { permission }
     );
@@ -105,7 +105,7 @@ export const getBaseUrl = (): string => {
   // En production, utilise soit:
   // 1. L'URL du serveur depuis le store (si disponible)
   // 2. Une variable d'environnement VITE_API_URL
-  // 3. L'URL de ton backend heberge
+  // 3. L'URL de ton backend héberge
 
 
   const serverUrl = getServerUrl();
@@ -114,7 +114,7 @@ export const getBaseUrl = (): string => {
     return apiServerUrl.endsWith('/') ? apiServerUrl : `${apiServerUrl}/`;
   }
 
-  // Fallback: variable d'environnement ou URL par defaut
+  // Fallback: variable d'environnement ou URL par défaut
   return import.meta.env.VITE_API_URL ||
     (isLoopbackHost(window.location.hostname)
       ? BASE_URL_DEV
@@ -156,7 +156,7 @@ export const resolveApiBaseUrl = (): string => {
   return normalizeBaseUrl(BASE_URL_ONLINE || BASE_URL_DEV);
 };
 
-// Interface pour la structure d'une reponse du serveur
+// Interface pour la structure d'une réponse du serveur
 export interface IServerResponse {
   status: number;
   data?: any;
@@ -165,7 +165,7 @@ export interface IServerResponse {
   message?: string;
 }
 
-// Interface pour la configuration d'une requete
+// Interface pour la configuration d'une requête
 export interface IConfig extends RequestInit {
   headers?: Record<string, string>;
   timeoutMs?: number;
@@ -190,37 +190,37 @@ const isLikelyNetworkError = (error: unknown): boolean =>
 const getHttpStatusMessage = (status: number): string => {
   switch (status) {
     case 0:
-      return "Impossible de joindre le serveur. Verifiez votre connexion et l'adresse du serveur dans les paramètres.";
+      return "Impossible de joindre le serveur. Vérifiez votre connexion et l'adresse du serveur dans les paramètres.";
     case 400:
-      return 'La demande envoyée est incomplete ou incorrecte. Verifiez les informations saisies puis reéssayez.';
+      return 'La demande envoyée est incomplète ou incorrecte. Vérifiez les informations saisies puis réessayez.';
     case 401:
       return 'Votre session a expiré ou vos identifiants sont incorrects. Reconnectez-vous pour continuer.';
     case 403:
       return "Vous n'avez pas l'autorisation d'effectuer cette action.";
     case 404:
-      return "Le service demande est introuvable. Verifiez que l'application utilise bien l'adresse du serveur local en port 49300.";
+      return "Le service demande est introuvable. Vérifiez que l'application utilise bien l'adresse du serveur local en port 49300.";
     case 408:
-      return 'Le serveur met trop de temps a repondre. Verifiez le reseau puis reessayez.';
+      return 'Le serveur met trop de temps à répondre. Vérifiez le réseau puis réessayez.';
     case 409:
-      return 'Cette action entre en conflit avec des données déjà existantes. Verifiez les informations puis reessayez.';
+      return 'Cette action entre en conflit avec des données déjà existantes. Vérifiez les informations puis réessayez.';
     case 413:
-      return 'Le fichier ou les données envoyees sont trop volumineux.';
+      return 'Le fichier ou les données envoyées sont trop volumineux.';
     case 422:
-      return 'Certaines informations saisies ne sont pas valides. Verifiez le formulaire puis reessayez.';
+      return 'Certaines informations saisies ne sont pas valides. Vérifiez le formulaire puis réessayez.';
     case 429:
-      return 'Trop de tentatives en peu de temps. Patientez un moment puis reessayez.';
+      return 'Trop de tentatives en peu de temps. Patientez un moment puis réessayez.';
     case 500:
-      return 'Le serveur a rencontre une erreur interne. Reessayez, puis contactez le support si le probleme continue.';
+      return 'Le serveur a rencontré une erreur interne. Réessayez, puis contactez le support si le problème continue.';
     case 502:
     case 503:
     case 504:
-      return "Le serveur est momentanement indisponible. Verifiez qu'il est demarre puis reessayez.";
+      return "Le serveur est momentanément indisponible. Vérifiez qu'il est démarré puis réessayez.";
     default:
       if (status >= 500) {
         return 'Le serveur a rencontré une erreur. Reéssayez dans quelques instants.';
       }
       if (status >= 400) {
-        return "La demande n'a pas pu être traitée. Verifiez les informations puis reéssayez.";
+        return "La demande n'a pas pu être traitée. Vérifiez les informations puis réessayez.";
       }
       return 'Une erreur est survenue pendant la communication avec le serveur.';
   }
@@ -228,10 +228,10 @@ const getHttpStatusMessage = (status: number): string => {
 
 const buildNetworkErrorMessage = (url: string): string => {
   const port = getLocalApiPort();
-  const baseMessage = `Impossible de joindre le serveur local. Verifiez que le serveur est demarre et que le port ${port} est autorisé par le pare-feu.`;
+  const baseMessage = `Impossible de joindre le serveur local. Vérifiez que le serveur est démarré et que le port ${port} est autorisé par le pare-feu.`;
 
   if (typeof window !== 'undefined' && !isLoopbackHost(window.location.hostname)) {
-    return `${baseMessage} Votre appareil doit etre sur le même reseau Wi-Fi. Adresse utilisee: ${url}`;
+    return `${baseMessage} Votre appareil doit être sur le même réseau Wi-Fi. Adresse utilisée: ${url}`;
   }
 
   return `${baseMessage} Adresse utilisée: ${url}`;
@@ -249,7 +249,7 @@ export const getApiErrorMessage = (error: unknown, fallback = 'Une erreur est su
   return normalizeText(fallback);
 };
 
-// Extrait un message exploitable depuis les differents formats d'erreur du backend.
+// Extrait un message exploitable depuis les différents formats d'erreur du backend.
 const buildErrorMessage = (data: any, fallback: string): string => {
   if (!data) return fallback;
 
@@ -333,7 +333,7 @@ export const buildGalerieDownloadUrl = (idGalerie: number | string, idUtilisateu
   const suffix = typeof idUtilisateur === 'number' ? `?idUtilisateur=${encodeURIComponent(String(idUtilisateur))}` : '';
   return cleanUrl(resolveApiBaseUrl(), `communaute/telechargergalerie/${idGalerie}${suffix}`);
 };
-// Point d'entree commun pour toutes les requetes HTTP du front.
+// Point d'entrée commun pour toutes les requêtes HTTP du front.
 export async function request<T>(
   route: string,
   config?: IConfig,
@@ -392,7 +392,7 @@ export async function request<T>(
 
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new ApiError(
-        "Le serveur local ne repond pas. Verifiez que l'application desktop est ouverte et que le backend local a bien demarre.",
+        "Le serveur local ne répond pas. Vérifiez que l'application desktop est ouverte et que le backend local a bien démarré.",
         408,
         { url }
       );
@@ -409,9 +409,9 @@ export async function request<T>(
   }
 }
 
-  // API client specifique pour le backend de l'application
+  // API client spécifique pour le backend de l'application
 export const apiClient = {
-  // Recupere l'IP et l'URL LAN du serveur pour affichage dans l'application.
+  // Récupère l'IP et l'URL LAN du serveur pour affichage dans l'application.
   getServerInfo: () =>
     request<IServerResponse>('communaute/server-info', { method: 'GET' }),
 
@@ -430,21 +430,21 @@ export const apiClient = {
       body: JSON.stringify({}),
     }),
 
-  // Retourne l'etat courant du blocage desktop pour l'utilisateur cible.
+  // Retourne l'état courant du blocage desktop pour l'utilisateur cible.
   getDesktopSecurityStatus: (nomUtilisateur: string) =>
     request<IServerResponse>(
       `communaute/desktop-control/status?nomUtilisateur=${encodeURIComponent(nomUtilisateur)}`,
       { method: 'GET' }
     ),
 
-  // Permet au superadmin de debloquer l'application desktop pour une nouvelle periode.
+  // Permet au superadmin de débloquer l'application desktop pour une nouvelle période.
   unlockDesktopAccess: (data: { nomUtilisateur: string; password: string; extendDays?: number }) =>
     request<IServerResponse>('communaute/desktop-control/unlock', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Rattache la licence desktop locale a l'ordinateur courant.
+  // Rattache la licence desktop locale à l'ordinateur courant.
   rebindDesktopLicenseMachine: (data: { nomUtilisateur: string; password: string }) =>
     request<IServerResponse>('communaute/desktop-control/rebind-machine', {
       method: 'POST',
@@ -465,7 +465,7 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
-  // Genere un nouveau pack de codes et remplace les codes non utilises.
+  // Génère un nouveau pack de codes et remplace les codes non utilisés.
   generateDesktopUnlockCodes: (data: { nomUtilisateur: string; password: string }) =>
     request<IServerResponse>('communaute/desktop-control/unlock-codes/generate', {
       method: 'POST',
@@ -486,15 +486,15 @@ export const apiClient = {
   },
 
   // Membres
-  // Recupere la liste complete des membres.
+  // Récupère la liste complete des membres.
   getMembres: () =>
     request<IServerResponse>('communaute/listemembre', { method: 'GET' }),
 
-  // Recupere uniquement les membres rattaches a un utilisateur.
+  // Récupère uniquement les membres rattachés à un utilisateur.
   getMembresByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupmembrebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
 
-  // Cree un membre.
+  // Crée un membre.
   createMembre: (data: any) =>
     request<IServerResponse>('communaute/inserermembre', {
       method: 'POST',
@@ -508,7 +508,7 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
-  // Recupere les demandes d'inscription membre en attente.
+  // Récupère les demandes d'inscription membre en attente.
   getMemberRegistrationRequests: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/demandesinscriptionmembre/${idUtilisateur}`, { method: 'GET' }),
 
@@ -532,11 +532,11 @@ export const apiClient = {
       body: JSON.stringify({ idDemandeInscription, idUtilisateur }),
     }),
 
-  // Recupere les versets bibliques programmes pour une eglise (verset du jour personnalise sur plusieurs mois).
+  // Récupère les versets bibliques programmes pour une église (verset du jour personnalise sur plusieurs mois).
   getVersetsProgramme: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/versetsprogramme/${idUtilisateur}`, { method: 'GET' }),
 
-  // Programme un nouveau verset pour une date donnee.
+  // Programme un nouveau verset pour une date donnée.
   createVersetProgramme: (data: {
     idUtilisateur: number;
     dateAffichage: string;
@@ -548,7 +548,7 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
-  // Modifie un verset deja programme.
+  // Modifie un verset déjà programme.
   updateVersetProgramme: (data: {
     idVersetProgramme: number;
     idUtilisateur: number;
@@ -568,11 +568,11 @@ export const apiClient = {
       body: JSON.stringify({ idVersetProgramme, idUtilisateur }),
     }),
 
-  // Recupere le programme d'eglise (qui dirige/preche/fait les annonces a chaque culte).
+  // Récupère le programme d'église (qui dirige/preche/fait les annonces à chaque culte).
   getProgrammesEglise: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/programmeseglise/${idUtilisateur}`, { method: 'GET' }),
 
-  // Ajoute une ligne de programme pour une date donnee.
+  // Ajoute une ligne de programme pour une date donnée.
   createProgrammeEglise: (data: {
     idUtilisateur: number;
     dateProgramme: string;
@@ -588,7 +588,7 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
-  // Modifie une ligne de programme deja existante.
+  // Modifie une ligne de programme déjà existante.
   updateProgrammeEglise: (data: {
     idProgramme: number;
     idUtilisateur: number;
@@ -612,7 +612,7 @@ export const apiClient = {
       body: JSON.stringify({ idProgramme, idUtilisateur }),
     }),
 
-  // Met a jour un membre existant.
+  // Met à jour un membre existant.
   updateMembre: (data: any) =>
     request<IServerResponse>('communaute/modifiermembre', {
       method: 'POST',
@@ -628,22 +628,22 @@ export const apiClient = {
 
 
   // cultes
-  // Recupere tous les cultes.
+  // Récupère tous les cultes.
   getCultes: () =>
     request<IServerResponse>('communaute/listeculte', { method: 'GET' }),
 
-  // Recupere les cultes d'un utilisateur.
+  // Récupère les cultes d'un utilisateur.
   getCultesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupcultebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
 
-  // Cree un culte.
+  // Crée un culte.
   createCulte: (data: any) =>
     request<IServerResponse>('communaute/insererculte', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Met a jour un culte.
+  // Met à jour un culte.
   updateCulte: (data: any) =>
     request<IServerResponse>('communaute/modifierculte', {
       method: 'POST',
@@ -657,30 +657,30 @@ export const apiClient = {
       body: JSON.stringify({ idCulte, idUtilisateur }),
     }),
 
-  // departements
-  // Recupere la liste des departements.
+  // départements
+  // Récupère la liste des départements.
   getDepartements: () =>
     request<IServerResponse>('communaute/listedepartement', { method: 'GET' }),
 
-  // Recupere les departements lies a un utilisateur.
+  // Récupère les départements lies à un utilisateur.
   getDepartementsByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupdepartementbyutilisateur/${idUtilisateur}`, { method: 'GET' }),
 
-  // Cree un departement.
+  // Crée un département.
   createDepartement: (data: any) =>
     request<IServerResponse>('communaute/insererdepartement', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Met a jour un departement.
+  // Met à jour un département.
   updateDepartement: (data: any) =>
     request<IServerResponse>('communaute/modifierdepartement', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Supprime un departement.
+  // Supprime un département.
   deleteDepartement: (idDepartement: number, idUtilisateur?: number | null) =>
     request<IServerResponse>('communaute/supprimerdepartement', {
       method: 'POST',
@@ -688,22 +688,22 @@ export const apiClient = {
     }),
 
   // cellules
-  // Recupere toutes les cellules.
+  // Récupère toutes les cellules.
   getCellules: () =>
     request<IServerResponse>('communaute/listecellule', { method: 'GET' }),
 
-  // Recupere les cellules d'un utilisateur.
+  // Récupère les cellules d'un utilisateur.
   getCellulesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupcellulebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
 
-  // Cree une cellule.
+  // Crée une cellule.
   createCellule: (data: any) =>
     request<IServerResponse>('communaute/inserercellule', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Met a jour une cellule.
+  // Met à jour une cellule.
   updateCellule: (data: any) =>
     request<IServerResponse>('communaute/modifiercellule', {
       method: 'POST',
@@ -718,22 +718,22 @@ export const apiClient = {
     }),
 
   // groupes
-  // Recupere tous les groupes.
+  // Récupère tous les groupes.
   getGroupes: () =>
     request<IServerResponse>('communaute/listegroupe', { method: 'GET' }),
 
-  // Recupere les groupes d'un utilisateur.
+  // Récupère les groupes d'un utilisateur.
   getGroupesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupgroupebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
 
-  // Cree un groupe.
+  // Crée un groupe.
   createGroupe: (data: any) =>
     request<IServerResponse>('communaute/inserergroupe', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Met a jour un groupe.
+  // Met à jour un groupe.
   updateGroupe: (data: any) =>
     request<IServerResponse>('communaute/modifiergroupe', {
       method: 'POST',
@@ -769,7 +769,7 @@ export const apiClient = {
       body: JSON.stringify({ idFamilleJeunesse, idUtilisateur }),
     }),
 
-  // responsabilites
+  // responsabilités
   getResponsabilites: () =>
     request<IServerResponse>('communaute/listeresponsabilite', { method: 'GET' }),
 
@@ -812,7 +812,7 @@ export const apiClient = {
       body: JSON.stringify({ idAgenda, idUtilisateur }),
     }),
 
-  // comptabilite
+  // comptabilité
   getComptabilitesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/listecomptabilite/${idUtilisateur}`, { method: 'GET' }),
 
@@ -908,18 +908,18 @@ export const apiClient = {
     }),
 
   // cas sociaux - mariages
-  // Recupere les mariages de l'utilisateur connecte.
+  // Récupère les mariages de l'utilisateur connecte.
   getMariagesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupmariagebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
 
-  // Cree un mariage.
+  // Crée un mariage.
   createMariage: (data: any) =>
     request<IServerResponse>('communaute/inserermariage', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Met a jour un mariage.
+  // Met à jour un mariage.
   updateMariage: (data: any) =>
     request<IServerResponse>('communaute/modifiermariage', {
       method: 'POST',
@@ -934,18 +934,18 @@ export const apiClient = {
     }),
 
   // cas sociaux - naissances
-  // Recupere les naissances de l'utilisateur connecte.
+  // Récupère les naissances de l'utilisateur connecte.
   getNaissancesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupnaissancebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
 
-  // Cree une naissance.
+  // Crée une naissance.
   createNaissance: (data: any) =>
     request<IServerResponse>('communaute/inserernaissance', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Met a jour une naissance.
+  // Met à jour une naissance.
   updateNaissance: (data: any) =>
     request<IServerResponse>('communaute/modifiernaissance', {
       method: 'POST',
@@ -959,26 +959,26 @@ export const apiClient = {
       body: JSON.stringify({ idNaissance, idUtilisateur }),
     }),
 
-  // cas sociaux - deces
-  // Recupere les deces de l'utilisateur connecte.
+  // cas sociaux - décès
+  // Récupère les décès de l'utilisateur connecte.
   getDecesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupdecesbyutilisateur/${idUtilisateur}`, { method: 'GET' }),
 
-  // Cree un deces.
+  // Crée un décès.
   createDeces: (data: any) =>
     request<IServerResponse>('communaute/insererdeces', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Met a jour un deces.
+  // Met à jour un décès.
   updateDeces: (data: any) =>
     request<IServerResponse>('communaute/modifierdeces', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Supprime un deces.
+  // Supprime un décès.
   deleteDeces: (idDeces: number) =>
     request<IServerResponse>('communaute/supprimerdeces', {
       method: 'POST',
@@ -986,18 +986,18 @@ export const apiClient = {
     }),
 
   // cas sociaux - maladies
-  // Recupere les maladies de l'utilisateur connecte.
+  // Récupère les maladies de l'utilisateur connecte.
   getMaladiesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupmaladiebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
 
-  // Cree un cas de maladie.
+  // Crée un cas de maladie.
   createMaladie: (data: any) =>
     request<IServerResponse>('communaute/inserermaladie', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Met a jour un cas de maladie.
+  // Met à jour un cas de maladie.
   updateMaladie: (data: any) =>
     request<IServerResponse>('communaute/modifiermaladie', {
       method: 'POST',
@@ -1037,7 +1037,7 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
-  // Cree un compte utilisateur dans le backend principal.
+  // Crée un compte utilisateur dans le backend principal.
   registerUtilisateur: (data: {
     logoUtilisateur?: string;
     logoEglise?: string;
@@ -1076,7 +1076,7 @@ export const apiClient = {
       timeoutMs: 120000,
     }),
 
-  // Met a jour les informations du profil et de l'eglise rattaches a l'utilisateur.
+  // Met à jour les informations du profil et de l'église rattachés à l'utilisateur.
   updateUtilisateur: (data: {
     idUtilisateur: number;
     logoUtilisateur?: string;
@@ -1115,7 +1115,7 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
-  // Demande au backend de creer la base SQLite locale de la communaute.
+  // Demande au backend de créer la base SQLite locale de la communauté.
   createCommunauteDatabase: (data: {
     idUtilisateur: number;
     nomTemple: string;
@@ -1128,7 +1128,7 @@ export const apiClient = {
       timeoutMs: 120000,
     }),
 
-  // Cree l'eglise rattachee a l'utilisateur nouvellement inscrit.
+  // Crée l'église rattachée à l'utilisateur nouvellement inscrit.
   createEglise: (data: {
     nomEglise: string;
     idUtilisateur: number;
@@ -1140,29 +1140,29 @@ export const apiClient = {
       timeoutMs: 120000,
     }),
 
-  // Alias historique pour recuperer les cultes d'un utilisateur.
+  // Alias historique pour récupérer les cultes d'un utilisateur.
   getCulteByUtilisateur: (idUtilisateur: string) =>
     request<IServerResponse>(`communaute/recupcultebyutilisateur/${idUtilisateur}`, {
       method: 'GET',
     }),
 
 
-  // Endpoint de test pour verifier que le backend repond.
+  // Endpoint de test pour vérifier que le backend répond.
   testConnection: () =>
     request<IServerResponse>('test', { method: 'GET' }),
 
-  // Prepare la future synchronisation des donnees distantes vers la base locale.
+  // Prépare la future synchronisation des données distantes vers la base locale.
   syncRemoteToLocal: (data?: { idUtilisateur?: number | string }) =>
     request<IServerResponse>('communaute/sync/remote-to-local', {
       method: 'POST',
       body: JSON.stringify(data || {}),
     }),
 
-  // Effectue une requete GET libre vers le backend.
+  // Effectue une requête GET libre vers le backend.
   get: <T = IServerResponse>(route: string, config?: IConfig) =>
     request<T>(route, { method: 'GET', ...config }),
 
-  // Effectue une requete POST libre vers le backend.
+  // Effectue une requête POST libre vers le backend.
   post: <T = IServerResponse>(route: string, data?: any, config?: IConfig) =>
     request<T>(route, {
       method: 'POST',
@@ -1170,7 +1170,7 @@ export const apiClient = {
       ...config
     }),
 
-  // Effectue une requete PUT libre vers le backend.
+  // Effectue une requête PUT libre vers le backend.
   put: <T = IServerResponse>(route: string, data?: any, config?: IConfig) =>
     request<T>(route, {
       method: 'PUT',
@@ -1178,7 +1178,7 @@ export const apiClient = {
       ...config
     }),
 
-  // Effectue une requete DELETE libre vers le backend.
+  // Effectue une requête DELETE libre vers le backend.
   delete: <T = IServerResponse>(route: string, config?: IConfig) =>
     request<T>(route, { method: 'DELETE', ...config }),
 };

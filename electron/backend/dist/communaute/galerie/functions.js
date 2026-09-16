@@ -77,7 +77,7 @@ const ajouterGalerie = (data) => __awaiter(void 0, void 0, void 0, function* () 
     (0, functions_1.getGalerieEventDirectory)(dossierGalerie);
     const galerie = yield getGalerieById(idGalerie);
     if (!galerie) {
-        throw new Error("Galerie introuvable apres creation.");
+        throw new Error("Galerie introuvable après création.");
     }
     return galerie;
 });
@@ -118,7 +118,7 @@ const recupImagesGalerie = (idGalerie) => __awaiter(void 0, void 0, void 0, func
 const ajouterImagesGalerie = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const galerie = yield getGalerieById(payload.idGalerie);
     if (!galerie) {
-        throw new Error("Evenement galerie introuvable.");
+        throw new Error("Événement galerie introuvable.");
     }
     const dossierGalerie = galerie.dossierGalerie || buildEventFolderName(payload.idGalerie, galerie.titreGalerie, galerie.dateEvenement);
     if (!galerie.dossierGalerie) {
@@ -171,26 +171,26 @@ const modifierImageGalerie = (payload) => __awaiter(void 0, void 0, void 0, func
         throw new Error("Image galerie introuvable.");
     }
     if (typeof payload.idUtilisateur === "number" && Number(image.idUtilisateur) !== Number(payload.idUtilisateur)) {
-        throw new Error("Modification non autorisee pour cette image.");
+        throw new Error("Modification non autorisée pour cette image.");
     }
     yield (0, db_1._executeSql)(`UPDATE galerie_image SET legendeImage = ? WHERE idGalerieImage = ?`, [payload.legendeImage || "", payload.idGalerieImage]);
     const updated = yield getGalerieImageById(payload.idGalerieImage);
     if (!updated) {
-        throw new Error("Image galerie introuvable apres modification.");
+        throw new Error("Image galerie introuvable après modification.");
     }
     return updated;
 });
 const definirCouvertureGalerie = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const galerie = yield getGalerieById(payload.idGalerie);
     if (!galerie) {
-        throw new Error("Evenement galerie introuvable.");
+        throw new Error("Événement galerie introuvable.");
     }
     if (typeof payload.idUtilisateur === "number" && Number(galerie.idUtilisateur) !== Number(payload.idUtilisateur)) {
-        throw new Error("Modification non autorisee pour cette galerie.");
+        throw new Error("Modification non autorisée pour cette galerie.");
     }
     const image = yield getGalerieImageById(payload.idGalerieImage);
     if (!image || Number(image.idGalerie) !== Number(payload.idGalerie)) {
-        throw new Error("Image de couverture introuvable pour cet evenement.");
+        throw new Error("Image de couverture introuvable pour cet événement.");
     }
     yield (0, db_1._executeSql)(`UPDATE galerie SET couvertureGalerie = ? WHERE idGalerie = ?`, [image.cheminImage, payload.idGalerie]);
     return true;
@@ -202,10 +202,10 @@ const supprimerImageGalerie = (idGalerieImage, idUtilisateur) => __awaiter(void 
     }
     const galerie = yield getGalerieById(image.idGalerie);
     if (!galerie) {
-        throw new Error("Evenement galerie introuvable.");
+        throw new Error("Événement galerie introuvable.");
     }
     if (typeof idUtilisateur === "number" && Number(galerie.idUtilisateur) !== Number(idUtilisateur)) {
-        throw new Error("Suppression non autorisee pour cette image.");
+        throw new Error("Suppression non autorisée pour cette image.");
     }
     const absolutePath = ensureSafeGalleryPath(path_1.default.join((0, functions_1.getGalerieMediaRootDirectory)(), image.cheminImage));
     if (fs_1.default.existsSync(absolutePath)) {
@@ -222,10 +222,10 @@ const supprimerImageGalerie = (idGalerieImage, idUtilisateur) => __awaiter(void 
 const buildGalerieZip = (idGalerie, idUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
     const galerie = yield getGalerieById(idGalerie);
     if (!galerie) {
-        throw new Error("Evenement galerie introuvable.");
+        throw new Error("Événement galerie introuvable.");
     }
     if (typeof idUtilisateur === "number" && Number(galerie.idUtilisateur) !== Number(idUtilisateur)) {
-        throw new Error("Telechargement non autorise pour cet evenement.");
+        throw new Error("Téléchargement non autorisé pour cet événement.");
     }
     const eventDir = ensureSafeGalleryPath((0, functions_1.getGalerieEventDirectory)(galerie.dossierGalerie));
     const zip = new AdmZip();
@@ -243,7 +243,7 @@ const supprimerGalerie = (idGalerie, idUtilisateur) => __awaiter(void 0, void 0,
         return false;
     }
     if (typeof idUtilisateur === "number" && Number(galerie.idUtilisateur) !== Number(idUtilisateur)) {
-        throw new Error("Suppression non autorisee pour cet evenement.");
+        throw new Error("Suppression non autorisée pour cet événement.");
     }
     const eventDir = ensureSafeGalleryPath((0, functions_1.getGalerieEventDirectory)(galerie.dossierGalerie));
     if (fs_1.default.existsSync(eventDir)) {

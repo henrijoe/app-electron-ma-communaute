@@ -5,7 +5,7 @@ const projectRoot = path.join(__dirname, "..");
 const serverRoot = path.join(projectRoot, "..", "server");
 const backendTargetRoot = path.join(__dirname, "backend");
 
-// Supprime un dossier s'il existe deja pour repartir d'un backend propre.
+// Supprime un dossier s'il existe déjà pour repartir d'un backend propre.
 function cleanDirectory(targetPath) {
   if (fs.existsSync(targetPath)) {
     fs.rmSync(targetPath, { recursive: true, force: true });
@@ -31,7 +31,7 @@ function copyFileIfExists(sourcePath, destinationPath) {
   fs.copyFileSync(sourcePath, destinationPath);
 }
 
-// Prepare le backend qui sera embarque dans les ressources Electron.
+// Prépare le backend qui sera embarque dans les ressources Electron.
 function prepareBackendBundle() {
   const serverDistPath = path.join(serverRoot, "dist");
   const serverTemplatesPath = path.join(serverRoot, "templates");
@@ -48,11 +48,11 @@ function prepareBackendBundle() {
   cleanDirectory(backendTargetRoot);
   fs.mkdirSync(backendTargetRoot, { recursive: true });
 
-  // On recopie le build serveur complet pour le lancer depuis l'executable client.
+  // On recopie le build serveur complet pour le lancer depuis l'exécutable client.
   copyDirectoryIfExists(serverDistPath, path.join(backendTargetRoot, "dist"));
 
   // On recopie aussi les dependances Node du serveur pour que le backend JS
-  // embarque puisse resoudre ses modules apres installation.
+  // embarque puisse resoudre ses modules après installation.
   copyDirectoryIfExists(serverNodeModulesPath, path.join(backendTargetRoot, "node_modules"));
 
   // Les templates SQL sont indispensables pour l'initialisation SQLite locale.
@@ -63,10 +63,10 @@ function prepareBackendBundle() {
   copyDirectoryIfExists(serverPublicPath, path.join(backendTargetRoot, "public"));
   copyFileIfExists(serverPackageJsonPath, path.join(backendTargetRoot, "package.json"));
 
-  // On garde aussi une copie du .env si present pour faciliter les reglages desktop.
+  // On garde aussi une copie du .env si present pour faciliter les réglages desktop.
   copyFileIfExists(serverEnvPath, path.join(backendTargetRoot, ".env"));
 
-  console.log("[desktop] Backend prepare dans", backendTargetRoot);
+  console.log("[desktop] Backend préparé dans", backendTargetRoot);
 }
 
 prepareBackendBundle();

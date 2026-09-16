@@ -1,6 +1,6 @@
 import type { IMembre } from 'src/store/membreSlice';
 
-export const DUPLICATE_MEMBER_MESSAGE = 'Ce membre a deja ete enregistre.';
+export const DUPLICATE_MEMBER_MESSAGE = 'Ce membre a déjà été enregistré.';
 
 export const normalizeMemberPhone = (value: unknown): string =>
   String(value ?? '').replace(/\D/g, '');

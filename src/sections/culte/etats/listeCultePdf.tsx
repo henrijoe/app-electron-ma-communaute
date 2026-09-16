@@ -18,10 +18,10 @@ import { getEcodimLabel, formatDateShort, getTypeCulteLabel } from '../utils';
 import type { IReduxState } from '../../../store/store';
 
 const formatCurrency = (amount: string) => {
-  // On convertit les chaines numeriques pour garder un affichage monetaire stable.
+  // On convertit les chaînes numériques pour garder un affichage monetaire stable.
   const parsedAmount = Number(amount || 0);
 
-  // Si la conversion echoue, on garde une valeur par defaut lisible pour l'impression.
+  // Si la conversion échoue, on garde une valeur par défaut lisible pour l'impression.
   if (Number.isNaN(parsedAmount)) {
     return '0 FCFA';
   }
@@ -35,7 +35,7 @@ const getParticipantCount = (culte: any) => {
   const hommes = Number(culte.nombreHommeCulte || 0);
   const femmes = Number(culte.nombreFemmeCulte || 0);
 
-  // En cas de valeur incoherente, on retombe sur zero sans casser l'etat imprimable.
+  // En cas de valeur incohérente, on retombe sur zéro sans casser l'état imprimable.
   return (Number.isNaN(hommes) ? 0 : hommes) + (Number.isNaN(femmes) ? 0 : femmes);
 };
 
@@ -43,7 +43,7 @@ export const ListeDesCultes = () => {
   const listCulte = useSelector((state: IReduxState) => state.culte.listCulte);
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
 
-  // On trie du plus recent au plus ancien pour obtenir une lecture chronologique naturelle.
+  // On trie du plus récent au plus ancien pour obtenir une lecture chronologique naturelle.
   const sortedCultes = [...(listCulte || [])].sort((a, b) => {
     const dateA = new Date(a.dateCulte).getTime();
     const dateB = new Date(b.dateCulte).getTime();
@@ -65,8 +65,8 @@ export const ListeDesCultes = () => {
               <TableCell sx={{ width: 110 }}>Date</TableCell>
               <TableCell sx={{ width: 160 }}>Type</TableCell>
               <TableCell>Dirigeant</TableCell>
-              <TableCell>Predicateur</TableCell>
-              <TableCell>Theme / passage</TableCell>
+              <TableCell>Prédicateur</TableCell>
+              <TableCell>Thème / passage</TableCell>
               <TableCell align="center" sx={{ width: 110 }}>
                 Participants
               </TableCell>
@@ -96,7 +96,7 @@ export const ListeDesCultes = () => {
 
                 <TableCell>
                   <Chip
-                    label={getTypeCulteLabel(item.typeCulte) || 'Non specifie'}
+                    label={getTypeCulteLabel(item.typeCulte) || 'Non spécifié'}
                     size="small"
                     color="primary"
                     variant="outlined"
@@ -105,20 +105,20 @@ export const ListeDesCultes = () => {
                 </TableCell>
 
                 <TableCell>
-                  <Typography variant="body2">{item.dirigeant || 'Non specifie'}</Typography>
+                  <Typography variant="body2">{item.dirigeant || 'Non spécifié'}</Typography>
                 </TableCell>
 
                 <TableCell>
-                  <Typography variant="body2">{item.predication || 'Non specifie'}</Typography>
+                  <Typography variant="body2">{item.predication || 'Non spécifié'}</Typography>
                 </TableCell>
 
                 <TableCell>
                   <Box>
                     <Typography variant="body2" fontWeight={600}>
-                      {item.themePredication || 'Theme non specifie'}
+                      {item.themePredication || 'Thème non spécifié'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {item.passageBiblique || 'Passage non specifie'}
+                      {item.passageBiblique || 'Passage non spécifié'}
                     </Typography>
                   </Box>
                 </TableCell>
