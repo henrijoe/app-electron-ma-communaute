@@ -27,6 +27,16 @@ export const GaleriePage = lazy(() => import('src/pages/galerie'));
 export const AgendaPage = lazy(() => import('src/pages/agenda'));
 export const ComptabilitePage = lazy(() => import('src/pages/comptabilite'));
 export const FamilleJeunessePage = lazy(() => import('src/pages/famille-jeunesse'));
+export const EcodimPage = lazy(() => import('src/pages/ecodim'));
+export const EcodimEnfantDetail = lazy(
+  () => import('src/sections/ecodim/view/enfant-detail/enfant-detail')
+);
+export const EcodimClasseDetail = lazy(
+  () => import('src/sections/ecodim/view/classe-detail/classe-detail')
+);
+export const EcodimMoniteurDetail = lazy(
+  () => import('src/sections/ecodim/view/moniteur-detail/moniteur-detail')
+);
 
 export const CultePage = lazy(() => import('src/pages/culte'));
 export const CulteDetail = lazy(() => import('src/sections/culte/view/culte-detail/culte-detail'));
@@ -35,6 +45,7 @@ export const CulteEdit = lazy(() => import('src/sections/culte/view/culte-edit/c
 export const UserPage = lazy(() => import('src/pages/user'));
 export const UserImportPage = lazy(() => import('src/pages/user-import'));
 export const MemberRegistrationPublicPage = lazy(() => import('src/pages/member-registration-public'));
+export const EnfantRegistrationPublicPage = lazy(() => import('src/pages/enfant-registration-public'));
 export const UserDetail = lazy(() => import('src/sections/user/view/user-detail/user-detail'));
 export const UserEdit = lazy(() => import('src/sections/user/view/user-edit/user-edit'));
 
@@ -103,6 +114,17 @@ export function Router() {
       ),
     },
     {
+      // Inscription d'un enfant a l'ecole du dimanche, depuis le QR code affiche
+      // en salle. Publique au meme titre que celle des membres : elle est hors
+      // du garde de session, sinon un parent serait renvoye vers la connexion.
+      path: 'inscription-enfant',
+      element: (
+        <Suspense fallback={renderFallback}>
+          <EnfantRegistrationPublicPage />
+        </Suspense>
+      ),
+    },
+    {
       element: mustWaitDesktopSecurity ? renderFallback : mustShowDesktopLocked ? <Navigate to="/desktop-locked" replace /> : isLoggedIn ? (
         <DashboardLayout>
           <Suspense fallback={renderFallback}>
@@ -120,6 +142,20 @@ export function Router() {
         { path: 'cellule', element: <GuardedPage permission="cellule" element={<CellulePage />} /> },
         { path: 'groupe', element: <GuardedPage permission="groupe" element={<GroupePage />} /> },
         { path: 'famille-jeunesse', element: <GuardedPage permission="familleJeunesse" element={<FamilleJeunessePage />} /> },
+        { path: 'ecodim', element: <GuardedPage permission="ecodim" element={<EcodimPage />} /> },
+        {
+          // Fiche d'un enfant : une adresse propre, partageable et imprimable.
+          path: 'ecodim/enfant/:id',
+          element: <GuardedPage permission="ecodim" element={<EcodimEnfantDetail />} />,
+        },
+        {
+          path: 'ecodim/classe/:id',
+          element: <GuardedPage permission="ecodim" element={<EcodimClasseDetail />} />,
+        },
+        {
+          path: 'ecodim/moniteur/:id',
+          element: <GuardedPage permission="ecodim" element={<EcodimMoniteurDetail />} />,
+        },
         { path: 'cas-sociaux', element: <GuardedPage permission="social" element={<SocialPage />} /> },
         { path: 'pastoral', element: <GuardedPage permission="social" element={<PastoralPage />} /> },
         { path: 'galerie', element: <GuardedPage permission="galerie" element={<GaleriePage />} /> },
