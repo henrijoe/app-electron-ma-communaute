@@ -18,17 +18,37 @@ const MuiBackdrop: Components<Theme>['MuiBackdrop'] = {
 
 const MuiButton: Components<Theme>['MuiButton'] = {
   defaultProps: {
- disableElevation: true,
-  }, styleOverrides: {
- containedInherit: ({ theme }) => ({
- color: theme.vars.palette.common.white,
- backgroundColor: theme.vars.palette.grey[800],
- '&:hover': {
- color: theme.vars.palette.common.white,
- backgroundColor: theme.vars.palette.grey[800],
+    disableElevation: true,
+  },
+  styleOverrides: {
+    /**
+     * Les boutons pleins en `color="inherit"` suivent la couleur de
+     * l'application.
+     *
+     * Ils étaient figés sur un gris sombre : changer la couleur de
+     * l'application laissait donc inchangés les boutons les plus visibles —
+     * « Ajouter membre », « Nouvelle écriture » et une quarantaine d'autres.
+     *
+     * Le texte reprend `contrastText`, calculé par contraste mesuré sur la
+     * teinte choisie : il reste lisible aussi bien sur un bleu nuit que sur un
+     * orange clair.
+     */
+    containedInherit: ({ theme }) => ({
+      color: theme.vars.palette.primary.contrastText,
+      backgroundColor: theme.vars.palette.primary.main,
+      '&:hover': {
+        backgroundColor: theme.vars.palette.primary.dark,
       },
-    }), sizeLarge: {
- minHeight: 48,
+    }),
+    outlinedInherit: ({ theme }) => ({
+      color: theme.vars.palette.primary.main,
+      borderColor: theme.vars.palette.primary.main,
+    }),
+    textInherit: ({ theme }) => ({
+      color: theme.vars.palette.primary.main,
+    }),
+    sizeLarge: {
+      minHeight: 48,
     },
   },
 };
@@ -157,6 +177,48 @@ const MuiRadio: Components<Theme>['MuiRadio'] = {
 };
 
 // ----------------------------------------------------------------------
+// Ouverture des listes déroulantes.
+//
+// Par défaut, un menu MUI se retourne vers le haut quand la place manque en
+// dessous, et un Select s'ouvre par-dessus le champ, l'option choisie alignée
+// sur lui. Dans une boîte de dialogue, la liste recouvre alors les champs
+// au-dessus et on ne voit plus ce qu'on est en train de remplir.
+//
+// On impose donc une ouverture vers le bas pour les deux formes de liste de choix,
+// `Select` et `Autocomplete`. Les menus d'actions — les « … » des lignes, le menu
+// Imprimer — gardent leur ancrage : ce ne sont pas des listes de choix, et les
+// déplacer n'avait pas été demandé.
+
+/** Le menu se place sous le champ, sans se retourner. */
+const ancrageVersLeBas = {
+  anchorOrigin: { vertical: 'bottom', horizontal: 'left' } as const,
+  transformOrigin: { vertical: 'top', horizontal: 'left' } as const,
+};
+
+const MuiSelect: Components<Theme>['MuiSelect'] = {
+  defaultProps: {
+    MenuProps: ancrageVersLeBas,
+  },
+};
+
+const MuiAutocomplete: Components<Theme>['MuiAutocomplete'] = {
+  defaultProps: {
+    slotProps: {
+      popper: {
+        placement: 'bottom-start',
+        modifiers: [
+          // `flip` est ce qui retourne la liste vers le haut : on le coupe.
+          { name: 'flip', enabled: false },
+          // `preventOverflow` reste actif, mais sans décaler verticalement :
+          // sans lui la liste sortirait de l'écran sur les petits écrans.
+          { name: 'preventOverflow', options: { altAxis: false } },
+        ],
+      },
+    },
+  },
+};
+
+// ----------------------------------------------------------------------
 
 export const components = {
   MuiCard,
@@ -164,11 +226,13 @@ export const components = {
   MuiPaper,
   MuiRadio,
   MuiButton,
+  MuiSelect,
   MuiBackdrop,
   MuiMenuItem,
   MuiCheckbox,
   MuiTableCell,
   MuiCardHeader,
+  MuiAutocomplete,
   MuiOutlinedInput,
   MuiFormControlLabel,
 };

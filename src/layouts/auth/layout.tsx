@@ -24,7 +24,7 @@ export type AuthLayoutProps = {
 export function AuthLayout({ sx, children, header }: AuthLayoutProps) {
   const layoutQuery: Breakpoint = 'md';
   const location = useLocation();
-  const logoUrl = resolveStaticAssetUrl('/assets/images/logoCom1.png');
+  const logoUrl = resolveStaticAssetUrl('/ma-communaute-logo/svg/ma-communaute-icone-app-carre.svg');
   const isRegisterPage = location.pathname === '/sign-up';
 
   const heroContent = useMemo(

@@ -10,6 +10,7 @@ import {
   ApartmentRounded,
   DashboardRounded,
   Diversity1Rounded,
+  SchoolRounded,
   Diversity3Rounded,
   PhotoLibraryRounded,
   WarningAmberRounded,
@@ -69,6 +70,12 @@ export const navData: DashboardNavItem[] = [
     path: '/famille-jeunesse',
     icon: <Diversity1Rounded />,
     permissionKey: 'familleJeunesse',
+  },
+  {
+    title: 'Ecodim',
+    path: '/ecodim',
+    icon: <SchoolRounded />,
+    permissionKey: 'ecodim',
   },
   {
     title: 'Cas sociaux',

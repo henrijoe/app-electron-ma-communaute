@@ -14,6 +14,7 @@ import { DarkModeRounded, LightModeRounded } from '@mui/icons-material';
 
 import { Iconify } from 'src/components/iconify';
 import { setThemeMode } from 'src/store/appSlice';
+import { AccentPopover } from 'src/layouts/components/accent-popover';
 import type { IReduxState } from 'src/store/store';
 
 import { Main } from './main';
@@ -97,6 +98,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
             rightArea: (
               <Box gap={1} display="flex" alignItems="center">
                 {/* <NotificationsPopover data={_notifications.slice(0, 4) as any} /> */}
+                <AccentPopover />
                 <IconButton
                   color="inherit"
                   onClick={() => dispatch(setThemeMode(themeMode === 'dark' ? 'light' : 'dark'))}
@@ -135,7 +137,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
         '--layout-nav-vertical-width': navCollapsed ? '96px' : '300px',
         '--layout-dashboard-content-pt': theme.spacing(1),
         '--layout-dashboard-content-pb': theme.spacing(8),
-        '--layout-dashboard-content-px': theme.spacing(5),
+        '--layout-dashboard-content-px': theme.spacing(3),
       }}
       sx={{
         [`& .${layoutClasses.hasSidebar}`]: {

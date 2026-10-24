@@ -3,12 +3,35 @@ import type { Theme } from '@mui/material/styles';
 import { experimental_extendTheme as extendTheme } from '@mui/material/styles';
 
 import { shadows, typography, components, colorSchemes, customShadows } from './core';
+import { createPaletteChannel } from './styles';
+import { construireGamme, COULEUR_PAR_DEFAUT } from './accents';
 
 // ----------------------------------------------------------------------
 
-export function createTheme(): Theme {
+/**
+ * Remplace la couleur « primary » des deux schémas par l'accent choisi.
+ *
+ * Les schémas clair et sombre partagent la même gamme d'accent : ce sont les
+ * fonds et les textes qui changent entre les deux, pas la couleur de marque.
+ */
+const appliquerAccent = (couleur: string) => {
+  const primary = createPaletteChannel(construireGamme(couleur));
+
+  return {
+    light: {
+      ...colorSchemes.light,
+      palette: { ...colorSchemes.light?.palette, primary },
+    },
+    dark: {
+      ...colorSchemes.dark,
+      palette: { ...colorSchemes.dark?.palette, primary },
+    },
+  };
+};
+
+export function createTheme(couleurAccent: string = COULEUR_PAR_DEFAUT): Theme {
   const initialTheme = {
-    colorSchemes, shadows: shadows(),
+    colorSchemes: appliquerAccent(couleurAccent), shadows: shadows(),
  customShadows: customShadows(),
  shape: { borderRadius: 8 },
     components,

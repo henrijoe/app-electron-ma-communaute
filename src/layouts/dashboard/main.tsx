@@ -43,7 +43,11 @@ export function DashboardContent({
   sx,
   children,
   disablePadding,
-  maxWidth = 'xl',
+  // Pleine largeur par defaut. Le plafond 'xl' (1536 px) laissait, sur un ecran de
+  // bureau, de larges bandes vides de chaque cote alors que les tableaux de cette
+  // application ont beaucoup de colonnes. Une page qui a besoin d'une largeur de
+  // lecture limitee la demande explicitement.
+  maxWidth = false,
   ...other
 }: DashboardContentProps) {
   const theme = useTheme();

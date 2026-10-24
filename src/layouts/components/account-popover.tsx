@@ -18,7 +18,7 @@ import { useRouter, usePathname } from 'src/routes/hooks';
 
 import { _myAccount } from 'src/_mock';
 import { setUserLoggedIn, setUserConnected } from 'src/store/appSlice';
-import { utilisateur, setConnecter, setUtilisateurData } from 'src/store/userSlice';
+import { utilisateur, setConnecter, setToken, setUtilisateurData } from 'src/store/userSlice';
 
 export type AccountPopoverProps = IconButtonProps & {
   data?: {
@@ -75,6 +75,8 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
 
   const handleLogout = useCallback(() => {
     handleClosePopover();
+    // Le jeton part avec la session : sans cela il resterait valide dans le stockage.
+    dispatch(setToken(''));
     dispatch(setConnecter(false));
     dispatch(setUtilisateurData(utilisateur));
     dispatch(setUserConnected({}));
