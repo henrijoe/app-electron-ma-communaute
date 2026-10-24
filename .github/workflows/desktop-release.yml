@@ -144,8 +144,13 @@ jobs:
             echo "::notice::Le dossier ../server n'existe pas dans ce checkout. Le backend embarque deja present dans electron/backend sera utilise."
             test -f electron/backend/dist/app.js
             test -f electron/backend/package.json
-            npm --prefix electron/backend install --omit=dev
-            npm --prefix electron/backend prune --omit=dev
+            # On se place DANS le dossier plutot que d utiliser --prefix.
+            # Lance depuis la racine, npm installait le paquet racine lui-meme
+            # (nomme Ma-communaute) comme dependance du backend : le dossier
+            # obtenu contenait tout le depot, donc a nouveau lui-meme, et
+            # 7-Zip tournait en rond jusqu a depasser la longueur maximale
+            # des chemins Windows. Cinquante minutes, puis code 255.
+            (cd electron/backend && npm install --omit=dev && npm prune --omit=dev)
             rm -rf \
               electron/backend/node_modules/.cache \
               electron/backend/node_modules/@types \
@@ -153,7 +158,8 @@ jobs:
               electron/backend/node_modules/ts-node \
               electron/backend/node_modules/typescript \
               electron/backend/node_modules/nw \
-              electron/backend/node_modules/nwjs-builder-phoenix
+              electron/backend/node_modules/nwjs-builder-phoenix \
+              electron/backend/node_modules/Ma-communaute
             node -e "for (const pkg of ['express','sqlite3','socket.io','cors','bcrypt']) require.resolve(pkg, { paths: ['./electron/backend'] })"
           fi
 

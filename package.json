@@ -134,6 +134,7 @@
           "!node_modules/typescript/**",
           "!node_modules/nw/**",
           "!node_modules/nwjs-builder-phoenix/**",
+          "!node_modules/Ma-communaute/**",
           "!**/*.map",
           "!**/test/**",
           "!**/tests/**",
