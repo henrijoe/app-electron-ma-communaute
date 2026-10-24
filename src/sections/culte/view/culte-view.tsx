@@ -31,6 +31,7 @@ import { normalizeForSearch } from 'src/utils/text';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { AdvancedFilterMenu } from 'src/components/filters/advanced-filter-menu';
 import ConfirmDialog from 'src/components/alert/confirmDialog';
+import { formaterDate } from 'src/utils/format-date';
 
 import { TableNoData } from '../table-no-data';
 import { CulteTableRow } from '../culte-table-row';
@@ -642,7 +643,7 @@ export function CulteView() {
                         {typeCulteOptions.find((option) => String(option.value) === String(row.typeCulte))?.label || row.typeCulte || 'Culte'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
-                        {row.dateCulte || 'Date non renseignée'} - {row.dirigeant || 'Dirigeant non renseigné'}
+                        {formaterDate(row.dateCulte, 'Date non renseignée')} - {row.dirigeant || 'Dirigeant non renseigné'}
                       </Typography>
                     </Box>
                   </Stack>

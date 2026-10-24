@@ -31,10 +31,11 @@ import {
 } from 'src/utils/browser-link';
 
 import { setUserLoggedIn, setUserConnected } from 'src/store/appSlice';
-import { setConnecter, setUtilisateurData } from 'src/store/userSlice';
+import { setConnecter, setToken, setUtilisateurData } from 'src/store/userSlice';
 
 import { Iconify } from 'src/components/iconify';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+import { SelectRecherche } from 'src/components/select-recherche';
 
 import {
   authLinkSx,
@@ -296,6 +297,8 @@ export function SignInView() {
         );
       }
 
+      // Le jeton doit être posé avant toute autre requête : sans lui, l'API répond 401.
+      dispatch(setToken(String(utilisateurConnecte?.token || '')));
       dispatch(setUtilisateurData(utilisateurConnecte));
       dispatch(setConnecter(true));
       dispatch(setUserConnected(utilisateurConnecte));
@@ -425,8 +428,7 @@ export function SignInView() {
         )}
 
         {usernameInputMode === 'select' && linkedAccountId > 0 ? (
-          <TextField
-            select
+          <SelectRecherche
             fullWidth
             name="nomUtilisateur"
             label="Utilisateur"
@@ -461,7 +463,7 @@ export function SignInView() {
                 </MenuItem>
               );
             })}
-          </TextField>
+          </SelectRecherche>
         ) : (
           <TextField
             fullWidth

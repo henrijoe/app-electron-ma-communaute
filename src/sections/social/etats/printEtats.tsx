@@ -16,6 +16,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 import {
   exportDesktopPdf,
   canUseDesktopPrint,
@@ -102,6 +103,12 @@ export function PrintEtatSociaux({ activeType, identity, rows, subtitle }: Print
     }),
     [activeType]
   );
+
+  // L'impression n'est pas proposée dans l'application installée : elle se fait
+  // depuis le navigateur. Les huit autres états imprimables se taisent déjà ici.
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   return (
     <>

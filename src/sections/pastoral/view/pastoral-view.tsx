@@ -10,6 +10,8 @@ import {
   HealingRounded,
   PersonAddAlt1Rounded,
   SearchRounded,
+  ViewListRounded,
+  ViewModuleRounded,
   VolunteerActivismRounded,
   WaterDropRounded,
 } from '@mui/icons-material';
@@ -27,8 +29,16 @@ import {
   MenuItem,
   Stack,
   Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Tabs,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
   Typography,
   alpha,
@@ -43,6 +53,7 @@ import { apiClient } from 'src/utils/apiClient';
 import { getScopeUserIdFromUser } from 'src/utils/access-control';
 import { normalizeText } from 'src/utils/text';
 import type { IMaladieDraft } from 'src/sections/social/types';
+import { SelectRecherche } from 'src/components/select-recherche';
 import {
   type DateRange,
   type PeriodMode,
@@ -50,6 +61,8 @@ import {
   formatPeriodLabel,
   resolvePeriodRange,
 } from 'src/utils/period-filter';
+
+import { PastoralComptabilite } from './pastoral-comptabilite';
 
 import { PrintEtatPastoral } from '../etats/printEtats';
 import type { PastoralPrintRow } from '../etats/pastoral-print-document';
@@ -63,7 +76,8 @@ type PastoralFilter =
   | 'visite'
   | 'bapteme'
   | 'maladie'
-  | 'deces';
+  | 'deces'
+  | 'comptabilite';
 
 // Couleurs MUI utilisées pour les Chip/SummaryCard selon la catégorie de l'élément pastoral.
 type PastoralStatusColor = 'default' | 'error' | 'info' | 'primary' | 'success' | 'warning';
@@ -83,7 +97,7 @@ const periodOptions: Array<{ value: PeriodMode; label: string }> = [
 // personne. Une même personne peut cumuler plusieurs situations : elles sont regroupées
 // dans une seule PastoralItem plutôt que de générer une carte par situation.
 type PastoralSituation = {
-  category: Exclude<PastoralFilter, 'all' | 'priority'>;
+  category: Exclude<PastoralFilter, 'all' | 'priority' | 'comptabilite'>;
   categoryLabel: string;
   color: PastoralStatusColor;
   priority: 'haute' | 'normale' | 'suivi';
@@ -167,6 +181,7 @@ const filterOptions: Array<{ value: PastoralFilter; label: string }> = [
   { value: 'bapteme', label: 'Pas encore baptisés' },
   { value: 'maladie', label: 'Malades' },
   { value: 'deces', label: 'Décès' },
+  { value: 'comptabilite', label: 'Comptabilité' },
 ];
 
 // Récupère l'identifiant de l'utilisateur connecté (ou de la portée qui lui est assignée)
@@ -489,11 +504,157 @@ function PastoralItemCard({ item, onOpen }: { item: PastoralItem; onOpen: (item:
   );
 }
 
+/**
+ * Les mêmes éléments, en liste.
+ *
+ * Les cartes donnent beaucoup d'air à chaque personne, mais une liste de
+ * cinquante suivis devient interminable à parcourir. La liste montre l'essentiel
+ * — qui, quoi, depuis quand — et laisse le détail à la fiche.
+ */
+function PastoralItemsTable({
+  items,
+  onOpen,
+}: {
+  items: PastoralItem[];
+  onOpen: (item: PastoralItem) => void;
+}) {
+  return (
+    <TableContainer>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Personne</TableCell>
+            <TableCell>Situations</TableCell>
+            <TableCell>Depuis</TableCell>
+            <TableCell>Contact</TableCell>
+            <TableCell>Résidence</TableCell>
+            <TableCell align="right">Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {items.map((item) => {
+            // La date la plus ancienne résume l'ancienneté du suivi : c'est elle
+            // qui dit si la personne attend depuis deux semaines ou deux ans.
+            const dates = item.situations
+              .map((situation) => situation.date)
+              .filter(Boolean) as string[];
+            const plusAncienne = dates.sort()[0];
+
+            return (
+              <TableRow
+                key={item.id}
+                hover
+                onDoubleClick={() => onOpen(item)}
+                sx={{ cursor: 'pointer' }}
+              >
+                <TableCell>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="subtitle2">{item.name}</Typography>
+                    {item.priority === 'haute' && (
+                      <Chip size="small" color="warning" label="Priorité" />
+                    )}
+                  </Stack>
+                </TableCell>
+
+                <TableCell>
+                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                    {item.situations.map((situation, index) => (
+                      <Chip
+                        key={`${item.id}-ligne-${index}`}
+                        size="small"
+                        color={situation.color}
+                        label={situation.categoryLabel}
+                      />
+                    ))}
+                  </Stack>
+                </TableCell>
+
+                <TableCell>
+                  {plusAncienne ? (
+                    <Typography variant="body2" color="text.secondary">
+                      {formatDate(plusAncienne)}
+                      <br />
+                      {formatRelativeAge(plusAncienne)}
+                    </Typography>
+                  ) : (
+                    '—'
+                  )}
+                </TableCell>
+
+                <TableCell>{item.contact || '—'}</TableCell>
+                <TableCell>{item.residence || '—'}</TableCell>
+
+                <TableCell align="right" onClick={(event) => event.stopPropagation()}>
+                  <Button size="small" endIcon={<ArrowForwardRounded />} onClick={() => onOpen(item)}>
+                    Ouvrir
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+/**
+ * Réunit en une seule ligne les éléments qui concernent la même personne.
+ *
+ * Les trois sources — membres, maladies, décès — sont construites séparément, si
+ * bien qu'un membre malade produisait deux lignes : une pour sa maladie, une pour
+ * ses visites et baptêmes en attente. On croyait voir deux personnes.
+ *
+ * Le regroupement se fait sur l'identifiant du membre. Une maladie ou un décès
+ * sans membre rattaché reste une ligne à part : rien ne permettrait de le relier
+ * à quelqu'un, et le rapprocher par le nom confondrait deux homonymes.
+ */
+const regrouperParPersonne = (items: PastoralItem[]): PastoralItem[] => {
+  const parMembre = new Map<number, PastoralItem>();
+  const resultat: PastoralItem[] = [];
+
+  items.forEach((item) => {
+    const idMembre = Number(item.memberId) || 0;
+
+    if (!idMembre) {
+      resultat.push(item);
+      return;
+    }
+
+    const existant = parMembre.get(idMembre);
+
+    if (!existant) {
+      parMembre.set(idMembre, { ...item });
+      resultat.push(parMembre.get(idMembre) as PastoralItem);
+      return;
+    }
+
+    existant.situations = [...existant.situations, ...item.situations];
+    existant.priority = worstPriority(existant.situations);
+    // Le contact et la résidence viennent de la fiche membre : on garde la
+    // première valeur connue, les sources sociales ne les portent pas toujours.
+    existant.contact = existant.contact || item.contact;
+    existant.residence = existant.residence || item.residence;
+
+    // « Ouvrir » mène à la fiche membre dès qu'elle existe : elle contient tout.
+    // Les cas sociaux sans membre gardent leur source et renvoient vers leur onglet.
+    if (item.source === 'membre') {
+      existant.source = 'membre';
+      existant.name = item.name;
+    }
+  });
+
+  return resultat;
+};
+
 // Page principale "Suivi pastoral" : agrège membres, maladies et décès déjà saisis
 // ailleurs dans l'application pour en tirer une liste d'actions pastorales à mener
 // (visites, baptêmes manquants, accompagnement de deuil/maladie, nouveaux convertis).
 export function PastoralView() {
   const navigate = useNavigate();
+  // La liste est le mode par défaut : les cartes prennent beaucoup de place dès
+  // qu'il y a plus d'une poignée de suivis.
+  const [affichage, setAffichage] = useState<'liste' | 'cartes'>('liste');
   // Portée de l'utilisateur connecté : détermine quelles données pastorales charger.
   const currentUserId = useSelector((state: IReduxState) => getCurrentUserId(state));
 
@@ -569,11 +730,12 @@ export function PastoralView() {
   // Fusionne les trois sources en une seule liste de cartes pastorales.
   // Recalculé uniquement quand une des sources de données change.
   const pastoralItems = useMemo(
-    () => [
-      ...buildMaladieItems(maladies, membres),
-      ...buildMemberItems(membres),
-      ...buildDecesItems(deces, membres),
-    ],
+    () =>
+      regrouperParPersonne([
+        ...buildMaladieItems(maladies, membres),
+        ...buildMemberItems(membres),
+        ...buildDecesItems(deces, membres),
+      ]),
     [deces, maladies, membres]
   );
 
@@ -657,7 +819,11 @@ export function PastoralView() {
   }, [periodItems]);
 
   // Navigue vers la fiche membre si l'élément est rattaché à un membre,
-  // sinon vers le module "cas sociaux" (cas maladie/décès sans membre lié).
+  // sinon vers le module « cas sociaux ».
+  //
+  // L'onglet visé est transmis dans l'adresse : sans lui, ouvrir un cas de
+  // maladie atterrissait sur « Mariages », et il fallait retrouver la ligne à la
+  // main.
   const handleOpenItem = useCallback(
     (item: PastoralItem) => {
       if (item.source === 'membre' && item.memberId) {
@@ -665,7 +831,7 @@ export function PastoralView() {
         return;
       }
 
-      navigate('/cas-sociaux');
+      navigate(`/cas-sociaux?type=${item.source}`);
     },
     [navigate]
   );
@@ -700,7 +866,7 @@ export function PastoralView() {
   const printSubtitle = `Période : ${periodLabel} — Filtre : ${activeFilterLabel} — ${filteredItems.length} élément(s)`;
 
   return (
-    <DashboardContent maxWidth="xl">
+    <DashboardContent>
       <Stack spacing={3}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
@@ -779,12 +945,23 @@ export function PastoralView() {
               ))}
             </Tabs>
 
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            {/* Recherche, priorité et période sur une seule ligne : la recherche
+                prenait toute la largeur et rejetait la période à la ligne suivante.
+
+                Le filtre de période est celui qui rend tout le tableau de bord
+                dynamique — compteurs et liste —, au lieu d'afficher tout
+                l'historique en permanence. */}
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'stretch', md: 'center' }}
+              flexWrap="wrap"
+              useFlexGap
+            >
               <TextField
-                fullWidth
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Rechercher un nom, contact, résidence ou observation..."
+                placeholder="Rechercher un nom, contact, résidence..."
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -792,27 +969,40 @@ export function PastoralView() {
                     </InputAdornment>
                   ),
                 }}
+                sx={{ flexGrow: 1, minWidth: { xs: 1, md: 260 } }}
               />
 
-              <TextField
-                select
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={affichage}
+                onChange={(_, valeur) => valeur && setAffichage(valeur)}
+              >
+                <ToggleButton value="liste">
+                  <Tooltip title="Affichage en liste">
+                    <ViewListRounded fontSize="small" />
+                  </Tooltip>
+                </ToggleButton>
+                <ToggleButton value="cartes">
+                  <Tooltip title="Affichage en cartes">
+                    <ViewModuleRounded fontSize="small" />
+                  </Tooltip>
+                </ToggleButton>
+              </ToggleButtonGroup>
+
+              <SelectRecherche
                 label="Priorité"
                 value={priority}
                 onChange={(event) => setPriority(event.target.value)}
-                sx={{ minWidth: { xs: 1, md: 220 } }}
+                sx={{ minWidth: { xs: 1, md: 200 } }}
               >
                 <MenuItem value="all">Toutes les priorités</MenuItem>
                 <MenuItem value="haute">Priorité haute</MenuItem>
                 <MenuItem value="normale">Suivi normal</MenuItem>
                 <MenuItem value="suivi">À surveiller</MenuItem>
-              </TextField>
-            </Stack>
+              </SelectRecherche>
 
-            {/* Filtre de période : c'est lui qui rend tout le tableau de bord dynamique
-                (compteurs + liste), au lieu d'afficher tout l'historique en permanence. */}
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
-              <TextField
-                select
+              <SelectRecherche
                 label="Période"
                 value={periodMode}
                 onChange={(event) => setPeriodMode(event.target.value as PeriodMode)}
@@ -830,7 +1020,7 @@ export function PastoralView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
 
               {periodMode === 'month' && (
                 <TextField
@@ -886,13 +1076,27 @@ export function PastoralView() {
             {loading && <LinearProgress />}
 
 
-            <Grid container spacing={2}>
-              {filteredItems.map((item) => (
-                <Grid key={item.id} item xs={12} md={6} xl={4}>
-                  <PastoralItemCard item={item} onOpen={handleOpenItem} />
-                </Grid>
-              ))}
-            </Grid>
+            {filter === 'comptabilite' ? (
+              <PastoralComptabilite
+                idUtilisateur={currentUserId || 0}
+                range={periodRange}
+                periodLabel={periodLabel}
+              />
+            ) : (
+              <>
+                {affichage === 'cartes' ? (
+                  <Grid container spacing={2}>
+                    {filteredItems.map((item) => (
+                      <Grid key={item.id} item xs={12} md={6} xl={4}>
+                        <PastoralItemCard item={item} onOpen={handleOpenItem} />
+                      </Grid>
+                    ))}
+                  </Grid>
+                ) : (
+                  <PastoralItemsTable items={filteredItems} onOpen={handleOpenItem} />
+                )}
+              </>
+            )}
           </Stack>
         </Card>
 

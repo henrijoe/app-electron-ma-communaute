@@ -127,10 +127,10 @@ const primaryActionButtonSx = {
   px: 1.75,
   height: 42,
   borderRadius: 2,
-  bgcolor: 'grey.900',
-  color: 'common.white',
+  bgcolor: 'primary.main',
+  color: 'primary.contrastText',
   '&:hover': {
-    bgcolor: 'grey.800',
+    bgcolor: 'primary.dark',
   },
 };
 
@@ -653,9 +653,9 @@ export function AgendaView() {
   );
 
   return (
-    <DashboardContent maxWidth="xl">
+    <DashboardContent>
       <NotificationComponent />
-      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 330, sm: 560, lg: 1400 }, mx: 'auto' }}>
+      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 330, sm: 560, lg: 1 }, mx: 'auto' }}>
         <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
           <Box>
             <Typography variant="h3" sx={{ mb: 0.5 }}>Agenda</Typography>

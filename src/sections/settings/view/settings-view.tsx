@@ -75,7 +75,9 @@ import { buildLinkedBrowserSignInUrl } from 'src/utils/browser-link';
 import { sanitizeSensitiveData } from 'src/utils/sensitive-data';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 import { fDate } from 'src/utils/format-time';
+import { SelectRecherche } from 'src/components/select-recherche';
 
+import { AbonnementCard } from './abonnement-card';
 import { VersetProgrammeManager } from './verset-programme-manager';
 
 type ConnectionMode = 'local' | 'online';
@@ -121,6 +123,7 @@ type ProfileFormState = {
   nomTemple: string;
   nomEgliseCourt: string;
   lieuEglise: string;
+  regionEglise: string;
   nomUtilisateur: string;
   prenomUtilisateur: string;
   telephoneUtilisateur: string;
@@ -157,6 +160,7 @@ const emptyProfileForm: ProfileFormState = {
   nomTemple: '',
   nomEgliseCourt: '',
   lieuEglise: '',
+  regionEglise: '',
   nomUtilisateur: '',
   prenomUtilisateur: '',
   telephoneUtilisateur: '',
@@ -240,6 +244,7 @@ const buildSharedChurchProfileData = (
   nomTemple: source.nomTemple || '',
   nomEgliseCourt: source.nomEgliseCourt || '',
   lieuEglise: source.lieuEglise || '',
+  regionEglise: source.regionEglise || '',
   telephoneSecretariatEglise: source.telephoneSecretariatEglise || '',
   pasteurPrincipal: source.pasteurPrincipal || '',
   pasteurSecondaire: source.pasteurSecondaire || '',
@@ -577,6 +582,7 @@ export function SettingsView() {
       nomTemple: source?.nomTemple || '',
       nomEgliseCourt: source?.nomEgliseCourt || '',
       lieuEglise: source?.lieuEglise || '',
+      regionEglise: source?.regionEglise || '',
       nomUtilisateur: source?.nomUtilisateur || '',
       prenomUtilisateur: source?.prenomUtilisateur || '',
       telephoneUtilisateur: source?.telephoneUtilisateur || '',
@@ -1881,6 +1887,18 @@ export function SettingsView() {
                         handleChangeProfileField('lieuEglise', event.target.value)
                       }
                     />
+                    {/* Région ecclésiastique : elle figure en tête des fiches du
+                        département enfants, et appartient à l'église, pas à
+                        chaque enfant. */}
+                    <TextField
+                      fullWidth
+                      label="Région ecclésiastique"
+                      placeholder="Ex. : Région d'Abidjan Ouest 2"
+                      value={profileForm.regionEglise}
+                      onChange={(event) =>
+                        handleChangeProfileField('regionEglise', event.target.value)
+                      }
+                    />
                   </Stack>
 
                   <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
@@ -2041,8 +2059,7 @@ export function SettingsView() {
                 />
                 <CardContent>
                   <Stack spacing={2.5}>
-                    <TextField
-                      select
+                    <SelectRecherche
                       fullWidth
                       label="Mode d'affichage"
                       value={profileForm.modeVersetDashboard}
@@ -2057,7 +2074,7 @@ export function SettingsView() {
                       <MenuItem value="daily">Verset automatique du jour</MenuItem>
                       <MenuItem value="custom">Verset personnalisé (un seul)</MenuItem>
                       <MenuItem value="scheduled">Programme sur plusieurs mois</MenuItem>
-                    </TextField>
+                    </SelectRecherche>
 
                     {profileForm.modeVersetDashboard === 'daily' && (
                       <Alert severity="info">
@@ -2251,10 +2268,10 @@ export function SettingsView() {
                     </Stack>
 
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                      <TextField
-                        select
+                      <SelectRecherche
                         fullWidth
-                        label="Role"
+                        sx={{ flex: 1, minWidth: { xs: 1, md: 240 } }}
+                        label="Rôle"
                         value={secondaryUserForm.roleUtilisateur}
                         onChange={(event) =>
                           handleChangeSecondaryUserField('roleUtilisateur', event.target.value)
@@ -2265,11 +2282,11 @@ export function SettingsView() {
                             {option.label}
                           </MenuItem>
                         ))}
-                      </TextField>
+                      </SelectRecherche>
 
-                      <TextField
-                        select
+                      <SelectRecherche
                         fullWidth
+                        sx={{ flex: 1, minWidth: { xs: 1, md: 240 } }}
                         label="Statut"
                         value={String(secondaryUserForm.actifUtilisateur)}
                         onChange={(event) =>
@@ -2281,7 +2298,7 @@ export function SettingsView() {
                       >
                         <MenuItem value="1">Actif</MenuItem>
                         <MenuItem value="0">Bloque</MenuItem>
-                      </TextField>
+                      </SelectRecherche>
                     </Stack>
 
                     <Stack spacing={1}>
@@ -2468,8 +2485,7 @@ export function SettingsView() {
           <CardContent>
             <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3} alignItems="stretch">
               <Stack spacing={3} sx={{ flex: 1, minWidth: 0 }}>
-                <TextField
-                  select
+                <SelectRecherche
                   fullWidth
                   label="Mode de connexion"
                   value={connectionMode}
@@ -2478,7 +2494,7 @@ export function SettingsView() {
                 >
                   <MenuItem value="local">Local</MenuItem>
                   <MenuItem value="online">Online</MenuItem>
-                </TextField>
+                </SelectRecherche>
 
                 <TextField
                   fullWidth
@@ -2596,6 +2612,11 @@ export function SettingsView() {
             </Stack>
           </CardContent>
         </Card>
+
+        {/* L'abonnement règle l'accès au service en ligne, là où la licence desktop
+            règle celui d'un poste. La carte se masque d'elle-même quand il ne
+            s'applique pas. */}
+        <AbonnementCard showNotification={showNotification} />
 
         {isDesktopApp && (
           <Card>

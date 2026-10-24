@@ -9,6 +9,7 @@ export type ModulePermissionKey =
   | 'culte'
   | 'departement'
   | 'familleJeunesse'
+  | 'ecodim'
   | 'cellule'
   | 'groupe'
   | 'social'
@@ -27,6 +28,8 @@ export interface IAuthentificationState {
   utilisateurData: IUtilisateur
   dataUtilisateurFilter: IUtilisateur[]
   filterUtilisateur: IUtilisateur[]
+  /** Jeton d'accès délivré par l'API à la connexion, joint à chaque requête. */
+  token: string
 }
 
 export interface IAuthentification {
@@ -57,6 +60,8 @@ export interface IUtilisateur {
   nomTemple: string;
   nomEgliseCourt: string;
   lieuEglise: string;
+  /** Région ecclésiastique, en tête des fiches du département enfants. */
+  regionEglise: string;
   nomUtilisateur: string;
   prenomUtilisateur: string;
   telephoneUtilisateur: string;
@@ -95,6 +100,7 @@ export const utilisateur: IUtilisateur = {
   nomTemple: '',
   nomEgliseCourt: '',
   lieuEglise: '',
+  regionEglise: '',
   nomUtilisateur: '',
   prenomUtilisateur: '',
   telephoneUtilisateur: '',
@@ -131,6 +137,7 @@ const initialStates: IAuthentificationState = {
   utilisateurData: utilisateur,
   dataUtilisateurFilter: [],
   filterUtilisateur: [],
+  token: '',
 };
 
 export const userSlice = createSlice({
@@ -163,6 +170,10 @@ export const userSlice = createSlice({
     },
     setConnecter: (state, action) => {
       state.connecter = action.payload
+    },
+    // Jeton d'accès : posé à la connexion, vidé à la déconnexion ou sur un 401.
+    setToken: (state, action: PayloadAction<string>) => {
+      state.token = String(action.payload || '')
     },
     setUser: (state, action) => {
       state.user = sanitizeSensitiveData(action.payload)
@@ -199,6 +210,7 @@ export const {
   setUtilisateur,
   setUtilisateurData,
   setFilterUtilisateur,
+  setToken,
 } = userSlice.actions
 
 export default userSlice.reducer

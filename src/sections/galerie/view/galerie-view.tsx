@@ -62,6 +62,8 @@ import {
 } from 'src/store/galerieSlice';
 import { apiClient, buildGalerieDownloadUrl, buildGalerieMediaUrl } from 'src/utils/apiClient';
 import { canManageModule, isDesktopAppRuntime } from 'src/utils/access-control';
+import { SelectRecherche } from 'src/components/select-recherche';
+import { formaterDate } from 'src/utils/format-date';
 
 type EventFormState = {
   dateEvenement: string;
@@ -121,10 +123,10 @@ const primaryActionButtonSx = {
   px: 1.6,
   height: 40,
   borderRadius: 2,
-  bgcolor: 'grey.900',
-  color: 'common.white',
+  bgcolor: 'primary.main',
+  color: 'primary.contrastText',
   '&:hover': {
-    bgcolor: 'grey.800',
+    bgcolor: 'primary.dark',
   },
 };
 
@@ -628,7 +630,7 @@ export function GalerieView() {
   }, [autoPlay, galerieImages.length, openPreviewAtIndex, previewIndex, slideshowOpen]);
 
   return (
-    <DashboardContent maxWidth="xl">
+    <DashboardContent>
       <NotificationComponent />
 
       <Stack spacing={3}>
@@ -673,8 +675,7 @@ export function GalerieView() {
                     ),
                   }}
                 />
-                <TextField
-                  select
+                <SelectRecherche
                   label="Trier"
                   value={sortBy}
                   onChange={(event) => setSortBy(event.target.value as EventSortOption)}
@@ -685,9 +686,8 @@ export function GalerieView() {
                       {option.label}
                     </MenuItem>
                   ))}
-                </TextField>
-                <TextField
-                  select
+                </SelectRecherche>
+                <SelectRecherche
                   label="Type"
                   value={typeFilter}
                   onChange={(event) => setTypeFilter(event.target.value)}
@@ -699,7 +699,7 @@ export function GalerieView() {
                       {option}
                     </MenuItem>
                   ))}
-                </TextField>
+                </SelectRecherche>
                 <Chip color="primary" variant="outlined" icon={<PhotoLibraryRounded />} label={`${filteredEvents.length} dossier(s)`} />
               </Stack>
             </Card>
@@ -945,7 +945,7 @@ export function GalerieView() {
                       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 2 }}>
                         <Box sx={{ minWidth: 0 }}>
                           <Typography variant="subtitle2" noWrap>{image.legendeImage || image.nomFichier}</Typography>
-                          <Typography variant="caption" color="text.secondary" noWrap>{image.dateAjout || 'Ajoutée récemment'}</Typography>
+                          <Typography variant="caption" color="text.secondary" noWrap>{formaterDate(image.dateAjout, 'Ajoutée récemment')}</Typography>
                         </Box>
 
                         <Stack direction="row" spacing={0.5}>

@@ -25,6 +25,8 @@ import { Iconify } from 'src/components/iconify';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { apiClient } from 'src/utils/apiClient';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+import { SelectRecherche } from 'src/components/select-recherche';
+import { formaterDate } from 'src/utils/format-date';
 import {
   ICulte,
   setDataModifiesCulte,
@@ -222,7 +224,7 @@ export function CulteEditView() {
           Modifier le culte
         </Typography>
         <Typography variant="body1" color="text.secondary" paragraph>
-          Modifiez les informations du culte du {culte?.dateCulte} ({culte.typeCulte})
+          Modifiez les informations du culte du {formaterDate(culte?.dateCulte)} ({culte.typeCulte})
         </Typography>
 
         {/* Formulaire d'édition */}
@@ -230,9 +232,8 @@ export function CulteEditView() {
           <Grid container spacing={3}>
             {/* Informations principales */}
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Type de culte *"
                 name="typeCulte"
                 value={formData.typeCulte || ''}
@@ -244,7 +245,7 @@ export function CulteEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>

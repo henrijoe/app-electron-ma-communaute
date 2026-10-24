@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useSearchParams } from 'react-router-dom';
 import {
   AddRounded as AddRoundedIcon,
   CakeRounded as CakeRoundedIcon,
@@ -30,6 +31,7 @@ import {
   Tabs,
   Table,
   TableBody,
+  TablePagination,
   TableCell,
   TableHead,
   TableRow,
@@ -53,6 +55,7 @@ import type { INaissance } from 'src/store/naissanceSlice';
 import { apiClient } from 'src/utils/apiClient';
 import { canManageModule } from 'src/utils/access-control';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
+import { SelectRecherche } from 'src/components/select-recherche';
 import {
   type PeriodMode,
   isDateWithinRange,
@@ -343,7 +346,19 @@ export function SocialView() {
   const currentUserId = Number(userConnected?.idUtilisateur || utilisateurData?.idUtilisateur || 0);
   const canManageSocial = canManageModule(userConnected || utilisateurData, 'social');
 
-  const [activeType, setActiveType] = useState<SocialCaseType>('mariage');
+  // L'onglet peut être imposé par l'adresse : le suivi pastoral y envoie
+  // directement sur la bonne catégorie.
+  const [rechercheAdresse] = useSearchParams();
+  const typeDemande = rechercheAdresse.get('type');
+  const [activeType, setActiveType] = useState<SocialCaseType>(
+    typeDemande && typeDemande in socialConfig ? (typeDemande as SocialCaseType) : 'mariage'
+  );
+
+  useEffect(() => {
+    if (typeDemande && typeDemande in socialConfig) {
+      setActiveType(typeDemande as SocialCaseType);
+    }
+  }, [typeDemande]);
   const [searchTerm, setSearchTerm] = useState('');
   const [records, setRecords] = useState<SocialCaseState>(emptyStateByType);
 
@@ -505,6 +520,9 @@ export function SocialView() {
 
   const currentRows = periodFilteredRecords[activeType];
 
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
   const filteredRows = useMemo(() => {
     if (!searchTerm.trim()) return currentRows;
 
@@ -515,6 +533,19 @@ export function SocialView() {
       searchableFields.some((field) => normalizeText(row?.[field]).includes(normalizedSearch))
     );
   }, [currentConfig.columns, currentRows, searchTerm]);
+
+  /** Les lignes de la page courante. Le même découpage pour les quatre onglets. */
+  const paginatedRows = useMemo(
+    () => filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [filteredRows, page, rowsPerPage]
+  );
+
+  // Changer d'onglet, de recherche ou de période ramène en première page : rester
+  // en page 3 d'une liste qui n'en compte plus qu'une afficherait un tableau vide
+  // sans explication.
+  useEffect(() => {
+    setPage(0);
+  }, [activeType, searchTerm, periodMode, periodCustomStart, periodCustomEnd]);
 
   // Sous-titre repris dans le document imprimé/PDF, pour qu'il reste clair,
   // une fois détaché de l'écran, à quelle période et quel onglet il correspond.
@@ -707,8 +738,8 @@ export function SocialView() {
   };
 
   return (
-    <DashboardContent maxWidth="xl">
-      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 320, sm: 560, lg: 1400 }, mx: 'auto' }}>
+    <DashboardContent>
+      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 320, sm: 560, lg: 1 }, mx: 'auto' }}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
           justifyContent="space-between"
@@ -821,26 +852,12 @@ export function SocialView() {
           </Tabs>
 
           <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 2.5 } }}>
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              justifyContent="space-between"
-              spacing={2}
-              sx={{ mb: 3 }}
-            >
-              <TextField
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder={`Rechercher dans ${currentConfig.label.toLowerCase()}...`}
-                InputProps={{ startAdornment: <SearchRoundedIcon sx={{ color: 'text.disabled', mr: 1 }} /> }}
-                sx={{ minWidth: { xs: '100%', md: 360 } }}
-              />
+            {/* Recherche et période sur une seule ligne : empilées, elles laissaient
+                toute la largeur droite vide pour deux champs étroits.
 
-              <Chip color={currentConfig.color} label={`${filteredRows.length} resultat(s)`} />
-            </Stack>
-
-            {/* Filtre de période : restreint aussi bien les compteurs des cartes que
-                la liste et le PDF de cet onglet, pour ne pas toujours imprimer/afficher
-                tout l'historique. */}
+                Le filtre de période restreint aussi bien les compteurs des cartes
+                que la liste et le PDF de cet onglet, pour ne pas toujours
+                imprimer ou afficher tout l'historique. */}
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={2}
@@ -848,7 +865,14 @@ export function SocialView() {
               sx={{ mb: 3 }}
             >
               <TextField
-                select
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder={`Rechercher dans ${currentConfig.label.toLowerCase()}...`}
+                InputProps={{ startAdornment: <SearchRoundedIcon sx={{ color: 'text.disabled', mr: 1 }} /> }}
+                sx={{ flexGrow: 1, minWidth: { xs: '100%', md: 280 } }}
+              />
+
+              <SelectRecherche
                 label="Période"
                 value={periodMode}
                 onChange={(event) => setPeriodMode(event.target.value as PeriodMode)}
@@ -860,7 +884,7 @@ export function SocialView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
 
               {periodMode === 'custom' && (
                 <>
@@ -892,6 +916,8 @@ export function SocialView() {
                   label={periodLabel}
                 />
               )}
+
+              <Chip color={currentConfig.color} label={`${filteredRows.length} resultat(s)`} />
             </Stack>
 
             {filteredRows.length === 0 ? (
@@ -913,7 +939,7 @@ export function SocialView() {
               <>
               {isMobile && (
                 <Stack spacing={1.5} sx={{ maxWidth: 330, mx: 'auto' }}>
-                  {filteredRows.map((row: any) => (
+                  {paginatedRows.map((row: any) => (
                     <Card
                       key={`card-${activeType}-${getRowId(activeType, row)}`}
                       variant="outlined"
@@ -1026,7 +1052,7 @@ export function SocialView() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredRows.map((row: any) => (
+                    {paginatedRows.map((row: any) => (
                       <TableRow key={`${activeType}-${getRowId(activeType, row)}`} hover>
                         {currentConfig.columns.map((column) => (
                           <TableCell key={column.key}>
@@ -1105,6 +1131,23 @@ export function SocialView() {
                   </TableBody>
                 </Table>
               </Box>
+
+              {/* Mêmes réglages que la liste des membres, pour que les écrans se
+                  manipulent de la même façon. */}
+              <TablePagination
+                component="div"
+                page={page}
+                count={filteredRows.length}
+                rowsPerPage={rowsPerPage}
+                rowsPerPageOptions={[5, 10, 25]}
+                onPageChange={(_, nouvelle) => setPage(nouvelle)}
+                onRowsPerPageChange={(event) => {
+                  setRowsPerPage(parseInt(event.target.value, 10));
+                  setPage(0);
+                }}
+                labelRowsPerPage="Lignes par page :"
+                labelDisplayedRows={({ from, to, count }) => `${from}–${to} sur ${count}`}
+              />
               </>
             )}
           </Box>
@@ -1119,8 +1162,7 @@ export function SocialView() {
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             {activeType === 'deces' && (
               <Grid item xs={12} md={6}>
-                <TextField
-                  select
+                <SelectRecherche
                   fullWidth
                   label="Membre déjà enregistré"
                   value={formState.deces.idMembre || ''}
@@ -1133,7 +1175,7 @@ export function SocialView() {
                       {buildMembreLabel(membre)}
                     </MenuItem>
                   ))}
-                </TextField>
+                </SelectRecherche>
               </Grid>
             )}
             {activeType === 'mariage' && (
@@ -1147,8 +1189,7 @@ export function SocialView() {
                   </Typography>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <TextField
-                    select
+                  <SelectRecherche
                     fullWidth
                     // label="Frère"
                     value={formState.mariage.idFrereMembre || ''}
@@ -1173,11 +1214,10 @@ export function SocialView() {
                         {buildMembreLabel(membre)}
                       </MenuItem>
                     ))}
-                  </TextField>
+                  </SelectRecherche>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <TextField
-                    select
+                  <SelectRecherche
                     fullWidth
                     // label="Sœur"
                     value={formState.mariage.idSoeurMembre || ''}
@@ -1202,7 +1242,7 @@ export function SocialView() {
                         {buildMembreLabel(membre)}
                       </MenuItem>
                     ))}
-                  </TextField>
+                  </SelectRecherche>
                 </Grid>
                 <Grid item xs={12} md={6}>{renderMariageField('nomFrereMariage')}</Grid>
                 <Grid item xs={12} md={6}>{renderMariageField('nomSoeurMariage')}</Grid>
@@ -1244,8 +1284,7 @@ export function SocialView() {
             )}
             {activeType === 'maladie' && (
               <Grid item xs={12} md={6}>
-                <TextField
-                  select
+                <SelectRecherche
                   fullWidth
                   label="Membre déjà enregistré"
                   value={formState.maladie.idMembre || ''}
@@ -1258,7 +1297,7 @@ export function SocialView() {
                       {buildMembreLabel(membre)}
                     </MenuItem>
                   ))}
-                </TextField>
+                </SelectRecherche>
               </Grid>
             )}
             {activeType !== 'mariage' && currentConfig.fields.map((field) => (

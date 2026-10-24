@@ -36,6 +36,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { apiClient, buildPhotoUrl } from 'src/utils/apiClient';
 import { DUPLICATE_MEMBER_MESSAGE, findDuplicateMember } from 'src/utils/member-duplicates';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
+import { SelectRecherche } from 'src/components/select-recherche';
 import { 
   IMembre, 
   dataNiveauEtude,
@@ -518,9 +519,8 @@ export function UserEditView() {
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Civilité"
                 name="civiliteMembre"
                 value={formData.civiliteMembre || ''}
@@ -531,13 +531,12 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Genre"
                 name="sexeMembre"
                 value={formData.sexeMembre || ''}
@@ -548,7 +547,7 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
@@ -594,9 +593,8 @@ export function UserEditView() {
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Niveau d&apos;étude"
                 name="idNiveauEtude"
                 value={formData.idNiveauEtude || ''}
@@ -610,7 +608,7 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             {/* Contact */}
@@ -687,9 +685,8 @@ export function UserEditView() {
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Situation matrimoniale"
                 name="situationMatrimonialeMembre"
                 value={formData.situationMatrimonialeMembre || ''}
@@ -700,7 +697,7 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
@@ -755,9 +752,8 @@ export function UserEditView() {
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Nouvelle âme"
                 name="nouvelleAmeMembre"
                 value={formData.nouvelleAmeMembre || ''}
@@ -768,13 +764,12 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Baptême d&apos;eau"
                 name="baptemeEauMembre"
                 value={formData.baptemeEauMembre || ''}
@@ -785,7 +780,7 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             {isWaterBaptismSelected && (
@@ -816,9 +811,8 @@ export function UserEditView() {
             )}
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Baptême du Saint-Esprit"
                 name="baptemeSaintEspritMembre"
                 value={formData.baptemeSaintEspritMembre || ''}
@@ -829,7 +823,7 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             {isSpiritBaptismSelected && (
@@ -847,9 +841,8 @@ export function UserEditView() {
               </Grid>
             )}
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Capacité spirituelle"
                 name="capaciteSpirituelleMembre"
                 value={formData.capaciteSpirituelleMembre || ''}
@@ -860,7 +853,7 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             {/* Engagement dans l'église */}
@@ -871,9 +864,8 @@ export function UserEditView() {
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Responsabilité"
                 name="idResponsabilite"
                 value={formData.idResponsabilite || ''}
@@ -887,13 +879,12 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Département/Comité"
                 name="idDepartement"
                 value={formData.idDepartement || ''}
@@ -907,13 +898,12 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Cellule"
                 name="idCellule"
                 value={formData.idCellule || ''}
@@ -927,13 +917,12 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             <Grid item xs={12} sm={6} md={4}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Groupe ethnique"
                 name="idGroupe"
                 value={formData.idGroupe || ''}
@@ -947,7 +936,7 @@ export function UserEditView() {
                     {option.label}
                   </MenuItem>
                 ))}
-              </TextField>
+              </SelectRecherche>
             </Grid>
 
             {/* Boutons d'action */}

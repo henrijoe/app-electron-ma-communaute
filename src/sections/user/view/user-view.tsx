@@ -17,6 +17,8 @@ import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 // --- Composants d'interface (MUI) ---
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -156,7 +158,12 @@ export function UserView() {
   const canManageUsers = canManageModule(appUserConnected || authUtilisateurData, 'user');
   // true si on est dans l'app desktop (Electron) plutôt que dans un navigateur :
   // certains boutons (impression web, export Excel...) sont adaptés en conséquence.
+  // Liste par défaut : le tableau montre plus de colonnes d'un coup. La grille
+  // reprend les cartes déjà utilisées sur téléphone.
+  const [modeAffichage, setModeAffichage] = useState<'liste' | 'grille'>('liste');
   const isDesktopApp = isDesktopAppRuntime();
+  // Le téléphone impose les cartes : un tableau de dix colonnes n'y tient pas.
+  const afficherEnCartes = isMobile || modeAffichage === 'grille';
   // Transforme chaque liste de référence en paires {value, label} exploitables
   // directement par les <TextField select> du formulaire membre.
   const departementOptions = useMemo(() => (
@@ -1473,12 +1480,49 @@ export function UserView() {
           }}
           onDelete={() => setConfirmDeleteSelectedOpen(true)}
           deleteLoading={deleteLoading}
-          extraAction={canManageUsers ? <PrintCartesMembre membres={selectedMembres} /> : undefined}
+          extraAction={
+            <>
+              {/* Le téléphone est déjà en cartes : la bascule n'y aurait pas d'effet. */}
+              {!isMobile && (
+                <ToggleButtonGroup
+                  exclusive
+                  size="small"
+                  value={modeAffichage}
+                  onChange={(_: unknown, valeur: 'liste' | 'grille' | null) =>
+                    valeur && setModeAffichage(valeur)
+                  }
+                >
+                  <ToggleButton value="liste">
+                    <Tooltip title="Affichage en liste">
+                      <Iconify icon="solar:list-bold" />
+                    </Tooltip>
+                  </ToggleButton>
+                  <ToggleButton value="grille">
+                    <Tooltip title="Affichage en grille">
+                      <Iconify icon="solar:widget-4-bold" />
+                    </Tooltip>
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              )}
+
+              {canManageUsers && !isDesktopApp && <PrintCartesMembre membres={selectedMembres} />}
+            </>
+          }
         />
 
-        {/* --- Vue mobile : une carte par membre --- */}
-        {isMobile && (
-          <Stack spacing={1.5} sx={{ px: 2, pb: 2 }}>
+        {/* --- Vue en cartes : sur téléphone, ou quand la grille est demandée --- */}
+        {afficherEnCartes && (
+          <Box
+            sx={{
+              px: 2,
+              pb: 2,
+              display: 'grid',
+              gap: 1.5,
+              gridTemplateColumns: isMobile
+                ? '1fr'
+                : { sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' },
+            }}
+          >
             {currentPageMembres.map((row: IMembre) => {
               const photoUrl = getPhotoUrl(row.photoMembre);
               const isSelected = table.selected?.includes(row.idMembre?.toString());
@@ -1563,11 +1607,11 @@ export function UserView() {
                 </Typography>
               </Card>
             )}
-          </Stack>
+          </Box>
         )}
 
-        {/* --- Vue desktop : tableau classique avec tri/sélection --- */}
-        {!isMobile && (
+        {/* --- Vue en liste : tableau avec tri et sélection --- */}
+        {!afficherEnCartes && (
           <Scrollbar>
           <TableContainer sx={{ overflow: 'unset' }}>
             <Table sx={{ minWidth: 800 }}>
@@ -1750,7 +1794,12 @@ export function UserView() {
             <Box
               sx={{
                 p: 2,
-                mx: 'auto',
+                // Centré par « alignSelf » et non par une marge automatique :
+                // le Stack qui l'entoure pose « margin: 0 » sur chacun de ses
+                // enfants avant d'appliquer l'écart vertical, et ce sélecteur
+                // l'emporte sur la classe de ce Box. Un « mx: auto » y serait
+                // donc effacé sans trace.
+                alignSelf: 'center',
                 width: 'fit-content',
                 display: 'flex',
                 alignItems: 'center',

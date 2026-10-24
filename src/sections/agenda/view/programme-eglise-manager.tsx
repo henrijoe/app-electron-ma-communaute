@@ -47,6 +47,7 @@ import {
   canUseDesktopPrint,
   openDesktopPrintPreview,
 } from 'src/utils/desktop-print';
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 import { PRINT_PORTRAIT_PAGE_STYLE } from 'src/components/print/print-document';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 
@@ -136,6 +137,8 @@ export function ProgrammeEgliseManager({ idUtilisateur }: ProgrammeEgliseManager
   const printRef = useRef<HTMLDivElement>(null);
   const [printMenuAnchor, setPrintMenuAnchor] = useState<null | HTMLElement>(null);
   const isDesktopPrint = canUseDesktopPrint();
+  // L'impression ne se propose pas dans l'application installée.
+  const isDesktopApp = isDesktopAppRuntime();
 
   // "Horaires" et "Thème de l'année" ne sont pas une donnée métier partagée entre
   // postes (juste un rappel affiche en tête du document imprime) : on les garde
@@ -309,16 +312,18 @@ export function ProgrammeEgliseManager({ idUtilisateur }: ProgrammeEgliseManager
             : 'Aucun culte programmé pour le moment.'}
         </Typography>
         <Stack direction="row" spacing={1.5} sx={{ flexShrink: 0 }}>
-          <Button
-            variant="outlined"
-            color="inherit"
-            startIcon={<PrintRounded fontSize="small" />}
-            endIcon={<KeyboardArrowDownIcon fontSize="small" />}
-            disabled={programmes.length === 0}
-            onClick={(event) => setPrintMenuAnchor(event.currentTarget)}
-          >
-            Imprimer
-          </Button>
+          {!isDesktopApp && (
+            <Button
+              variant="outlined"
+              color="inherit"
+              startIcon={<PrintRounded fontSize="small" />}
+              endIcon={<KeyboardArrowDownIcon fontSize="small" />}
+              disabled={programmes.length === 0}
+              onClick={(event) => setPrintMenuAnchor(event.currentTarget)}
+            >
+              Imprimer
+            </Button>
+          )}
           <Button variant="contained" startIcon={<AddRounded />} onClick={openAddDialog}>
             Ajouter un programme
           </Button>
@@ -489,7 +494,7 @@ export function ProgrammeEgliseManager({ idUtilisateur }: ProgrammeEgliseManager
               multiline
               minRows={2}
               label="Thématiques / Observations"
-              placeholder="Ex : Offrande BN et Télé. Jeûne et prière."
+              placeholder="Ex : Jeûne et prière."
               value={form.thematique}
               onChange={(event) => setForm((prev) => ({ ...prev, thematique: event.target.value }))}
             />

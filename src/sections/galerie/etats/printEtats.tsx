@@ -97,9 +97,9 @@ export function PrintEtatGalerie({ event, images }: PrintEtatGalerieProps) {
         sx={{
           minWidth: { xs: 44, sm: 'auto' },
           px: { xs: 1.25, sm: 2 },
-          bgcolor: 'grey.900',
-          color: 'common.white',
-          '&:hover': { bgcolor: 'grey.800' },
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+          '&:hover': { bgcolor: 'primary.dark' },
         }}
       >
         <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>

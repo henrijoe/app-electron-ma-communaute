@@ -29,6 +29,7 @@ import PersonAddAlt1Rounded from '@mui/icons-material/PersonAddAlt1Rounded';
 import VolunteerActivismRounded from '@mui/icons-material/VolunteerActivismRounded';
 
 import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
+import { SelectRecherche } from 'src/components/select-recherche';
 
 type PublicMemberForm = {
   nomMembre: string;
@@ -170,6 +171,22 @@ export function PublicMemberRegistrationView() {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [photoError, setPhotoError] = useState('');
+  /**
+   * Parties de date en cours de saisie, par champ.
+   *
+   * Dans le formulaire, une date n'existe que sous sa forme complète
+   * « AAAA-MM-JJ ». Une date partielle n'avait donc aucun endroit où être
+   * rangée : choisir le jour en premier écrivait une valeur vide, et le jour
+   * disparaissait au rendu suivant. Remplir dans l'ordre naturel était
+   * impossible.
+   *
+   * Les trois listes lisent désormais ces parties, et le formulaire ne reçoit
+   * la date qu'une fois les trois renseignées. La validation reste inchangée :
+   * une date incomplète vaut toujours « pas de date ».
+   */
+  const [partiesDate, setPartiesDate] = useState<
+    Record<string, { day: string; month: string; year: string }>
+  >({});
 
   const idUtilisateur = Number(searchParams.get('user') || searchParams.get('idUtilisateur') || 0);
   const churchName = searchParams.get('church') || 'Ma Communauté';
@@ -362,11 +379,17 @@ export function PublicMemberRegistrationView() {
   // année ancienne (ex. une date de naissance en 1995), ce qui est très penible. Ici,
   // l'année se choisit directement dans une liste deroulante.
   const renderDateField = (name: keyof PublicMemberForm, label: string) => {
-    const { day, month, year } = parseIsoDate(form[name]);
+    // La saisie en cours fait foi ; la date déjà enregistrée ne sert qu'au
+    // premier affichage, avant que l'on touche à l'une des trois listes.
+    const { day, month, year } = partiesDate[name] || parseIsoDate(form[name]);
     const maxDay = getDaysInMonth(year, month);
     const jourOptions = Array.from({ length: maxDay }, (_, index) => pad2(index + 1));
 
     const updateDate = (nextDay: string, nextMonth: string, nextYear: string) => {
+      setPartiesDate((precedent) => ({
+        ...precedent,
+        [name]: { day: nextDay, month: nextMonth, year: nextYear },
+      }));
       setField(name, nextDay && nextMonth && nextYear ? `${nextYear}-${nextMonth}-${nextDay}` : '');
     };
 
@@ -376,8 +399,7 @@ export function PublicMemberRegistrationView() {
           {label}
         </Typography>
         <Stack direction="row" spacing={1}>
-          <TextField
-            select
+          <SelectRecherche
             label="Jour"
             value={day}
             onChange={(event) => updateDate(event.target.value, month, year)}
@@ -387,9 +409,8 @@ export function PublicMemberRegistrationView() {
             {jourOptions.map((option) => (
               <MenuItem key={option} value={option}>{option}</MenuItem>
             ))}
-          </TextField>
-          <TextField
-            select
+          </SelectRecherche>
+          <SelectRecherche
             label="Mois"
             value={month}
             onChange={(event) => {
@@ -404,19 +425,25 @@ export function PublicMemberRegistrationView() {
             {MOIS_LABELS.map((label_, index) => (
               <MenuItem key={label_} value={pad2(index + 1)}>{label_}</MenuItem>
             ))}
-          </TextField>
-          <TextField
-            select
+          </SelectRecherche>
+          <SelectRecherche
             label="Année"
             value={year}
-            onChange={(event) => updateDate(day, month, event.target.value)}
+            onChange={(event) => {
+              const nextYear = event.target.value;
+              // Le 29 février n'existe pas toutes les années : on ramène le jour
+              // au dernier du mois, comme le fait déjà la liste des mois.
+              const clampedMax = getDaysInMonth(nextYear, month);
+              const nextDay = day && Number(day) > clampedMax ? pad2(clampedMax) : day;
+              updateDate(nextDay, month, nextYear);
+            }}
             error={Boolean(errors[name])}
             sx={{ flex: 1.2, minWidth: 0 }}
           >
             {ANNEE_OPTIONS.map((option) => (
               <MenuItem key={option} value={option}>{option}</MenuItem>
             ))}
-          </TextField>
+          </SelectRecherche>
         </Stack>
         {errors[name] && (
           <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>

@@ -45,7 +45,7 @@ import {
 
 import { apiClient } from 'src/utils/apiClient';
 import { normalizeForSearch } from 'src/utils/text';
-import { canManageModule } from 'src/utils/access-control';
+import { canManageModule, isDesktopAppRuntime } from 'src/utils/access-control';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 import {
@@ -125,6 +125,8 @@ function MobileResponsibleLine({
 export function FamilleJeunesseView() {
   const dispatch = useDispatch();
   const theme = useTheme();
+  // L'impression navigateur n'a pas cours dans l'application desktop.
+  const isDesktopApp = isDesktopAppRuntime();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const ficheRenseignementRef = useRef<HTMLDivElement>(null);
   const printListRef = useRef<HTMLDivElement>(null);
@@ -397,7 +399,7 @@ export function FamilleJeunesseView() {
   }, [filteredData, formatMemberWithContact, showNotification]);
 
   return (
-    <DashboardContent maxWidth="xl">
+    <DashboardContent>
       <NotificationComponent />
 
       <Stack spacing={3}>
@@ -417,66 +419,70 @@ export function FamilleJeunesseView() {
               flexWrap: 'wrap',
             }}
           >
-            <ReactToPrint
-              documentTitle="fiche-renseignement-famille-jeunesse"
-              pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
-              trigger={() => (
-                <Tooltip title="Fiche de renseignement">
-                  <IconButton
-                    color="primary"
-                    sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}
+            {!isDesktopApp && (
+              <>
+              <ReactToPrint
+                documentTitle="fiche-renseignement-famille-jeunesse"
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
+                trigger={() => (
+                  <Tooltip title="Fiche de renseignement">
+                    <IconButton
+                      color="primary"
+                      sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}
+                    >
+                      <PrintRounded />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                content={() => ficheRenseignementRef.current}
+              />
+              <ReactToPrint
+                documentTitle="familles-de-jeunesse"
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
+                trigger={() => (
+                  <Tooltip title="Imprimer">
+                    <IconButton
+                      color="primary"
+                      sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}
+                    >
+                      <PrintRounded />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                content={() => printListRef.current}
+              />
+              <ReactToPrint
+                documentTitle="fiche-renseignement-famille-jeunesse"
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
+                trigger={() => (
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    startIcon={<PrintRounded />}
+                    sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                   >
-                    <PrintRounded />
-                  </IconButton>
-                </Tooltip>
-              )}
-              content={() => ficheRenseignementRef.current}
-            />
-            <ReactToPrint
-              documentTitle="familles-de-jeunesse"
-              pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
-              trigger={() => (
-                <Tooltip title="Imprimer">
-                  <IconButton
-                    color="primary"
-                    sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}
+                    Fiche de renseignement
+                  </Button>
+                )}
+                content={() => ficheRenseignementRef.current}
+              />
+              <ReactToPrint
+                documentTitle="familles-de-jeunesse"
+                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
+                trigger={() => (
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    startIcon={<PrintRounded />}
+                    sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                   >
-                    <PrintRounded />
-                  </IconButton>
-                </Tooltip>
-              )}
-              content={() => printListRef.current}
-            />
-            <ReactToPrint
-              documentTitle="fiche-renseignement-famille-jeunesse"
-              pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
-              trigger={() => (
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  startIcon={<PrintRounded />}
-                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-                >
-                  Fiche de renseignement
-                </Button>
-              )}
-              content={() => ficheRenseignementRef.current}
-            />
-            <ReactToPrint
-              documentTitle="familles-de-jeunesse"
-              pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
-              trigger={() => (
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  startIcon={<PrintRounded />}
-                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-                >
-                  Imprimer
-                </Button>
-              )}
-              content={() => printListRef.current}
-            />
+                    Imprimer
+                  </Button>
+                )}
+                content={() => printListRef.current}
+              />
+              </>
+            )}
             <Tooltip title="Exporter vers Excel">
               <span>
                 <IconButton

@@ -109,9 +109,9 @@ export function PrintEtatAgenda({ events, identity, monthLabel }: PrintEtatAgend
           px: { xs: 1.25, sm: 1.75 },
           height: 42,
           borderRadius: 2,
-          bgcolor: 'grey.900',
-          color: 'common.white',
-          '&:hover': { bgcolor: 'grey.800' },
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+          '&:hover': { bgcolor: 'primary.dark' },
         }}
       >
         <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>

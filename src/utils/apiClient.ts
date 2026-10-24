@@ -5,7 +5,13 @@ import { normalizeText } from './text';
 import { canManageModule } from './access-control';
 import { describeJournalAction, recordActionJournalEntry } from './action-journal';
 import { sanitizeSensitiveData } from './sensitive-data';
-import { getServerUrl, getConnectionMode, getCurrentSessionUser } from './functions';
+import {
+  getServerUrl,
+  getSessionToken,
+  getConnectionMode,
+  getCurrentSessionUser,
+  terminerSessionExpiree,
+} from './functions';
 
 export const BASE_URL_DEV = 'http://localhost:49300/';
 export const BASE_URL_ONLINE = import.meta.env.VITE_API_URL || '';
@@ -329,6 +335,10 @@ export const buildGalerieMediaUrl = (filePath: string): string => {
   return cleanUrl(resolveApiBaseUrl(), normalized ? `galerie-media/${normalized}` : 'galerie-media');
 };
 
+/** URL publique d'une photo d'enfant ou d'une image d'activité. */
+export const buildEcodimMediaUrl = (fichier?: string | null): string =>
+  fichier ? cleanUrl(resolveApiBaseUrl(), `ecodim-medias/${fichier}`) : '';
+
 export const buildGalerieDownloadUrl = (idGalerie: number | string, idUtilisateur?: number | null): string => {
   const suffix = typeof idUtilisateur === 'number' ? `?idUtilisateur=${encodeURIComponent(String(idUtilisateur))}` : '';
   return cleanUrl(resolveApiBaseUrl(), `communaute/telechargergalerie/${idGalerie}${suffix}`);
@@ -355,12 +365,17 @@ export async function request<T>(
       config?.timeoutMs || DEFAULT_REQUEST_TIMEOUT_MS
     );
 
+    // Le jeton de session accompagne chaque appel : l'API refuse désormais les
+    // requêtes anonymes, hors routes publiques (connexion, inscription, QR code).
+    const sessionToken = getSessionToken();
+
     const response = await fetch(url, {
       ...config,
       signal: config?.signal || controller.signal,
       headers: {
         'Accept': 'application/json',
         ...(isFormDataBody ? {} : { 'Content-Type': 'application/json' }),
+        ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
         ...config?.headers,
       },
     });
@@ -372,6 +387,18 @@ export async function request<T>(
     const responseData = isJson ? await response.json() : await response.text();
 
     if (!response.ok) {
+      // Un 401 alors que l'application se croit connectée ne laisse qu'une
+      // lecture : la session ne vaut plus rien. On la coupe pour revenir à la
+      // page de connexion, au lieu de laisser l'utilisateur devant des écrans
+      // vides qu'il lira comme une base perdue.
+      //
+      // La condition est portée par la fonction appelée, qui vérifie qu'une
+      // session est bien ouverte : sur la page de connexion, un mot de passe
+      // erroné répond aussi 401 sans qu'il faille déconnecter qui que ce soit.
+      if (response.status === 401) {
+        terminerSessionExpiree();
+      }
+
       const message = buildErrorMessage(responseData, getHttpStatusMessage(response.status));
       throw new ApiError(message, response.status, responseData);
     }
@@ -436,6 +463,270 @@ export const apiClient = {
       `communaute/desktop-control/status?nomUtilisateur=${encodeURIComponent(nomUtilisateur)}`,
       { method: 'GET' }
     ),
+
+  // École du dimanche (Ecodim) : classes, moniteurs, enfants
+  getClassesEcodim: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupclasseecodimbyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  createClasseEcodim: (data: any) =>
+    request<IServerResponse>('communaute/insererclasseecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateClasseEcodim: (data: any) =>
+    request<IServerResponse>('communaute/modifierclasseecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteClasseEcodim: (data: { idClasseEcodim: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/supprimerclasseecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getMoniteursEcodim: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupmoniteurecodimbyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  createMoniteurEcodim: (data: any) =>
+    request<IServerResponse>('communaute/inserermoniteurecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateMoniteurEcodim: (data: any) =>
+    request<IServerResponse>('communaute/modifiermoniteurecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteMoniteurEcodim: (data: { idMoniteur: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/supprimermoniteurecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getEnfantsEcodim: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupenfantecodimbyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  createEnfantEcodim: (data: any) =>
+    request<IServerResponse>('communaute/insererenfantecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateEnfantEcodim: (data: any) =>
+    request<IServerResponse>('communaute/modifierenfantecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteEnfantEcodim: (data: { idEnfantEcodim: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/supprimerenfantecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getActivitesEcodim: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupactiviteecodimbyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  createActiviteEcodim: (data: any) =>
+    request<IServerResponse>('communaute/insereractiviteecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateActiviteEcodim: (data: any) =>
+    request<IServerResponse>('communaute/modifieractiviteecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteActiviteEcodim: (data: { idActiviteEcodim: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/supprimeractiviteecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Cahier de texte : un culte par dimanche et par classe.
+  getCultesEcodim: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupculteecodimbyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  createCulteEcodim: (data: any) =>
+    request<IServerResponse>('communaute/insererculteecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateCulteEcodim: (data: any) =>
+    request<IServerResponse>('communaute/modifierculteecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteCulteEcodim: (data: { idCulteEcodim: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/supprimerculteecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Évaluations et notes.
+  getEvaluationsEcodim: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupevaluationecodimbyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  createEvaluationEcodim: (data: any) =>
+    request<IServerResponse>('communaute/insererevaluationecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateEvaluationEcodim: (data: any) =>
+    request<IServerResponse>('communaute/modifierevaluationecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteEvaluationEcodim: (data: { idEvaluation: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/supprimerevaluationecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getNotesEcodim: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupnoteecodimbyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  enregistrerNotesEcodim: (data: {
+    idUtilisateur: number;
+    notes: { idEvaluation: number; idEnfantEcodim: number; valeurNote: string }[];
+  }) =>
+    request<IServerResponse>('communaute/enregistrernoteecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Assiduité : l'appel nominatif d'un dimanche, rattaché à sa séance.
+  getPresencesEcodim: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recuppresenceecodimbyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  enregistrerAppelEcodim: (data: {
+    idUtilisateur: number;
+    idCulteEcodim: number;
+    presences: { idEnfantEcodim: number; statutPresence: string; motifPresence?: string }[];
+  }) =>
+    request<IServerResponse>('communaute/enregistrerappelecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Inscription d'un enfant par QR code. Le dépôt est public : c'est un parent
+  // sur son téléphone, sans compte ni session.
+  createDemandeInscriptionEnfant: (data: any) =>
+    request<IServerResponse>('communaute/demandeinscriptionenfant', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getDemandesInscriptionEnfant: (idUtilisateur: number | string) =>
+    request<IServerResponse>(
+      `communaute/demandesinscriptionenfantbyutilisateur/${idUtilisateur}`,
+      { method: 'GET' }
+    ),
+
+  validerDemandeInscriptionEnfant: (data: {
+    idDemandeEnfant: number;
+    idUtilisateur: number;
+    modifications?: any;
+  }) =>
+    request<IServerResponse>('communaute/validerdemandeinscriptionenfant', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  rejeterDemandeInscriptionEnfant: (data: {
+    idDemandeEnfant: number;
+    idUtilisateur: number;
+    motifRejet?: string;
+  }) =>
+    request<IServerResponse>('communaute/rejeterdemandeinscriptionenfant', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Photo d'un enfant : envoyée en base64, stockée en fichier côté serveur.
+  enregistrerPhotoEnfantEcodim: (data: {
+    idEnfantEcodim: number;
+    idUtilisateur: number;
+    photo: string;
+  }) =>
+    request<IServerResponse>('communaute/enregistrerphotoenfantecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getImagesActiviteEcodim: (idActiviteEcodim: number | string, idUtilisateur: number | string) =>
+    request<IServerResponse>(
+      `communaute/recupimageactiviteecodim/${idActiviteEcodim}?idUtilisateur=${idUtilisateur}`,
+      { method: 'GET' }
+    ),
+
+  ajouterImageActiviteEcodim: (data: {
+    idActiviteEcodim: number;
+    idUtilisateur: number;
+    image: string;
+    legende?: string;
+  }) =>
+    request<IServerResponse>('communaute/insererimageactiviteecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  supprimerImageActiviteEcodim: (data: { idImageActivite: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/supprimerimageactiviteecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Abonnement en ligne (SasPay)
+  // Ouvre une souscription et renvoie l'URL de la page de paiement hébergée.
+  souscrireAbonnement: (data: {
+    idUtilisateur: number;
+    plan?: 'mensuel' | 'annuel';
+    emailClient: string;
+    nomClient: string;
+    telephoneClient?: string;
+  }) =>
+    request<IServerResponse>('communaute/abonnement/souscrire', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Demande à SasPay où en est le paiement et active l'abonnement s'il est réglé.
+  // C'est ce qui remplace le webhook tant qu'aucune adresse publique n'est joignable.
+  verifierAbonnement: (reference: string) =>
+    request<IServerResponse>(`communaute/abonnement/verifier/${encodeURIComponent(reference)}`, {
+      method: 'GET',
+    }),
+
+  // État courant : statut, date de fin, jours restants.
+  getAbonnementEtat: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/abonnement/etat/${idUtilisateur}`, { method: 'GET' }),
 
   // Permet au superadmin de débloquer l'application desktop pour une nouvelle période.
   unlockDesktopAccess: (data: { nomUtilisateur: string; password: string; extendDays?: number }) =>

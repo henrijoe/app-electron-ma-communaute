@@ -22,7 +22,9 @@ export type LogoProps = BoxProps & {
 
 const getLogoImageUrl = (logoEglise?: string, cacheKey?: string | number): string => {
   if (!logoEglise) {
-    return resolveStaticAssetUrl('/assets/images/logoCom1.png');
+    // Icone carree de la marque : son fond bleu la rend lisible en theme clair
+    // comme en theme sombre, contrairement a un symbole sur fond transparent.
+    return resolveStaticAssetUrl('/ma-communaute-logo/svg/ma-communaute-icone-app-carre.svg');
   }
 
   if (/^(data:|https?:|blob:|file:)/i.test(logoEglise)) {

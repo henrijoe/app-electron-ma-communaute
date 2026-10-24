@@ -32,7 +32,7 @@ import {
 } from 'src/utils/browser-link';
 
 import { setUserLoggedIn, setUserConnected } from 'src/store/appSlice';
-import { setConnecter, setUtilisateurData } from 'src/store/userSlice';
+import { setConnecter, setToken, setUtilisateurData } from 'src/store/userSlice';
 
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 
@@ -91,6 +91,66 @@ export function SignUpView() {
   useEffect(() => {
     setLinkedBrowserContext(captureLinkedBrowserContextFromCurrentUrl());
   }, []);
+
+  /**
+   * Ouvre la page de paiement si le serveur exige un abonnement.
+   * Un échec ici ne doit jamais annuler l'inscription : le compte est déjà créé, et
+   * l'église pourra régler depuis Paramètres. On informe, on n'interrompt pas.
+   */
+  const proposerAbonnement = useCallback(
+    async (utilisateurConnecte: any) => {
+      const idUtilisateur = Number(utilisateurConnecte?.idUtilisateur || 0);
+
+      if (!idUtilisateur) {
+        return;
+      }
+
+      try {
+        const etatReponse = await apiClient.getAbonnementEtat(idUtilisateur);
+        const etat = etatReponse?.data as { requis?: boolean; actif?: boolean };
+
+        if (!etat?.requis || etat?.actif) {
+          return;
+        }
+
+        const souscription = await apiClient.souscrireAbonnement({
+          idUtilisateur,
+          plan: 'mensuel',
+          emailClient: String(utilisateurConnecte?.email || utilisateurConnecte?.emailEglise || ''),
+          nomClient: String(
+            utilisateurConnecte?.nomEgliseCourt || utilisateurConnecte?.nomTemple || 'Église'
+          ),
+          telephoneClient: String(utilisateurConnecte?.telephoneUtilisateur || ''),
+        });
+
+        const donnees = souscription?.data as { checkoutUrl?: string; reference?: string };
+
+        if (!donnees?.checkoutUrl) {
+          return;
+        }
+
+        // La référence est relue au retour, dans Paramètres, pour confirmer le paiement.
+        localStorage.setItem('maCommunauteAbonnementReference', String(donnees.reference || ''));
+
+        if ((window as any)?.desktopShell?.openExternal) {
+          await (window as any).desktopShell.openExternal(donnees.checkoutUrl);
+        } else {
+          window.open(donnees.checkoutUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        showNotification(
+          'Finalisez le paiement de votre abonnement dans la page qui vient de s’ouvrir.',
+          'info'
+        );
+      } catch (_error) {
+        showNotification(
+          'Compte créé. Le paiement de l’abonnement reste à finaliser depuis Paramètres.',
+          'warning'
+        );
+      }
+    },
+    [showNotification]
+  );
 
   const onChange = useCallback(
     (field: keyof RegisterForm) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,12 +255,20 @@ export function SignUpView() {
 
       const connectedUser = extractFirstItem(loginResponse.data);
 
+      // Même règle qu'à la connexion : le jeton d'abord, les requêtes ensuite.
+      dispatch(setToken(String(connectedUser?.token || '')));
       dispatch(setUtilisateurData(connectedUser));
       dispatch(setConnecter(true));
       dispatch(setUserConnected(connectedUser));
       dispatch(setUserLoggedIn(true));
 
       showNotification('Compte créé et connexion réussie', 'success');
+
+      // Sur le service en ligne, l'église règle son abonnement dans la foulée de la
+      // création du compte. Sur un poste local, le serveur répond "non requis" et
+      // cette étape ne se voit pas.
+      await proposerAbonnement(connectedUser);
+
       router.push('/');
     } catch (error: any) {
       showNotification(
@@ -213,7 +281,7 @@ export function SignUpView() {
     } finally {
       setLoading(false);
     }
-  }, [dispatch, form, linkedBrowserContext, loading, router, showNotification]);
+  }, [dispatch, form, linkedBrowserContext, loading, proposerAbonnement, router, showNotification]);
 
   if (linkedBrowserContext) {
     return (

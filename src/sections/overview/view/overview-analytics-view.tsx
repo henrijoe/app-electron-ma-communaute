@@ -302,7 +302,7 @@ export function OverviewAnalyticsView() {
   );
 
   return (
-    <DashboardContent maxWidth="xl">
+    <DashboardContent>
       <Typography variant="h4" sx={{ mb: 1 }}>
         Tableau de bord communautaire
       </Typography>

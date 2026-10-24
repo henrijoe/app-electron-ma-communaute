@@ -19,6 +19,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 import { PRINT_LANDSCAPE_PAGE_STYLE } from 'src/components/print/print-document';
+import { isDesktopAppRuntime } from 'src/utils/access-control';
 import { exportDesktopPdf, canUseDesktopPrint, openDesktopPrintPreview } from 'src/utils/desktop-print';
 
 import { PastoralPrintDocument, type PastoralPrintRow } from './pastoral-print-document';
@@ -44,6 +45,12 @@ export function PrintEtatPastoral({ identity, rows, subtitle }: PrintEtatPastora
   const isDesktopPrint = canUseDesktopPrint();
   const open = Boolean(anchorEl);
   const meta = { title: 'Suivi pastoral', fileName: 'suivi-pastoral' };
+
+  // L'impression n'est pas proposée dans l'application installée : elle se fait
+  // depuis le navigateur. Les huit autres états imprimables se taisent déjà ici.
+  if (isDesktopAppRuntime()) {
+    return null;
+  }
 
   return (
     <>

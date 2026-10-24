@@ -56,6 +56,8 @@ import ConfirmDialog from 'src/components/alert/confirmDialog';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 
 import { PrintEtatComptabilite } from 'src/sections/comptabilite/etats';
+import { SelectRecherche } from 'src/components/select-recherche';
+import { formaterDate } from 'src/utils/format-date';
 
 const formatDateForStorage = (value?: string | null): string => {
   const normalized = String(value || '').trim();
@@ -129,10 +131,10 @@ const primaryActionButtonSx = {
   px: 1.75,
   height: 42,
   borderRadius: 2,
-  bgcolor: 'grey.900',
-  color: 'common.white',
+  bgcolor: 'primary.main',
+  color: 'primary.contrastText',
   '&:hover': {
-    bgcolor: 'grey.800',
+    bgcolor: 'primary.dark',
   },
 };
 
@@ -487,10 +489,10 @@ export function ComptabiliteView() {
   };
 
   return (
-    <DashboardContent maxWidth="xl">
+    <DashboardContent>
       <NotificationComponent />
 
-      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 440, md: 1400 }, mx: 'auto' }}>
+      <Stack spacing={3} sx={{ width: 1, maxWidth: { xs: 440, md: 1 }, mx: 'auto' }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }}>
           <Box>
             <Typography variant="h4">Comptabilité</Typography>
@@ -580,8 +582,7 @@ export function ComptabiliteView() {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Rechercher un libellé, une note ou une date..."
             />
-            <TextField
-              select
+            <SelectRecherche
               label="Type"
               value={filterType}
               onChange={(event) => setFilterType(event.target.value as 'all' | ComptabiliteType)}
@@ -590,7 +591,7 @@ export function ComptabiliteView() {
               <MenuItem value="all">Toutes les écritures</MenuItem>
               <MenuItem value="entree">Entrées seulement</MenuItem>
               <MenuItem value="sortie">Sorties seulement</MenuItem>
-            </TextField>
+            </SelectRecherche>
           </Stack>
         </Card>
 
@@ -634,7 +635,7 @@ export function ComptabiliteView() {
                             {item.nomComptabilite}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {item.dateComptabilite || '--'}
+                            {formaterDate(item.dateComptabilite, '--')}
                           </Typography>
                         </Box>
                       </Stack>
@@ -711,7 +712,7 @@ export function ComptabiliteView() {
                   const isEntree = item.typeComptabilite === 'entree';
                   return (
                     <TableRow hover key={item.idComptabilite || `${item.nomComptabilite}-${item.dateComptabilite}`}>
-                      <TableCell>{item.dateComptabilite || '--'}</TableCell>
+                      <TableCell>{formaterDate(item.dateComptabilite, '--')}</TableCell>
                       <TableCell>
                         <Stack direction="row" spacing={1.25} alignItems="center">
                           <Box
@@ -791,7 +792,7 @@ export function ComptabiliteView() {
                               {item.nomComptabilite}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {item.dateComptabilite || '--'}
+                              {formaterDate(item.dateComptabilite, '--')}
                             </Typography>
                           </Box>
                           <Chip size="small" color={item.typeComptabilite === 'entree' ? 'success' : 'error'} label={item.typeComptabilite === 'entree' ? 'Entrée' : 'Sortie'} />
@@ -827,7 +828,7 @@ export function ComptabiliteView() {
                         </Stack>
 
                         <Typography variant="body2" color="text.secondary">
-                          Supprimé le {item.dateSuppressionComptabilite || '--'} par {item.nomUtilisateurSuppression || '--'}
+                          Supprimé le {formaterDate(item.dateSuppressionComptabilite, '--')} par {item.nomUtilisateurSuppression || '--'}
                         </Typography>
                         <Typography variant="body2">{item.motifSuppressionComptabilite || '--'}</Typography>
                       </Stack>
@@ -862,13 +863,13 @@ export function ComptabiliteView() {
                   <TableBody>
                     {deletedItems.map((item) => (
                       <TableRow hover key={`deleted-${item.idComptabilite}`}>
-                        <TableCell>{item.dateComptabilite || '--'}</TableCell>
+                        <TableCell>{formaterDate(item.dateComptabilite, '--')}</TableCell>
                         <TableCell>{item.nomComptabilite}</TableCell>
                         <TableCell>
                           <Chip size="small" color={item.typeComptabilite === 'entree' ? 'success' : 'error'} label={item.typeComptabilite === 'entree' ? 'Entrée' : 'Sortie'} />
                         </TableCell>
                         <TableCell align="right">{currencyFormatter.format(item.montantComptabilite || 0)}</TableCell>
-                        <TableCell>{item.dateSuppressionComptabilite || '--'}</TableCell>
+                        <TableCell>{formaterDate(item.dateSuppressionComptabilite, '--')}</TableCell>
                         <TableCell>{item.nomUtilisateurSuppression || '--'}</TableCell>
                         <TableCell>{item.motifSuppressionComptabilite || '--'}</TableCell>
                         {canManageComptabilite && (
@@ -931,16 +932,15 @@ export function ComptabiliteView() {
               />
             </Grid>
             <Grid item xs={12} md={3}>
-              <TextField
+              <SelectRecherche
                 fullWidth
-                select
                 label="Type"
                 value={currentItem.typeComptabilite}
                 onChange={(event) => handleChange('typeComptabilite', event.target.value)}
               >
                 <MenuItem value="entree">Entrée</MenuItem>
                 <MenuItem value="sortie">Sortie</MenuItem>
-              </TextField>
+              </SelectRecherche>
             </Grid>
             <Grid item xs={12} md={3}>
               <TextField
