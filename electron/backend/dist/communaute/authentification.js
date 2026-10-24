@@ -22,6 +22,7 @@ const ROUTES_PUBLIQUES = [
     /^\/demander-reset-password$/,
     /^\/reinitialiser-password$/,
     /^\/demandeinscriptionmembre$/,
+    /^\/demandeinscriptionenfant$/,
     /^\/listeutilisateurparent\/\d+$/,
     /^\/desktop-control\/status$/,
     /^\/desktop-control\/unlock-code$/,

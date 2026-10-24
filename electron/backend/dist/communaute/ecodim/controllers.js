@@ -257,6 +257,63 @@ const enregistrerNotes = (req, res) => {
     })
         .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
 };
+const recupPresencesByUtilisateur = (req, res) => repondre(res, functions_2.default.recupPresences(Number(req.params.idUtilisateur)));
+const enregistrerAppel = (req, res) => {
+    const data = req.body;
+    return functions_2.default
+        .enregistrerAppel({
+        idUtilisateur: Number(data === null || data === void 0 ? void 0 : data.idUtilisateur),
+        idCulteEcodim: Number(data === null || data === void 0 ? void 0 : data.idCulteEcodim),
+        presences: data === null || data === void 0 ? void 0 : data.presences,
+    })
+        .then((result) => {
+        diffuser(req, "enregistrerAppelEcodim", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
+/**
+ * Dépôt d'une fiche depuis le QR code public : aucune session n'est requise,
+ * c'est un parent sur son téléphone. La route est donc listée comme publique
+ * dans le middleware d'authentification.
+ */
+const ajouterDemandeEnfant = (req, res) => functions_2.default
+    .ajouterDemandeEnfant(req.body)
+    .then((result) => {
+    var _a;
+    diffuser(req, "demandeEnfantEcodim", { idUtilisateur: (_a = req.body) === null || _a === void 0 ? void 0 : _a.idUtilisateur });
+    res.status(200).send({ status: 1, data: result });
+})
+    .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+const recupDemandesEnfantByUtilisateur = (req, res) => repondre(res, functions_2.default.recupDemandesEnfant(Number(req.params.idUtilisateur)));
+const validerDemandeEnfant = (req, res) => {
+    const data = req.body;
+    return functions_2.default
+        .validerDemandeEnfant({
+        idDemandeEnfant: Number(data === null || data === void 0 ? void 0 : data.idDemandeEnfant),
+        idUtilisateur: Number(data === null || data === void 0 ? void 0 : data.idUtilisateur),
+        modifications: data === null || data === void 0 ? void 0 : data.modifications,
+    })
+        .then((result) => {
+        diffuser(req, "validerDemandeEnfantEcodim", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
+const rejeterDemandeEnfant = (req, res) => {
+    const data = req.body;
+    return functions_2.default
+        .rejeterDemandeEnfant({
+        idDemandeEnfant: Number(data === null || data === void 0 ? void 0 : data.idDemandeEnfant),
+        idUtilisateur: Number(data === null || data === void 0 ? void 0 : data.idUtilisateur),
+        motifRejet: data === null || data === void 0 ? void 0 : data.motifRejet,
+    })
+        .then((result) => {
+        diffuser(req, "rejeterDemandeEnfantEcodim", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
 exports.default = {
     recupClassesByUtilisateur,
     ajouterClasse,
@@ -288,5 +345,11 @@ exports.default = {
     supprimerEvaluation,
     recupNotesByUtilisateur,
     enregistrerNotes,
+    recupPresencesByUtilisateur,
+    enregistrerAppel,
+    ajouterDemandeEnfant,
+    recupDemandesEnfantByUtilisateur,
+    validerDemandeEnfant,
+    rejeterDemandeEnfant,
 };
 //# sourceMappingURL=controllers.js.map
