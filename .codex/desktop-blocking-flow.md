@@ -226,7 +226,7 @@ alors le front redirige vers :
 - `/desktop-locked`
 
 ### 4. Ecran de blocage
-
+   
 La page de blocage est :
 
 - [desktop-locked.tsx](D:/Mes_projets/Ma-communaute/communaute-encours/frond/src/pages/desktop-locked.tsx)
@@ -312,7 +312,7 @@ Le comportement global est le suivant :
 
 1. creation du compte
 2. creation de la licence locale chiffree
-3. expiration fixee a `40 jours`
+3. expiration fixee a `15 jours`
 4. utilisateur normal :
    - acces autorise tant que la licence est valide
    - acces bloque apres expiration
