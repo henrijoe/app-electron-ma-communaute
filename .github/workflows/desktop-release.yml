@@ -81,6 +81,51 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Une release publiee sans aucun fichier casse la mise a jour automatique de
+      # TOUS les utilisateurs : electron-updater interroge la release la plus
+      # recente et y cherche "latest.yml". S'il ne l'y trouve pas, il abandonne --
+      # meme si une release complete existe juste en dessous. C'est ce qui est
+      # arrive avec la v1.0.11, restee en tete et vide.
+      #
+      # On supprime donc ces coquilles. Le filtre est strict : uniquement les
+      # releases publiees comptant ZERO fichier. Une release avec ne serait-ce
+      # qu'un fichier n'est jamais touchee.
+      - name: Remove empty published releases
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          releases="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100")"
+
+          echo "$releases" \
+            | node -e "
+                let d='';
+                process.stdin.on('data', (c) => { d += c; });
+                process.stdin.on('end', () => {
+                  const vides = JSON.parse(d)
+                    .filter((r) => !r.draft && (r.assets || []).length === 0)
+                    .map((r) => r.id + ' ' + r.tag_name);
+                  process.stdout.write(vides.join('\n'));
+                });
+              " > vides.txt
+
+          if [ ! -s vides.txt ]; then
+            echo "::notice::Aucune release vide a supprimer."
+            exit 0
+          fi
+
+          while read -r id tag; do
+            [ -z "${id:-}" ] && continue
+            echo "::warning::Suppression de la release vide $tag (aucun fichier publie)."
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id"
+            # Le tag part avec elle : laisse seul, il empecherait de republier
+            # cette version plus tard.
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" || true
+          done < vides.txt
+
       - name: Install frontend dependencies
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
         run: yarn install --frozen-lockfile
@@ -228,18 +273,95 @@ jobs:
       # v1.0.8, publiee vide). Ce garde-fou fait donc echouer le job (visible dans
       # l'onglet Actions) des que la publication rate, sans empecher l'artefact de
       # secours d'etre disponible au telechargement depuis le run GitHub Actions.
-      - name: Verify GitHub Release was actually published
+      # La release est creee en BROUILLON par electron-builder (voir "releaseType":
+      # "draft" dans package.json). Un brouillon est invisible pour
+      # electron-updater : si l'envoi echoue a mi-chemin, personne n'est casse.
+      #
+      # On ne la rend publique qu'apres avoir verifie qu'elle contient bien ce
+      # qu'il faut. Verifier le code de sortie de l'etape ne suffisait pas : elle
+      # pouvait reussir en n'ayant televerse qu'une partie des fichiers.
+      - name: Publish the release only if it is complete
+        if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.current }}
+        run: |
+          set -euo pipefail
+
+          if [ "${{ steps.publish_release.outcome }}" != "success" ]; then
+            echo "::error::La construction de la release $TAG a echoue (voir l'etape precedente). L'executable reste telechargeable en artefact GitHub Actions ('ma-communaute-v$VERSION'), mais aucune release publique n'a ete mise a jour."
+          fi
+
+          # "releases/tags/{tag}" ne renvoie QUE les releases publiees : un
+          # brouillon y est introuvable. On liste donc et on cherche par nom de tag.
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100"             | node -e "
+                let d='';
+                process.stdin.on('data', (c) => { d += c; });
+                process.stdin.on('end', () => {
+                  const tag = process.env.TAG;
+                  const trouvee = JSON.parse(d).find((r) => r.tag_name === tag);
+                  process.stdout.write(trouvee ? JSON.stringify(trouvee) : '');
+                });
+              " > release.json
+
+          if [ ! -s release.json ]; then
+            echo "::error::Aucune release $TAG n'a ete creee, meme en brouillon. La mise a jour automatique reste sur la version precedente."
+            exit 1
+          fi
+
+          # Deux fichiers sont indispensables : l'installateur, et le "latest.yml"
+          # que l'application installee lit pour se savoir perimee.
+          node -e "
+            const r = require('./release.json');
+            const noms = (r.assets || []).map((a) => a.name);
+            const installateur = noms.some((n) => n.endsWith('.exe'));
+            const manifeste = noms.includes('latest.yml');
+
+            console.log('Fichiers publies : ' + (noms.join(', ') || 'AUCUN'));
+
+            if (!installateur || !manifeste) {
+              console.log('::error::Release incomplete : ' +
+                (installateur ? '' : 'installateur .exe manquant. ') +
+                (manifeste ? '' : 'latest.yml manquant. ') +
+                'Elle reste en brouillon et ne casse donc pas la mise a jour des utilisateurs.');
+              process.exit(1);
+            }
+          "
+
+          id="$(node -p "require('./release.json').id")"
+
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$id" -F draft=false >/dev/null
+          echo "::notice::Release $TAG publiee avec son installateur et son latest.yml."
+
+      # Dernier controle, du point de vue de l'application installee : c'est cette
+      # adresse exacte qu'interroge electron-updater.
+      - name: Check the updater can reach latest.yml
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists != 'true'
         shell: bash
         run: |
           set -euo pipefail
 
-          if [ "${{ steps.publish_release.outcome }}" != "success" ]; then
-            echo "::error::La publication de la GitHub Release ${{ steps.version.outputs.tag }} a echoue (voir l'etape 'Build and publish GitHub Release' ci-dessus). L'executable reste disponible en artefact GitHub Actions ('ma-communaute-v${{ steps.version.outputs.current }}'), mais AUCUNE release publique n'a ete mise a jour : le telechargement manuel et la mise a jour automatique resteront casses tant que ce n'est pas corrige."
+          url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/latest.yml"
+          code=""
+
+          # GitHub met quelques secondes a designer la nouvelle release comme
+          # "latest" : sans cette attente, le controle echouait sur une release
+          # pourtant complete.
+          for tentative in 1 2 3 4 5; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' -L "$url")"
+            [ "$code" = "200" ] && break
+            echo "Tentative $tentative : $code. Nouvel essai dans 10 s."
+            sleep 10
+          done
+
+          if [ "$code" != "200" ]; then
+            echo "::error::La mise a jour automatique est cassee : $url repond $code au lieu de 200."
             exit 1
           fi
 
-          echo "La GitHub Release ${{ steps.version.outputs.tag }} a bien ete publiee."
+          echo "::notice::La mise a jour automatique fonctionne : $url repond 200."
 
       - name: Existing version tag
         if: steps.version.outputs.should_release == 'true' && steps.tag.outputs.exists == 'true'

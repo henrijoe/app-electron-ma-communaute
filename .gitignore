@@ -18,6 +18,9 @@ dist
 !electron/backend/dist/
 !electron/backend/dist/**
 !electron/backend/package.json
+# Trace locale de la derniere copie des dependances du serveur : elle depend des
+# dates de fichiers de cette machine et n'a aucun sens ailleurs.
+electron/backend-node-modules.empreinte.json
 build
 release
 electron-dist
