@@ -32,7 +32,27 @@ const services_1 = __importDefault(require("../desktop-control/services"));
 const functions_2 = __importDefault(require("./functions"));
 const sqlite_1 = __importDefault(require("./sqlite"));
 const smtpMailer_1 = require("../../utils/smtpMailer");
+const jetons_1 = require("../../helpers/jetons");
+const services_2 = __importDefault(require("../abonnement/services"));
 const bcrypt = require('bcrypt');
+/**
+ * Jeton d'accès renvoyé au client après une connexion réussie.
+ * Le périmètre porté par le jeton fait foi côté API : c'est lui, et non plus
+ * l'identifiant présent dans l'URL, qui délimite les données accessibles.
+ */
+const construireJeton = (utilisateur) => {
+    const idUtilisateur = Number((utilisateur === null || utilisateur === void 0 ? void 0 : utilisateur.idUtilisateur) || 0);
+    const idParent = Number((utilisateur === null || utilisateur === void 0 ? void 0 : utilisateur.idUtilisateurParent) || 0);
+    return (0, jetons_1.signerJeton)({
+        idUtilisateur,
+        // Un utilisateur secondaire travaille dans le périmètre de son compte parent.
+        scope: idParent || idUtilisateur,
+        nomUtilisateur: String((utilisateur === null || utilisateur === void 0 ? void 0 : utilisateur.nomUtilisateur) || ''),
+        role: String((utilisateur === null || utilisateur === void 0 ? void 0 : utilisateur.roleUtilisateur) || 'admin'),
+        // Le superadmin fixe est le seul compte dont l'identifiant vaut 0.
+        superadmin: idUtilisateur === 0,
+    });
+};
 const ALL_MODULE_PERMISSIONS = JSON.stringify([
     'dashboard',
     'user',
@@ -349,7 +369,7 @@ const login = (data) => {
                     versetDashboardTexte: '',
                     email: '',
                 };
-                resolve(superAdminUser);
+                resolve(Object.assign(Object.assign({}, superAdminUser), { token: construireJeton(superAdminUser) }));
                 return;
             }
             const desktopLicenseStatus = yield services_1.default.getDesktopLicenseStatus(data.nomUtilisateur);
@@ -365,8 +385,16 @@ const login = (data) => {
                 }
             }
             const utilisateur = yield functions_2.default.login(data);
+            // Sur le service en ligne (ABONNEMENT_REQUIS=true), c'est l'abonnement qui ouvre
+            // la porte, là où un poste local dépend de la licence desktop. Le contrôle se fait
+            // après l'identification, pour ne pas révéler l'existence d'un compte impayé.
+            const acces = yield services_2.default.accesBloque(Number((utilisateur === null || utilisateur === void 0 ? void 0 : utilisateur.idUtilisateurParent) || (utilisateur === null || utilisateur === void 0 ? void 0 : utilisateur.idUtilisateur) || 0));
+            if (acces.bloque) {
+                reject(new Error(acces.message));
+                return;
+            }
             const safeUtilisateur = sanitizeUtilisateurData(Object.assign(Object.assign({}, normalizeUtilisateurData(utilisateur)), { idUtilisateur: Number((utilisateur === null || utilisateur === void 0 ? void 0 : utilisateur.idUtilisateur) || 0), idUtilisateurParent: (utilisateur === null || utilisateur === void 0 ? void 0 : utilisateur.idUtilisateurParent) ? Number(utilisateur.idUtilisateurParent) : null }));
-            resolve(safeUtilisateur);
+            resolve(Object.assign(Object.assign({}, safeUtilisateur), { token: construireJeton(safeUtilisateur) }));
         }
         catch (error) {
             reject(error);

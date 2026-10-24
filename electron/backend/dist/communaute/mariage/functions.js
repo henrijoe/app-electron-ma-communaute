@@ -77,8 +77,7 @@ const recupMariageByIdUtilsateur = (idUtilisateur) => {
         try {
             const sql = `SELECT * FROM mariage WHERE idUtilisateur= ?;`;
             const mariage = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
-            if (!mariage.length)
-                return reject({ name: "Erreur_mariage", message: "Aucun mariage trouvé" });
+            // Une liste vide est un résultat valide, pas une erreur.
             resolve(mariage);
         }
         catch (error) {

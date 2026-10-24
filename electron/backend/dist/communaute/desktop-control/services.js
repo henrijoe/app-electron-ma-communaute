@@ -22,6 +22,12 @@ const ip_1 = require("ip");
 const sqliteDB_1 = __importDefault(require("../../db/sqliteDB"));
 const sqliteSecurity_1 = require("../../db/sqliteSecurity");
 const DEFAULT_DESKTOP_TRIAL_DAYS = Number(process.env.DESKTOP_TRIAL_DAYS || 15);
+// Le verrou de licence protège une installation posée chez un client : il n'a aucun
+// sens sur un serveur partagé, où l'empreinte machine change au moindre redimensionnement
+// et où l'expiration bloquerait tous les comptes d'un coup.
+// DESKTOP_LICENSE_ENFORCED=false le neutralise pour ce déploiement-là uniquement.
+// Toute autre valeur (et surtout l'absence de variable) conserve le comportement actuel.
+const isDesktopLicenseEnforced = () => { var _a; return String((_a = process.env.DESKTOP_LICENSE_ENFORCED) !== null && _a !== void 0 ? _a : "true").trim().toLowerCase() !== "false"; };
 const DEFAULT_DESKTOP_SUPERADMINS = (process.env.DESKTOP_SUPERADMINS || sqliteSecurity_1.DESKTOP_SUPERADMIN_USERNAME)
     .split(",")
     .map((item) => item.trim().toLowerCase())
@@ -375,9 +381,12 @@ const getDesktopLicenseStatus = (nomUtilisateur) => __awaiter(void 0, void 0, vo
     const isMachineMismatch = !machineBindingStatus.isCurrentMachine;
     // On combine le blocage manuel et l'expiration pour produire l'état brut de blocage.
     const rawBlocked = config.manuallyBlocked || isExpired || isMachineMismatch;
+    // Sur un déploiement serveur (DESKTOP_LICENSE_ENFORCED=false), l'état reste calculé
+    // et visible dans les paramètres, mais il ne ferme plus l'accès à personne.
+    const isEnforced = isDesktopLicenseEnforced();
     return {
         // Un créateur de l'application reste autorise a entrer même si la licence est techniquement bloquée.
-        isBlocked: rawBlocked && !isSuperAdmin,
+        isBlocked: isEnforced && rawBlocked && !isSuperAdmin,
         isSuperAdmin,
         expiresAt: config.expiresAt,
         manuallyBlocked: config.manuallyBlocked,

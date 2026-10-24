@@ -14,64 +14,30 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const db_1 = require("../../db");
 const sqliteDB_1 = __importDefault(require("../../db/sqliteDB"));
+const schema_1 = require("../../db/schema");
 const textValue = (value) => String(value || "").trim();
 const numberValue = (value) => Number(value || 0) || 0;
-const ensureColumn = (columnName, sqliteDefinition, mysqlDefinition) => __awaiter(void 0, void 0, void 0, function* () {
+const ensureColumn = (alterStatement) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        yield (0, db_1._executeSql)(`ALTER TABLE famille_jeunesse ADD COLUMN ${columnName} ${sqliteDB_1.default.isSqliteMode() ? sqliteDefinition : mysqlDefinition}`, []);
+        yield (0, db_1._executeSql)(alterStatement, []);
     }
     catch (error) {
-        // La colonne existe deja sur les bases deja mises a jour.
+        // La colonne existe déjà sur les bases déjà mises à jour.
     }
 });
 const ensureFamilleJeunesseTable = () => __awaiter(void 0, void 0, void 0, function* () {
-    const createTableSql = sqliteDB_1.default.isSqliteMode()
-        ? `CREATE TABLE IF NOT EXISTS famille_jeunesse (
-      idFamilleJeunesse INTEGER PRIMARY KEY AUTOINCREMENT,
-      nomFamilleJeunesse TEXT DEFAULT '',
-      sloganFamille TEXT DEFAULT '',
-      conseillerFamille TEXT DEFAULT '',
-      nomAnimateur TEXT DEFAULT '',
-      nomViceAnimateur TEXT DEFAULT '',
-      nomSecretaire TEXT DEFAULT '',
-      nomSecretaireAdjoint TEXT DEFAULT '',
-      nomTresorier TEXT DEFAULT '',
-      nomTresorierAdjoint TEXT DEFAULT '',
-      nomSecretaireOrganisation1 TEXT DEFAULT '',
-      nomSecretaireOrganisation2 TEXT DEFAULT '',
-      nomSecretaireOrganisation3 TEXT DEFAULT '',
-      nomCommissaireAuCompte TEXT DEFAULT '',
-      nomCommissaireAuCompteAdjoint TEXT DEFAULT '',
-      nombreMembreTotal INTEGER DEFAULT 0,
-      nombreMembreActuel INTEGER DEFAULT 0,
-      remarque TEXT DEFAULT '',
-      idUtilisateur INTEGER NOT NULL
-    )`
-        : `CREATE TABLE IF NOT EXISTS famille_jeunesse (
-      idFamilleJeunesse INT AUTO_INCREMENT PRIMARY KEY,
-      nomFamilleJeunesse VARCHAR(255) DEFAULT '',
-      sloganFamille VARCHAR(255) DEFAULT '',
-      conseillerFamille VARCHAR(255) DEFAULT '',
-      nomAnimateur VARCHAR(255) DEFAULT '',
-      nomViceAnimateur VARCHAR(255) DEFAULT '',
-      nomSecretaire VARCHAR(255) DEFAULT '',
-      nomSecretaireAdjoint VARCHAR(255) DEFAULT '',
-      nomTresorier VARCHAR(255) DEFAULT '',
-      nomTresorierAdjoint VARCHAR(255) DEFAULT '',
-      nomSecretaireOrganisation1 VARCHAR(255) DEFAULT '',
-      nomSecretaireOrganisation2 VARCHAR(255) DEFAULT '',
-      nomSecretaireOrganisation3 VARCHAR(255) DEFAULT '',
-      nomCommissaireAuCompte VARCHAR(255) DEFAULT '',
-      nomCommissaireAuCompteAdjoint VARCHAR(255) DEFAULT '',
-      nombreMembreTotal INT DEFAULT 0,
-      nombreMembreActuel INT DEFAULT 0,
-      remarque TEXT,
-      idUtilisateur INT NOT NULL
-    )`;
-    yield (0, db_1._executeSql)(createTableSql, []);
-    yield ensureColumn("nomFamilleJeunesse", "TEXT DEFAULT ''", "VARCHAR(255) DEFAULT ''");
-    yield ensureColumn("sloganFamille", "TEXT DEFAULT ''", "VARCHAR(255) DEFAULT ''");
-    yield ensureColumn("conseillerFamille", "TEXT DEFAULT ''", "VARCHAR(255) DEFAULT ''");
+    // Le schéma n'est plus écrit ici : il vient de db/schema.ts, décrit une seule fois
+    // et traduit pour SQLite comme pour MySQL. Il est appliqué au démarrage du serveur ;
+    // on le rejoue à l'usage pour les bases ouvertes avant cette étape.
+    const dialect = sqliteDB_1.default.isSqliteMode() ? "sqlite" : "mysql";
+    const table = schema_1.SHARED_TABLES.find((item) => item.name === "famille_jeunesse");
+    if (!table) {
+        return;
+    }
+    yield (0, db_1._executeSql)((0, schema_1.buildCreateTableSql)(table, dialect), []);
+    for (const column of table.columns.filter((item) => item.type !== "pk")) {
+        yield ensureColumn((0, schema_1.buildAddColumnSql)(table.name, column, dialect));
+    }
 });
 const getValues = (data) => [
     textValue(data.nomFamilleJeunesse),

@@ -84,9 +84,8 @@ const recupCelluleByIdUtilsateur = (idUtilisateur) => {
         try {
             const sql = `SELECT * FROM cellule WHERE idUtilisateur= ?;`;
             const cellule = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
-            if (!cellule.length) {
-                return reject({ name: "Erreur_cellule", message: "Aucune cellule trouvée" });
-            }
+            // Une liste vide est un résultat valide, pas une erreur : une église qui n'a
+            // pas encore créé de cellule doit voir un écran vide, pas une alerte.
             resolve(cellule);
         }
         catch (error) {

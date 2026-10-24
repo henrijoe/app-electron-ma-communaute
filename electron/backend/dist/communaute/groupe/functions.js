@@ -63,9 +63,7 @@ const recupGroupeByIdUtilsateur = (idUtilisateur) => {
         try {
             const sql = `SELECT * FROM groupe WHERE idUtilisateur= ?;`;
             const groupes = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
-            if (groupes.length === 0) {
-                return reject({ name: "Erreur_groupe", message: "Aucun groupe trouvé" });
-            }
+            // Une liste vide est un résultat valide, pas une erreur.
             resolve(groupes);
         }
         catch (error) {

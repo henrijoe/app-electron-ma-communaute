@@ -81,8 +81,7 @@ const recupDecesByIdUtilsateur = (idUtilisateur) => {
         try {
             const sql = 'SELECT * FROM deces WHERE idUtilisateur = ?;';
             const deces = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
-            if (!deces.length)
-                return reject({ name: 'Erreur_deces', message: 'Aucun décès trouvé' });
+            // Une liste vide est un résultat valide, pas une erreur.
             resolve(deces);
         }
         catch (error) {

@@ -17,6 +17,7 @@ const fs_1 = __importDefault(require("fs"));
 const os_1 = __importDefault(require("os"));
 const path_1 = __importDefault(require("path"));
 const sqlite3_1 = __importDefault(require("sqlite3"));
+const schema_1 = require("./schema");
 const AdmZip = require("adm-zip");
 const WINDOWS_SQLITE_DIR = "C:\\base-communaute";
 const SQLITE_BACKUP_DIR_NAME = "sauvegardes";
@@ -746,6 +747,25 @@ const repairBrokenMaladieTable = (database) => __awaiter(void 0, void 0, void 0,
   `);
 });
 /**
+ * Applique le schéma partagé décrit dans db/schema.ts : les tables absentes du dump
+ * MySQL, définies une seule fois pour les deux moteurs.
+ */
+const ensureSharedSchemaTables = (database) => __awaiter(void 0, void 0, void 0, function* () {
+    for (const statement of (0, schema_1.buildSharedCreateStatements)("sqlite")) {
+        yield execDatabase(database, statement);
+    }
+    // Une colonne déjà présente fait échouer l'ALTER : c'est le cas normal sur une base
+    // à jour, et ni SQLite ni MySQL 5.7 ne connaissent "ADD COLUMN IF NOT EXISTS".
+    for (const statement of (0, schema_1.buildSharedColumnStatements)("sqlite")) {
+        try {
+            yield execDatabase(database, statement);
+        }
+        catch (_error) {
+            // colonne déjà en place
+        }
+    }
+});
+/**
  * Ajoute les tables et indexes manquants sur une base SQLite déjà existante.
  */
 const ensureSqliteSchemaUpdated = (databasePath) => __awaiter(void 0, void 0, void 0, function* () {
@@ -763,6 +783,7 @@ const ensureSqliteSchemaUpdated = (databasePath) => __awaiter(void 0, void 0, vo
         yield ensureComptabiliteColumns(database);
         yield repairBrokenGalerieTables(database);
         yield repairBrokenMaladieTable(database);
+        yield ensureSharedSchemaTables(database);
     }
     finally {
         yield new Promise((resolve, reject) => {
@@ -942,6 +963,8 @@ const initializeSqliteDatabase = (databasePath) => __awaiter(void 0, void 0, voi
     const database = openDatabase(databasePath);
     // Ici on initialise une base neuve avec le schéma complet et les données de référence.
     yield executeStatements(database, statements);
+    // Puis les tables que le dump ne contient pas (agenda, famille_jeunesse, nouvelleame).
+    yield ensureSharedSchemaTables(database);
     yield new Promise((resolve, reject) => {
         database.close((closeError) => {
             if (closeError) {

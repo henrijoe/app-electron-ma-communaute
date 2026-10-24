@@ -60,8 +60,7 @@ const recupMaladieByIdUtilsateur = (idUtilisateur) => new Promise((resolve, reje
     try {
         const sql = `SELECT * FROM maladie WHERE idUtilisateur = ?;`;
         const maladie = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
-        if (!maladie.length)
-            return reject({ name: 'Erreur_maladie', message: 'Aucune maladie trouvée' });
+        // Une liste vide est un résultat valide, pas une erreur.
         resolve(maladie);
     }
     catch (error) {

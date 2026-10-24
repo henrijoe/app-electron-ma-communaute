@@ -393,8 +393,7 @@ const recupMembre = () => {
         try {
             const sql = 'SELECT * FROM membre WHERE COALESCE(estDecede, 0) <> 1 ORDER BY idMembre ASC;';
             const membre = yield (0, db_1._selectSql)(sql, []);
-            if (!membre.length)
-                return reject({ name: 'Erreur_membre', message: 'Aucun membre trouvé' });
+            // Une liste vide est un résultat valide, pas une erreur.
             resolve(membre);
         }
         catch (error) {
@@ -421,8 +420,8 @@ const recupMembreByIdUtilsateur = (idUtilisateur) => {
         try {
             const sql = 'SELECT * FROM membre WHERE idUtilisateur = ? AND COALESCE(estDecede, 0) <> 1;';
             const membre = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
-            if (!membre.length)
-                return reject({ name: 'Erreur_membre', message: 'Aucun membre trouvé' });
+            // Une liste vide est un résultat valide : une église qui vient d'être créée
+            // n'a aucun membre, et ce n'est pas une anomalie.
             resolve(membre);
         }
         catch (error) {

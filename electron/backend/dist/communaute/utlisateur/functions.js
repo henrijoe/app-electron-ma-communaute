@@ -16,6 +16,11 @@ exports.modifierLogin = void 0;
 const db_1 = require("../../db");
 const sqliteDB_1 = __importDefault(require("../../db/sqliteDB"));
 const bcrypt = require('bcrypt');
+// Coût bcrypt. Chaque palier double le temps de calcul : le facteur 20 utilisé
+// auparavant demandait environ 124 secondes par inscription sur un poste courant,
+// processeur saturé, et la requête n'aboutissait jamais côté client.
+// 10 est la valeur usuelle (~120 ms) et reste solide.
+const COUT_BCRYPT = Number(process.env.BCRYPT_COST || 10);
 const UTILISATEUR_OPTIONAL_TEXT_FIELDS = [
     'logoEglise',
     'nomEgliseCourt',
@@ -209,8 +214,11 @@ const ensureUtilisateurColumns = () => __awaiter(void 0, void 0, void 0, functio
 const ajouterUtilisateur = (rawData) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         const data = normalizeUtilisateurData(rawData);
-        const hashedconfirmPassword = yield bcrypt.hash(data.confirmPassword, 20);
         try {
+            // Le hachage est à l'intérieur du try : placé avant, une erreur de bcrypt
+            // laissait cette promesse ni tenue ni rompue, et la requête restait suspendue
+            // indéfiniment au lieu de renvoyer une erreur.
+            const hashedconfirmPassword = yield bcrypt.hash(data.confirmPassword, COUT_BCRYPT);
             yield ensureUtilisateurColumns();
             const sql = `INSERT INTO utilisateur(
         logoUtilisateur,

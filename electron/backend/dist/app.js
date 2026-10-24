@@ -15,8 +15,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const constants_1 = require("./helpers/constants");
 const routes_1 = __importDefault(require("./communaute/routes"));
+const authentification_1 = __importDefault(require("./communaute/authentification"));
 const mysqlDB_1 = __importDefault(require("./db/mysqlDB"));
 const sqliteDB_1 = __importDefault(require("./db/sqliteDB"));
+const db_1 = require("./db");
+const schema_1 = require("./db/schema");
 const qrcode = require('qrcode-terminal');
 const path = require('path');
 const dotenv = require('dotenv');
@@ -51,7 +54,13 @@ const sqliteRootDir = sqliteDB_1.default.getSqliteDirectory();
 const memberPhotosDir = path.join(sqliteRootDir, 'photo-membre');
 const galerieMediaDir = path.join(sqliteRootDir, 'galerie-evenements');
 const churchLogosDir = path.join(sqliteRootDir, 'logo-eglise');
+// Photos des enfants et images des activités de l'école du dimanche.
+const ecodimMediasDir = path.join(sqliteRootDir, 'ecodim-medias');
 // =================================== MIDDLEWARES =========================================================
+// Le webhook SasPay doit être monté AVANT les parseurs JSON : sa signature HMAC se
+// calcule sur les octets reçus. Une fois le corps transformé en objet puis resérialisé,
+// le moindre écart de formatage invalide la signature.
+app.use('/communaute/abonnement/webhook', express_1.default.raw({ type: '*/*', limit: '1mb' }));
 app.use(express_1.default.urlencoded({ limit: '100mb', extended: true, }));
 app.use(express_1.default.json({ limit: '100mb' }));
 app.use(cors({ credentials: true, optionsSuccessStatus: 200, origin: true }));
@@ -60,6 +69,7 @@ app.use(bodyParser.json());
 app.use('/photos', express_1.default.static(memberPhotosDir));
 app.use('/galerie-media', express_1.default.static(galerieMediaDir));
 app.use('/church-logos', express_1.default.static(churchLogosDir));
+app.use('/ecodim-medias', express_1.default.static(ecodimMediasDir));
 // ===================================Socket.io configuration =======================================
 const options = {
     transports: ["websocket"],
@@ -94,7 +104,9 @@ app.get("/test", function (_, res) {
         },
     });
 });
-app.use("/communaute", routes_1.default);
+// Toute l'API est derrière le contrôle du jeton, sauf les routes explicitement
+// publiques listées dans le middleware (connexion, inscription, QR code...).
+app.use("/communaute", authentification_1.default, routes_1.default);
 app.get("/db-test", (req, res) => {
     if (sqliteDB_1.default.isSqliteMode()) {
         sqliteDB_1.default.selectSqlite("SELECT 1 AS status")
@@ -170,6 +182,24 @@ const startSqliteBackupScheduler = () => {
     }, SQLITE_BACKUP_CHECK_INTERVAL_MS);
 };
 /**
+ * Crée côté MySQL les tables décrites dans db/schema.ts, puis complète les colonnes
+ * manquantes. Les erreurs "existe déjà" sont le cas normal et sont ignorées.
+ */
+const ensureSharedSchemaForMysql = () => __awaiter(void 0, void 0, void 0, function* () {
+    for (const statement of (0, schema_1.buildSharedCreateStatements)("mysql")) {
+        yield (0, db_1._executeSql)(statement, []);
+    }
+    for (const statement of (0, schema_1.buildSharedColumnStatements)("mysql")) {
+        try {
+            yield (0, db_1._executeSql)(statement, []);
+        }
+        catch (_error) {
+            // colonne déjà en place
+        }
+    }
+    return schema_1.SHARED_TABLES.length;
+});
+/**
  * Affiche le moteur de base de données actif et prépare SQLite si besoin.
  */
 const logDatabaseStartup = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -187,6 +217,11 @@ const logDatabaseStartup = () => __awaiter(void 0, void 0, void 0, function* () 
     }
     console.log(`[DB] Mode actif: mysql`);
     console.log(`[DB] Cible MySQL: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
+    // Le dump MySQL ne contient ni agenda, ni famille_jeunesse, ni nouvelleame : sans
+    // cette étape, ces trois modules répondraient "table inconnue" en ligne alors qu'ils
+    // fonctionnent en local. Voir db/schema.ts.
+    const createdTables = yield ensureSharedSchemaForMysql();
+    console.log(`[DB] Tables partagées vérifiées: ${createdTables}`);
 });
 // httpServer.listen(PORT, () => {
 //   console.log(welcomeMsg);
