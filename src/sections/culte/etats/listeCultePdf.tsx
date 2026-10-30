@@ -39,12 +39,24 @@ const getParticipantCount = (culte: any) => {
   return (Number.isNaN(hommes) ? 0 : hommes) + (Number.isNaN(femmes) ? 0 : femmes);
 };
 
-export const ListeDesCultes = () => {
+type ListeDesCultesProps = {
+  /**
+   * Lignes à imprimer : celles que le tableau affiche, recherche et filtres
+   * compris. Omise, la propriété laisse l'état reprendre la liste complète du
+   * store, qui était le comportement d'origine.
+   */
+  cultes?: any[];
+  /** Filtre actif, rappelé sous le titre pour que la feuille se relise seule. */
+  sousTitre?: string;
+};
+
+export const ListeDesCultes = ({ cultes, sousTitre }: ListeDesCultesProps) => {
   const listCulte = useSelector((state: IReduxState) => state.culte.listCulte);
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
+  const sourceCultes = Array.isArray(cultes) ? cultes : (listCulte || []);
 
   // On trie du plus récent au plus ancien pour obtenir une lecture chronologique naturelle.
-  const sortedCultes = [...(listCulte || [])].sort((a, b) => {
+  const sortedCultes = [...sourceCultes].sort((a, b) => {
     const dateA = new Date(a.dateCulte).getTime();
     const dateB = new Date(b.dateCulte).getTime();
     return dateB - dateA;
@@ -55,6 +67,11 @@ export const ListeDesCultes = () => {
       identity={utilisateurData}
       title="Liste des cultes"
     >
+      {sousTitre && (
+        <Typography variant="body2" sx={{ mb: 1.5, color: '#475569' }}>
+          {sousTitre}
+        </Typography>
+      )}
 
         <PrintTable minWidth={1080}>
           <TableHead>

@@ -49,6 +49,7 @@ import {
   CATEGORIES_SORTIE,
   PERSONNES_REFERENTES,
   SITUATIONS_SOCIALES,
+  estInscrit,
 } from '../../constantes';
 import { FicheSuiviEnfant, FICHE_SUIVI_PAGE_STYLE } from '../../etats/fiche-suivi-enfant';
 import {
@@ -414,6 +415,16 @@ export default function EnfantDetail() {
               </Stack>
 
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap justifyContent="center">
+                {/* Le matricule en premier : c'est l'identifiant qu'on dicte
+                    au téléphone pour désigner cet enfant sans ambiguïté. */}
+                {(enfant as any).matriculeEnfant && (
+                  <Chip
+                    size="medium"
+                    variant="filled"
+                    label={(enfant as any).matriculeEnfant}
+                    sx={{ fontFamily: 'monospace', fontWeight: 700 }}
+                  />
+                )}
                 <Chip
                   size="medium"
                   color="primary"
@@ -434,6 +445,16 @@ export default function EnfantDetail() {
                     label={enfant.sexeEnfant === 'F' ? 'Fille' : 'Garçon'}
                   />
                 )}
+                <Chip
+                  size="medium"
+                  variant={estInscrit(enfant) ? 'filled' : 'outlined'}
+                  color={estInscrit(enfant) ? 'success' : 'default'}
+                  label={
+                    estInscrit(enfant)
+                      ? `Inscrit${enfant.dateInscriptionEcodim ? ` le ${formaterDate(enfant.dateInscriptionEcodim)}` : ''}`
+                      : 'Non inscrit'
+                  }
+                />
               </Stack>
             </Stack>
 

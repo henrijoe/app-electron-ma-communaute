@@ -18,14 +18,26 @@ import {
 import type { IReduxState } from '../../../store/store';
 import type { IMembre } from '../../../store/membreSlice';
 
-export const ListeDesDepartements = () => {
+type ListeDesDepartementsProps = {
+  /**
+   * Lignes à imprimer : celles que le tableau affiche, recherche et filtres
+   * compris. Omise, la propriété laisse l'état reprendre la liste complète du
+   * store, qui était le comportement d'origine.
+   */
+  departements?: any[];
+  /** Filtre actif, rappelé sous le titre pour que la feuille se relise seule. */
+  sousTitre?: string;
+};
+
+export const ListeDesDepartements = ({ departements, sousTitre }: ListeDesDepartementsProps) => {
   const listDepartement = useSelector((state: IReduxState) => state.departement.listDepartement);
   const listMembre = useSelector((state: IReduxState) => state.membre.listMembre);
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
   const membres = Array.isArray(listMembre) ? (listMembre as IMembre[]) : [];
+  const sourceDepartements = Array.isArray(departements) ? departements : (listDepartement || []);
 
   // On trie les départements par nom long pour obtenir un état alphabétique facile à lire.
-  const sortedDepartements = [...(listDepartement || [])].sort((a, b) =>
+  const sortedDepartements = [...sourceDepartements].sort((a, b) =>
     (a.libelleLongDepartement || '').localeCompare(b.libelleLongDepartement || '')
   );
 
@@ -34,6 +46,11 @@ export const ListeDesDepartements = () => {
       identity={utilisateurData}
       title="Liste des départements"
     >
+      {sousTitre && (
+        <Typography variant="body2" sx={{ mb: 1.5, color: '#475569' }}>
+          {sousTitre}
+        </Typography>
+      )}
       {sortedDepartements.length === 0 ? (
         <PrintEmptyState
           title="Aucun département trouvé"

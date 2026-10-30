@@ -45,11 +45,20 @@ const StyledMenu = styled(Menu)(({ theme }) => ({
   },
 }));
 
-const ComponentToPrintCultes = forwardRef<HTMLDivElement>((_, ref) => (
-  <div ref={ref}>
-    <ListeDesCultes />
-  </div>
-));
+type EtatListeProps = {
+  /** Lignes affichées par le tableau au moment du clic (filtres compris). */
+  cultes?: any[];
+  /** Filtre actif, rappelé sous le titre de l'état. */
+  sousTitre?: string;
+};
+
+const ComponentToPrintCultes = forwardRef<HTMLDivElement, EtatListeProps>(
+  ({ cultes, sousTitre }, ref) => (
+    <div ref={ref}>
+      <ListeDesCultes cultes={cultes} sousTitre={sousTitre} />
+    </div>
+  )
+);
 
 const ComponentToPrintFicheCulte = forwardRef<HTMLDivElement>((_, ref) => (
   <div ref={ref}>
@@ -57,7 +66,7 @@ const ComponentToPrintFicheCulte = forwardRef<HTMLDivElement>((_, ref) => (
   </div>
 ));
 
-const PrintEtatGlobal = () => {
+const PrintEtatGlobal = ({ cultes, sousTitre }: EtatListeProps = {}) => {
   const culteRef = useRef<HTMLDivElement>(null);
   const ficheCulteRef = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -173,7 +182,7 @@ const PrintEtatGlobal = () => {
       </StyledMenu>
 
       <div style={{ display: 'none' }}>
-        <ComponentToPrintCultes ref={culteRef} />
+        <ComponentToPrintCultes ref={culteRef} cultes={cultes} sousTitre={sousTitre} />
         <ComponentToPrintFicheCulte ref={ficheCulteRef} />
       </div>
     </div>

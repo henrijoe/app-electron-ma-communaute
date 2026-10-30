@@ -22,9 +22,16 @@ export interface ICulte {
   nombreHommeCulte: string
   nombreFemmeCulte: string
     offrandeCulte: string;
+  /** Dîme relevée au culte, à côté de l'offrande. */
+  dimeCulte: string
   ecodim: string
   filleEcodim: string
-    offrandeEcodim: string;
+  /**
+   * Ancienne offrande de l'école du dimanche : plus saisie, plus écrite. La
+   * caisse du département vit maintenant dans l'onglet Ecodim. Le champ reste
+   * déclaré parce que les relevés déjà enregistrés le portent encore.
+   */
+  offrandeEcodim?: string;
   resumePredication: string
   idUtilisateur: number
 }
@@ -49,9 +56,9 @@ export const culte: any = {
   nombreHommeCulte: "",
   nombreFemmeCulte: "",
   offrandeCulte: "",
+  dimeCulte: "",
   ecodim: "",
   filleEcodim: "",
-  offrandeEcodim: "",
   resumePredication: "",
   idUtilisateur: null,
 }

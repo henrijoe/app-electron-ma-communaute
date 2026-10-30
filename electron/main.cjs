@@ -1144,11 +1144,20 @@ if (!gotSingleInstanceLock) {
   createMainWindow();
 
   if (autoUpdater && app.isPackaged) {
-    setTimeout(() => {
+    const verifierLesMisesAJour = () => {
       checkForDesktopUpdates().catch((error) => {
         writeDesktopLog(`Vérification automatique des mises à jour impossible: ${error.message}`);
       });
-    }, 8000);
+    };
+
+    // Premier passage peu après l'ouverture, le temps que le backend démarre.
+    setTimeout(verifierLesMisesAJour, 8000);
+
+    // Puis toutes les quatre heures. Beaucoup de postes d'église restent
+    // allumés toute la semaine sans jamais fermer l'application : sans cette
+    // reprise, une seule vérification au lancement signifierait qu'une version
+    // publiée le mardi ne serait vue qu'au prochain redémarrage.
+    setInterval(verifierLesMisesAJour, 4 * 60 * 60 * 1000);
   }
 
   app.on("activate", () => {

@@ -146,8 +146,22 @@ const getBaptemeDisplay = (value: string | number | null | undefined) => {
 };
 
 
+type ListeDesMembresProps = {
+  /**
+   * Lignes à imprimer, dans l'ordre où le tableau les affiche.
+   *
+   * Sans cette propriété, l'état reprend la liste complète du store. C'était le
+   * comportement d'avant, et il reste le repli : une feuille imprimée depuis un
+   * écran filtré doit montrer le filtre, mais un appel qui ne filtre rien ne
+   * doit pas se retrouver avec une page vide.
+   */
+  membres?: any[];
+  /** Filtre actif, écrit sous le titre pour que la feuille se relise seule. */
+  sousTitre?: string;
+};
+
 //
-export const ListeDesMembres = () => {
+export const ListeDesMembres = ({ membres, sousTitre }: ListeDesMembresProps) => {
 
   // Données brutes récupérées depuis le store Redux.
   const listMembre = useSelector((state: IReduxState) => state.membre.listMembre);
@@ -192,6 +206,13 @@ export const ListeDesMembres = () => {
     const cellule = dataCellule?.find((item: any) => item.value === id);
     return cellule?.label || 'Non spécifiée';
   };
+
+  // Les lignes imprimées sont celles que l'écran affiche. Un état qui sortirait
+  // la liste entière alors que le tableau est filtré ne correspondrait à rien
+  // de ce que la personne a sous les yeux au moment où elle clique.
+  const lignes: any[] = Array.isArray(membres)
+    ? membres
+    : (Array.isArray(listMembre) ? listMembre : []);
 
   return (
     <>
@@ -301,7 +322,16 @@ export const ListeDesMembres = () => {
               </Typography>
               <Typography sx={{ fontSize: 17, fontWeight: 900, lineHeight: 1 }}>
                 Liste des membres
-
+              </Typography>
+              {/*
+                Le filtre et l'effectif, sous le titre : une feuille qui montre
+                12 membres sur 240 doit dire pourquoi, sinon elle se lit comme
+                la liste entière de l'église.
+              */}
+              <Typography sx={{ fontSize: 9.5, mt: 0.3, opacity: 0.85 }}>
+                {[sousTitre, `${lignes.length} membre${lignes.length > 1 ? 's' : ''}`]
+                  .filter(Boolean)
+                  .join(' — ')}
               </Typography>
             </Box>
           </Stack>
@@ -325,11 +355,18 @@ export const ListeDesMembres = () => {
                 N°
               </th>
 
-              <th style={{ ...thStyle, width: "10%" }}>
+              <th style={{ ...thStyle, width: "8%" }}>
                 Photo
               </th>
 
-              <th style={{ ...thStyle, width: "22%" }}>
+              {/* Le matricule sur la feuille imprimée : c'est par lui qu'on
+                  retrouve la fiche du membre, là où deux lignes peuvent porter
+                  exactement les mêmes nom et prénoms. */}
+              <th style={{ ...thStyle, width: "11%" }}>
+                Matricule
+              </th>
+
+              <th style={{ ...thStyle, width: "21%" }}>
                 Nom et prénoms
               </th>
 
@@ -360,8 +397,8 @@ export const ListeDesMembres = () => {
           </thead>
 
           <tbody>
-            {/* Une ligne par membre de la liste filtree/chargee dans le store. */}
-            {listMembre.map((item: any, index: number) => {
+            {/* Une ligne par membre affiche par le tableau au moment du clic. */}
+            {lignes.map((item: any, index: number) => {
               const baptemeDisplay = getBaptemeDisplay(item.baptemeEauMembre);
               const photoUrl = getPhotoUrl(item.photoMembre);
 
@@ -401,6 +438,10 @@ export const ListeDesMembres = () => {
                         {`${item.nomMembre?.charAt(0) || ""}${item.prenomMembre?.charAt(0) || ""}`}
                       </div>
                     )}
+                  </td>
+
+                  <td style={{ ...tdStyle, fontFamily: "monospace", fontWeight: 700 }}>
+                    {item.matriculeMembre || "—"}
                   </td>
 
                   <td style={tdStyle}>

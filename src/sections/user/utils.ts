@@ -113,6 +113,9 @@ export function applyFilter({ inputData, comparator, filterName }: ApplyFilterPr
 
       // Vérifiez chaque champ de manière sécurisée
       return (
+        // Le matricule en premier : c'est l'identifiant qu'on reçoit par
+        // téléphone, et le seul qui distingue deux homonymes à coup sûr.
+        safeToString((user as any).matriculeMembre)?.includes(searchTerm) ||
         safeToString(user.nomMembre)?.includes(searchTerm) ||
         safeToString(user.prenomMembre)?.includes(searchTerm) ||
         safeToString(user.lieuNaissMembre)?.includes(searchTerm) ||

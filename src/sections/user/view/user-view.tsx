@@ -186,7 +186,6 @@ export function UserView() {
       ? listResponsabilite.map((item: any) => ({ value: item.idResponsabilite, label: item.libelleResponsabilite }))
       : []
   ), [listResponsabilite]);
-  const exportableMembres = useMemo(() => (Array.isArray(listMembre) ? listMembre : []), [listMembre]);
   // Nom de l'église affiché sur le QR code / l'affiche imprimable, avec
   // repli sur "Ma Communauté" si rien n'est renseigné dans le profil.
   const registrationChurchName = useMemo(() => (
@@ -209,6 +208,66 @@ export function UserView() {
 
   // ---- États du composant ----
   const [filterName, setFilterName] = useState('');           // Texte tapé dans la barre de recherche du tableau
+
+  // ---- Lignes réellement affichées par le tableau ----
+  //
+  // Ce bloc est volontairement placé ici, tout en haut du composant : l'export
+  // Excel et le menu Imprimer s'appuient dessus, et ils sont déclarés plus bas.
+  // Un `const` lu avant sa ligne de déclaration casse le rendu (et TypeScript ne
+  // le signale pas quand la lecture se fait dans un tableau de dépendances).
+  const dataFiltered: IMembre[] = useMemo(() => {
+    const hasStructuredFilter = Boolean(String(titreDocument || '').trim());
+    const dataToFilter = hasStructuredFilter
+      ? (Array.isArray(filterMembre) ? filterMembre : [])
+      : (Array.isArray(listMembre) ? listMembre : []);
+
+    return applyFilter({
+      inputData: dataToFilter,
+      comparator: getComparator(table?.order, table?.orderBy),
+      filterName,
+    });
+  }, [filterMembre, filterName, listMembre, table.order, table.orderBy, titreDocument]);
+
+  const notFound = !dataFiltered?.length && (!!filterName || Boolean(String(titreDocument || '').trim()));
+
+  const sortedData = useMemo(() => dataFiltered.sort((a, b) => {
+    const nameA = a.nomMembre?.toLowerCase();
+    const nameB = b.nomMembre?.toLowerCase();
+    return table.order === 'asc'
+      ? nameA?.localeCompare(nameB)
+      : nameB?.localeCompare(nameA);
+  }), [dataFiltered, table.order]);
+
+  const currentPageMembres = useMemo(
+    () =>
+      sortedData?.slice(
+        table.page * table.rowsPerPage,
+        table.page * table.rowsPerPage + table.rowsPerPage
+      ) || [],
+    [sortedData, table.page, table.rowsPerPage]
+  );
+
+  /**
+   * Rappel du filtre actif, porté par les états imprimés et par la notification
+   * d'export.
+   *
+   * `titreDocument` est le libellé du filtre structuré (département, cellule,
+   * responsabilité...), `filterName` le texte tapé dans la barre de recherche.
+   * Les deux peuvent s'appliquer en même temps.
+   */
+  const libelleFiltreActif = useMemo(() => {
+    const parties = [
+      String(titreDocument || '').trim(),
+      String(filterName || '').trim() ? `Recherche : ${String(filterName).trim()}` : '',
+    ].filter(Boolean);
+
+    return parties.join(' · ');
+  }, [filterName, titreDocument]);
+
+  // L'export reprend exactement les lignes du tableau : filtre structuré et
+  // recherche compris. Exporter la liste entière depuis un écran filtré
+  // donnait un fichier qui ne correspondait pas à ce qui était affiché.
+  const exportableMembres = useMemo(() => sortedData, [sortedData]);
   const [openDialog, setOpenDialog] = useState(false);         // Ouverture de la boîte de dialogue "Ajouter/Modifier un membre"
   const [data, setData] = useState({ ...membre });             // Contenu du formulaire membre en cours d'édition
   const [photoPreview, setPhotoPreview] = useState<string | null>(null); // Aperçu de la photo affichée dans le formulaire
@@ -956,6 +1015,9 @@ export function UserView() {
     }
 
     const rows = exportableMembres.map((item: IMembre) => ({
+      // Le matricule ouvre la feuille : c'est la clé qui permet de rapprocher
+      // ce fichier d'un autre sans risque d'homonymie.
+      matriculeMembre: (item as any).matriculeMembre || '',
       nomMembre: item.nomMembre || '',
       prenomMembre: item.prenomMembre || '',
       contactMembre: item.contactMembre || '',
@@ -992,8 +1054,14 @@ export function UserView() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Membres');
     XLSX.writeFile(workbook, 'export-membres.xlsx');
-    showNotification(`${rows.length} membre(s) exporté(s)`, 'success');
+    showNotification(
+      libelleFiltreActif
+        ? `${rows.length} membre(s) exporté(s) — ${libelleFiltreActif}`
+        : `${rows.length} membre(s) exporté(s)`,
+      'success'
+    );
   }, [
+    libelleFiltreActif,
     celluleOptions,
     departementOptions,
     exportableMembres,
@@ -1069,38 +1137,6 @@ export function UserView() {
   useEffect(() => {
     fetchMembres();
   }, [fetchMembres]);
-
-  const dataFiltered: IMembre[] = useMemo(() => {
-    const hasStructuredFilter = Boolean(String(titreDocument || '').trim());
-    const dataToFilter = hasStructuredFilter
-      ? (Array.isArray(filterMembre) ? filterMembre : [])
-      : (Array.isArray(listMembre) ? listMembre : []);
-
-    return applyFilter({
-      inputData: dataToFilter,
-      comparator: getComparator(table?.order, table?.orderBy),
-      filterName,
-    });
-  }, [filterMembre, filterName, listMembre, table.order, table.orderBy, titreDocument]);
-
-  const notFound = !dataFiltered?.length && (!!filterName || Boolean(String(titreDocument || '').trim()));
-
-  const sortedData = useMemo(() => dataFiltered.sort((a, b) => {
-    const nameA = a.nomMembre?.toLowerCase();
-    const nameB = b.nomMembre?.toLowerCase();
-    return table.order === 'asc'
-      ? nameA?.localeCompare(nameB)
-      : nameB?.localeCompare(nameA);
-  }), [dataFiltered, table.order]);
-
-  const currentPageMembres = useMemo(
-    () =>
-      sortedData?.slice(
-        table.page * table.rowsPerPage,
-        table.page * table.rowsPerPage + table.rowsPerPage
-      ) || [],
-    [sortedData, table.page, table.rowsPerPage]
-  );
 
   // Membres correspondant aux lignes cochees dans le tableau, utilisés pour
   // imprimer une carte de membre par personne sélectionnée.
@@ -1271,8 +1307,9 @@ export function UserView() {
           alignItems="center"
           sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' }, flexWrap: 'wrap' }}
         >
-          {/* Menu Imprimer, uniquement dans le navigateur (voir printEtats.tsx) */}
-          {!isDesktopApp && <PrintEtatGlobal />}
+          {/* Menu Imprimer, uniquement dans le navigateur (voir printEtats.tsx).
+              Les lignes imprimées sont celles du tableau, filtre compris. */}
+          {!isDesktopApp && <PrintEtatGlobal membres={sortedData} sousTitre={libelleFiltreActif} />}
 
           {!isDesktopApp && canManageUsers && (
             <>
@@ -1631,6 +1668,7 @@ export function UserView() {
                 }
                 headLabel={[
                   { id: 'photoMembre', label: 'Photo' },
+                  { id: 'matriculeMembre', label: 'Matricule' },
                   { id: 'nomMembre', label: 'Nom et prénoms' },
                   { id: 'residenceMembre', label: "Lieu d'habitation" },
                   { id: 'baptemeEauMembre', label: 'Baptisé(e)' },

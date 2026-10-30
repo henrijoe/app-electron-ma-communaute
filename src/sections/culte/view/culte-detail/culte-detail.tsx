@@ -121,8 +121,8 @@ export function CulteDetailView() {
   const getTotalOffrandes = () => {
     if (!culte) return 0;
     const offrandeCulte = parseInt(culte.offrandeCulte, 10) || 0;
-    const offrandeEcodim = parseInt(culte.offrandeEcodim, 10) || 0;
-    return offrandeCulte + offrandeEcodim;
+    const dimeCulte = parseInt(culte.dimeCulte, 10) || 0;
+    return offrandeCulte + dimeCulte;
   };
 
   if (loading) {
@@ -310,11 +310,26 @@ export function CulteDetailView() {
                     </Typography>
                   </Box>
                   <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Typography variant="body1">Offrande ECODIM</Typography>
+                    <Typography variant="body1">Dîme</Typography>
                     <Typography variant="body1" fontWeight="bold">
-                      {culte.offrandeEcodim ? `${culte.offrandeEcodim} FCFA` : '0 FCFA'}
+                      {culte.dimeCulte ? `${culte.dimeCulte} FCFA` : '0 FCFA'}
                     </Typography>
                   </Box>
+
+                  {/* Les relevés saisis avant que la caisse Ecodim n'existe
+                      portent encore une offrande de l'école du dimanche. On la
+                      montre pour ne pas faire disparaître un montant déjà
+                      enregistré, mais seulement quand il y en a un. */}
+                  {Number(culte.offrandeEcodim) > 0 && (
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Typography variant="body2" color="text.secondary">
+                        Offrande ECODIM (ancien relevé)
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {culte.offrandeEcodim} FCFA
+                      </Typography>
+                    </Box>
+                  )}
                   <Divider />
                   <Box display="flex" alignItems="center" justifyContent="space-between">
                     <Typography variant="h6">Total</Typography>

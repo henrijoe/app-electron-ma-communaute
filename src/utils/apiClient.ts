@@ -669,6 +669,53 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  // Caisse de l'école du dimanche : recettes et dépenses du département, tenues
+  // à part de la comptabilité de l'église.
+  getFinancesEcodim: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupfinanceecodimbyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  getFinancesEcodimSupprimees: (idUtilisateur: number | string) =>
+    request<IServerResponse>(
+      `communaute/recupfinanceecodimsupprimeebyutilisateur/${idUtilisateur}`,
+      { method: 'GET' }
+    ),
+
+  createFinanceEcodim: (data: any) =>
+    request<IServerResponse>('communaute/insererfinanceecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateFinanceEcodim: (data: any) =>
+    request<IServerResponse>('communaute/modifierfinanceecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteFinanceEcodim: (data: {
+    idFinanceEcodim: number;
+    idUtilisateur: number;
+    motifSuppressionFinance?: string;
+  }) =>
+    request<IServerResponse>('communaute/supprimerfinanceecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  restoreFinanceEcodim: (data: { idFinanceEcodim: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/restaurerfinanceecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  purgeFinanceEcodim: (data: { idFinanceEcodim: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/supprimerfinanceecodimdefinitivement', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // Photo d'un enfant : envoyée en base64, stockée en fichier côté serveur.
   enregistrerPhotoEnfantEcodim: (data: {
     idEnfantEcodim: number;

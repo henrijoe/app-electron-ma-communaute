@@ -1,4 +1,5 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
+import ReactToPrint from 'react-to-print';
 import * as XLSX from 'xlsx';
 
 import {
@@ -22,10 +23,45 @@ import {
   TablePagination,
   ToggleButtonGroup,
 } from '@mui/material';
-import { SaveRounded, DoneAllRounded, TableChartRounded } from '@mui/icons-material';
+import {
+  SaveRounded,
+  DoneAllRounded,
+  TableChartRounded,
+  PictureAsPdfRounded,
+} from '@mui/icons-material';
 
+import { formaterDate } from 'src/utils/format-date';
 import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
 import { SelectRecherche } from 'src/components/select-recherche';
+import { PrintDocumentLayout } from 'src/components/print/print-document';
+
+// Styles des états imprimés : les mêmes que les listes de l'école du dimanche.
+const styleTableau: React.CSSProperties = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  fontSize: 12.5,
+};
+
+const styleCellule: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  padding: '5px 7px',
+  textAlign: 'left',
+};
+
+const styleCentre: React.CSSProperties = { ...styleCellule, textAlign: 'center' };
+
+const styleEntete: React.CSSProperties = {
+  ...styleCellule,
+  backgroundColor: '#eef2f7',
+  fontWeight: 700,
+};
+
+const styleTitreSection: React.CSSProperties = {
+  margin: '14px 0 6px',
+  fontSize: 14,
+  fontWeight: 700,
+  color: '#1e293b',
+};
 
 // ----------------------------------------------------------------------
 // Assiduité : l'appel du dimanche, et ce qu'on en tire.
@@ -49,15 +85,15 @@ import { SelectRecherche } from 'src/components/select-recherche';
 const STATUTS = [
   { valeur: 'present', libelle: 'Présent', lettre: 'P', couleur: 'success' as const },
   { valeur: 'absent', libelle: 'Absent', lettre: 'A', couleur: 'error' as const },
-  { valeur: 'excuse', libelle: 'Excusé', lettre: 'E', couleur: 'warning' as const },
+  { valeur: 'deplacement', libelle: 'Déplacement', lettre: 'D', couleur: 'warning' as const },
 ];
 
 /** Un clic fait défiler les statuts, puis revient à la case vide. */
 const STATUT_SUIVANT: Record<string, string> = {
   '': 'present',
   present: 'absent',
-  absent: 'excuse',
-  excuse: '',
+  absent: 'deplacement',
+  deplacement: '',
 };
 
 const MOIS_LIBELLES = [
@@ -152,6 +188,11 @@ export function AssiduiteGrille({
   // affiche reste celui du classement entier, pas celui de la page.
   const [pageSynthese, setPageSynthese] = useState(0);
   const [lignesParPage, setLignesParPage] = useState(5);
+  // Pagination de l'appel, réglée comme les autres tableaux du projet. Une
+  // classe de trente enfants tenait sinon sur un écran et demi, et la ligne des
+  // totaux finissait hors de vue.
+  const [pageAppel, setPageAppel] = useState(0);
+  const [lignesParPageAppel, setLignesParPageAppel] = useState(5);
   /** Saisie en cours, par « idEnfant|date ». Vide tant que rien n'est touché. */
   const [brouillon, setBrouillon] = useState<Record<string, string>>({});
   const [enregistrement, setEnregistrement] = useState(false);
@@ -159,6 +200,13 @@ export function AssiduiteGrille({
   // La première classe sert de choix par défaut : l'appel se fait toujours pour
   // une classe précise, « toutes les classes » n'aurait pas de sens ici.
   const classeCourante = idClasse || String(classes[0]?.idClasseEcodim || '');
+
+  const libelleDeLaClasse = (id: string) =>
+    classes.find((classe) => String(classe.idClasseEcodim) === String(id))?.libelleClasse || '';
+  const libelleClasseCourante = libelleDeLaClasse(classeCourante);
+
+  /** Le document imprimé, monté hors écran. */
+  const referenceImpression = useRef<HTMLDivElement>(null);
 
   const dimanches = useMemo(() => dimanchesDuMois(annee, mois), [annee, mois]);
 
@@ -173,6 +221,29 @@ export function AssiduiteGrille({
         .sort((a, b) => nomComplet(a).localeCompare(nomComplet(b), 'fr')),
     [enfants, classeCourante]
   );
+
+  /**
+   * Les enfants de la page affichée.
+   *
+   * Seules les LIGNES sont paginées. La ligne « Présents » et le compteur de
+   * chaque colonne continuent de porter sur la classe entière : un total qui ne
+   * compterait que la page en cours serait faux, et c'est pourtant ce qu'on
+   * reporterait sur le registre.
+   */
+  const enfantsDeLaPage = useMemo(
+    () =>
+      enfantsDeLaClasse.slice(
+        pageAppel * lignesParPageAppel,
+        pageAppel * lignesParPageAppel + lignesParPageAppel
+      ),
+    [enfantsDeLaClasse, pageAppel, lignesParPageAppel]
+  );
+
+  // Changer de classe ou de mois raccourcit souvent la liste : rester en page 3
+  // afficherait un tableau vide sans qu'on comprenne pourquoi.
+  useEffect(() => {
+    setPageAppel(0);
+  }, [classeCourante, annee, mois]);
 
   /** La séance d'un dimanche pour la classe affichée, si elle existe déjà. */
   const culteDuJour = useCallback(
@@ -203,8 +274,24 @@ export function AssiduiteGrille({
     return cle in brouillon ? brouillon[cle] : statutsEnregistres[cle] || '';
   };
 
+  /**
+   * Un dimanche qui n'est pas encore arrivé ne se pointe pas.
+   *
+   * La grille affiche le mois entier, dimanches à venir compris : on peut donc
+   * ouvrir novembre fin octobre et marquer des présences pour une classe qui
+   * n'a pas eu lieu. Une assiduité se constate, elle ne se prévoit pas — et un
+   * enfant « présent » d'avance fausserait son taux et sa fiche de suivi.
+   *
+   * La comparaison porte sur des chaînes « AAAA-MM-JJ », qui s'ordonnent comme
+   * des dates. Le jour courant est composé à partir de l'heure locale : passer
+   * par toISOString() le décalerait d'un jour à l'approche de minuit.
+   */
+  const jourCourant = `${maintenant.getFullYear()}-${String(maintenant.getMonth() + 1).padStart(2, '0')}-${String(maintenant.getDate()).padStart(2, '0')}`;
+
+  const estAVenir = (jour: string): boolean => jour > jourCourant;
+
   const basculerCase = (idEnfantEcodim: number, jour: string) => {
-    if (!modifiable) return;
+    if (!modifiable || estAVenir(jour)) return;
 
     const cle = `${idEnfantEcodim}|${jour}`;
     setBrouillon((precedent) => ({
@@ -215,7 +302,7 @@ export function AssiduiteGrille({
 
   /** Marque tout le monde présent sur un dimanche : le cas de loin le plus courant. */
   const toutPresent = (jour: string) => {
-    if (!modifiable) return;
+    if (!modifiable || estAVenir(jour)) return;
 
     setBrouillon((precedent) => {
       const suivant = { ...precedent };
@@ -230,12 +317,23 @@ export function AssiduiteGrille({
     enfantsDeLaClasse.filter((enfant) => statutAffiche(enfant.idEnfantEcodim, jour) === 'present')
       .length;
 
-  /** Dimanches réellement touchés : inutile de réécrire les autres séances. */
+  /**
+   * Dimanches réellement touchés : inutile de réécrire les autres séances.
+   *
+   * Les dimanches à venir sont écartés une seconde fois ici. La saisie les
+   * refuse déjà, mais un brouillon peut leur survivre : on pointe le dimanche
+   * courant, on change de mois, on revient — et rien ne doit partir pour une
+   * séance qui n'a pas eu lieu.
+   */
   const joursModifies = useMemo(() => {
     const jours = new Set<string>();
-    Object.keys(brouillon).forEach((cle) => jours.add(cle.split('|')[1]));
+    Object.keys(brouillon).forEach((cle) => {
+      const jour = cle.split('|')[1];
+      if (!estAVenir(jour)) jours.add(jour);
+    });
     return Array.from(jours);
-  }, [brouillon]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brouillon, jourCourant]);
 
   const enregistrer = async () => {
     if (!joursModifies.length) return;
@@ -338,7 +436,7 @@ export function AssiduiteGrille({
 
         const presents = siennes.filter((p) => p.statutPresence === 'present').length;
         const absents = siennes.filter((p) => p.statutPresence === 'absent').length;
-        const excuses = siennes.filter((p) => p.statutPresence === 'excuse').length;
+        const deplacements = siennes.filter((p) => p.statutPresence === 'deplacement').length;
 
         // Le dénominateur est le nombre de séances de SA classe sur la période,
         // pas le nombre d'appels où il figure : un enfant jamais pointé a un
@@ -355,7 +453,7 @@ export function AssiduiteGrille({
           seances,
           presents,
           absents,
-          excuses,
+          deplacements,
           taux: seances ? Math.round((presents / seances) * 100) : 0,
         };
       })
@@ -407,7 +505,7 @@ export function AssiduiteGrille({
         Séances: ligne.seances,
         Présences: ligne.presents,
         Absences: ligne.absents,
-        Excusés: ligne.excuses,
+        Déplacements: ligne.deplacements,
         'Taux (%)': ligne.taux,
       }))
     );
@@ -415,7 +513,9 @@ export function AssiduiteGrille({
     const feuilleClasses = XLSX.utils.json_to_sheet(
       effectifsParClasse.map((ligne) => ({
         Classe: ligne.classe.libelleClasse || '',
-        Inscrits: ligne.inscrits,
+        // « Effectif » et non « Inscrits » : l'inscription est désormais une case
+        // de la fiche enfant, et ce chiffre compte tous les enfants de la classe.
+        Effectif: ligne.inscrits,
         'Nouveaux sur la période': ligne.nouveaux,
         Séances: ligne.seances,
         'Taux moyen (%)': ligne.tauxMoyen,
@@ -466,6 +566,26 @@ export function AssiduiteGrille({
             Excel
           </Button>
         )}
+
+        {/* L'état suit la vue : la feuille d'appel du mois, ou la synthèse de
+            la période. Désactivé quand il n'y aurait rien à imprimer. */}
+        <ReactToPrint
+          documentTitle={
+            vue === 'appel'
+              ? `appel-${libelleClasseCourante || 'classe'}-${annee}-${pad2(mois + 1)}`
+              : `assiduite-${dateDebut}-${dateFin}`
+          }
+          trigger={() => (
+            <Button
+              variant="outlined"
+              startIcon={<PictureAsPdfRounded />}
+              disabled={vue === 'appel' ? !enfantsDeLaClasse.length : !lignesSynthese.length}
+            >
+              PDF
+            </Button>
+          )}
+          content={() => referenceImpression.current}
+        />
 
         {vue === 'appel' && modifiable && (
           <Button
@@ -528,10 +648,19 @@ export function AssiduiteGrille({
 
           <Alert severity="info" sx={{ mb: 2 }}>
             Un clic sur une case fait défiler <strong>Présent</strong>,{' '}
-            <strong>Absent</strong>, <strong>Excusé</strong>, puis vide. Une case laissée
+            <strong>Absent</strong>, <strong>Déplacement</strong>, puis vide. Une case laissée
             vide signifie que l&apos;enfant n&apos;a pas été appelé — ce n&apos;est pas une
             absence, et sa fiche de suivi restera vide pour ce dimanche.
           </Alert>
+
+          {/* Un mois entièrement à venir donne une grille où rien ne réagit au
+              clic. Sans cette ligne, on croirait à une panne. */}
+          {dimanches.length > 0 && dimanches.every((jour) => estAVenir(jour)) && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Ce mois n&apos;a pas encore commencé : l&apos;appel reste fermé. Chaque dimanche
+              s&apos;ouvrira le jour venu.
+            </Alert>
+          )}
 
           {!enfantsDeLaClasse.length ? (
             <Alert severity="warning">Aucun enfant actif dans cette classe.</Alert>
@@ -542,39 +671,55 @@ export function AssiduiteGrille({
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ minWidth: 220 }}>Nom et prénoms</TableCell>
-                      {dimanches.map((jour) => (
-                        <TableCell key={jour} align="center" sx={{ minWidth: 72 }}>
-                          <Stack alignItems="center" spacing={0.5}>
-                            <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                              {jour.slice(8)}
-                            </Typography>
-                            {modifiable && (
-                              <Tooltip title="Marquer tout le monde présent">
-                                <Button
-                                  size="small"
-                                  onClick={() => toutPresent(jour)}
-                                  sx={{ minWidth: 0, px: 0.5 }}
-                                >
-                                  <DoneAllRounded fontSize="small" />
-                                </Button>
-                              </Tooltip>
-                            )}
-                            {!culteDuJour(jour) && (
-                              <Tooltip title="Aucune séance enregistrée ce dimanche : elle sera créée à l'enregistrement.">
-                                <Typography variant="caption" color="text.disabled">
-                                  nouv.
-                                </Typography>
-                              </Tooltip>
-                            )}
-                          </Stack>
-                        </TableCell>
-                      ))}
+                      {dimanches.map((jour) => {
+                        const aVenir = estAVenir(jour);
+
+                        return (
+                          <TableCell
+                            key={jour}
+                            align="center"
+                            sx={{ minWidth: 72, opacity: aVenir ? 0.45 : 1 }}
+                          >
+                            <Stack alignItems="center" spacing={0.5}>
+                              <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                                {jour.slice(8)}
+                              </Typography>
+                              {modifiable && !aVenir && (
+                                <Tooltip title="Marquer tout le monde présent">
+                                  <Button
+                                    size="small"
+                                    onClick={() => toutPresent(jour)}
+                                    sx={{ minWidth: 0, px: 0.5 }}
+                                  >
+                                    <DoneAllRounded fontSize="small" />
+                                  </Button>
+                                </Tooltip>
+                              )}
+                              {aVenir ? (
+                                <Tooltip title="Ce dimanche n'est pas encore arrivé : l'appel s'ouvrira le jour venu.">
+                                  <Typography variant="caption" color="text.disabled">
+                                    à venir
+                                  </Typography>
+                                </Tooltip>
+                              ) : (
+                                !culteDuJour(jour) && (
+                                  <Tooltip title="Aucune séance enregistrée ce dimanche : elle sera créée à l'enregistrement.">
+                                    <Typography variant="caption" color="text.disabled">
+                                      nouv.
+                                    </Typography>
+                                  </Tooltip>
+                                )
+                              )}
+                            </Stack>
+                          </TableCell>
+                        );
+                      })}
                       <TableCell align="center">Taux</TableCell>
                     </TableRow>
                   </TableHead>
 
                   <TableBody>
-                    {enfantsDeLaClasse.map((enfant) => {
+                    {enfantsDeLaPage.map((enfant) => {
                       const pointes = dimanches.filter(
                         (jour) => statutAffiche(enfant.idEnfantEcodim, jour) !== ''
                       );
@@ -595,7 +740,7 @@ export function AssiduiteGrille({
                                 <Button
                                   size="small"
                                   onClick={() => basculerCase(enfant.idEnfantEcodim, jour)}
-                                  disabled={!modifiable}
+                                  disabled={!modifiable || estAVenir(jour)}
                                   sx={{
                                     minWidth: 34,
                                     px: 0,
@@ -618,6 +763,8 @@ export function AssiduiteGrille({
                       );
                     })}
 
+                    {/* Total de la CLASSE, pas de la page : c'est ce chiffre
+                        qu'on recopie sur le registre. */}
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700 }}>Présents</TableCell>
                       {dimanches.map((jour) => (
@@ -630,6 +777,21 @@ export function AssiduiteGrille({
                   </TableBody>
                 </Table>
               </TableContainer>
+
+              <TablePagination
+                component="div"
+                page={pageAppel}
+                count={enfantsDeLaClasse.length}
+                rowsPerPage={lignesParPageAppel}
+                rowsPerPageOptions={[5, 10, 25]}
+                onPageChange={(_, nouvelle) => setPageAppel(nouvelle)}
+                onRowsPerPageChange={(evenement) => {
+                  setLignesParPageAppel(parseInt(evenement.target.value, 10));
+                  setPageAppel(0);
+                }}
+                labelRowsPerPage="Lignes par page :"
+                labelDisplayedRows={({ from, to, count }) => `${from}–${to} sur ${count}`}
+              />
             </Card>
           )}
         </>
@@ -687,7 +849,7 @@ export function AssiduiteGrille({
                 <TableHead>
                   <TableRow>
                     <TableCell>Classe</TableCell>
-                    <TableCell align="center">Inscrits</TableCell>
+                    <TableCell align="center">Effectif</TableCell>
                     <TableCell align="center">Nouveaux sur la période</TableCell>
                     <TableCell align="center">Séances</TableCell>
                     <TableCell align="center">Assiduité moyenne</TableCell>
@@ -723,7 +885,7 @@ export function AssiduiteGrille({
                     <TableCell align="center">Séances</TableCell>
                     <TableCell align="center">Présences</TableCell>
                     <TableCell align="center">Absences</TableCell>
-                    <TableCell align="center">Excusés</TableCell>
+                    <TableCell align="center">Déplacements</TableCell>
                     <TableCell align="center">Taux</TableCell>
                   </TableRow>
                 </TableHead>
@@ -746,7 +908,7 @@ export function AssiduiteGrille({
                       <TableCell align="center">{ligne.seances}</TableCell>
                       <TableCell align="center">{ligne.presents}</TableCell>
                       <TableCell align="center">{ligne.absents}</TableCell>
-                      <TableCell align="center">{ligne.excuses}</TableCell>
+                      <TableCell align="center">{ligne.deplacements}</TableCell>
                       <TableCell align="center">
                         <Chip
                           size="small"
@@ -793,6 +955,145 @@ export function AssiduiteGrille({
           </Card>
         </>
       )}
+
+      {/* États imprimables. Ils reprennent TOUTES les lignes, sans la
+          pagination de l'écran : une feuille d'appel qui s'arrêterait au
+          cinquième enfant serait inutilisable. */}
+      <Box sx={{ display: 'none' }}>
+        <div ref={referenceImpression}>
+          {vue === 'appel' ? (
+            <PrintDocumentLayout
+              title={`Feuille d'appel — ${libelleClasseCourante || 'Classe'}`}
+              orientation="landscape"
+            >
+              <div style={{ marginBottom: 10, fontSize: 13, color: '#475569' }}>
+                {MOIS_LIBELLES[mois]} {annee} · {enfantsDeLaClasse.length} enfant
+                {enfantsDeLaClasse.length > 1 ? 's' : ''}
+              </div>
+
+              <table style={styleTableau}>
+                <thead>
+                  <tr>
+                    <th style={{ ...styleEntete, width: 34, textAlign: 'center' }}>N°</th>
+                    <th style={styleEntete}>Nom et prénoms</th>
+                    {dimanches.map((jour) => (
+                      <th key={jour} style={{ ...styleEntete, textAlign: 'center', width: 70 }}>
+                        {formaterDate(jour).slice(0, 5)}
+                      </th>
+                    ))}
+                    <th style={{ ...styleEntete, textAlign: 'center', width: 70 }}>Taux</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {enfantsDeLaClasse.map((enfant, index) => {
+                    const pointes = dimanches.filter(
+                      (jour) => statutAffiche(enfant.idEnfantEcodim, jour) !== ''
+                    );
+                    const presentsMois = dimanches.filter(
+                      (jour) => statutAffiche(enfant.idEnfantEcodim, jour) === 'present'
+                    ).length;
+
+                    return (
+                      <tr key={enfant.idEnfantEcodim}>
+                        <td style={styleCentre}>{index + 1}</td>
+                        <td style={styleCellule}>{nomComplet(enfant)}</td>
+                        {dimanches.map((jour) => (
+                          <td key={jour} style={{ ...styleCentre, fontWeight: 700 }}>
+                            {STATUTS.find(
+                              (item) => item.valeur === statutAffiche(enfant.idEnfantEcodim, jour)
+                            )?.lettre || ''}
+                          </td>
+                        ))}
+                        <td style={styleCentre}>
+                          {pointes.length
+                            ? `${Math.round((presentsMois / pointes.length) * 100)} %`
+                            : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr>
+                    <td style={{ ...styleCellule, fontWeight: 700 }} colSpan={2}>
+                      Présents
+                    </td>
+                    {dimanches.map((jour) => (
+                      <td key={jour} style={{ ...styleCentre, fontWeight: 700 }}>
+                        {presentsDuJour(jour)}
+                      </td>
+                    ))}
+                    <td style={styleCellule} />
+                  </tr>
+                </tbody>
+              </table>
+
+              <div style={{ marginTop: 8, fontSize: 11, fontStyle: 'italic', color: '#475569' }}>
+                P : présent · A : absent · D : déplacement · case vide : appel non fait
+              </div>
+            </PrintDocumentLayout>
+          ) : (
+            <PrintDocumentLayout title="Synthèse de l'assiduité" orientation="portrait">
+              <div style={{ marginBottom: 10, fontSize: 13, color: '#475569' }}>
+                Du {formaterDate(dateDebut)} au {formaterDate(dateFin)} ·{' '}
+                {classeSynthese ? libelleDeLaClasse(classeSynthese) : 'Toutes les classes'}
+              </div>
+
+              <div style={styleTitreSection}>Le point par classe</div>
+              <table style={styleTableau}>
+                <thead>
+                  <tr>
+                    <th style={styleEntete}>Classe</th>
+                    <th style={{ ...styleEntete, textAlign: 'center' }}>Effectif</th>
+                    <th style={{ ...styleEntete, textAlign: 'center' }}>Nouveaux</th>
+                    <th style={{ ...styleEntete, textAlign: 'center' }}>Séances</th>
+                    <th style={{ ...styleEntete, textAlign: 'center' }}>Assiduité moyenne</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {effectifsParClasse.map((ligne) => (
+                    <tr key={ligne.classe.idClasseEcodim}>
+                      <td style={styleCellule}>{ligne.classe.libelleClasse}</td>
+                      <td style={styleCentre}>{ligne.inscrits}</td>
+                      <td style={styleCentre}>{ligne.nouveaux}</td>
+                      <td style={styleCentre}>{ligne.seances}</td>
+                      <td style={styleCentre}>{ligne.tauxMoyen} %</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div style={styleTitreSection}>Les enfants, du plus assidu au moins assidu</div>
+              <table style={styleTableau}>
+                <thead>
+                  <tr>
+                    <th style={{ ...styleEntete, width: 34, textAlign: 'center' }}>N°</th>
+                    <th style={styleEntete}>Nom et prénoms</th>
+                    <th style={styleEntete}>Classe</th>
+                    <th style={{ ...styleEntete, textAlign: 'center' }}>Séances</th>
+                    <th style={{ ...styleEntete, textAlign: 'center' }}>Présences</th>
+                    <th style={{ ...styleEntete, textAlign: 'center' }}>Absences</th>
+                    <th style={{ ...styleEntete, textAlign: 'center' }}>Déplacements</th>
+                    <th style={{ ...styleEntete, textAlign: 'center' }}>Taux</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lignesSynthese.map((ligne, index) => (
+                    <tr key={ligne.enfant.idEnfantEcodim}>
+                      <td style={styleCentre}>{index + 1}</td>
+                      <td style={styleCellule}>{nomComplet(ligne.enfant)}</td>
+                      <td style={styleCellule}>{ligne.classe?.libelleClasse || '—'}</td>
+                      <td style={styleCentre}>{ligne.seances}</td>
+                      <td style={styleCentre}>{ligne.presents}</td>
+                      <td style={styleCentre}>{ligne.absents}</td>
+                      <td style={styleCentre}>{ligne.deplacements}</td>
+                      <td style={{ ...styleCentre, fontWeight: 700 }}>{ligne.taux} %</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </PrintDocumentLayout>
+          )}
+        </div>
+      </Box>
     </Box>
   );
 }

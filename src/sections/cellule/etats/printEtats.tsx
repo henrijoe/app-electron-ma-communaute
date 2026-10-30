@@ -42,9 +42,16 @@ const StyledMenu = styled(Menu)(({ theme }) => ({
   },
 }));
 
-const ComponentToPrintCellules = forwardRef<HTMLDivElement>((_, ref) => (
+type EtatListeProps = {
+  /** Lignes affichées par le tableau au moment du clic (filtres compris). */
+  cellules?: any[];
+  /** Filtre actif, rappelé sous le titre de l'état. */
+  sousTitre?: string;
+};
+
+const ComponentToPrintCellules = forwardRef<HTMLDivElement, EtatListeProps>(({ cellules, sousTitre }, ref) => (
   <div ref={ref}>
-    <ListeDesCellules />
+    <ListeDesCellules cellules={cellules} sousTitre={sousTitre} />
   </div>
 ));
 
@@ -54,7 +61,7 @@ const ComponentToPrintFicheCellule = forwardRef<HTMLDivElement>((_, ref) => (
   </div>
 ));
 
-export const PrintEtatGlobal = () => {
+export const PrintEtatGlobal = ({ cellules, sousTitre }: EtatListeProps = {}) => {
   const celluleRef = useRef<HTMLDivElement>(null);
   const ficheCelluleRef = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -159,7 +166,7 @@ export const PrintEtatGlobal = () => {
       </StyledMenu>
 
       <div style={{ display: 'none' }}>
-        <ComponentToPrintCellules ref={celluleRef} />
+        <ComponentToPrintCellules ref={celluleRef} cellules={cellules} sousTitre={sousTitre} />
         <ComponentToPrintFicheCellule ref={ficheCelluleRef} />
       </div>
     </div>

@@ -50,7 +50,7 @@ const SECTIONS = [
 const STATUTS_APPEL = [
   { valeur: 'present', libelle: 'Présent', couleur: 'success' as const },
   { valeur: 'absent', libelle: 'Absent', couleur: 'error' as const },
-  { valeur: 'excuse', libelle: 'Excusé', couleur: 'warning' as const },
+  { valeur: 'deplacement', libelle: 'Déplacement', couleur: 'warning' as const },
 ];
 
 type CleSection = (typeof SECTIONS)[number]['cle'];
@@ -735,7 +735,7 @@ export function CulteEditorDialog({
 
                   <Typography variant="body2" color="text.secondary">
                     {compterAppel('present')} présent(s) · {compterAppel('absent')} absent(s) ·{' '}
-                    {compterAppel('excuse')} excusé(s)
+                    {compterAppel('deplacement')} en déplacement
                   </Typography>
                 </Stack>
 

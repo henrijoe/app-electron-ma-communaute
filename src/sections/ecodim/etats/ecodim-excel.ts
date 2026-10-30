@@ -17,6 +17,7 @@ import {
   CATEGORIES_SORTIE,
   PERSONNES_REFERENTES,
   SITUATIONS_SOCIALES,
+  estInscrit,
   libelleSexe,
   libelleFonction,
   nomIntervenant,
@@ -54,7 +55,13 @@ const largeurs = (feuille: XLSX.WorkSheet, tailles: number[]) => {
 };
 
 /** Les volets exportables, dans l'ordre des onglets de l'écran. */
-export type VoletEcodim = 'classes' | 'moniteurs' | 'enfants' | 'cultes' | 'activites';
+export type VoletEcodim =
+  | 'classes'
+  | 'moniteurs'
+  | 'enfants'
+  | 'cultes'
+  | 'activites'
+  | 'finances';
 
 export type DonneesEcodimExcel = {
   classes: any[];
@@ -62,6 +69,7 @@ export type DonneesEcodimExcel = {
   enfants: any[];
   activites: any[];
   cultes?: any[];
+  finances?: any[];
   nomEglise?: string;
 };
 
@@ -101,8 +109,15 @@ const feuilleEnfants = (donnees: DonneesEcodimExcel) =>
   largeurs(
     XLSX.utils.json_to_sheet(
       donnees.enfants.map((enfant) => ({
+        // Le matricule ouvre la feuille : c'est la clé qui permet de
+        // rapprocher ce fichier d'un autre sans risque d'homonymie.
+        Matricule: enfant.matriculeEnfant || '',
         Nom: enfant.nomEnfant || '',
         Prénoms: enfant.prenomEnfant || '',
+        // Juste après le nom : c'est la colonne qu'on filtre ou qu'on trie pour
+        // séparer les inscrits des autres.
+        Inscrit: estInscrit(enfant) ? 'Oui' : 'Non',
+        "Date d'inscription": estInscrit(enfant) ? enfant.dateInscriptionEcodim || '' : '',
         // « M » et « F » sont les valeurs stockées ; une feuille se lit à l'œil.
         Sexe: libelleSexe(enfant.sexeEnfant),
         'Date de naissance': enfant.dateNaissEnfant || '',
@@ -156,7 +171,8 @@ const feuilleEnfants = (donnees: DonneesEcodimExcel) =>
       }))
     ),
     [
-      20, 24, 10, 18, 7, 20, 24, 14, 16, 18, 16, 18, 22, 22, 16, 24, 30, 22, 14, 24, 20, 14, 24,
+      14,
+      20, 24, 9, 16, 10, 18, 7, 20, 24, 14, 16, 18, 16, 18, 22, 22, 16, 24, 30, 22, 14, 24, 20, 14, 24,
       22, 22, 20, 16, 12, 18,
       22, 22, 20, 16, 14, 18,
       14, 18, 18, 20, 22, 14, 22, 24, 18, 22, 14, 24,
@@ -224,6 +240,101 @@ const feuilleCultes = (donnees: DonneesEcodimExcel) =>
   );
 
 /**
+ * Caisse du département : une ligne par mouvement, puis le total.
+ *
+ * Recette et dépense occupent deux colonnes distinctes plutôt qu'un montant
+ * signé : c'est la forme d'un livre de caisse, et elle se totalise d'un coup
+ * d'œil sans avoir à trier les signes.
+ */
+const feuilleFinances = (donnees: DonneesEcodimExcel) => {
+  const lignes = (donnees.finances || []).map((finance) => ({
+    Date: finance.dateFinance || '',
+    Libellé: finance.libelleFinance || '',
+    Catégorie: finance.categorieFinance || '',
+    Classe: finance.libelleClasse || '',
+    Recette: Number(finance.entreeFinance) || 0,
+    Dépense: Number(finance.sortieFinance) || 0,
+    Observation: finance.observationFinance || '',
+  }));
+
+  const totalRecettes = lignes.reduce((somme, ligne) => somme + ligne.Recette, 0);
+  const totalDepenses = lignes.reduce((somme, ligne) => somme + ligne.Dépense, 0);
+
+  // Deux lignes de pied : les totaux, puis le solde. Sans elles, le point
+  // financier reste à refaire à la main dans le tableur.
+  const pied = [
+    {
+      Date: '',
+      Libellé: 'TOTAL',
+      Catégorie: '',
+      Classe: '',
+      Recette: totalRecettes,
+      Dépense: totalDepenses,
+      Observation: '',
+    },
+    {
+      Date: '',
+      Libellé: 'SOLDE',
+      Catégorie: '',
+      Classe: '',
+      Recette: totalRecettes - totalDepenses,
+      Dépense: 0,
+      Observation: '',
+    },
+  ];
+
+  return largeurs(
+    XLSX.utils.json_to_sheet([...lignes, ...pied]),
+    [12, 34, 22, 18, 14, 14, 40]
+  );
+};
+
+/**
+ * Les enfants inscrits, ou les autres, en liste courte.
+ *
+ * La feuille Enfants porte déjà la colonne Inscrit, mais ses quarante colonnes
+ * se lisent mal à l'écran : ces deux feuilles répondent d'un coup d'œil à la
+ * question « qui est inscrit, qui ne l'est pas ». Elles partent des mêmes lignes
+ * que la feuille principale, donc des mêmes filtres.
+ */
+const feuilleInscription = (donnees: DonneesEcodimExcel, inscrits: boolean) =>
+  largeurs(
+    XLSX.utils.json_to_sheet(
+      donnees.enfants
+        .filter((enfant) => estInscrit(enfant) === inscrits)
+        .map((enfant, index) => ({
+          'N°': index + 1,
+          Matricule: enfant.matriculeEnfant || '',
+          Nom: enfant.nomEnfant || '',
+          Prénoms: enfant.prenomEnfant || '',
+          Classe: enfant.libelleClasse || 'Non affecté',
+          Sexe: libelleSexe(enfant.sexeEnfant),
+          Âge: ageDepuisNaissance(enfant.dateNaissEnfant),
+          ...(inscrits ? { "Date d'inscription": enfant.dateInscriptionEcodim || '' } : {}),
+          'Parent ou tuteur': enfant.nomParentEnfant || '',
+          'Contact parent': enfant.contactParentEnfant || '',
+        })),
+      // Les en-têtes restent écrits même sans ligne : une feuille vide qui dit
+      // « Non inscrits » se lit comme « aucun », pas comme une erreur.
+      {
+        header: [
+          'N°',
+          'Matricule',
+          'Nom',
+          'Prénoms',
+          'Classe',
+          'Sexe',
+          'Âge',
+          ...(inscrits ? ["Date d'inscription"] : []),
+          'Parent ou tuteur',
+          'Contact parent',
+        ],
+      }
+    ),
+    inscrits ? [5, 14, 20, 24, 18, 10, 6, 16, 24, 16] : [5, 14, 20, 24, 18, 10, 6, 24, 16]
+  );
+
+/**
  * Un volet, son nom d'onglet dans le classeur et sa construction.
  *
  * Le nom sert aussi au fichier : une seule source, donc aucune chance que
@@ -231,13 +342,26 @@ const feuilleCultes = (donnees: DonneesEcodimExcel) =>
  */
 const VOLETS: Record<
   VoletEcodim,
-  { nom: string; construire: (donnees: DonneesEcodimExcel) => XLSX.WorkSheet }
+  {
+    nom: string;
+    construire: (donnees: DonneesEcodimExcel) => XLSX.WorkSheet;
+    /** Feuilles ajoutées après la principale, tirées des mêmes lignes. */
+    annexes?: { nom: string; construire: (donnees: DonneesEcodimExcel) => XLSX.WorkSheet }[];
+  }
 > = {
   classes: { nom: 'Classes', construire: feuilleClasses },
   moniteurs: { nom: 'Moniteurs', construire: feuilleMoniteurs },
-  enfants: { nom: 'Enfants', construire: feuilleEnfants },
+  enfants: {
+    nom: 'Enfants',
+    construire: feuilleEnfants,
+    annexes: [
+      { nom: 'Inscrits', construire: (donnees) => feuilleInscription(donnees, true) },
+      { nom: 'Non inscrits', construire: (donnees) => feuilleInscription(donnees, false) },
+    ],
+  },
   cultes: { nom: 'Cultes', construire: feuilleCultes },
   activites: { nom: 'Activités', construire: feuilleActivites },
+  finances: { nom: 'Finances', construire: feuilleFinances },
 };
 
 const partieDeNomDeFichier = (valeur: string): string =>
@@ -255,6 +379,9 @@ export const exporterEcodimExcel = (
   const classeur = XLSX.utils.book_new();
 
   XLSX.utils.book_append_sheet(classeur, feuille.construire(donnees), feuille.nom);
+  (feuille.annexes || []).forEach((annexe) =>
+    XLSX.utils.book_append_sheet(classeur, annexe.construire(donnees), annexe.nom)
+  );
 
   const eglise = partieDeNomDeFichier(donnees.nomEglise || '') || 'eglise';
   const date = new Date().toISOString().slice(0, 10);

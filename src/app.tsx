@@ -7,6 +7,7 @@ import { useScrollToTop } from 'src/hooks/use-scroll-to-top';
 import { ThemeProvider } from 'src/theme/theme-provider';
 
 import { AppRuntimeBootstrap } from 'src/components/desktop/app-runtime-bootstrap';
+import { DesktopUpdateDialog } from 'src/components/desktop/desktop-update-dialog';
 import { DesktopSecurityBootstrap } from 'src/components/desktop/desktop-security-bootstrap';
 
 // ----------------------------------------------------------------------
@@ -18,6 +19,7 @@ export default function App() {
     <ThemeProvider>
       <AppRuntimeBootstrap />
       <DesktopSecurityBootstrap />
+      <DesktopUpdateDialog />
       <Router />
     </ThemeProvider>
   );

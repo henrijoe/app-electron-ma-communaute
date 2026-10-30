@@ -154,6 +154,12 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, can
           </Box>
         </TableCell>
 
+        {/* Le matricule vient avant le nom : c'est l'identifiant stable, là où
+            deux membres peuvent porter exactement les mêmes nom et prénoms. */}
+        <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          {(row as any).matriculeMembre || '—'}
+        </TableCell>
+
         <TableCell>{row.nomMembre} {row.prenomMembre}</TableCell>
         <TableCell>{row.residenceMembre}</TableCell>
 

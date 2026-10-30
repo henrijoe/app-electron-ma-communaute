@@ -21,7 +21,7 @@ Les valeurs importantes configurees en dur sont :
 - secret de reference local :
   - `com2026!`
 - duree avant blocage automatique pour demo  :
-  - `15 jours`
+  - `30 jours` (reglable par DESKTOP_TRIAL_DAYS)
 
 Le fichier qui contient ces references est :
 
@@ -312,7 +312,7 @@ Le comportement global est le suivant :
 
 1. creation du compte
 2. creation de la licence locale chiffree
-3. expiration fixee a `15 jours`
+3. expiration fixee a `30 jours`
 4. utilisateur normal :
    - acces autorise tant que la licence est valide
    - acces bloque apres expiration

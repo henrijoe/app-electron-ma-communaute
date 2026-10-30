@@ -15,15 +15,32 @@ import {
 
 import type { IReduxState } from '../../../store/store';
 
-export const ListeDesGroupes = () => {
+type ListeDesGroupesProps = {
+  /**
+   * Lignes à imprimer : celles que le tableau affiche, recherche et filtres
+   * compris. Omise, la propriété laisse l'état reprendre la liste complète du
+   * store, qui était le comportement d'origine.
+   */
+  groupes?: any[];
+  /** Filtre actif, rappelé sous le titre pour que la feuille se relise seule. */
+  sousTitre?: string;
+};
+
+export const ListeDesGroupes = ({ groupes, sousTitre }: ListeDesGroupesProps) => {
   const listGroupe = useSelector((state: IReduxState) => state.groupe.listGroupe);
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
-  const sortedGroupes = [...(listGroupe || [])].sort((a, b) =>
+  const sourceGroupes = Array.isArray(groupes) ? groupes : (listGroupe || []);
+  const sortedGroupes = [...sourceGroupes].sort((a, b) =>
     (a.libelleGroupe || '').localeCompare(b.libelleGroupe || '')
   );
 
   return (
     <PrintDocumentLayout identity={utilisateurData} title="Liste des groupes">
+      {sousTitre && (
+        <Typography variant="body2" sx={{ mb: 1.5, color: '#475569' }}>
+          {sousTitre}
+        </Typography>
+      )}
       {sortedGroupes.length === 0 ? (
         <PrintEmptyState title="Aucun groupe trouvé" message="Aucun groupe n'est encore enregistré dans la base locale." />
       ) : (

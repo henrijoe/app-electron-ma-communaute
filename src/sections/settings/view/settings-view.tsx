@@ -190,6 +190,16 @@ const emptyProfileForm: ProfileFormState = {
 
 type SecondaryUserFormState = {
   idUtilisateur: number | null;
+  /**
+   * Membre de l'église choisi comme titulaire du compte.
+   *
+   * Un accès à l'application se donne à quelqu'un qu'on connaît : le nom et le
+   * prénom viennent donc de la fiche membre, au lieu d'être tapés à la main.
+   * Obligatoire à la création, laissé vide pour les comptes créés avant cette
+   * règle — le lien n'est pas stocké en base, il ne sert qu'à remplir le
+   * formulaire.
+   */
+  idMembre: number | null;
   nomUtilisateur: string;
   prenomUtilisateur: string;
   telephoneUtilisateur: string;
@@ -203,6 +213,7 @@ type SecondaryUserFormState = {
 
 const emptySecondaryUserForm: SecondaryUserFormState = {
   idUtilisateur: null,
+  idMembre: null,
   nomUtilisateur: '',
   prenomUtilisateur: '',
   telephoneUtilisateur: '',
@@ -210,7 +221,10 @@ const emptySecondaryUserForm: SecondaryUserFormState = {
   password: '',
   confirmPassword: '',
   roleUtilisateur: 'gestionnaire',
-  permissions: ['dashboard', 'comptabilite'],
+  // Seul le tableau de bord est coché d'avance, et il l'est parce qu'il est
+  // verrouillé : tout utilisateur y a accès. Les autres onglets se choisissent,
+  // un accès ne s'accorde pas par défaut.
+  permissions: ['dashboard'],
   actifUtilisateur: 1,
 };
 
@@ -268,6 +282,9 @@ const buildSharedChurchProfileData = (
 
 const buildSecondaryUserFormFromEntity = (user: IUtilisateur): SecondaryUserFormState => ({
   idUtilisateur: Number(user.idUtilisateur || 0),
+  // Le rattachement au membre ne vit que dans le formulaire : un compte créé
+  // avant cette règle s'ouvre donc sans membre sélectionné, et reste modifiable.
+  idMembre: null,
   nomUtilisateur: user.nomUtilisateur || '',
   prenomUtilisateur: user.prenomUtilisateur || '',
   telephoneUtilisateur: user.telephoneUtilisateur || '',
@@ -455,6 +472,8 @@ export function SettingsView() {
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm);
   const [secondaryUsers, setSecondaryUsers] = useState<IUtilisateur[]>([]);
   const [loadingSecondaryUsers, setLoadingSecondaryUsers] = useState(false);
+  /** Membres de l'église, parmi lesquels se choisit le titulaire d'un compte. */
+  const [membresEglise, setMembresEglise] = useState<any[]>([]);
   const [secondaryUserForm, setSecondaryUserForm] =
     useState<SecondaryUserFormState>(emptySecondaryUserForm);
   const [isSavingSecondaryUser, setIsSavingSecondaryUser] = useState(false);
@@ -648,6 +667,27 @@ export function SettingsView() {
     }
   }, [canManageSecondaryUsers, currentAccountId, showNotification]);
 
+  /**
+   * Membres de l'église, pour choisir le titulaire d'un compte secondaire.
+   *
+   * Un échec reste silencieux : la liste n'est utile qu'à qui peut créer des
+   * utilisateurs, et une erreur ici ne doit pas couvrir l'écran d'une alerte
+   * alors que tout le reste des paramètres fonctionne.
+   */
+  const loadMembresEglise = useCallback(async () => {
+    if (!canManageSecondaryUsers) {
+      setMembresEglise([]);
+      return;
+    }
+
+    try {
+      const response = await apiClient.getMembresByUtilisateur(currentAccountId);
+      setMembresEglise(Array.isArray(response?.data) ? response.data : []);
+    } catch (error) {
+      setMembresEglise([]);
+    }
+  }, [canManageSecondaryUsers, currentAccountId]);
+
   const refreshDesktopSecurityStatus = useCallback(async () => {
     if (!canInspectDesktopLicense || !currentUsername) {
       return;
@@ -775,6 +815,10 @@ export function SettingsView() {
   useEffect(() => {
     loadSecondaryUsers();
   }, [loadSecondaryUsers]);
+
+  useEffect(() => {
+    loadMembresEglise();
+  }, [loadMembresEglise]);
 
   useEffect(() => {
     if (!canManageSecondaryUsers) {
@@ -1393,6 +1437,54 @@ export function SettingsView() {
     setSecondaryUserForm(emptySecondaryUserForm);
   }, []);
 
+  /**
+   * Membres proposés comme titulaires d'un compte.
+   *
+   * La liste vient déjà sans les membres décédés : le serveur les écarte de
+   * toutes les lectures de la table.
+   */
+  const optionsMembres = useMemo(
+    () =>
+      (Array.isArray(membresEglise) ? membresEglise : [])
+        .map((membre: any) => ({
+          value: String(membre.idMembre),
+          label: `${String(membre.nomMembre || '').trim()} ${String(membre.prenomMembre || '').trim()}`.trim(),
+          membre,
+        }))
+        .filter((option) => option.label)
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [membresEglise]
+  );
+
+  /**
+   * Choisir un membre remplit son identité dans le formulaire.
+   *
+   * Les champs restent modifiables ensuite : le nom d'utilisateur sert à se
+   * connecter, et une église peut vouloir un identifiant plus court que le nom
+   * complet. Ce qui est imposé, c'est que le compte parte d'un membre réel.
+   */
+  const handleSelectMembreUtilisateur = useCallback(
+    (valeur: string) => {
+      const option = optionsMembres.find((item) => item.value === String(valeur));
+
+      if (!option) {
+        setSecondaryUserForm((prev) => ({ ...prev, idMembre: null }));
+        return;
+      }
+
+      setSecondaryUserForm((prev) => ({
+        ...prev,
+        idMembre: Number(option.membre.idMembre),
+        nomUtilisateur: String(option.membre.nomMembre || '').trim(),
+        prenomUtilisateur: String(option.membre.prenomMembre || '').trim(),
+        telephoneUtilisateur:
+          String(option.membre.contactMembre || '').trim() || prev.telephoneUtilisateur,
+        email: String(option.membre.emailMembre || '').trim() || prev.email,
+      }));
+    },
+    [optionsMembres]
+  );
+
   const handleTogglePermission = useCallback((permission: ModulePermissionKey) => {
     if (permission === 'dashboard') {
       return;
@@ -1432,6 +1524,18 @@ export function SettingsView() {
   const handleSaveSecondaryUser = useCallback(async () => {
     if (!canManageSecondaryUsers) {
       showNotification("Cette action est réservée à l'administrateur principal.", 'warning');
+      return;
+    }
+
+    // Un accès se donne à quelqu'un que l'église connaît. À la création, le
+    // compte part donc obligatoirement d'une fiche membre. La modification d'un
+    // compte existant reste possible sans : ceux créés avant cette règle n'ont
+    // aucun membre rattaché, et les bloquer les rendrait impossibles à corriger.
+    if (!isEditingSecondaryUser && !secondaryUserForm.idMembre) {
+      showNotification(
+        "Choisis d'abord le membre de l'église à qui appartient ce compte.",
+        'warning'
+      );
       return;
     }
 
@@ -2051,6 +2155,19 @@ export function SettingsView() {
                 </Stack>
               </Stack>
 
+              {/* Le bouton est posé au pied des champs qu'il enregistre. Plus bas,
+                  après deux encadrés, on le lisait comme celui du dernier bloc. */}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Button
+                  variant="contained"
+                  startIcon={<SaveRounded />}
+                  onClick={handleSaveProfile}
+                  disabled={isSavingProfile}
+                >
+                  {isSavingProfile ? 'Enregistrement...' : 'Enregistrer le profil'}
+                </Button>
+              </Stack>
+
               <Card variant="outlined" sx={{ borderRadius: 3 }}>
                 <CardHeader
                   avatar={<MenuBookRounded color="primary" />}
@@ -2124,6 +2241,21 @@ export function SettingsView() {
                         )}
                       </Box>
                     )}
+
+                    {/* Le bouton général étant remonté au pied des champs de
+                        l'église, cet encadré a le sien : un réglage changé ici
+                        paraîtrait sinon sans moyen d'être enregistré. Les trois
+                        boutons appellent le même enregistrement. */}
+                    <Stack direction="row">
+                      <Button
+                        variant="outlined"
+                        startIcon={<SaveRounded />}
+                        onClick={handleSaveProfile}
+                        disabled={isSavingProfile}
+                      >
+                        {isSavingProfile ? 'Enregistrement...' : 'Enregistrer'}
+                      </Button>
+                    </Stack>
                   </Stack>
                 </CardContent>
               </Card>
@@ -2165,20 +2297,20 @@ export function SettingsView() {
                         Un anti-doublon (nom + téléphone) reste actif dans tous les cas.
                       </Alert>
                     )}
+                    {/* Même raison que pour l'encadré « Verset du jour ». */}
+                    <Stack direction="row">
+                      <Button
+                        variant="outlined"
+                        startIcon={<SaveRounded />}
+                        onClick={handleSaveProfile}
+                        disabled={isSavingProfile}
+                      >
+                        {isSavingProfile ? 'Enregistrement...' : 'Enregistrer'}
+                      </Button>
+                    </Stack>
                   </Stack>
                 </CardContent>
               </Card>
-
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveRounded />}
-                  onClick={handleSaveProfile}
-                  disabled={isSavingProfile}
-                >
-                  {isSavingProfile ? 'Enregistrement...' : 'Enregistrer le profil'}
-                </Button>
-              </Stack>
             </Stack>
           </CardContent>
         </Card>
@@ -2195,8 +2327,35 @@ export function SettingsView() {
                 <Stack direction={{ xs: 'column', xl: 'row' }} spacing={3} alignItems="stretch">
                   <Stack spacing={2} sx={{ flex: 1, minWidth: 0 }}>
                     <Alert severity="info">
-                      Utilisateurs secondaires créés : {secondaryUserCount} / 5. 
+                      Utilisateurs secondaires créés : {secondaryUserCount} / 5.
                     </Alert>
+
+                    {/* Le compte part d'une fiche membre : on choisit la personne,
+                        et son identité remplit le formulaire. */}
+                    <SelectRecherche
+                      fullWidth
+                      label="Membre de l'église"
+                      value={secondaryUserForm.idMembre ? String(secondaryUserForm.idMembre) : ''}
+                      onChange={(event) => handleSelectMembreUtilisateur(event.target.value)}
+                      helperText={
+                        isEditingSecondaryUser
+                          ? "Choisis un membre pour réécrire l'identité de ce compte."
+                          : "Un compte ne se crée que pour un membre déjà enregistré dans l'église."
+                      }
+                    >
+                      {optionsMembres.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </SelectRecherche>
+
+                    {optionsMembres.length === 0 && (
+                      <Alert severity="warning">
+                        Aucun membre n&apos;est encore enregistré. Ajoute la personne dans
+                        l&apos;onglet Membre avant de lui ouvrir un accès.
+                      </Alert>
+                    )}
 
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                       <TextField
@@ -2206,6 +2365,7 @@ export function SettingsView() {
                         onChange={(event) =>
                           handleChangeSecondaryUserField('nomUtilisateur', event.target.value)
                         }
+                        helperText="Sert à se connecter. Repris du membre, modifiable si besoin."
                       />
                       <TextField
                         fullWidth

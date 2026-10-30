@@ -66,7 +66,7 @@ const LIGNES_OBSERVATIONS = 5;
 const LETTRE_STATUT: Record<string, string> = {
   present: 'P',
   absent: 'A',
-  excuse: 'E',
+  deplacement: 'D',
 };
 
 const styleBandeauOfficiel: React.CSSProperties = {
@@ -198,6 +198,10 @@ export function FicheSuiviEnfant({ enfant, presences = [] }: FicheSuiviEnfantPro
 
           <div style={{ height: 8 }} />
 
+          {/* Le matricule ouvre l'identité : c'est lui qui rattache la fiche
+              papier au dossier, là où deux enfants peuvent porter les mêmes
+              nom et prénoms. */}
+          <LigneChamp libelle="MATRICULE" valeur={enfant?.matriculeEnfant} />
           <LigneChamp libelle="NOM" valeur={enfant?.nomEnfant} />
           <LigneChamp libelle="PRÉNOMS" valeur={enfant?.prenomEnfant} />
           <LigneChamp libelle="DATE ET LIEU DE NAISSANCE" valeur={dateEtLieuNaissance(enfant)} />
@@ -292,7 +296,7 @@ export function FicheSuiviEnfant({ enfant, presences = [] }: FicheSuiviEnfantPro
 
         {presences.length ? (
           <div style={{ fontSize: 9.5, marginTop: 3, fontStyle: 'italic' }}>
-            P : présent · A : absent · E : excusé · case vide : appel non fait
+            P : présent · A : absent · D : déplacement · case vide : appel non fait
           </div>
         ) : null}
 

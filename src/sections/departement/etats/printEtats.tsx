@@ -58,11 +58,20 @@ const StyledMenu = styled((props: MenuProps) => (
   },
 }));
 
-const ComponentToPrintDepartements = forwardRef<HTMLDivElement>((_, ref) => (
-  <div ref={ref}>
-    <ListeDesDepartements />
-  </div>
-));
+type EtatListeProps = {
+  /** Lignes affichées par le tableau au moment du clic (filtres compris). */
+  departements?: any[];
+  /** Filtre actif, rappelé sous le titre de l'état. */
+  sousTitre?: string;
+};
+
+const ComponentToPrintDepartements = forwardRef<HTMLDivElement, EtatListeProps>(
+  ({ departements, sousTitre }, ref) => (
+    <div ref={ref}>
+      <ListeDesDepartements departements={departements} sousTitre={sousTitre} />
+    </div>
+  )
+);
 
 const ComponentToPrintFicheDepartement = forwardRef<HTMLDivElement>((_, ref) => (
   <div ref={ref}>
@@ -70,7 +79,7 @@ const ComponentToPrintFicheDepartement = forwardRef<HTMLDivElement>((_, ref) => 
   </div>
 ));
 
-const PrintEtatGlobal = () => {
+const PrintEtatGlobal = ({ departements, sousTitre }: EtatListeProps = {}) => {
   const departementRef = useRef<HTMLDivElement>(null);
   const ficheDepartementRef = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -200,7 +209,11 @@ const PrintEtatGlobal = () => {
       </StyledMenu>
 
       <div style={{ display: 'none' }}>
-        <ComponentToPrintDepartements ref={departementRef} />
+        <ComponentToPrintDepartements
+          ref={departementRef}
+          departements={departements}
+          sousTitre={sousTitre}
+        />
         <ComponentToPrintFicheDepartement ref={ficheDepartementRef} />
       </div>
     </div>

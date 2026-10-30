@@ -388,7 +388,9 @@ export function CulteView() {
 
     sortedData.forEach((item: ICulte) => {
       totalParticipants += (Number(item.nombreHommeCulte) || 0) + (Number(item.nombreFemmeCulte) || 0);
-      totalOffrandes += (Number(item.offrandeCulte) || 0) + (Number(item.offrandeEcodim) || 0);
+      // Offrande et dîme du culte. L'offrande de l'école du dimanche n'entre
+      // plus ici : elle est comptée dans la caisse du département.
+      totalOffrandes += (Number(item.offrandeCulte) || 0) + (Number(item.dimeCulte) || 0);
       totalEcodim += (Number(item.ecodim) || 0) + (Number(item.filleEcodim) || 0);
     });
 
@@ -408,6 +410,25 @@ export function CulteView() {
       ) || [],
     [sortedData, table.page, table.rowsPerPage]
   );
+
+  /**
+   * Rappel du filtre actif, porté par l'état imprimé.
+   *
+   * Ce sont les valeurs saisies qui sont reprises, pas les noms de champs : une
+   * feuille qui annonce « Culte de prière » se lit, « typeCulte » non.
+   */
+  const libelleFiltreActif = useMemo(() => {
+    const valeurs = Object.values(advancedFilters)
+      .map((valeur) => String(valeur || '').trim())
+      .filter(Boolean);
+
+    return [
+      String(filterName || '').trim() ? `Recherche : ${String(filterName).trim()}` : '',
+      valeurs.length ? `Filtres : ${valeurs.join(', ')}` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  }, [advancedFilters, filterName]);
 
 
   // Fonction pour gérer les changements dans les champs
@@ -511,7 +532,8 @@ export function CulteView() {
           alignItems="center"
           sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}
         >
-          {!isDesktopApp && <PrintEtatGlobal />}
+          {/* L'état reprend les lignes du tableau, filtres et recherche compris. */}
+          {!isDesktopApp && <PrintEtatGlobal cultes={sortedData} sousTitre={libelleFiltreActif} />}
 
           {!isDesktopApp && canManageCulte && (
           <>
@@ -1067,39 +1089,15 @@ export function CulteView() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      setFocus('offrandeEcodim');
-                    }
-                  }}
-                />
-              </Grid>
-
-              {/* Offrandes Ecodim */}
-              <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  margin="dense"
-                  type="number"
-                  label="Offrande ecodim"
-                  variant="outlined"
-                  value={data.offrandeEcodim}
-                  {...register('offrandeEcodim')}
-                  onChange={handleChange}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <AttachMoneyRounded fontSize="small" color="success" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
                       setFocus('offrandeCulte');
                     }
                   }}
                 />
               </Grid>
+
+              {/* L'offrande de l'école du dimanche ne se saisit plus ici : elle
+                  appartient à la caisse du département, dans l'onglet Ecodim.
+                  Ne restent donc que les effectifs. */}
 
               {/* Section : offrandes */}
               <Grid item xs={12}>
@@ -1120,6 +1118,34 @@ export function CulteView() {
                   variant="outlined"
                   value={data.offrandeCulte}
                   {...register('offrandeCulte')}
+                  onChange={handleChange}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <AttachMoneyRounded fontSize="small" color="success" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      setFocus('dimeCulte');
+                    }
+                  }}
+                />
+              </Grid>
+
+              {/* Dîme : elle se relève au culte, à côté de l'offrande. */}
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  margin="dense"
+                  type="number"
+                  label="Dîme"
+                  variant="outlined"
+                  value={data.dimeCulte}
+                  {...register('dimeCulte')}
                   onChange={handleChange}
                   InputProps={{
                     startAdornment: (

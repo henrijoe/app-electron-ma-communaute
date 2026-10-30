@@ -57,11 +57,18 @@ const StyledMenu = styled((props: MenuProps) => (
   },
 }));
 
-const ComponentToPrintMembres = forwardRef<HTMLDivElement>((_, ref) => (
-  <div ref={ref}>
-    <ListeDesMembres />
-  </div>
-));
+type ListeMembresProps = {
+  membres?: any[];
+  sousTitre?: string;
+};
+
+const ComponentToPrintMembres = forwardRef<HTMLDivElement, ListeMembresProps>(
+  ({ membres, sousTitre }, ref) => (
+    <div ref={ref}>
+      <ListeDesMembres membres={membres} sousTitre={sousTitre} />
+    </div>
+  )
+);
 
 const ComponentToPrintFicheDecision = forwardRef<HTMLDivElement>((_, ref) => (
   <div ref={ref}>
@@ -81,7 +88,17 @@ const ComponentToPrintFicheInscription = forwardRef<HTMLDivElement>((_, ref) => 
   </div>
 ));
 
-const PrintEtatGlobal = () => {
+type PrintEtatGlobalProps = {
+  /**
+   * Membres à porter sur la liste imprimée : ceux que le tableau affiche, filtre
+   * et recherche compris. Omis, l'état reprend la liste complète du store.
+   */
+  membres?: any[];
+  /** Filtre actif, rappelé sous le titre de la liste. */
+  sousTitre?: string;
+};
+
+const PrintEtatGlobal = ({ membres, sousTitre }: PrintEtatGlobalProps = {}) => {
   const membreRef = useRef<HTMLDivElement>(null);
   const ficheDecisionRef = useRef<HTMLDivElement>(null);
   const coursDeBaseRef = useRef<HTMLDivElement>(null);
@@ -262,7 +279,7 @@ const PrintEtatGlobal = () => {
       </StyledMenu>
 
       <div style={{ display: 'none' }}>
-        <ComponentToPrintMembres ref={membreRef} />
+        <ComponentToPrintMembres ref={membreRef} membres={membres} sousTitre={sousTitre} />
         <ComponentToPrintFicheDecision ref={ficheDecisionRef} />
         <ComponentToPrintCoursDeBase ref={coursDeBaseRef} />
         <ComponentToPrintFicheInscription ref={ficheInscriptionRef} />

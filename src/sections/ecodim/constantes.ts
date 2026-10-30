@@ -95,3 +95,13 @@ export const TYPES_EVALUATION: Record<string, string> = {
   Regionale: 'Évaluation régionale',
   Nationale: 'Évaluation nationale',
 };
+
+/**
+ * L'enfant est-il inscrit à l'Ecodim ?
+ *
+ * La case arrive en booléen du formulaire, et en 0 ou 1 d'une ligne relue du
+ * serveur : un test `=== true` seul rangerait tous les enfants enregistrés
+ * parmi les non-inscrits.
+ */
+export const estInscrit = (enfant: any): boolean =>
+  enfant?.inscritEcodim === true || Number(enfant?.inscritEcodim) === 1;

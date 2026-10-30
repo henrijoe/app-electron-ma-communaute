@@ -145,6 +145,9 @@ export function FicheInscriptionEnfant({ enfant }: FicheInscriptionEnfantProps) 
         {/* ------------------------------------------------------------- l'élève */}
         <Bandeau titre="L'ÉLÈVE" />
 
+        {/* Même place que sur la fiche de suivi : le matricule en tête de
+            l'identité, pour rattacher la feuille au dossier. */}
+        <LigneChamp libelle="MATRICULE" valeur={enfant?.matriculeEnfant} />
         <LigneChamp libelle="NOM" valeur={enfant?.nomEnfant} />
         <LigneChamp libelle="PRÉNOMS" valeur={enfant?.prenomEnfant} />
         <LigneChamp libelle="DATE ET LIEU DE NAISSANCE" valeur={dateEtLieuNaissance(enfant)} />
@@ -238,7 +241,10 @@ export function FicheInscriptionEnfant({ enfant }: FicheInscriptionEnfantProps) 
         <div style={{ textAlign: 'right', marginTop: 22, fontSize: 12.5 }}>
           Date d&apos;inscription le{' '}
           <span style={{ fontWeight: 700 }}>
-            {formaterDate(enfant?.dateEntreeEcodim) || '……/……/20……'}
+            {/* La date d'entrée reste en secours : avant la case « inscrit »,
+                c'est elle que cette ligne affichait. */}
+            {formaterDate(enfant?.dateInscriptionEcodim || enfant?.dateEntreeEcodim) ||
+              '……/……/20……'}
           </span>
         </div>
 

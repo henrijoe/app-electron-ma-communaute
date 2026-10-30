@@ -18,7 +18,9 @@ import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Divider from '@mui/material/Divider';
+import Checkbox from '@mui/material/Checkbox';
 import Autocomplete from '@mui/material/Autocomplete';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import TableRow from '@mui/material/TableRow';
 import MenuItem from '@mui/material/MenuItem';
 import TableBody from '@mui/material/TableBody';
@@ -39,6 +41,7 @@ import {
   AddRounded,
   EventRounded,
   FactCheckRounded,
+  SavingsRounded,
   TableChartRounded,
   PhotoCameraRounded,
   PersonRounded,
@@ -54,6 +57,7 @@ import {
 import { alpha } from '@mui/material/styles';
 
 import { DashboardContent } from 'src/layouts/dashboard';
+import { varAlpha } from 'src/theme/styles';
 import { apiClient, buildEcodimMediaUrl, getApiErrorMessage } from 'src/utils/apiClient';
 import { getSessionUser, getScopeUserIdFromUser, isDesktopAppRuntime } from 'src/utils/access-control';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
@@ -69,6 +73,7 @@ import { CulteEditorDialog } from './culte-editor-dialog';
 import { SelecteurMembre } from './selecteur-membre';
 import { ClassesDuMoniteur } from './classes-du-moniteur';
 import { AssiduiteGrille } from './assiduite-grille';
+import { FinancesGrille } from './finances-grille';
 import { InscriptionQrEnfant } from './inscription-qr-enfant';
 import { EvaluationsGrille } from './evaluations-grille';
 import { RowActions } from './row-actions';
@@ -87,6 +92,7 @@ import {
   FONCTIONS_MONITEUR,
   CATEGORIES_SORTIE,
   TYPES_EVALUATION,
+  estInscrit,
   libelleSexe,
   nomIntervenant,
   PERSONNES_REFERENTES,
@@ -294,6 +300,39 @@ const CARTES = [
     couleur: 'info' as const,
     icone: <FactCheckRounded />,
   },
+  {
+    // Cet onglet est volontairement ajouté EN DERNIER : les positions servent
+    // d'identifiants dans tout l'écran (`onglet === 3`, `onglet === 6`...), et
+    // l'insérer au milieu décalerait tous les onglets suivants.
+    libelle: 'Finances',
+    ajout: 'Ajouter un mouvement',
+    couleur: 'success' as const,
+    icone: <SavingsRounded />,
+  },
+];
+
+/**
+ * Les filtres qui agissent réellement sur chaque onglet, dans l'ordre de CARTES.
+ *
+ * Tous les onglets affichaient les quatre mêmes filtres. Or un mois ne veut
+ * rien dire pour une classe, et un moniteur rien pour la caisse : la liste ne
+ * bougeait pas, et on cherchait pourquoi. Un filtre qui ne change rien là où il
+ * est posé est une promesse que l'écran ne tient pas.
+ *
+ * Cette table décide seulement de ce qui est AFFICHÉ. Ce qui est appliqué reste
+ * décidé par chaque liste : les cartes du haut comptent les sept volets à la
+ * fois, et la carte Cultes doit suivre le mois même quand on regarde l'onglet
+ * des classes.
+ */
+const FILTRES_PAR_ONGLET: ('classe' | 'periode' | 'moniteur' | 'inscription')[][] = [
+  ['classe'], // Classes
+  ['classe', 'moniteur'], // Moniteurs
+  ['classe', 'inscription'], // Enfants
+  ['classe', 'periode', 'moniteur'], // Cultes
+  [], // Évaluations : la grille porte ses propres filtres
+  ['classe', 'periode', 'moniteur'], // Activités
+  [], // Assiduité : la grille porte ses propres filtres
+  ['periode'], // Finances
 ];
 
 /**
@@ -382,6 +421,10 @@ const enfantVide = {
   responsabiliteTuteurEglise: '',
   professionTuteur: '',
 
+  // 0 ou 1, comme la colonne : l'enfant relu du serveur arrive sous cette forme.
+  inscritEcodim: 0,
+  dateInscriptionEcodim: '',
+
   dateEntreeEcodim: '',
   niveauEntreeEcodim: '',
   niveauActuelEcodim: '',
@@ -446,6 +489,10 @@ export function EcodimView() {
   const [evaluations, setEvaluations] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
   const [presences, setPresences] = useState<any[]>([]);
+  /** Mouvements de la caisse du département : recettes et dépenses. */
+  const [finances, setFinances] = useState<any[]>([]);
+  /** Compteur d'ouvertures demandées au dialogue de saisie de la caisse. */
+  const [demandeAjoutFinance, setDemandeAjoutFinance] = useState(0);
   const [culteEnEdition, setCulteEnEdition] = useState<any | null>(null);
   const [editeurCulteOuvert, setEditeurCulteOuvert] = useState(false);
   const [recherche, setRecherche] = useState('');
@@ -455,6 +502,8 @@ export function EcodimView() {
   const [moisFiltre, setMoisFiltre] = useState('');
   const [anneeFiltre, setAnneeFiltre] = useState('');
   const [moniteurFiltre, setMoniteurFiltre] = useState('');
+  // « inscrits », « non-inscrits » ou vide. Ne concerne que les enfants.
+  const [inscriptionFiltre, setInscriptionFiltre] = useState('');
   const [classes, setClasses] = useState<Classe[]>([]);
   const [moniteurs, setMoniteurs] = useState<Moniteur[]>([]);
   const [enfants, setEnfants] = useState<Enfant[]>([]);
@@ -487,6 +536,7 @@ export function EcodimView() {
       setEvaluations([]);
       setNotes([]);
       setPresences([]);
+      setFinances([]);
       return;
     }
 
@@ -502,6 +552,7 @@ export function EcodimView() {
         evaluationsRes,
         notesRes,
         presencesRes,
+        financesRes,
       ] = await Promise.allSettled([
           apiClient.getClassesEcodim(idUtilisateur),
           apiClient.getMoniteursEcodim(idUtilisateur),
@@ -511,6 +562,7 @@ export function EcodimView() {
           apiClient.getEvaluationsEcodim(idUtilisateur),
           apiClient.getNotesEcodim(idUtilisateur),
           apiClient.getPresencesEcodim(idUtilisateur),
+          apiClient.getFinancesEcodim(idUtilisateur),
         ]);
 
       const extraire = (resultat: PromiseSettledResult<any>): any[] =>
@@ -526,6 +578,7 @@ export function EcodimView() {
       setEvaluations(extraire(evaluationsRes));
       setNotes(extraire(notesRes));
       setPresences(extraire(presencesRes));
+      setFinances(extraire(financesRes));
     } finally {
       setChargement(false);
     }
@@ -589,7 +642,17 @@ export function EcodimView() {
     [moisFiltre, anneeFiltre]
   );
 
-  /** Les années présentes dans les données, pour ne proposer que du réel. */
+  /**
+   * Les années présentes dans les données, pour ne proposer que du réel.
+   *
+   * La liste n'est pas une plage calculée mais le relevé des dates réellement
+   * enregistrées : proposer une année sans aucune ligne donnerait un tableau
+   * vide sans que rien n'explique pourquoi.
+   *
+   * Toute source datée sur laquelle le filtre de période agit doit figurer
+   * ici — sinon son année n'est jamais proposée, et ses lignes deviennent
+   * infiltrables.
+   */
   const anneesDisponibles = useMemo(() => {
     const annees = new Set<string>();
 
@@ -601,9 +664,10 @@ export function EcodimView() {
     cultes.forEach((culte) => ajouter(culte.dateCulte));
     activites.forEach((activite) => ajouter(activite.dateDebutActivite));
     evaluations.forEach((evaluation) => ajouter(evaluation.dateEvaluation));
+    finances.forEach((finance) => ajouter(finance.dateFinance));
 
     return Array.from(annees).sort().reverse();
-  }, [cultes, activites, evaluations]);
+  }, [cultes, activites, evaluations, finances]);
 
   /** Le moniteur retenu dirige-t-il ou enseigne-t-il cette séance ? */
   const intervientDans = useCallback(
@@ -620,6 +684,7 @@ export function EcodimView() {
     setMoisFiltre('');
     setAnneeFiltre('');
     setMoniteurFiltre('');
+    setInscriptionFiltre('');
     setPage(0);
   }, []);
 
@@ -675,8 +740,28 @@ export function EcodimView() {
       });
     }
 
+    if (inscriptionFiltre) {
+      actifs.push({
+        cle: 'inscription',
+        libelle: inscriptionFiltre === 'inscrits' ? 'Enfants inscrits' : 'Enfants non inscrits',
+        retirer: () => setInscriptionFiltre(''),
+      });
+    }
+
     return actifs;
-  }, [recherche, classeFiltre, moisFiltre, anneeFiltre, moniteurFiltre, classes, moniteurs]);
+  }, [
+    recherche,
+    classeFiltre,
+    moisFiltre,
+    anneeFiltre,
+    moniteurFiltre,
+    inscriptionFiltre,
+    classes,
+    moniteurs,
+  ]);
+
+  /** Les filtres montrés sur l'onglet courant. */
+  const filtresDeLOnglet = FILTRES_PAR_ONGLET[onglet] || [];
 
   /** Les classes d’un moniteur, telles que le serveur les joint. */
   const classesDuMoniteur = (moniteur: any): string[] =>
@@ -717,13 +802,18 @@ export function EcodimView() {
       enfants.filter(
         (enfant) =>
           (!classeFiltre || String(enfant.idClasseEcodim) === classeFiltre) &&
+          (!inscriptionFiltre ||
+            estInscrit(enfant) === (inscriptionFiltre === 'inscrits')) &&
           (!terme ||
+            // Le matricule d'abord : c'est l'identifiant qu'on reçoit par
+            // téléphone, et le seul qui ne laisse aucun doute entre homonymes.
+            contient((enfant as any).matriculeEnfant, terme) ||
             contient(enfant.nomEnfant, terme) ||
             contient(enfant.prenomEnfant, terme) ||
             contient(enfant.libelleClasse, terme) ||
             contient(enfant.nomParentEnfant, terme))
       ),
-    [enfants, terme, classeFiltre]
+    [enfants, terme, classeFiltre, inscriptionFiltre]
   );
 
   // Totaux des cartes, dans l'ordre exact de CARTES. Les deux listes doivent rester
@@ -778,6 +868,31 @@ export function EcodimView() {
     [activites, terme, classeFiltre, dansLaPeriode, intervientDans]
   );
 
+  /**
+   * Mouvements de caisse retenus : la période et la recherche, rien d'autre.
+   *
+   * La classe n'entre pas en compte, et c'est délibéré. La caisse est celle du
+   * département : la plupart des mouvements ne visent aucune classe en
+   * particulier, et filtrer dessus donnerait un solde qui n'est celui de
+   * personne. Comme le filtre de classe reste posé d'un onglet à l'autre, il ne
+   * doit pas non plus agir ici en coulisse alors qu'il n'y est plus affiché.
+   */
+  const financesFiltrees = useMemo(
+    () =>
+      finances.filter(
+        (finance) =>
+          dansLaPeriode(finance.dateFinance) &&
+          (!terme ||
+            contient(finance.libelleFinance, terme) ||
+            contient(finance.categorieFinance, terme) ||
+            contient(finance.observationFinance, terme) ||
+            contient(finance.libelleClasse, terme) ||
+            contient(finance.titreActivite, terme) ||
+            contient(formaterDate(finance.dateFinance), terme))
+      ),
+    [finances, terme, dansLaPeriode]
+  );
+
   /** Évaluations retenues : le filtre de classe passe par leurs rattachements. */
   const evaluationsFiltrees = useMemo(
     () =>
@@ -830,6 +945,10 @@ export function EcodimView() {
       // Séances dont l'appel a été fait : le nombre de lignes de présence ne
       // voudrait rien dire, il grandit avec l'effectif de la classe.
       seancesAppelees,
+      // Pour la caisse, le nombre de mouvements. Le solde a sa place sur la
+      // grille elle-même, où il tient en toutes lettres avec sa devise ; réduit
+      // au chiffre nu d'une carte, il se confondrait avec un effectif.
+      financesFiltrees.length,
     ],
     [
       classesFiltrees,
@@ -839,6 +958,7 @@ export function EcodimView() {
       evaluationsFiltrees,
       activitesFiltrees,
       seancesAppelees,
+      financesFiltrees,
     ]
   );
 
@@ -851,6 +971,8 @@ export function EcodimView() {
     0,
     activitesFiltrees.length,
     // L'assiduité non plus : elle a ses propres filtres de classe et de mois.
+    0,
+    // La caisse porte sa propre pagination, comme les deux grilles ci-dessus.
     0,
   ][onglet];
 
@@ -890,6 +1012,12 @@ export function EcodimView() {
     } else if (index === 5) {
       setFormActivite(activiteVide);
       setDialogue('activite');
+    } else if (index === 7) {
+      // La caisse a son propre dialogue, porté par sa grille. On l'ouvre en
+      // incrémentant un compteur plutôt qu'en posant un booléen : deux clics
+      // successifs sur le « + » doivent rouvrir la saisie, ce qu'un booléen
+      // déjà à vrai ne ferait pas.
+      setDemandeAjoutFinance((precedent) => precedent + 1);
     }
 
     // L'assiduité n'ouvre aucun formulaire : l'appel se saisit dans la grille.
@@ -904,7 +1032,7 @@ export function EcodimView() {
    * sous les yeux. Le bouton disparaît donc sur ces deux onglets.
    */
   const voletExportable = (
-    ['classes', 'moniteurs', 'enfants', 'cultes', null, 'activites', null] as const
+    ['classes', 'moniteurs', 'enfants', 'cultes', null, 'activites', null, 'finances'] as const
   )[onglet];
 
   const apresEcriture = useCallback(
@@ -1102,6 +1230,11 @@ export function EcodimView() {
       return;
     }
 
+    if (estInscrit(formEnfant) && !formEnfant.dateInscriptionEcodim) {
+      showNotification("Indiquez la date d'inscription de l'enfant.", 'warning');
+      return;
+    }
+
     try {
       setEnregistrement(true);
       const charge = {
@@ -1250,13 +1383,16 @@ export function EcodimView() {
               color="success"
               startIcon={<TableChartRounded />}
               onClick={() => {
+                // Les listes filtrées, et non les listes complètes : le fichier
+                // doit contenir ce que le tableau montre au moment du clic.
                 exporterEcodimExcel({
                   volet: voletExportable,
-                  classes,
-                  moniteurs,
-                  enfants,
-                  activites,
-                  cultes,
+                  classes: classesFiltrees,
+                  moniteurs: moniteursFiltres,
+                  enfants: enfantsFiltres,
+                  activites: activitesFiltrees,
+                  cultes: cultesFiltres,
+                  finances: financesFiltrees,
                   nomEglise: (sessionUser as any)?.nomEgliseCourt || (sessionUser as any)?.nomTemple,
                 });
                 showNotification(`Export Excel de « ${CARTES[onglet].libelle} » généré.`, 'success');
@@ -1268,10 +1404,12 @@ export function EcodimView() {
 
           {!isDesktopApp && (
             <EcodimPrint
-              classes={classes}
-              moniteurs={moniteurs}
-              enfants={enfants}
-              activites={activites}
+              classes={classesFiltrees}
+              moniteurs={moniteursFiltres}
+              enfants={enfantsFiltres}
+              activites={activitesFiltrees}
+              finances={financesFiltrees}
+              sousTitre={filtresActifs.map((filtre) => filtre.libelle).join(' · ')}
             />
           )}
 
@@ -1391,80 +1529,107 @@ export function EcodimView() {
                 }}
               />
 
-              <SelectRecherche
-                label="Classe"
-                size="small"
-                value={classeFiltre}
-                onChange={(event) => {
-                  setClasseFiltre(event.target.value);
-                  setPage(0);
-                }}
-                sx={{ minWidth: 170 }}
-              >
-                <MenuItem value="">Toutes les classes</MenuItem>
-                {classes.map((classe) => (
-                  <MenuItem key={classe.idClasseEcodim} value={String(classe.idClasseEcodim)}>
-                    {classe.libelleClasse}
-                  </MenuItem>
-                ))}
-              </SelectRecherche>
+              {/* Chaque onglet ne montre que les filtres qui le concernent
+                  (voir FILTRES_PAR_ONGLET). */}
+              {filtresDeLOnglet.includes('classe') && (
+                <SelectRecherche
+                  label="Classe"
+                  size="small"
+                  value={classeFiltre}
+                  onChange={(event) => {
+                    setClasseFiltre(event.target.value);
+                    setPage(0);
+                  }}
+                  sx={{ minWidth: 170 }}
+                >
+                  <MenuItem value="">Toutes les classes</MenuItem>
+                  {classes.map((classe) => (
+                    <MenuItem key={classe.idClasseEcodim} value={String(classe.idClasseEcodim)}>
+                      {classe.libelleClasse}
+                    </MenuItem>
+                  ))}
+                </SelectRecherche>
+              )}
 
-              {/* Le mois et l’année ne concernent que les volets datés :
-                  cultes, activités et évaluations. Les classes, les moniteurs
-                  et les enfants n’ont pas de date, et restent entiers. */}
-              <SelectRecherche
-                label="Mois"
-                size="small"
-                value={moisFiltre}
-                onChange={(event) => {
-                  setMoisFiltre(event.target.value);
-                  setPage(0);
-                }}
-                sx={{ minWidth: 140 }}
-              >
-                <MenuItem value="">Tous les mois</MenuItem>
-                {MOIS_LIBELLES.map((libelle, index) => (
-                  <MenuItem key={libelle} value={String(index + 1).padStart(2, '0')}>
-                    {libelle}
-                  </MenuItem>
-                ))}
-              </SelectRecherche>
+              {filtresDeLOnglet.includes('inscription') && (
+                <SelectRecherche
+                  label="Inscription"
+                  size="small"
+                  value={inscriptionFiltre}
+                  onChange={(event) => {
+                    setInscriptionFiltre(event.target.value);
+                    setPage(0);
+                  }}
+                  sx={{ minWidth: 170 }}
+                >
+                  <MenuItem value="">Tous les enfants</MenuItem>
+                  <MenuItem value="inscrits">Inscrits</MenuItem>
+                  <MenuItem value="non-inscrits">Non inscrits</MenuItem>
+                </SelectRecherche>
+              )}
 
-              <SelectRecherche
-                label="Année"
-                size="small"
-                value={anneeFiltre}
-                onChange={(event) => {
-                  setAnneeFiltre(event.target.value);
-                  setPage(0);
-                }}
-                sx={{ minWidth: 130 }}
-              >
-                <MenuItem value="">Toutes les années</MenuItem>
-                {anneesDisponibles.map((annee) => (
-                  <MenuItem key={annee} value={annee}>
-                    {annee}
-                  </MenuItem>
-                ))}
-              </SelectRecherche>
+              {/* Le mois et l'année ne concernent que les volets datés : cultes,
+                  activités et caisse. Une classe, un moniteur ou un enfant n'ont
+                  pas de date, et restent entiers. */}
+              {filtresDeLOnglet.includes('periode') && (
+                <SelectRecherche
+                  label="Mois"
+                  size="small"
+                  value={moisFiltre}
+                  onChange={(event) => {
+                    setMoisFiltre(event.target.value);
+                    setPage(0);
+                  }}
+                  sx={{ minWidth: 140 }}
+                >
+                  <MenuItem value="">Tous les mois</MenuItem>
+                  {MOIS_LIBELLES.map((libelle, index) => (
+                    <MenuItem key={libelle} value={String(index + 1).padStart(2, '0')}>
+                      {libelle}
+                    </MenuItem>
+                  ))}
+                </SelectRecherche>
+              )}
 
-              <SelectRecherche
-                label="Moniteur"
-                size="small"
-                value={moniteurFiltre}
-                onChange={(event) => {
-                  setMoniteurFiltre(event.target.value);
-                  setPage(0);
-                }}
-                sx={{ minWidth: 180 }}
-              >
-                <MenuItem value="">Tous les moniteurs</MenuItem>
-                {moniteurs.map((moniteur) => (
-                  <MenuItem key={moniteur.idMoniteur} value={String(moniteur.idMoniteur)}>
-                    {nomComplet(moniteur)}
-                  </MenuItem>
-                ))}
-              </SelectRecherche>
+              {filtresDeLOnglet.includes('periode') && (
+                <SelectRecherche
+                  label="Année"
+                  size="small"
+                  value={anneeFiltre}
+                  onChange={(event) => {
+                    setAnneeFiltre(event.target.value);
+                    setPage(0);
+                  }}
+                  sx={{ minWidth: 130 }}
+                >
+                  <MenuItem value="">Toutes les années</MenuItem>
+                  {anneesDisponibles.map((annee) => (
+                    <MenuItem key={annee} value={annee}>
+                      {annee}
+                    </MenuItem>
+                  ))}
+                </SelectRecherche>
+              )}
+
+              {filtresDeLOnglet.includes('moniteur') && (
+                <SelectRecherche
+                  label="Moniteur"
+                  size="small"
+                  value={moniteurFiltre}
+                  onChange={(event) => {
+                    setMoniteurFiltre(event.target.value);
+                    setPage(0);
+                  }}
+                  sx={{ minWidth: 180 }}
+                >
+                  <MenuItem value="">Tous les moniteurs</MenuItem>
+                  {moniteurs.map((moniteur) => (
+                    <MenuItem key={moniteur.idMoniteur} value={String(moniteur.idMoniteur)}>
+                      {nomComplet(moniteur)}
+                    </MenuItem>
+                  ))}
+                </SelectRecherche>
+              )}
             </Stack>
           </Box>
         )}
@@ -1682,9 +1847,13 @@ export function EcodimView() {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ width: 64 }}>Photo</TableCell>
+                  {/* Le matricule vient en tête : c'est lui qu'on dicte au
+                      téléphone et qu'on cherche dans la barre de recherche. */}
+                  <TableCell>Matricule</TableCell>
                   <TableCell>Nom</TableCell>
                   <TableCell>Prénoms</TableCell>
                   <TableCell>Classe</TableCell>
+                  <TableCell>Inscription</TableCell>
                   <TableCell>Sexe</TableCell>
                   <TableCell>Âge</TableCell>
                   <TableCell>Lieu d&apos;habitation</TableCell>
@@ -1711,9 +1880,29 @@ export function EcodimView() {
                         {(enfant.nomEnfant || '?').charAt(0).toUpperCase()}
                       </Avatar>
                     </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                        {(enfant as any).matriculeEnfant || '—'}
+                      </Typography>
+                    </TableCell>
                     <TableCell>{enfant.nomEnfant}</TableCell>
                     <TableCell>{enfant.prenomEnfant || '—'}</TableCell>
                     <TableCell>{enfant.libelleClasse || 'Non affecté'}</TableCell>
+                    <TableCell>
+                      {estInscrit(enfant) ? (
+                        <Tooltip
+                          title={
+                            (enfant as any).dateInscriptionEcodim
+                              ? `Inscrit le ${formaterDate((enfant as any).dateInscriptionEcodim)}`
+                              : ''
+                          }
+                        >
+                          <Chip label="Inscrit" color="success" size="small" variant="outlined" />
+                        </Tooltip>
+                      ) : (
+                        <Chip label="Non inscrit" size="small" variant="outlined" />
+                      )}
+                    </TableCell>
                     <TableCell>{libelleSexe(enfant.sexeEnfant) || '—'}</TableCell>
                     <TableCell>{calculerAge(enfant.dateNaissEnfant)}</TableCell>
                     <TableCell>{enfant.lieuHabitationEnfant || '—'}</TableCell>
@@ -1913,8 +2102,11 @@ export function EcodimView() {
                   <TableCell>Date</TableCell>
                   <TableCell>Lieu</TableCell>
                   <TableCell>Classe</TableCell>
-                  <TableCell align="center">Enfants</TableCell>
-                  <TableCell align="center">Moniteurs</TableCell>
+                  {/* « Nbre » plutôt qu'« Enfants » et « Moniteurs » : ces deux
+                      colonnes portent un effectif, pas des noms. Les titres
+                      courts les faisaient lire comme la liste des présents. */}
+                  <TableCell align="center">Nbre enfants</TableCell>
+                  <TableCell align="center">Nbre moniteurs</TableCell>
                   <TableCell>Statut</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
@@ -1994,6 +2186,20 @@ export function EcodimView() {
             </Table>
           )}
 
+          {onglet === 7 && (
+            <Box sx={{ p: 2 }}>
+              <FinancesGrille
+                finances={financesFiltrees}
+                classes={classes}
+                idUtilisateur={idUtilisateur}
+                chargement={chargement}
+                demandeAjout={demandeAjoutFinance}
+                onEnregistre={charger}
+                onNotifier={showNotification}
+              />
+            </Box>
+          )}
+
           {onglet === 6 && (
             <Box sx={{ p: 2 }}>
               <AssiduiteGrille
@@ -2017,7 +2223,7 @@ export function EcodimView() {
             paginées : elles comptent leurs propres lignes et portent leur propre
             pagination. Cette barre y affichait « 0–0 sur 0 », ce qui laissait
             croire à un tableau vide juste en dessous de vingt-quatre lignes. */}
-        {onglet !== 4 && onglet !== 6 && (
+        {onglet !== 4 && onglet !== 6 && onglet !== 7 && (
           <TablePagination
             component="div"
             page={page}
@@ -2341,6 +2547,70 @@ export function EcodimView() {
               Cliquez sur l&apos;icône appareil photo pour ajouter une photo
             </Typography>
           </Stack>
+
+          {/* L'inscription vient en premier : tous les enfants qui fréquentent
+              l'Ecodim sont saisis, et c'est cette case qui distingue ceux qui
+              sont inscrits. Placée au milieu de la fiche, elle passerait
+              inaperçue et resterait décochée par oubli. */}
+          <Box
+            sx={{
+              mb: 2,
+              p: 2,
+              borderRadius: 1.5,
+              border: '1px solid',
+              borderColor: estInscrit(formEnfant) ? 'success.main' : 'divider',
+              // Une teinte transparente plutôt que success.lighter : ce vert pâle
+              // rendrait le texte blanc illisible en mode sombre.
+              bgcolor: (theme) =>
+                estInscrit(formEnfant)
+                  ? varAlpha(theme.vars.palette.success.mainChannel, 0.08)
+                  : varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Inscription à l&apos;Ecodim
+            </Typography>
+            <Grid container spacing={2} alignItems="center">
+              <Grid xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={estInscrit(formEnfant)}
+                      onChange={(event) =>
+                        setFormEnfant((precedent: any) => ({
+                          ...precedent,
+                          inscritEcodim: event.target.checked ? 1 : 0,
+                          // Cocher propose la date du jour : c'est le cas le plus
+                          // courant, et une inscription sans date ne s'enregistre pas.
+                          dateInscriptionEcodim: event.target.checked
+                            ? precedent.dateInscriptionEcodim ||
+                              new Date().toISOString().slice(0, 10)
+                            : '',
+                        }))
+                      }
+                    />
+                  }
+                  label="L'enfant est inscrit"
+                />
+              </Grid>
+              <Grid xs={12} md={6}>
+                <TextField
+                  label="Date d'inscription"
+                  type="date"
+                  value={formEnfant.dateInscriptionEcodim || ''}
+                  onChange={(event) =>
+                    setFormEnfant({ ...formEnfant, dateInscriptionEcodim: event.target.value })
+                  }
+                  disabled={!estInscrit(formEnfant)}
+                  helperText={
+                    estInscrit(formEnfant) ? undefined : "Cochez la case pour saisir la date"
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  fullWidth
+                />
+              </Grid>
+            </Grid>
+          </Box>
 
           <Grid container spacing={2} sx={{ mt: 0 }}>
             <Grid xs={12} md={6}>

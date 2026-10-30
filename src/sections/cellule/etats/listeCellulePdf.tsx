@@ -19,11 +19,23 @@ import {
 import type { IReduxState } from '../../../store/store';
 import type { IMembre } from '../../../store/membreSlice';
 
-export const ListeDesCellules = () => {
+type ListeDesCellulesProps = {
+  /**
+   * Lignes à imprimer : celles que le tableau affiche, recherche et filtres
+   * compris. Omise, la propriété laisse l'état reprendre la liste complète du
+   * store, qui était le comportement d'origine.
+   */
+  cellules?: any[];
+  /** Filtre actif, rappelé sous le titre pour que la feuille se relise seule. */
+  sousTitre?: string;
+};
+
+export const ListeDesCellules = ({ cellules, sousTitre }: ListeDesCellulesProps) => {
   const listCellule = useSelector((state: IReduxState) => state.cellule.listCellule);
   const listMembre = useSelector((state: IReduxState) => state.membre.listMembre);
   const utilisateurData = useSelector((state: IReduxState) => state.authentification.utilisateurData);
-  const sortedCellules = [...(listCellule || [])].sort((a, b) => (a.nomCellule || '').localeCompare(b.nomCellule || ''));
+  const sourceCellules = Array.isArray(cellules) ? cellules : (listCellule || []);
+  const sortedCellules = [...sourceCellules].sort((a, b) => (a.nomCellule || '').localeCompare(b.nomCellule || ''));
   const membres = Array.isArray(listMembre) ? (listMembre as IMembre[]) : [];
 
   return (
@@ -31,6 +43,11 @@ export const ListeDesCellules = () => {
       identity={utilisateurData}
       title="Liste des cellules"
     >
+      {sousTitre && (
+        <Typography variant="body2" sx={{ mb: 1.5, color: '#475569' }}>
+          {sousTitre}
+        </Typography>
+      )}
       {sortedCellules.length === 0 ? (
         <PrintEmptyState title="Aucune cellule trouvée" message="Aucune cellule n'est encore enregistrée dans la base locale." />
       ) : (

@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ma Communauté — Téléchargement</title>
+    <meta
+      name="description"
+      content="Téléchargez Ma Communauté, le logiciel de gestion de votre église : membres, cultes, école du dimanche, comptabilité. Fonctionne sans connexion Internet."
+    />
+    <link rel="icon" href="assets/favicon.ico" />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;900&display=swap"
+    />
+
+    <style>
+      /*
+        Une page, un seul geste attendu : télécharger.
+        Tout le reste est là pour rassurer quelqu'un qui n'est pas informaticien.
+      */
+      :root {
+        --fond: #f6f8fb;
+        --carte: #ffffff;
+        --texte: #0f172a;
+        --texte-doux: #51627c;
+        --bord: #e2e8f0;
+        --accent: #1668e3;
+        --accent-sombre: #0f4ca8;
+        --succes: #0f8a53;
+        --ombre: 0 18px 50px rgba(15, 23, 42, 0.1);
+      }
+
+      /*
+        Mode sombre : il suit le réglage du téléphone ou de l'ordinateur.
+        Le garde `:root:not([data-theme='light'])` laisse la possibilité de
+        forcer le mode clair plus tard sans réécrire ces règles.
+      */
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --fond: #0b1220;
+          --carte: #141d2e;
+          --texte: #e8eefb;
+          --texte-doux: #9babc6;
+          --bord: #243149;
+          --accent: #4d94ff;
+          --accent-sombre: #1668e3;
+          --succes: #35c88a;
+          --ombre: 0 18px 50px rgba(0, 0, 0, 0.45);
+        }
+      }
+
+      :root[data-theme='dark'] {
+        --fond: #0b1220;
+        --carte: #141d2e;
+        --texte: #e8eefb;
+        --texte-doux: #9babc6;
+        --bord: #243149;
+        --accent: #4d94ff;
+        --accent-sombre: #1668e3;
+        --succes: #35c88a;
+        --ombre: 0 18px 50px rgba(0, 0, 0, 0.45);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--fond);
+        color: var(--texte);
+        font-family: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* 16 px de marge sur les côtés : la page doit se lire sur un téléphone. */
+      .page {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 16px 64px;
+      }
+
+      /* ------------------------------------------------------------- en-tête */
+      header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 28px 0 8px;
+      }
+
+      header img {
+        width: 52px;
+        height: 52px;
+        border-radius: 13px;
+      }
+
+      header .nom {
+        font-weight: 900;
+        font-size: 1.3rem;
+        letter-spacing: -0.3px;
+      }
+
+      header .sous {
+        color: var(--texte-doux);
+        font-size: 0.92rem;
+      }
+
+      /* ------------------------------------------------- bloc de téléchargement */
+      .heros {
+        background: var(--carte);
+        border: 1px solid var(--bord);
+        border-radius: 22px;
+        box-shadow: var(--ombre);
+        padding: 40px 32px;
+        margin-top: 24px;
+        text-align: center;
+      }
+
+      .heros h1 {
+        font-size: clamp(1.7rem, 5vw, 2.5rem);
+        line-height: 1.15;
+        margin: 0 0 12px;
+        letter-spacing: -0.8px;
+      }
+
+      .heros p.accroche {
+        color: var(--texte-doux);
+        font-size: 1.08rem;
+        max-width: 560px;
+        margin: 0 auto 28px;
+      }
+
+      .bouton {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: var(--accent);
+        color: #fff;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 1.08rem;
+        padding: 16px 34px;
+        border-radius: 14px;
+        border: none;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.15s ease;
+      }
+
+      .bouton:hover {
+        background: var(--accent-sombre);
+        transform: translateY(-1px);
+      }
+
+      .meta {
+        margin-top: 14px;
+        color: var(--texte-doux);
+        font-size: 0.92rem;
+      }
+
+      .meta strong {
+        color: var(--texte);
+      }
+
+      .essai {
+        display: inline-block;
+        margin-top: 18px;
+        padding: 7px 16px;
+        border-radius: 999px;
+        /* Repli d'abord : `color-mix` n'existe pas sur les navigateurs
+           anciens, et une pastille sans fond doit rester lisible. */
+        background: rgba(15, 138, 83, 0.13);
+        background: color-mix(in srgb, var(--succes) 14%, transparent);
+        color: var(--succes);
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      /* ------------------------------------------------------------- sections */
+      h2 {
+        font-size: 1.32rem;
+        margin: 48px 0 6px;
+        letter-spacing: -0.3px;
+      }
+
+      h2 + p.intro {
+        color: var(--texte-doux);
+        margin: 0 0 20px;
+      }
+
+      .grille {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+        gap: 16px;
+      }
+
+      .carte {
+        background: var(--carte);
+        border: 1px solid var(--bord);
+        border-radius: 16px;
+        padding: 22px;
+      }
+
+      .carte h3 {
+        margin: 0 0 6px;
+        font-size: 1.04rem;
+      }
+
+      .carte p {
+        margin: 0;
+        color: var(--texte-doux);
+        font-size: 0.95rem;
+      }
+
+      .carte .pictogramme {
+        font-size: 1.5rem;
+        line-height: 1;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      /* ------------------------------------------------- carte des mises à jour */
+      .maj {
+        background: var(--carte);
+        border: 1px solid var(--bord);
+        border-left: 4px solid var(--accent);
+        border-radius: 16px;
+        padding: 26px 28px;
+      }
+
+      .maj h3 {
+        margin: 0 0 10px;
+        font-size: 1.12rem;
+      }
+
+      .maj p {
+        margin: 0 0 12px;
+        color: var(--texte-doux);
+      }
+
+      .maj p:last-child {
+        margin-bottom: 0;
+      }
+
+      .maj ul {
+        margin: 0 0 14px;
+        padding-left: 20px;
+        color: var(--texte-doux);
+      }
+
+      .maj li {
+        margin-bottom: 5px;
+      }
+
+      /* -------------------------------------------------------- installation */
+      ol.etapes {
+        counter-reset: etape;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      ol.etapes li {
+        counter-increment: etape;
+        position: relative;
+        padding: 0 0 18px 44px;
+        color: var(--texte-doux);
+      }
+
+      ol.etapes li::before {
+        content: counter(etape);
+        position: absolute;
+        left: 0;
+        top: 1px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      ol.etapes li strong {
+        color: var(--texte);
+        display: block;
+      }
+
+      footer {
+        margin-top: 56px;
+        padding-top: 22px;
+        border-top: 1px solid var(--bord);
+        color: var(--texte-doux);
+        font-size: 0.9rem;
+        text-align: center;
+      }
+
+      footer a {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page">
+      <header>
+        <img src="assets/logo.png" alt="" />
+        <div>
+          <div class="nom">Ma Communauté</div>
+          <div class="sous">La gestion de votre église, simplement</div>
+        </div>
+      </header>
+
+      <!-- ------------------------------------------------ téléchargement -->
+      <section class="heros">
+        <h1>Téléchargez Ma&nbsp;Communauté</h1>
+        <p class="accroche">
+          Membres, cultes, école du dimanche, comptabilité — tout le registre de
+          votre église sur un seul poste, et sans connexion Internet.
+        </p>
+
+        <!--
+          Le lien est fixe : le fichier porte toujours le même nom sur
+          l'hébergement, et une nouvelle version l'écrase. Rien à changer ici
+          d'une version à l'autre.
+        -->
+        <!--
+          L'adresse est écrite ici, pas posée par le script : si le JavaScript
+          échoue, le bouton doit rester cliquable. Télécharger est la seule
+          chose que cette page a vraiment à faire.
+        -->
+        <a class="bouton" id="lien-telechargement" href="ma-communaute-setup.exe" download>
+          Télécharger pour Windows
+        </a>
+
+        <div class="meta">
+          Version <strong id="version">la plus récente</strong>
+          <span id="bloc-taille" hidden> · <span id="taille"></span></span>
+          <span id="bloc-date" hidden> · publiée le <span id="date"></span></span>
+        </div>
+
+        <div class="essai">30 jours d'essai, sans engagement</div>
+      </section>
+
+      <!-- --------------------------------------------------- fonctionnalités -->
+      <h2>Ce que fait l'application</h2>
+      <p class="intro">
+        Tout est enregistré sur votre ordinateur. Rien ne part ailleurs.
+      </p>
+
+      <div class="grille">
+        <div class="carte">
+          <span class="pictogramme">👥</span>
+          <h3>Membres</h3>
+          <p>
+            Le registre complet de votre église, avec photo, matricule unique et
+            fiche imprimable. Inscription par QR&nbsp;code depuis un téléphone.
+          </p>
+        </div>
+
+        <div class="carte">
+          <span class="pictogramme">⛪</span>
+          <h3>Cultes</h3>
+          <p>
+            Chaque culte relevé : prédicateur, thème, effectifs, offrande et
+            dîme. Les totaux se calculent tout seuls.
+          </p>
+        </div>
+
+        <div class="carte">
+          <span class="pictogramme">🎒</span>
+          <h3>École du dimanche</h3>
+          <p>
+            Classes, moniteurs, enfants, cahier de texte, évaluations, appel du
+            dimanche et caisse du département. Les fiches officielles
+            s'impriment déjà remplies.
+          </p>
+        </div>
+
+        <div class="carte">
+          <span class="pictogramme">🏠</span>
+          <h3>Cellules et départements</h3>
+          <p>
+            Cellules de maison, départements, groupes et familles de jeunesse,
+            avec leurs responsables et leurs effectifs.
+          </p>
+        </div>
+
+        <div class="carte">
+          <span class="pictogramme">💰</span>
+          <h3>Comptabilité</h3>
+          <p>
+            Entrées, sorties et solde de l'église. Journal imprimable, et une
+            corbeille qui garde la trace des lignes retirées.
+          </p>
+        </div>
+
+        <div class="carte">
+          <span class="pictogramme">🖨️</span>
+          <h3>États et exports</h3>
+          <p>
+            Toutes les listes s'impriment ou s'exportent vers Excel, en suivant
+            exactement les filtres affichés à l'écran.
+          </p>
+        </div>
+      </div>
+
+      <!-- ------------------------------------------------- mises à jour -->
+      <h2>Les mises à jour</h2>
+      <p class="intro">Vous n'aurez pas à revenir sur cette page.</p>
+
+      <div class="maj">
+        <h3>Automatiques, une fois l'application installée</h3>
+        <p>
+          Dès qu'une nouvelle version est disponible, l'application vous prévient
+          par un message. Elle la télécharge seule, en arrière-plan.
+        </p>
+        <p>
+          <strong>Rien ne s'installe sans vous.</strong> La mise à jour se
+          termine quand vous l'acceptez, depuis l'onglet
+          <em>Paramètres</em> — jamais au milieu d'une saisie.
+        </p>
+
+        <h3 style="margin-top: 22px">Dans cette version</h3>
+        <ul id="nouveautes">
+          <li>Chargement…</li>
+        </ul>
+
+        <p>
+          Une connexion Internet n'est nécessaire que pour recevoir ces mises à
+          jour. Le reste du temps, l'application fonctionne entièrement hors
+          ligne.
+        </p>
+      </div>
+
+      <!-- -------------------------------------------------- installation -->
+      <h2>Installer en trois étapes</h2>
+      <p class="intro">Comptez deux minutes.</p>
+
+      <ol class="etapes">
+        <li>
+          <strong>Téléchargez le fichier</strong>
+          Cliquez sur le bouton bleu en haut de cette page.
+        </li>
+        <li>
+          <strong>Ouvrez-le</strong>
+          Windows peut afficher un avertissement parce que le fichier vient
+          d'être publié : cliquez sur « Informations complémentaires », puis sur
+          « Exécuter quand même ».
+        </li>
+        <li>
+          <strong>Lancez Ma Communauté</strong>
+          L'icône apparaît sur votre bureau. Créez le compte de votre église au
+          premier démarrage.
+        </li>
+      </ol>
+
+      <footer>
+        Ma Communauté — Windows 10 et 11 · Besoin d'aide ?
+        <a href="mailto:spidertechnologiesdevice@gmail.com">Écrivez-nous</a>
+      </footer>
+    </div>
+
+    <script>
+      /*
+        L'adresse du fichier et celle du manifeste.
+        Les deux vivent sur l'hébergement de fichiers, pas dans ce dépôt :
+        un exécutable de 93 Mo versionné à chaque sortie rendrait le dépôt
+        inutilisable, et le remplacer ne libérerait rien — Git garde toutes les
+        versions passées dans son historique.
+
+        Le nom du fichier ne change JAMAIS : une nouvelle version écrase la
+        précédente, et ce lien reste valable sans qu'on y touche.
+      */
+      const LIEN_EXE = 'ma-communaute-setup.exe';
+      const LIEN_VERSION = 'version.json';
+
+      document.getElementById('lien-telechargement').href = LIEN_EXE;
+
+      /** Affiche un détail du manifeste, et révèle le bloc qui le porte. */
+      const poser = (idBloc, idValeur, valeur) => {
+        if (!valeur) return;
+
+        document.getElementById(idValeur).textContent = valeur;
+        document.getElementById(idBloc).hidden = false;
+      };
+
+      /*
+        Le numéro de version vient d'un petit fichier JSON déposé à côté de
+        l'exécutable. Publier une version revient donc à remplacer deux
+        fichiers sur l'hébergement — cette page n'est jamais modifiée.
+
+        En cas d'échec, le bouton reste utilisable : seuls les détails
+        manquent. Une page qui refuse de s'afficher parce qu'un numéro de
+        version n'a pas été lu serait un mauvais échange.
+      */
+      fetch(LIEN_VERSION, { cache: 'no-store' })
+        .then((reponse) => (reponse.ok ? reponse.json() : Promise.reject()))
+        .then((infos) => {
+          if (infos.version) {
+            document.getElementById('version').textContent = infos.version;
+          }
+
+          poser('bloc-taille', 'taille', infos.taille);
+
+          if (infos.date) {
+            // Les dates se lisent en jj/mm/aaaa ici comme dans l'application.
+            const [annee, mois, jour] = String(infos.date).split('-');
+            poser('bloc-date', 'date', `${jour}/${mois}/${annee}`);
+          }
+
+          const liste = document.getElementById('nouveautes');
+          const nouveautes = Array.isArray(infos.nouveautes) ? infos.nouveautes : [];
+
+          liste.innerHTML = '';
+
+          if (nouveautes.length === 0) {
+            liste.innerHTML = '<li>Corrections et améliorations diverses.</li>';
+            return;
+          }
+
+          nouveautes.forEach((texte) => {
+            const element = document.createElement('li');
+            element.textContent = texte;
+            liste.appendChild(element);
+          });
+        })
+        .catch(() => {
+          // Manifeste illisible : les détails restent masqués, le bouton reste
+          // utilisable. Mieux vaut une page sans numéro de version qu'une page
+          // qui refuse de s'afficher.
+          document.getElementById('nouveautes').innerHTML =
+            '<li>Les nouveautés sont rappelées dans l&rsquo;application, onglet Paramètres.</li>';
+        });
+    </script>
+  </body>
+</html>

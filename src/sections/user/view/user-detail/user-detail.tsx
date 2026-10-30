@@ -41,7 +41,6 @@ import { isDesktopAppRuntime } from 'src/utils/access-control';
 
 import { getPhotoUrl } from '../../utils';
 import { dataResponsabilite } from '../../../../store/membreSlice';
-import { PrintCartesMembre } from '../../etats/printCarteMembre';
 import { MemberProfilePrint } from '../../etats/member-profile-print';
 
 import type { IMembre } from '../../../../store/membreSlice';
@@ -219,12 +218,6 @@ export function MembreDetailView() {
           </Button>
 
           <Stack direction="row" spacing={1.5}>
-            {/* Comme "Imprimer la fiche", l'impression de la carte reste réservée au
-                navigateur : elle est masquée dans l'application desktop. */}
-            {membre && !isDesktopApp && (
-              <PrintCartesMembre membres={[membre]} label="Imprimer sa carte" />
-            )}
-
             {!isDesktopApp && (
               <ReactToPrint
                 documentTitle={`fiche-personnelle-${fullName.replace(/\s+/g, '-').toLowerCase()}`}
@@ -305,6 +298,16 @@ export function MembreDetailView() {
                   alignItems={{ xs: 'flex-start', md: 'center' }}
                 >
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {/* Le matricule en premier : c'est l'identifiant qu'on
+                        dicte au téléphone pour désigner ce membre sans
+                        ambiguïté. */}
+                    {(membre as any).matriculeMembre && (
+                      <Chip
+                        variant="filled"
+                        label={(membre as any).matriculeMembre}
+                        sx={{ fontFamily: 'monospace', fontWeight: 700 }}
+                      />
+                    )}
                     <Chip color="primary" variant="outlined" label={getSexeLabel(membre.sexeMembre)} />
                     <Chip
                       color="secondary"

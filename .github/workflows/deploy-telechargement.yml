@@ -1,0 +1,169 @@
+name: Page de telechargement
+
+# Publie la page que les nouveaux clients visitent, AVEC l'installateur a
+# cote. Les deux vivent sur le meme site : le lien de telechargement reste
+# donc relatif, et aucune adresse n'est a tenir a jour quelque part.
+#
+# Un deploiement Netlify est un instantane complet : ce qui n'est pas envoye
+# disparait du site. C'est pourquoi ce workflow reconstruit TOUJOURS le dossier
+# entier, page et installateur compris, quel que soit ce qui l'a declenche.
+# Deux workflows separes — un pour la page, un pour le fichier — se seraient
+# mutuellement efface le travail.
+#
+# L'installateur n'est jamais commite : il est repris de la derniere release
+# GitHub a chaque deploiement. Git conserve toutes les versions passees de
+# chaque fichier, et un binaire de 93 Mo "remplace" resterait dans
+# l'historique pour toujours.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "telechargement/**"
+      - ".github/workflows/deploy-telechargement.yml"
+  # Une nouvelle version publiee doit arriver sur la page sans rien faire.
+  release:
+    types: [published]
+  # Relance manuelle, pour rattraper un deploiement rate.
+  workflow_dispatch:
+
+jobs:
+  deployer:
+    name: Publier la page et l installateur
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v4
+
+      # Garde-fou : l'executable ne doit JAMAIS etre versionne ici.
+      - name: Verifier qu aucun executable n a ete commite
+        run: |
+          set -euo pipefail
+
+          trouves="$(find telechargement -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' \) || true)"
+
+          if [ -n "$trouves" ]; then
+            echo "::error::Un executable a ete commite dans telechargement/ :"
+            echo "$trouves"
+            echo "::error::Retire-le du depot. Il est repris automatiquement de la derniere release."
+            exit 1
+          fi
+
+          echo "Aucun executable dans le depot."
+
+      - name: Recuperer l installateur de la derniere version
+        id: installateur
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Le site se construit a part : on n'ajoute rien dans le depot.
+          mkdir -p site
+          cp -r telechargement/. site/
+
+          tag="${{ github.event.release.tag_name }}"
+          [ -z "$tag" ] && tag="$(gh release view --json tagName -q .tagName 2>/dev/null || true)"
+
+          if [ -z "$tag" ]; then
+            echo "::error::Aucune release publiee : il n'y a pas d'installateur a proposer."
+            exit 1
+          fi
+
+          gh release download "$tag" --pattern "*.exe" --dir /tmp/release
+          fichier="$(find /tmp/release -name '*.exe' | head -1)"
+
+          if [ -z "$fichier" ]; then
+            echo "::error::Aucun .exe dans la release $tag."
+            exit 1
+          fi
+
+          # Nom FIXE : le lien de la page ne change jamais d'une version a
+          # l'autre, et il n'y a donc rien a modifier dans le HTML.
+          mv "$fichier" site/ma-communaute-setup.exe
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Installateur $tag repris ($(du -h site/ma-communaute-setup.exe | cut -f1))."
+
+      # Le manifeste que lit la page. Il est reconstruit a partir de la release
+      # plutot que recopie du depot : la taille doit etre celle du fichier
+      # reellement servi, et la version celle reellement publiee.
+      - name: Construire le manifeste
+        env:
+          # Le texte de la release passe par l'environnement, JAMAIS interpole
+          # dans la commande : une note contenant un guillemet casserait le
+          # shell, et une note malveillante pourrait y faire executer autre
+          # chose.
+          NOTES: ${{ github.event.release.body }}
+          VERSION: ${{ steps.installateur.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          # Script dans un fichier, delimiteur entre quotes : le shell ne touche
+          # ni aux antislashs des expressions regulieres, ni aux accents graves.
+          cat > /tmp/construire-manifeste.cjs <<'FIN'
+          const fs = require('fs');
+
+          const octets = fs.statSync('site/ma-communaute-setup.exe').size;
+          const ancien = JSON.parse(fs.readFileSync('telechargement/version.json', 'utf8'));
+
+          // Les notes de release sont en Markdown : on ne garde que les lignes
+          // de liste, debarrassees de leurs tirets et de leur mise en forme. Le
+          // reste — titres, liens, mentions de commits — n'a rien a faire sur
+          // une page destinee a un pasteur.
+          //
+          // Les underscores sont conserves : ils emphasent rarement du texte
+          // ecrit a la main, et tous les retirer transformerait « version_2 »
+          // en « version2 ».
+          const nouveautes = String(process.env.NOTES || '')
+            .split('\n')
+            .map((ligne) => ligne.trim())
+            .filter((ligne) => /^[-*] /.test(ligne))
+            .map((ligne) => ligne.replace(/^[-*] /, '').replace(/[*`]/g, '').trim())
+            .filter(Boolean)
+            .slice(0, 6);
+
+          const manifeste = {
+            version: process.env.VERSION || ancien.version,
+            date: new Date().toISOString().slice(0, 10),
+            taille: Math.round(octets / (1024 * 1024)) + ' Mo',
+            // Sans notes de release — un deploiement declenche par une simple
+            // retouche de la page —, on garde celles deja ecrites a la main.
+            nouveautes: nouveautes.length ? nouveautes : ancien.nouveautes || [],
+          };
+
+          fs.writeFileSync('site/version.json', JSON.stringify(manifeste, null, 2) + '\n');
+          console.log(JSON.stringify(manifeste, null, 2));
+          FIN
+
+          node /tmp/construire-manifeste.cjs
+
+      - name: Deployer sur Netlify
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          set -euo pipefail
+
+          npx --yes netlify-cli@17 deploy \
+            --dir=site \
+            --prod \
+            --message "Version ${{ steps.installateur.outputs.version }}"
+
+      # Dernier controle, du point de vue d'un client : le fichier repond-il ?
+      # Mieux vaut un workflow rouge qu'un visiteur devant un lien mort.
+      - name: Verifier que le telechargement repond
+        if: ${{ vars.URL_TELECHARGEMENT != '' }}
+        run: |
+          set -euo pipefail
+
+          code="$(curl -s -o /dev/null -w '%{http_code}' -I "${{ vars.URL_TELECHARGEMENT }}/ma-communaute-setup.exe")"
+
+          if [ "$code" != "200" ]; then
+            echo "::error::L'installateur ne repond pas (code HTTP $code). Les nouveaux clients ne peuvent pas le telecharger."
+            exit 1
+          fi
+
+          echo "::notice::Page en ligne, installateur telechargeable."

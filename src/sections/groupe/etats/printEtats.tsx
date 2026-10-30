@@ -42,9 +42,16 @@ const StyledMenu = styled(Menu)(({ theme }) => ({
   },
 }));
 
-const ComponentToPrintGroupes = forwardRef<HTMLDivElement>((_, ref) => (
+type EtatListeProps = {
+  /** Lignes affichées par le tableau au moment du clic (filtres compris). */
+  groupes?: any[];
+  /** Filtre actif, rappelé sous le titre de l'état. */
+  sousTitre?: string;
+};
+
+const ComponentToPrintGroupes = forwardRef<HTMLDivElement, EtatListeProps>(({ groupes, sousTitre }, ref) => (
   <div ref={ref}>
-    <ListeDesGroupes />
+    <ListeDesGroupes groupes={groupes} sousTitre={sousTitre} />
   </div>
 ));
 
@@ -54,7 +61,7 @@ const ComponentToPrintFicheGroupe = forwardRef<HTMLDivElement>((_, ref) => (
   </div>
 ));
 
-export const PrintEtatGlobal = () => {
+export const PrintEtatGlobal = ({ groupes, sousTitre }: EtatListeProps = {}) => {
   const groupeRef = useRef<HTMLDivElement>(null);
   const ficheGroupeRef = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -159,7 +166,7 @@ export const PrintEtatGlobal = () => {
       </StyledMenu>
 
       <div style={{ display: 'none' }}>
-        <ComponentToPrintGroupes ref={groupeRef} />
+        <ComponentToPrintGroupes ref={groupeRef} groupes={groupes} sousTitre={sousTitre} />
         <ComponentToPrintFicheGroupe ref={ficheGroupeRef} />
       </div>
     </div>

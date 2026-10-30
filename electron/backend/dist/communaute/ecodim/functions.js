@@ -90,6 +90,25 @@ const reprendreRattachementsAnciens = (idUtilisateur) => __awaiter(void 0, void 
        VALUES (?,?,?,?)`, [ligne.idMoniteur, ligne.idClasseEcodim, ligne.estPrincipal ? 1 : 0, idUtilisateur]);
     }
 });
+/**
+ * Condition qui écarte un moniteur dont le membre est décédé.
+ *
+ * Un décès retire le membre de toutes ses listes (`membre` est lu avec
+ * `COALESCE(estDecede, 0) <> 1`). Son rattachement à l'Ecodim doit suivre : il
+ * serait incompréhensible de ne plus le trouver dans les membres et de le voir
+ * encore proposé comme moniteur d'une classe.
+ *
+ * Rien n'est supprimé : la ligne `ecodim_moniteur` reste en base avec ses
+ * classes. Retirer le décès du membre le fait réapparaître tel qu'il était.
+ *
+ * La sous-requête est corrélée plutôt que jointe pour servir aussi dans les
+ * `COUNT` de `recupClasses`, où la table `membre` n'est pas de la partie. Le
+ * `COALESCE` couvre le moniteur sans membre rattaché : la sous-requête ne rend
+ * alors rien, la valeur vaut 0, et le moniteur est conservé.
+ */
+const MONITEUR_VIVANT = `COALESCE(
+      (SELECT membre.estDecede FROM membre WHERE membre.idMembre = moniteur.idMembre), 0
+    ) <> 1`;
 // ----------------------------------------------------------------- classes
 /**
  * Classes d'une église, avec leurs effectifs et le nom de leur responsable.
@@ -106,7 +125,8 @@ const recupClasses = (idUtilisateur) => __awaiter(void 0, void 0, void 0, functi
             (SELECT COUNT(*) FROM ecodim_moniteur_classe lien
                JOIN ecodim_moniteur moniteur ON moniteur.idMoniteur = lien.idMoniteur
               WHERE lien.idClasseEcodim = classe.idClasseEcodim
-                AND COALESCE(moniteur.actifMoniteur, 1) = 1) AS nombreMoniteurs,
+                AND COALESCE(moniteur.actifMoniteur, 1) = 1
+                AND ${MONITEUR_VIVANT}) AS nombreMoniteurs,
             (SELECT lien.idMoniteur
                FROM ecodim_moniteur_classe lien
               WHERE lien.idClasseEcodim = classe.idClasseEcodim
@@ -119,7 +139,8 @@ const recupClasses = (idUtilisateur) => __awaiter(void 0, void 0, void 0, functi
        FROM ecodim_moniteur_classe lien
        JOIN ecodim_moniteur moniteur ON moniteur.idMoniteur = lien.idMoniteur
        LEFT JOIN membre ON membre.idMembre = moniteur.idMembre
-      WHERE lien.idUtilisateur = ? AND lien.estPrincipal = 1`, [idUtilisateur]);
+      WHERE lien.idUtilisateur = ? AND lien.estPrincipal = 1
+        AND ${MONITEUR_VIVANT}`, [idUtilisateur]);
     return (Array.isArray(classes) ? classes : []).map((classe) => {
         const responsable = (Array.isArray(responsables) ? responsables : []).find((ligne) => Number(ligne.idClasseEcodim) === Number(classe.idClasseEcodim));
         return Object.assign(Object.assign({}, classe), { nomResponsable: responsable
@@ -166,8 +187,15 @@ const modifierClasse = (data) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.modifierClasse = modifierClasse;
 const supprimerClasse = (idClasseEcodim, idUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
-    const rattaches = yield (0, db_1._selectSql)(`SELECT (SELECT COUNT(*) FROM ecodim_enfant WHERE idClasseEcodim = ?) AS enfants,
-            (SELECT COUNT(*) FROM ecodim_moniteur_classe WHERE idClasseEcodim = ?) AS moniteurs`, [idClasseEcodim, idClasseEcodim]);
+    const rattaches = yield (0, db_1._selectSql)(
+    // Un moniteur décédé ne compte pas : il n'apparaît plus nulle part, et
+    // refuser la suppression à cause de lui laisserait une classe impossible
+    // à supprimer sans qu'on puisse voir ce qui la retient.
+    `SELECT (SELECT COUNT(*) FROM ecodim_enfant WHERE idClasseEcodim = ?) AS enfants,
+            (SELECT COUNT(*) FROM ecodim_moniteur_classe lien
+               JOIN ecodim_moniteur moniteur ON moniteur.idMoniteur = lien.idMoniteur
+              WHERE lien.idClasseEcodim = ?
+                AND ${MONITEUR_VIVANT}) AS moniteurs`, [idClasseEcodim, idClasseEcodim]);
     const compte = Array.isArray(rattaches) ? rattaches[0] : rattaches;
     // On refuse plutôt que de détacher en silence : des enfants sans classe
     // disparaîtraient des listes sans que personne ne comprenne pourquoi.
@@ -198,6 +226,7 @@ const recupMoniteurs = (idUtilisateur) => __awaiter(void 0, void 0, void 0, func
        FROM ecodim_moniteur moniteur
        LEFT JOIN membre ON membre.idMembre = moniteur.idMembre
       WHERE moniteur.idUtilisateur = ?
+        AND ${MONITEUR_VIVANT}
       ORDER BY membre.nomMembre ASC`, [idUtilisateur]);
     const liens = yield (0, db_1._selectSql)(`SELECT lien.idMoniteur, lien.idClasseEcodim, lien.estPrincipal, classe.libelleClasse
        FROM ecodim_moniteur_classe lien

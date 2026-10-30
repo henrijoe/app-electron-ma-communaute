@@ -83,12 +83,15 @@ export const navData: DashboardNavItem[] = [
     icon: <VolunteerActivismRounded />,
     permissionKey: 'social',
   },
-  {
-    title: 'Pastoral',
-    path: '/pastoral',
-    icon: <HealthAndSafetyRounded />,
-    permissionKey: 'social',
-  },
+  // Pastoral est masqué du menu en attendant que le module soit finalisé. La
+  // route reste en place (voir routes/sections.tsx) : les données saisies ne
+  // sont pas perdues, et il suffira de rétablir cette entrée pour le rouvrir.
+  // {
+  //   title: 'Pastoral',
+  //   path: '/pastoral',
+  //   icon: <HealthAndSafetyRounded />,
+  //   permissionKey: 'social',
+  // },
   {
     title: 'Nos évènements',
     path: '/galerie',

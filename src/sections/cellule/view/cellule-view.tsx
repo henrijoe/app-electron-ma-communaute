@@ -334,6 +334,25 @@ export function CelluleView() {
     [sortedData, table.page, table.rowsPerPage]
   );
 
+  /**
+   * Rappel du filtre actif, porté par l'état imprimé.
+   *
+   * Ce sont les valeurs saisies qui sont reprises, pas les noms de champs : une
+   * feuille qui annonce « Yopougon » se lit, « lieuCellule » non.
+   */
+  const libelleFiltreActif = useMemo(() => {
+    const valeurs = Object.values(advancedFilters)
+      .map((valeur) => String(valeur || '').trim())
+      .filter(Boolean);
+
+    return [
+      String(filterName || '').trim() ? `Recherche : ${String(filterName).trim()}` : '',
+      valeurs.length ? `Filtres : ${valeurs.join(', ')}` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  }, [advancedFilters, filterName]);
+
   return (
     <DashboardContent>
       <Box
@@ -345,7 +364,8 @@ export function CelluleView() {
       >
         <Typography variant="h4" flexGrow={1}>Liste des cellules</Typography>
         <Box display="flex" gap={1.25} alignItems="center" sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-          {!isDesktopApp && <PrintEtatGlobal />}
+          {/* L'état reprend les lignes du tableau, filtres et recherche compris. */}
+          {!isDesktopApp && <PrintEtatGlobal cellules={sortedData} sousTitre={libelleFiltreActif} />}
           {!isDesktopApp && canManageCellule && (
             <>
               <Tooltip title="Ajouter cellule">
