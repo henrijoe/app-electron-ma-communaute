@@ -21,7 +21,19 @@ on:
     paths:
       - "telechargement/**"
       - ".github/workflows/deploy-telechargement.yml"
-  # Une nouvelle version publiee doit arriver sur la page sans rien faire.
+  # Une nouvelle version construite doit arriver sur la page sans rien faire.
+  #
+  # Le declencheur est "workflow_run" et NON "release: published", parce que
+  # GitHub refuse de demarrer un workflow sur un evenement provoque par
+  # GITHUB_TOKEN — une protection contre les boucles infinies. La release
+  # etant publiee par desktop-release.yml, "release: published" ne se
+  # declenchait jamais : la page restait sur la version precedente sans que
+  # rien ne signale l'anomalie.
+  workflow_run:
+    workflows: ["Desktop release"]
+    types: [completed]
+  # Conserve pour une release publiee A LA MAIN depuis l'interface GitHub :
+  # celle-la, elle, declenche bien.
   release:
     types: [published]
   # Relance manuelle, pour rattraper un deploiement rate.
@@ -31,6 +43,12 @@ jobs:
   deployer:
     name: Publier la page et l installateur
     runs-on: ubuntu-latest
+    # Une construction echouee ne doit pas redeployer la page : elle n'a
+    # produit aucun installateur, et on servirait l'ancien en annoncant le
+    # nouveau numero de version.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Recuperer le depot
@@ -83,6 +101,12 @@ jobs:
           # l'autre, et il n'y a donc rien a modifier dans le HTML.
           mv "$fichier" site/ma-communaute-setup.exe
 
+          # Les notes sont relues depuis la release plutot que prises dans
+          # l'evenement : selon le declencheur — push, workflow_run, relance
+          # manuelle — l'evenement ne les porte pas, et la page retombait
+          # silencieusement sur les nouveautes ecrites a la main.
+          gh release view "$tag" --json body -q .body > /tmp/notes-release.md || true
+
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
           echo "::notice::Installateur $tag repris ($(du -h site/ma-communaute-setup.exe | cut -f1))."
@@ -92,11 +116,6 @@ jobs:
       # reellement servi, et la version celle reellement publiee.
       - name: Construire le manifeste
         env:
-          # Le texte de la release passe par l'environnement, JAMAIS interpole
-          # dans la commande : une note contenant un guillemet casserait le
-          # shell, et une note malveillante pourrait y faire executer autre
-          # chose.
-          NOTES: ${{ github.event.release.body }}
           VERSION: ${{ steps.installateur.outputs.version }}
         run: |
           set -euo pipefail
@@ -117,7 +136,14 @@ jobs:
           // Les underscores sont conserves : ils emphasent rarement du texte
           // ecrit a la main, et tous les retirer transformerait « version_2 »
           // en « version2 ».
-          const nouveautes = String(process.env.NOTES || '')
+          // Le fichier est lu plutot qu'une variable d'environnement : un texte
+          // de release contenant un guillemet ou un retour a la ligne casserait
+          // le shell s'il etait interpole dans la commande.
+          const notes = fs.existsSync('/tmp/notes-release.md')
+            ? fs.readFileSync('/tmp/notes-release.md', 'utf8')
+            : '';
+
+          const nouveautes = notes
             .split('\n')
             .map((ligne) => ligne.trim())
             .filter((ligne) => /^[-*] /.test(ligne))
