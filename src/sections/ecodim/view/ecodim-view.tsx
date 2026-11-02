@@ -424,6 +424,7 @@ const enfantVide = {
   // 0 ou 1, comme la colonne : l'enfant relu du serveur arrive sous cette forme.
   inscritEcodim: 0,
   dateInscriptionEcodim: '',
+  montantInscriptionEcodim: '',
 
   dateEntreeEcodim: '',
   niveauEntreeEcodim: '',
@@ -2586,6 +2587,12 @@ export function EcodimView() {
                             ? precedent.dateInscriptionEcodim ||
                               new Date().toISOString().slice(0, 10)
                             : '',
+                          // Décocher efface aussi le montant : un enfant qui
+                          // n'est plus inscrit ne doit plus peser dans le total
+                          // encaissé.
+                          montantInscriptionEcodim: event.target.checked
+                            ? precedent.montantInscriptionEcodim
+                            : '',
                         }))
                       }
                     />
@@ -2604,6 +2611,27 @@ export function EcodimView() {
                   disabled={!estInscrit(formEnfant)}
                   helperText={
                     estInscrit(formEnfant) ? undefined : "Cochez la case pour saisir la date"
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  fullWidth
+                />
+              </Grid>
+              <Grid xs={12} md={6}>
+                <TextField
+                  label="Montant versé (FCFA)"
+                  type="number"
+                  value={formEnfant.montantInscriptionEcodim ?? ''}
+                  onChange={(event) =>
+                    setFormEnfant({
+                      ...formEnfant,
+                      montantInscriptionEcodim: event.target.value,
+                    })
+                  }
+                  disabled={!estInscrit(formEnfant)}
+                  helperText={
+                    estInscrit(formEnfant)
+                      ? 'Laissez vide si rien n’a encore été versé'
+                      : 'Cochez la case pour saisir le montant'
                   }
                   InputLabelProps={{ shrink: true }}
                   fullWidth

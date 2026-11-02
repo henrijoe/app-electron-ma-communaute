@@ -118,6 +118,7 @@ const feuilleEnfants = (donnees: DonneesEcodimExcel) =>
         // séparer les inscrits des autres.
         Inscrit: estInscrit(enfant) ? 'Oui' : 'Non',
         "Date d'inscription": estInscrit(enfant) ? enfant.dateInscriptionEcodim || '' : '',
+        'Montant verse': estInscrit(enfant) ? Number(enfant.montantInscriptionEcodim) || 0 : '',
         // « M » et « F » sont les valeurs stockées ; une feuille se lit à l'œil.
         Sexe: libelleSexe(enfant.sexeEnfant),
         'Date de naissance': enfant.dateNaissEnfant || '',
@@ -310,7 +311,12 @@ const feuilleInscription = (donnees: DonneesEcodimExcel, inscrits: boolean) =>
           Classe: enfant.libelleClasse || 'Non affecté',
           Sexe: libelleSexe(enfant.sexeEnfant),
           Âge: ageDepuisNaissance(enfant.dateNaissEnfant),
-          ...(inscrits ? { "Date d'inscription": enfant.dateInscriptionEcodim || '' } : {}),
+          ...(inscrits
+            ? {
+                "Date d'inscription": enfant.dateInscriptionEcodim || '',
+                'Montant verse': Number(enfant.montantInscriptionEcodim) || 0,
+              }
+            : {}),
           'Parent ou tuteur': enfant.nomParentEnfant || '',
           'Contact parent': enfant.contactParentEnfant || '',
         })),
@@ -325,13 +331,13 @@ const feuilleInscription = (donnees: DonneesEcodimExcel, inscrits: boolean) =>
           'Classe',
           'Sexe',
           'Âge',
-          ...(inscrits ? ["Date d'inscription"] : []),
+          ...(inscrits ? ["Date d'inscription", 'Montant verse'] : []),
           'Parent ou tuteur',
           'Contact parent',
         ],
       }
     ),
-    inscrits ? [5, 14, 20, 24, 18, 10, 6, 16, 24, 16] : [5, 14, 20, 24, 18, 10, 6, 24, 16]
+    inscrits ? [5, 14, 20, 24, 18, 10, 6, 16, 14, 24, 16] : [5, 14, 20, 24, 18, 10, 6, 24, 16]
   );
 
 /**

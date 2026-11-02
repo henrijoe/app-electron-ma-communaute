@@ -229,6 +229,8 @@ export function EcodimPrint({
   const referenceEnfants = useRef<HTMLDivElement>(null);
   const referenceInscriptions = useRef<HTMLDivElement>(null);
   const referenceActivites = useRef<HTMLDivElement>(null);
+  const referenceFraisInscription = useRef<HTMLDivElement>(null);
+  const referenceInscriptionsParClasse = useRef<HTMLDivElement>(null);
   const referenceFinances = useRef<HTMLDivElement>(null);
   const referenceFiche = useRef<HTMLDivElement>(null);
   const referenceIdentification = useRef<HTMLDivElement>(null);
@@ -239,6 +241,8 @@ export function EcodimPrint({
     moniteurs: referenceMoniteurs,
     enfants: referenceEnfants,
     inscriptions: referenceInscriptions,
+    fraisInscription: referenceFraisInscription,
+    inscriptionsParClasse: referenceInscriptionsParClasse,
     activites: referenceActivites,
     finances: referenceFinances,
   };
@@ -248,12 +252,60 @@ export function EcodimPrint({
     moniteurs: 'Liste des moniteurs',
     enfants: 'Liste des enfants',
     inscriptions: 'État des inscriptions',
+    fraisInscription: 'Frais d’inscription encaissés',
+    inscriptionsParClasse: 'Inscriptions par classe',
     activites: 'Programme des activités',
     finances: 'Point financier du département',
   };
 
   const enfantsInscrits = enfants.filter((enfant) => estInscrit(enfant));
   const enfantsNonInscrits = enfants.filter((enfant) => !estInscrit(enfant));
+
+  const totalFraisInscription = enfantsInscrits.reduce(
+    (somme, enfant) => somme + (Number(enfant.montantInscriptionEcodim) || 0),
+    0
+  );
+
+  // Inscrits n'ayant encore rien versé : la feuille porte un total, et ce
+  // total serait trompeur sans dire combien de lignes pèsent zéro.
+  const enfantsSansVersement = enfantsInscrits.filter(
+    (enfant) => !(Number(enfant.montantInscriptionEcodim) > 0)
+  ).length;
+
+  /**
+   * Les enfants regroupés par classe, pour l'état « Inscriptions par classe ».
+   *
+   * Les classes viennent des enfants eux-mêmes et non de la liste des classes :
+   * un enfant sans classe doit apparaître quelque part, sinon l'état en oublie
+   * silencieusement — et ce sont précisément ceux qu'on cherche à rattraper.
+   */
+  const groupesParClasse = (() => {
+    const parClasse = new Map<string, any[]>();
+
+    enfants.forEach((enfant) => {
+      const libelle = String(enfant.libelleClasse || '').trim() || 'Sans classe';
+      if (!parClasse.has(libelle)) parClasse.set(libelle, []);
+      parClasse.get(libelle)!.push(enfant);
+    });
+
+    return Array.from(parClasse.entries())
+      .map(([libelle, liste]) => ({
+        libelle,
+        enfants: [...liste].sort((a, b) =>
+          `${a.nomEnfant || ''} ${a.prenomEnfant || ''}`
+            .trim()
+            .localeCompare(`${b.nomEnfant || ''} ${b.prenomEnfant || ''}`.trim(), 'fr')
+        ),
+        inscrits: liste.filter((enfant) => estInscrit(enfant)).length,
+      }))
+      // « Sans classe » en dernier : c'est une anomalie à traiter, pas une
+      // classe de l'école.
+      .sort((a, b) => {
+        if (a.libelle === 'Sans classe') return 1;
+        if (b.libelle === 'Sans classe') return -1;
+        return a.libelle.localeCompare(b.libelle, 'fr');
+      });
+  })();
 
   return (
     <>
@@ -267,7 +319,16 @@ export function EcodimPrint({
 
       <Menu anchorEl={ancre} open={Boolean(ancre)} onClose={() => setAncre(null)}>
         {(
-          ['classes', 'moniteurs', 'enfants', 'inscriptions', 'activites', 'finances'] as const
+          [
+            'classes',
+            'moniteurs',
+            'enfants',
+            'inscriptions',
+            'fraisInscription',
+            'inscriptionsParClasse',
+            'activites',
+            'finances',
+          ] as const
         ).map((cible) => (
           <ReactToPrint
             key={cible}
@@ -413,6 +474,146 @@ export function EcodimPrint({
               titre={`Enfants non inscrits (${enfantsNonInscrits.length})`}
               enfants={enfantsNonInscrits}
             />
+          </PrintDocumentLayout>
+        </div>
+
+        {/* ------------------------------------- frais d'inscription encaissés */}
+        <div ref={referenceFraisInscription}>
+          <PrintDocumentLayout title={titres.fraisInscription} orientation="portrait">
+            <RappelFiltres sousTitre={sousTitre} />
+
+            <table style={styleTableau}>
+              <thead>
+                <tr>
+                  <th style={{ ...styleEntete, width: 34, textAlign: 'center' }}>N°</th>
+                  <th style={styleEntete}>Matricule</th>
+                  <th style={styleEntete}>Nom</th>
+                  <th style={styleEntete}>Prénoms</th>
+                  <th style={styleEntete}>Classe</th>
+                  <th style={{ ...styleEntete, textAlign: 'center' }}>Statut</th>
+                  <th style={{ ...styleEntete, textAlign: 'right' }}>Montant</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {enfantsInscrits.length === 0 ? (
+                  <tr>
+                    <td style={{ ...styleCellule, textAlign: 'center' }} colSpan={7}>
+                      Aucun enfant inscrit
+                    </td>
+                  </tr>
+                ) : (
+                  enfantsInscrits.map((enfant, index) => (
+                    <tr key={enfant.idEnfantEcodim}>
+                      <td style={{ ...styleCellule, textAlign: 'center' }}>{index + 1}</td>
+                      <td style={styleCellule}>{enfant.matriculeEnfant || '—'}</td>
+                      <td style={styleCellule}>{enfant.nomEnfant}</td>
+                      <td style={styleCellule}>{enfant.prenomEnfant || '—'}</td>
+                      <td style={styleCellule}>{enfant.libelleClasse || 'Non affecté'}</td>
+                      <td style={{ ...styleCellule, textAlign: 'center' }}>Inscrit</td>
+                      {/* Un montant nul s'écrit en toutes lettres plutôt qu'en
+                          « 0 FCFA » : l'enfant est inscrit mais n'a encore rien
+                          versé, et c'est la ligne qu'on vient chercher. */}
+                      <td style={{ ...styleCellule, textAlign: 'right' }}>
+                        {Number(enfant.montantInscriptionEcodim) > 0
+                          ? formaterMontant(enfant.montantInscriptionEcodim)
+                          : 'Non versé'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+
+              {/* Le total, c'est ce qu'on vient chercher sur cette feuille. Un
+                  état qu'il faut encore additionner à la main n'en est pas un. */}
+              <tfoot>
+                <tr>
+                  <td style={{ ...styleEntete, textAlign: 'right' }} colSpan={6}>
+                    TOTAL ENCAISSÉ · {enfantsInscrits.length} inscrit
+                    {enfantsInscrits.length > 1 ? 's' : ''}
+                  </td>
+                  <td style={{ ...styleEntete, textAlign: 'right' }}>
+                    {formaterMontant(totalFraisInscription)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+
+            {enfantsSansVersement > 0 && (
+              <Box sx={{ mt: 1.5, fontSize: 12, fontStyle: 'italic', color: '#475569' }}>
+                {enfantsSansVersement} enfant{enfantsSansVersement > 1 ? 's' : ''} inscrit
+                {enfantsSansVersement > 1 ? 's' : ''} n&apos;
+                {enfantsSansVersement > 1 ? 'ont' : 'a'} encore rien versé.
+              </Box>
+            )}
+
+            <div style={{ marginTop: 28, display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 700, fontSize: 12 }}>Le trésorier</span>
+              <span style={{ fontWeight: 700, fontSize: 12 }}>Le Directeur</span>
+            </div>
+          </PrintDocumentLayout>
+        </div>
+
+        {/* ------------------------------------------- inscriptions par classe */}
+        <div ref={referenceInscriptionsParClasse}>
+          <PrintDocumentLayout title={titres.inscriptionsParClasse} orientation="portrait">
+            <RappelFiltres sousTitre={sousTitre} />
+
+            {groupesParClasse.length === 0 ? (
+              <Box sx={{ fontSize: 13 }}>Aucun enfant enregistré.</Box>
+            ) : (
+              groupesParClasse.map((groupe) => (
+                <Box key={groupe.libelle} sx={{ mb: 3 }}>
+                  <Box sx={{ mb: 1, fontSize: 15, fontWeight: 700, color: '#1e293b' }}>
+                    {groupe.libelle} — {groupe.enfants.length} enfant
+                    {groupe.enfants.length > 1 ? 's' : ''} · {groupe.inscrits} inscrit
+                    {groupe.inscrits > 1 ? 's' : ''} · {groupe.enfants.length - groupe.inscrits} non
+                    inscrit{groupe.enfants.length - groupe.inscrits > 1 ? 's' : ''}
+                  </Box>
+
+                  <table style={styleTableau}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...styleEntete, width: 34, textAlign: 'center' }}>N°</th>
+                        <th style={styleEntete}>Matricule</th>
+                        <th style={styleEntete}>Nom et prénoms</th>
+                        <th style={styleEntete}>Âge</th>
+                        <th style={{ ...styleEntete, textAlign: 'center' }}>Statut</th>
+                        <th style={styleEntete}>Inscrit le</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {groupe.enfants.map((enfant: any, index: number) => (
+                        <tr key={enfant.idEnfantEcodim}>
+                          <td style={{ ...styleCellule, textAlign: 'center' }}>{index + 1}</td>
+                          <td style={styleCellule}>{enfant.matriculeEnfant || '—'}</td>
+                          <td style={styleCellule}>
+                            {`${enfant.nomEnfant || ''} ${enfant.prenomEnfant || ''}`.trim()}
+                          </td>
+                          <td style={styleCellule}>
+                            {ageDepuisNaissance(enfant.dateNaissEnfant)}
+                          </td>
+                          <td
+                            style={{
+                              ...styleCellule,
+                              textAlign: 'center',
+                              fontWeight: estInscrit(enfant) ? 700 : 400,
+                            }}
+                          >
+                            {estInscrit(enfant) ? 'Inscrit' : 'Non inscrit'}
+                          </td>
+                          <td style={styleCellule}>
+                            {estInscrit(enfant)
+                              ? formaterDate(enfant.dateInscriptionEcodim, '—')
+                              : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Box>
+              ))
+            )}
           </PrintDocumentLayout>
         </div>
 
