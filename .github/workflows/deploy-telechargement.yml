@@ -156,13 +156,31 @@ jobs:
       # Mieux vaut un workflow rouge qu'un visiteur devant un lien mort.
       - name: Verifier que le telechargement repond
         if: ${{ vars.URL_TELECHARGEMENT != '' }}
+        env:
+          # Par l'environnement plutot qu'interpolee dans la commande : une
+          # valeur collee depuis un navigateur traine souvent un retour chariot,
+          # et GitHub la conserve telle quelle.
+          URL_BRUTE: ${{ vars.URL_TELECHARGEMENT }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
-          code="$(curl -s -o /dev/null -w '%{http_code}' -I "${{ vars.URL_TELECHARGEMENT }}/ma-communaute-setup.exe")"
+          # Espaces, retours chariot et barre oblique finale sont retires : sans
+          # ce nettoyage, curl recevait une URL coupee en deux et sortait sur
+          # « URL malformed » (code 3), ce qui faisait echouer un deploiement
+          # par ailleurs reussi.
+          url="$(printf '%s' "$URL_BRUTE" | tr -d '[:space:]' | sed 's#/*$##')"
+
+          if [ -z "$url" ]; then
+            echo "::warning::URL_TELECHARGEMENT est vide apres nettoyage, verification ignoree."
+            exit 0
+          fi
+
+          # `|| true` : un echec de curl doit produire NOTRE message, pas une
+          # sortie brute dont le code ne dit rien a la lecture du journal.
+          code="$(curl -s -o /dev/null -w '%{http_code}' -I --max-time 30 "$url/ma-communaute-setup.exe" || true)"
 
           if [ "$code" != "200" ]; then
-            echo "::error::L'installateur ne repond pas (code HTTP $code). Les nouveaux clients ne peuvent pas le telecharger."
+            echo "::error::L'installateur ne repond pas sur $url (code HTTP ${code:-aucun}). Les nouveaux clients ne peuvent pas le telecharger."
             exit 1
           fi
 
