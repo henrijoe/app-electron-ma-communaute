@@ -34,6 +34,7 @@ import { setUserLoggedIn, setUserConnected } from 'src/store/appSlice';
 import { setConnecter, setToken, setUtilisateurData } from 'src/store/userSlice';
 
 import { Iconify } from 'src/components/iconify';
+import { NumeroMachine, useStatutMachine } from 'src/components/desktop/numero-machine';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 import { SelectRecherche } from 'src/components/select-recherche';
 
@@ -41,7 +42,6 @@ import {
   authLinkSx,
   authTitleSx,
   authBodyTextSx,
-  authInfoAlertSx,
   authMutedTextSx,
   authTextFieldSx,
   authPrimaryButtonSx,
@@ -87,6 +87,7 @@ export function SignInView() {
   const [password, setPassword] = useState('');
   const [unlockCode, setUnlockCode] = useState('');
   const [showUnlockCodeForm, setShowUnlockCodeForm] = useState(false);
+  const { numeroMachine } = useStatutMachine(showUnlockCodeForm);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotStep, setForgotStep] = useState<'request' | 'reset'>('request');
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -325,7 +326,7 @@ export function SignInView() {
       );
       showNotification(errorMessage, 'error');
 
-      if (isDesktopApp && /licence|bloqu/i.test(errorMessage)) {
+      if (isDesktopApp && /licence|bloqu|expir/i.test(errorMessage)) {
         setShowUnlockCodeForm(true);
       }
     } finally {
@@ -353,7 +354,7 @@ export function SignInView() {
     }
 
     if (!unlockCode.trim()) {
-      showNotification('Le code de déblocage est requis.', 'warning');
+      showNotification("Collez le code d'activation reçu.", 'warning');
       return;
     }
 
@@ -365,14 +366,14 @@ export function SignInView() {
       });
 
       if (response.status !== 1) {
-        throw new Error(response.error?.message || 'Code de déblocage invalide');
+        throw new Error(response.error?.message || "Code d'activation invalide");
       }
 
       setUnlockCode('');
       setShowUnlockCodeForm(false);
-      showNotification('Application débloquée. Tu peux maintenant te connecter.', 'success');
+      showNotification('Application activée. Vous pouvez maintenant vous connecter.', 'success');
     } catch (error: any) {
-      showNotification(getApiErrorMessage(error, 'Code de déblocage invalide.'), 'error');
+      showNotification(getApiErrorMessage(error, "Code d'activation invalide."), 'error');
     } finally {
       setUnlockLoading(false);
     }
@@ -537,7 +538,7 @@ export function SignInView() {
             onClick={() => setShowUnlockCodeForm(true)}
             sx={{ alignSelf: 'center', ...authLinkSx }}
           >
-            J&apos;ai un code de déblocage
+            J&apos;ai un code d&apos;activation
           </Link>
         )}
 
@@ -549,19 +550,19 @@ export function SignInView() {
               border: '1px solid',
               borderColor: 'divider',
               borderRadius: 2,
-              bgcolor: 'background.neutral',
             }}
           >
-            <Alert severity="info" sx={authInfoAlertSx}>
-              Saisis le code fourni par le développeur pour débloquer cette installation.
-            </Alert>
+            <NumeroMachine numero={numeroMachine} />
 
             <TextField
               fullWidth
-              label="Code de déblocage"
+              multiline
+              minRows={3}
+              label="Code d'activation"
               value={unlockCode}
               onChange={(event) => setUnlockCode(event.target.value.toUpperCase())}
-              placeholder="MC-XXXX-XXXX-XXXX-XXXX"
+              placeholder="MC2-…"
+              inputProps={{ spellCheck: false, style: { fontFamily: 'monospace', wordBreak: 'break-all' } }}
               sx={authTextFieldSx}
             />
 
@@ -572,7 +573,7 @@ export function SignInView() {
               loading={unlockLoading}
               onClick={handleUnlockWithCode}
             >
-              Débloquer avec ce code
+              Activer
             </LoadingButton>
           </Stack>
         )}

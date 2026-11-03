@@ -568,24 +568,27 @@ export function AssiduiteGrille({
         )}
 
         {/* L'état suit la vue : la feuille d'appel du mois, ou la synthèse de
-            la période. Désactivé quand il n'y aurait rien à imprimer. */}
-        <ReactToPrint
-          documentTitle={
-            vue === 'appel'
-              ? `appel-${libelleClasseCourante || 'classe'}-${annee}-${pad2(mois + 1)}`
-              : `assiduite-${dateDebut}-${dateFin}`
-          }
-          trigger={() => (
-            <Button
-              variant="outlined"
-              startIcon={<PictureAsPdfRounded />}
-              disabled={vue === 'appel' ? !enfantsDeLaClasse.length : !lignesSynthese.length}
-            >
-              PDF
-            </Button>
-          )}
-          content={() => referenceImpression.current}
-        />
+            la période. Désactivé quand il n'y aurait rien à imprimer, et masqué
+            dans l'application desktop : l'impression y reste bloquée. */}
+        {modifiable && (
+          <ReactToPrint
+            documentTitle={
+              vue === 'appel'
+                ? `appel-${libelleClasseCourante || 'classe'}-${annee}-${pad2(mois + 1)}`
+                : `assiduite-${dateDebut}-${dateFin}`
+            }
+            trigger={() => (
+              <Button
+                variant="outlined"
+                startIcon={<PictureAsPdfRounded />}
+                disabled={vue === 'appel' ? !enfantsDeLaClasse.length : !lignesSynthese.length}
+              >
+                PDF
+              </Button>
+            )}
+            content={() => referenceImpression.current}
+          />
+        )}
 
         {vue === 'appel' && modifiable && (
           <Button

@@ -21,9 +21,9 @@ const ajouterCulte = (data) => {
         data.nombreHommeCulte,
         data.nombreFemmeCulte,
         data.offrandeCulte,
+        data.dimeCulte,
         data.ecodim,
         data.filleEcodim,
-        data.offrandeEcodim,
         data.resumePredication,
         data.idUtilisateur,
     ];
@@ -35,7 +35,10 @@ const ajouterCulte = (data) => {
             if (result.count > 0) {
                 return reject(new Error("Ce culte existe déjà."));
             }
-            const sql = `INSERT INTO culte(typeCulte,dateCulte,dirigeant,predication,passageBiblique,themePredication,nombreHommeCulte,nombreFemmeCulte,offrandeCulte,ecodim,filleEcodim,offrandeEcodim,resumePredication,idUtilisateur) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            // `offrandeEcodim` ne figure plus ici : la caisse de l'école du dimanche
+            // est tenue à part (table `ecodim_finance`). La colonne reste en base
+            // pour que les relevés déjà saisis gardent leur montant.
+            const sql = `INSERT INTO culte(typeCulte,dateCulte,dirigeant,predication,passageBiblique,themePredication,nombreHommeCulte,nombreFemmeCulte,offrandeCulte,dimeCulte,ecodim,filleEcodim,resumePredication,idUtilisateur) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
             const culteData = yield (0, db_1._executeSql)(sql, values);
             resolve(culteData.insertId);
         }
@@ -98,7 +101,9 @@ const supprimerCulte = (idCulte, idUtilisateur) => {
 const modifierCulte = (data) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const sql = `UPDATE culte SET typeCulte=?,dateCulte=?,dirigeant=?,predication=?,passageBiblique=?,themePredication=?,nombreHommeCulte=?,nombreFemmeCulte=?,offrandeCulte=?,ecodim=?,filleEcodim=?,offrandeEcodim=?,resumePredication=? WHERE idCulte=? AND idUtilisateur=?`;
+            // Même remarque qu'à l'insertion : `offrandeEcodim` n'est plus écrite,
+            // donc une modification de culte ne l'efface pas non plus.
+            const sql = `UPDATE culte SET typeCulte=?,dateCulte=?,dirigeant=?,predication=?,passageBiblique=?,themePredication=?,nombreHommeCulte=?,nombreFemmeCulte=?,offrandeCulte=?,dimeCulte=?,ecodim=?,filleEcodim=?,resumePredication=? WHERE idCulte=? AND idUtilisateur=?`;
             yield (0, db_1._executeSql)(sql, [
                 data.typeCulte,
                 data.dateCulte,
@@ -109,9 +114,9 @@ const modifierCulte = (data) => {
                 data.nombreHommeCulte,
                 data.nombreFemmeCulte,
                 data.offrandeCulte,
+                data.dimeCulte,
                 data.ecodim,
                 data.filleEcodim,
-                data.offrandeEcodim,
                 data.resumePredication,
                 data.idCulte,
                 data.idUtilisateur,

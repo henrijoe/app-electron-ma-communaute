@@ -197,6 +197,16 @@ const ensureSharedSchemaForMysql = () => __awaiter(void 0, void 0, void 0, funct
             // colonne déjà en place
         }
     }
+    // Reprises de contenu : une valeur à choix renommée. Sans effet une fois
+    // passées, elles doivent tourner sur les deux moteurs.
+    for (const statement of schema_1.SHARED_DATA_MIGRATIONS) {
+        try {
+            yield (0, db_1._executeSql)(statement, []);
+        }
+        catch (_error) {
+            // rien à reprendre sur cette base
+        }
+    }
     return schema_1.SHARED_TABLES.length;
 });
 /**

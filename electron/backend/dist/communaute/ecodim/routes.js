@@ -55,5 +55,14 @@ ecodimRouter.post("/demandeinscriptionenfant", controllers_1.default.ajouterDema
 ecodimRouter.get("/demandesinscriptionenfantbyutilisateur/:idUtilisateur", controllers_1.default.recupDemandesEnfantByUtilisateur);
 ecodimRouter.post("/validerdemandeinscriptionenfant", controllers_1.default.validerDemandeEnfant);
 ecodimRouter.post("/rejeterdemandeinscriptionenfant", controllers_1.default.rejeterDemandeEnfant);
+// Caisse du département : recettes et dépenses de l'école du dimanche, tenues
+// à part de la comptabilité de l'église.
+ecodimRouter.get("/recupfinanceecodimbyutilisateur/:idUtilisateur", controllers_1.default.recupFinancesByUtilisateur);
+ecodimRouter.get("/recupfinanceecodimsupprimeebyutilisateur/:idUtilisateur", controllers_1.default.recupFinancesSupprimeesByUtilisateur);
+ecodimRouter.post("/insererfinanceecodim", controllers_1.default.ajouterFinance);
+ecodimRouter.post("/modifierfinanceecodim", controllers_1.default.modifierFinance);
+ecodimRouter.post("/supprimerfinanceecodim", controllers_1.default.supprimerFinance);
+ecodimRouter.post("/restaurerfinanceecodim", controllers_1.default.restaurerFinance);
+ecodimRouter.post("/supprimerfinanceecodimdefinitivement", controllers_1.default.supprimerFinanceDefinitivement);
 exports.default = ecodimRouter;
 //# sourceMappingURL=routes.js.map

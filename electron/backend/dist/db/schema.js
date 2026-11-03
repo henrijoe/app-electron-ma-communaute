@@ -10,7 +10,7 @@
 // Ici le schéma est décrit une seule fois, et le SQL est produit pour chaque moteur.
 // Ajouter une colonne = une ligne dans ce fichier, et les deux bases suivent.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildSharedColumnStatements = exports.buildSharedCreateStatements = exports.SHARED_COLUMNS = exports.SHARED_TABLES = exports.buildAddColumnSql = exports.buildCreateTableSql = void 0;
+exports.SHARED_DATA_MIGRATIONS = exports.buildSharedColumnStatements = exports.buildSharedCreateStatements = exports.SHARED_COLUMNS = exports.SHARED_TABLES = exports.buildAddColumnSql = exports.buildCreateTableSql = void 0;
 const TYPES = {
     pk: {
         sqlite: "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -153,6 +153,18 @@ const ecodimEnfant = {
     name: "ecodim_enfant",
     columns: [
         { name: "idEnfantEcodim", type: "pk" },
+        /**
+         * Matricule de l'enfant : « E2026-000001 ».
+         *
+         * Les noms ne sont pas des identifiants — deux « Kouassi Yao » dans une
+         * même église, c'est la règle. Ce numéro est attribué une fois, à
+         * l'enregistrement, et suit l'enfant toute sa scolarité à l'Ecodim. Il
+         * porte son année d'entrée, ce qui donne son ancienneté à la lecture.
+         *
+         * L'identifiant technique `idEnfantEcodim` ne peut pas jouer ce rôle : il
+         * ne se dicte pas au téléphone et ne veut rien dire sur une fiche papier.
+         */
+        { name: "matriculeEnfant", type: "text", default: "''" },
         { name: "nomEnfant", type: "text", notNull: true },
         { name: "prenomEnfant", type: "text", default: "''" },
         { name: "sexeEnfant", type: "text", default: "''" },
@@ -213,6 +225,20 @@ const ecodimEnfant = {
         { name: "avecQuiVientEglise", type: "text", default: "''" },
         { name: "responsabiliteTuteurEglise", type: "text", default: "''" },
         { name: "professionTuteur", type: "text", default: "''" },
+        // Tous les enfants qui fréquentent l'Ecodim sont saisis, mais tous ne sont pas
+        // inscrits : la case dit lesquels le sont, et depuis quand. La date d'entrée,
+        // elle, dit depuis quand l'enfant vient, inscrit ou non.
+        { name: "inscritEcodim", type: "int", default: "0" },
+        { name: "dateInscriptionEcodim", type: "text" },
+        // Frais verses par l'enfant a son inscription, en francs CFA — donc un
+        // entier : la monnaie n'a pas de centimes, et un reel introduirait des
+        // arrondis la ou il n'y en a pas.
+        //
+        // Le montant est porte par l'enfant et non par un tarif unique : une
+        // paroisse module selon les familles, et une fratrie ne paie pas toujours
+        // le plein tarif. Zero est une valeur valable — un enfant inscrit sans
+        // avoir encore verse.
+        { name: "montantInscriptionEcodim", type: "int", default: "0" },
         { name: "dateEntreeEcodim", type: "text" },
         { name: "niveauEntreeEcodim", type: "text", default: "''" },
         { name: "niveauActuelEcodim", type: "text", default: "''" },
@@ -445,7 +471,7 @@ const ecodimNote = {
  * n'a jamais ete fait.
  *
  * Le statut est stocke SANS ACCENT, comme les autres valeurs a choix : present,
- * absent ou excuse. Un enfant sans ligne n'a pas ete appele -- ce qui n'est pas
+* absent ou deplacement. Un enfant sans ligne n'a pas ete appele -- ce qui n'est pas
  * la meme chose qu'une absence, et doit le rester.
  */
 const ecodimPresence = {
@@ -455,7 +481,7 @@ const ecodimPresence = {
         { name: "idCulteEcodim", type: "int", notNull: true },
         { name: "idEnfantEcodim", type: "int", notNull: true },
         { name: "statutPresence", type: "text", default: "'present'" },
-        // Motif d'une absence excusee : maladie, voyage, examen...
+        // Motif d'une absence ou d'un deplacement : maladie, voyage, examen...
         { name: "motifPresence", type: "text", default: "''" },
         { name: "idUtilisateur", type: "int", notNull: true },
         { name: "dateCreation", type: "datetime", default: "CURRENT_TIMESTAMP" },
@@ -490,6 +516,44 @@ const ecodimEnfantDemande = {
         { name: "dateTraitement", type: "datetime" },
     ],
 };
+/**
+ * Caisse de l'école du dimanche.
+ *
+ * L'Ecodim a ses propres recettes et ses propres dépenses — offrande des
+ * enfants, goûter d'une fête, achat de cahiers, transport d'une sortie — et les
+ * mêler à la comptabilité de l'église rendait le point financier du département
+ * impossible à faire. La table reprend donc le modèle de `comptabilite` : une
+ * ligne par mouvement, une entrée OU une sortie, et une corbeille plutôt qu'une
+ * suppression sèche.
+ *
+ * Les montants sont des entiers : la monnaie du terrain est le franc CFA, qui
+ * n'a pas de centimes. Un réel introduirait des arrondis là où il n'y en a pas.
+ *
+ * `idActiviteEcodim` est facultatif : il rattache un mouvement à une sortie ou à
+ * une fête, ce qui permet de dire ce qu'a coûté un évènement précis.
+ */
+const ecodimFinance = {
+    name: "ecodim_finance",
+    columns: [
+        { name: "idFinanceEcodim", type: "pk" },
+        { name: "libelleFinance", type: "text", notNull: true },
+        // Valeur stockée volontairement sans accent, comme les autres statuts.
+        { name: "typeFinance", type: "text", default: "'depense'" },
+        { name: "entreeFinance", type: "int", default: "0" },
+        { name: "sortieFinance", type: "int", default: "0" },
+        { name: "dateFinance", type: "text" },
+        { name: "categorieFinance", type: "text", default: "''" },
+        { name: "observationFinance", type: "longtext", default: "''" },
+        { name: "idClasseEcodim", type: "int" },
+        { name: "idActiviteEcodim", type: "int" },
+        // Corbeille, sur le modèle de la comptabilité de l'église.
+        { name: "estSupprimeFinance", type: "int", default: "0" },
+        { name: "dateSuppressionFinance", type: "text" },
+        { name: "motifSuppressionFinance", type: "text", default: "''" },
+        { name: "idUtilisateur", type: "int", notNull: true },
+        { name: "dateCreation", type: "datetime", default: "CURRENT_TIMESTAMP" },
+    ],
+};
 exports.SHARED_TABLES = [
     agenda,
     familleJeunesse,
@@ -507,11 +571,27 @@ exports.SHARED_TABLES = [
     ecodimNote,
     ecodimPresence,
     ecodimEnfantDemande,
+    ecodimFinance,
 ];
 // Colonnes ajoutées après coup à des tables qui, elles, existent bien dans le dump.
 // Elles n'étaient posées que sur SQLite : en MySQL, les requêtes qui les utilisent
 // échouaient avec "Unknown column".
 exports.SHARED_COLUMNS = [
+    {
+        // La dîme se relève au culte, à côté de l'offrande. Elle remplace dans le
+        // formulaire l'offrande Ecodim, désormais tenue dans la caisse du
+        // département (voir `ecodim_finance`). L'ancienne colonne reste en base :
+        // elle n'est plus écrite, mais les relevés passés gardent leur montant.
+        table: "culte",
+        columns: [{ name: "dimeCulte", type: "int", default: "0" }],
+    },
+    {
+        // Matricule du membre : « M2026-000001 ». Même principe que celui de
+        // l'enfant (voir `ecodim_enfant.matriculeEnfant`), avec sa propre série :
+        // la lettre de tête empêche qu'un membre et un enfant portent le même.
+        table: "membre",
+        columns: [{ name: "matriculeMembre", type: "text", default: "''" }],
+    },
     {
         // Corbeille de la comptabilité : archivage, motif et auteur de la suppression.
         table: "comptabilite",
@@ -539,4 +619,22 @@ const buildSharedColumnStatements = (dialect) => [
     ...exports.SHARED_COLUMNS.flatMap((patch) => patch.columns.map((column) => (0, exports.buildAddColumnSql)(patch.table, column, dialect))),
 ];
 exports.buildSharedColumnStatements = buildSharedColumnStatements;
+/**
+ * Reprises de données à rejouer au démarrage.
+ *
+ * Elles ne changent pas la forme des tables mais le contenu de colonnes à
+ * valeurs fixes, quand l'une de ces valeurs est renommée. Chacune doit pouvoir
+ * se rejouer sans effet : au second passage, la condition ne retrouve plus
+ * aucune ligne.
+ *
+ * Le SQL est volontairement commun aux deux moteurs — pas de fonction ni de
+ * syntaxe propre à l'un d'eux — pour n'exister qu'en un seul exemplaire.
+ */
+exports.SHARED_DATA_MIGRATIONS = [
+    // Le troisième statut d'appel était « excusé ». Les écoles le lisent comme un
+    // DÉPLACEMENT : l'enfant est en voyage, chez de la famille, pas absent sans
+    // raison. La valeur stockée suit le libellé, sinon le code dirait longtemps
+    // l'inverse de l'écran. Les appels déjà saisis sont repris ici.
+    "UPDATE ecodim_presence SET statutPresence = 'deplacement' WHERE statutPresence = 'excuse'",
+];
 //# sourceMappingURL=schema.js.map

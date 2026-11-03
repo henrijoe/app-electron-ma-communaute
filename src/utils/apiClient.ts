@@ -13,7 +13,9 @@ import {
   terminerSessionExpiree,
 } from './functions';
 
-export const BASE_URL_DEV = 'http://localhost:49300/';
+// VITE_LOCAL_API_URL n'est défini par aucun build : il sert aux lanceurs de test, dont
+// le serveur tourne sur un autre port pour ne pas toucher à l'installation réelle.
+export const BASE_URL_DEV = import.meta.env.VITE_LOCAL_API_URL || 'http://localhost:49300/';
 export const BASE_URL_ONLINE = import.meta.env.VITE_API_URL || '';
 const DEFAULT_LOCAL_API_PORT = '49300';
 const DEFAULT_REQUEST_TIMEOUT_MS = 60000;

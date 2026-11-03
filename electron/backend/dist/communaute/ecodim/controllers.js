@@ -314,6 +314,59 @@ const rejeterDemandeEnfant = (req, res) => {
     })
         .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
 };
+// ----------------------------------------------------------------- finances
+const recupFinancesByUtilisateur = (req, res) => repondre(res, functions_2.default.recupFinances(Number(req.params.idUtilisateur)));
+const recupFinancesSupprimeesByUtilisateur = (req, res) => repondre(res, functions_2.default.recupFinancesSupprimees(Number(req.params.idUtilisateur)));
+const ajouterFinance = (req, res) => {
+    const data = req.body;
+    return functions_2.default
+        .ajouterFinance(data)
+        .then((result) => {
+        diffuser(req, "ajouterFinanceEcodim", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur, data: result });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
+const modifierFinance = (req, res) => {
+    const data = req.body;
+    return functions_2.default
+        .modifierFinance(data)
+        .then((result) => {
+        diffuser(req, "modifierFinanceEcodim", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur, data: result });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
+const supprimerFinance = (req, res) => {
+    const { idFinanceEcodim, idUtilisateur, motifSuppressionFinance } = req.body;
+    return functions_2.default
+        .supprimerFinance(Number(idFinanceEcodim), Number(idUtilisateur), motifSuppressionFinance)
+        .then((result) => {
+        diffuser(req, "supprimerFinanceEcodim", { idUtilisateur, idFinanceEcodim });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
+const restaurerFinance = (req, res) => {
+    const { idFinanceEcodim, idUtilisateur } = req.body;
+    return functions_2.default
+        .restaurerFinance(Number(idFinanceEcodim), Number(idUtilisateur))
+        .then((result) => {
+        diffuser(req, "restaurerFinanceEcodim", { idUtilisateur, idFinanceEcodim });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
+const supprimerFinanceDefinitivement = (req, res) => {
+    const { idFinanceEcodim, idUtilisateur } = req.body;
+    return functions_2.default
+        .supprimerFinanceDefinitivement(Number(idFinanceEcodim), Number(idUtilisateur))
+        .then((result) => {
+        diffuser(req, "supprimerFinanceEcodimDefinitivement", { idUtilisateur, idFinanceEcodim });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
 exports.default = {
     recupClassesByUtilisateur,
     ajouterClasse,
@@ -351,5 +404,12 @@ exports.default = {
     recupDemandesEnfantByUtilisateur,
     validerDemandeEnfant,
     rejeterDemandeEnfant,
+    recupFinancesByUtilisateur,
+    recupFinancesSupprimeesByUtilisateur,
+    ajouterFinance,
+    modifierFinance,
+    supprimerFinance,
+    restaurerFinance,
+    supprimerFinanceDefinitivement,
 };
 //# sourceMappingURL=controllers.js.map

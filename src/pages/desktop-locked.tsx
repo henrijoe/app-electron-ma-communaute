@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -14,6 +13,7 @@ import { resetDesktopSecurityStatus, setDesktopSecurityStatus, setUserConnected,
 import { setConnecter, setUtilisateurData, utilisateur } from 'src/store/userSlice';
 import type { IReduxState } from 'src/store/store';
 import { apiClient } from 'src/utils/apiClient';
+import { NumeroMachine, useStatutMachine } from 'src/components/desktop/numero-machine';
 import { fDate } from 'src/utils/format-time';
 
 // Écran simple affiche quand la licence desktop bloque l'utilisateur courant.
@@ -31,6 +31,7 @@ export default function DesktopLockedPage() {
   const [unlockCode, setUnlockCode] = useState('');
   const [isUnlocking, setIsUnlocking] = useState(false);
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
+  const { numeroMachine, licenceActivee } = useStatutMachine();
 
   // Permet de sortir proprement de la session pour tenter ensuite une connexion superadmin.
   const handleDisconnect = () => {
@@ -48,7 +49,7 @@ export default function DesktopLockedPage() {
     }
 
     if (!unlockCode.trim()) {
-      showNotification('Le code de déblocage est requis.', 'warning');
+      showNotification("Collez le code d'activation reçu.", 'warning');
       return;
     }
 
@@ -73,10 +74,10 @@ export default function DesktopLockedPage() {
       );
 
       setUnlockCode('');
-      showNotification('Application desktop débloquée avec succès.', 'success');
+      showNotification('Application activée avec succès.', 'success');
       navigate('/', { replace: true });
     } catch (error: any) {
-      showNotification(error?.message || 'Code de déblocage invalide.', 'error');
+      showNotification(error?.message || "Code d'activation invalide.", 'error');
     } finally {
       setIsUnlocking(false);
     }
@@ -85,7 +86,9 @@ export default function DesktopLockedPage() {
   return (
     <Box sx={{ py: 8, px: 3 }}>
       <Stack spacing={3} alignItems="center" textAlign="center">
-        <Typography variant="h3">Application desktop bloquée</Typography>
+        <Typography variant="h3">
+          {licenceActivee ? 'Votre licence est terminée' : 'Votre essai est terminé'}
+        </Typography>
 
         <Typography color="text.secondary" sx={{ maxWidth: 560 }}>
           {desktopMessage || "L'application desktop est actuellement bloquée pour ce compte."}
@@ -106,20 +109,21 @@ export default function DesktopLockedPage() {
             borderRadius: 2,
           }}
         >
-          <Alert severity="info">
-            Renseigne ici le code de déblocage fourni par le développeur.
-          </Alert>
+          <NumeroMachine numero={numeroMachine} />
 
           <TextField
             fullWidth
-            label="Code de déblocage"
+            multiline
+            minRows={3}
+            label="Code d'activation"
             value={unlockCode}
             onChange={(event) => setUnlockCode(event.target.value.toUpperCase())}
-            placeholder="MC-XXXX-XXXX-XXXX-XXXX"
+            placeholder="MC2-…"
+            inputProps={{ spellCheck: false, style: { fontFamily: 'monospace', wordBreak: 'break-all' } }}
           />
 
           <Button variant="contained" onClick={handleUnlockWithCode} disabled={isUnlocking}>
-            {isUnlocking ? 'Déblocage...' : "Débloquer l'application"}
+            {isUnlocking ? 'Activation...' : 'Activer'}
           </Button>
         </Stack>
 

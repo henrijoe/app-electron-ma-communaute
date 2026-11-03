@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getServerNetworkInfo = exports.restoreSqliteBackup = exports.generateDesktopUnlockCodes = exports.exportPendingDesktopUnlockCodes = exports.unlockDesktopLicenseWithCode = exports.rebindDesktopLicenseMachine = exports.unlockDesktopLicense = exports.ensureDesktopLicenseInitialized = exports.getDesktopLicenseStatus = exports.isFixedDesktopSuperAdminCredentials = void 0;
+exports.getServerNetworkInfo = exports.restoreSqliteBackup = exports.generateDesktopUnlockCodes = exports.exportPendingDesktopUnlockCodes = exports.unlockDesktopLicenseWithCode = exports.rebindDesktopLicenseMachine = exports.unlockDesktopLicense = exports.ensureDesktopLicenseInitialized = exports.getDesktopLicenseStatus = exports.estNomSuperAdminReserve = exports.isFixedDesktopSuperAdminCredentials = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -21,17 +21,21 @@ const child_process_1 = require("child_process");
 const ip_1 = require("ip");
 const sqliteDB_1 = __importDefault(require("../../db/sqliteDB"));
 const sqliteSecurity_1 = require("../../db/sqliteSecurity");
-const DEFAULT_DESKTOP_TRIAL_DAYS = Number(process.env.DESKTOP_TRIAL_DAYS || 15);
+const licence_ticket_1 = require("./licence-ticket");
+// Période d'essai d'une installation neuve, et durée par défaut d'un
+// renouvellement manuel. Portée de 15 à 30 jours pour la phase de test : deux
+// semaines laissaient à peine le temps de saisir les membres et de tenir un
+// mois de cultes avant que l'accès ne se ferme.
+//
+// Rien d'autre ne change dans le verrou : même blocage, même déblocage, mêmes
+// codes. DESKTOP_TRIAL_DAYS permet de régler la durée sans retoucher le code.
+const DEFAULT_DESKTOP_TRIAL_DAYS = Number(process.env.DESKTOP_TRIAL_DAYS || 30);
 // Le verrou de licence protège une installation posée chez un client : il n'a aucun
 // sens sur un serveur partagé, où l'empreinte machine change au moindre redimensionnement
 // et où l'expiration bloquerait tous les comptes d'un coup.
 // DESKTOP_LICENSE_ENFORCED=false le neutralise pour ce déploiement-là uniquement.
 // Toute autre valeur (et surtout l'absence de variable) conserve le comportement actuel.
 const isDesktopLicenseEnforced = () => { var _a; return String((_a = process.env.DESKTOP_LICENSE_ENFORCED) !== null && _a !== void 0 ? _a : "true").trim().toLowerCase() !== "false"; };
-const DEFAULT_DESKTOP_SUPERADMINS = (process.env.DESKTOP_SUPERADMINS || sqliteSecurity_1.DESKTOP_SUPERADMIN_USERNAME)
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
 const DESKTOP_UNLOCK_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const DESKTOP_UNLOCK_CODE_PLANS = [
     { label: "Forfait 30 jours", durationDays: 30, quantity: 10 },
@@ -265,13 +269,13 @@ const isFixedDesktopSuperAdminCredentials = (nomUtilisateur, password) => {
     // On compare le nom normalise au créateur de l'application configure en dur dans le projet.
     const isMatchingUsername = normalizeUsername(nomUtilisateur) === normalizeUsername(sqliteSecurity_1.DESKTOP_SUPERADMIN_USERNAME);
     // Le mot de passe est compare tel quel car il sert ici de clé d'accès spéciale.
-    const isMatchingPassword = (password || "") === sqliteSecurity_1.DESKTOP_SUPERADMIN_PASSWORD;
+    const isMatchingPassword = (0, sqliteSecurity_1.verifierMotDePasseSuperAdmin)(password || "");
     // Les deux informations doivent correspondre pour reconnaitre le créateur de l'application fixe.
     return isMatchingUsername && isMatchingPassword;
 };
 exports.isFixedDesktopSuperAdminCredentials = isFixedDesktopSuperAdminCredentials;
 // Crée la configuration de licence minimale si aucun fichier n'existe encore.
-const buildDefaultDesktopLicense = (seedSuperAdminUsername) => {
+const buildDefaultDesktopLicense = () => {
     const unlockCodePack = buildDesktopUnlockCodePack();
     const now = new Date().toISOString();
     return {
@@ -283,16 +287,14 @@ const buildDefaultDesktopLicense = (seedSuperAdminUsername) => {
         manuallyBlocked: false,
         // Ce message sera réutilise si un blocage manuel est active plus tard.
         blockMessage: "Accès desktop temporairement bloqué. Veuillez contacter le créateur de l'application pour renouveler l'application.",
-        // Si un nom est fourni au premier lancement, on l'utilise comme créateur de l'application initial de la licence.
-        superAdminUsers: seedSuperAdminUsername
-            ? [normalizeUsername(seedSuperAdminUsername)]
-            : DEFAULT_DESKTOP_SUPERADMINS,
+        superAdminUsers: [],
         // Aucun déblocage n'a encore eu lieu à la création de la licence.
         lastUnlockedAt: null,
         lastUnlockedBy: null,
         // Les codes en clair ne sont gardes que jusqu'au premier export reserve au superadmin fixe.
         unlockCodes: unlockCodePack.records,
         pendingPlainUnlockCodes: unlockCodePack.plainCodes,
+        usedSignedCodeIds: [],
         lastUnlockCodesGeneratedAt: now,
         lastUnlockCodesExportedAt: null,
         machineBinding: buildCurrentMachineBinding(),
@@ -304,12 +306,12 @@ const ensureDesktopLicenseDirectory = () => __awaiter(void 0, void 0, void 0, fu
     yield fs_1.default.promises.mkdir(sqliteDB_1.default.getSqliteDirectory(), { recursive: true });
 });
 // Lit la configuration locale de licence desktop en la creant au besoin.
-const readDesktopLicenseConfig = (seedSuperAdminUsername) => __awaiter(void 0, void 0, void 0, function* () {
+const readDesktopLicenseConfig = () => __awaiter(void 0, void 0, void 0, function* () {
     // Avant toute lecture, on s'assure que le dossier de stockage existe bien.
     yield ensureDesktopLicenseDirectory();
     if (!fs_1.default.existsSync(DESKTOP_LICENSE_FILE)) {
         // Si aucun fichier n'existe, on cree une licence par défaut immédiate.
-        const defaultConfig = buildDefaultDesktopLicense(seedSuperAdminUsername);
+        const defaultConfig = buildDefaultDesktopLicense();
         // On écrit aussitot cette licence sous forme chiffrée pour initialiser le desktop local.
         yield fs_1.default.promises.writeFile(DESKTOP_LICENSE_FILE, encryptDesktopLicenseConfig(defaultConfig), "utf-8");
         return defaultConfig;
@@ -319,7 +321,7 @@ const readDesktopLicenseConfig = (seedSuperAdminUsername) => __awaiter(void 0, v
     // On déchiffre ensuite ce contenu pour retrouver la configuration courante.
     const parsedContent = decryptDesktopLicenseConfig(rawContent);
     // On garde une base par défaut pour compléter les propriétés manquantes si besoin.
-    const defaultConfig = buildDefaultDesktopLicense(seedSuperAdminUsername);
+    const defaultConfig = buildDefaultDesktopLicense();
     const storedUnlockCodes = normalizeUnlockCodeRecords(parsedContent.unlockCodes);
     const hasStoredUnlockCodes = storedUnlockCodes.length > 0;
     const unlockCodePack = hasStoredUnlockCodes
@@ -327,10 +329,11 @@ const readDesktopLicenseConfig = (seedSuperAdminUsername) => __awaiter(void 0, v
         : buildDesktopUnlockCodePack();
     const storedMachineBinding = normalizeMachineBinding(parsedContent.machineBinding);
     const config = Object.assign(Object.assign(Object.assign({}, defaultConfig), parsedContent), { 
-        // Enfin, on normalise toujours la liste des créateur de l'applications pour garder des comparaisons fiables.
-        superAdminUsers: Array.isArray(parsedContent.superAdminUsers)
-            ? parsedContent.superAdminUsers.map((item) => normalizeUsername(item)).filter(Boolean)
-            : defaultConfig.superAdminUsers, unlockCodes: unlockCodePack.records, pendingPlainUnlockCodes: unlockCodePack.plainCodes, lastUnlockCodesGeneratedAt: parsedContent.lastUnlockCodesGeneratedAt
+        // Vidée à la lecture : jusqu'à la version 1.0.14, le compte créateur de l'église y
+        // était inscrit, et une installation existante ne doit plus l'exempter du blocage.
+        superAdminUsers: [], unlockCodes: unlockCodePack.records, pendingPlainUnlockCodes: unlockCodePack.plainCodes, usedSignedCodeIds: Array.isArray(parsedContent.usedSignedCodeIds)
+            ? parsedContent.usedSignedCodeIds.map((id) => String(id))
+            : [], lastUnlockCodesGeneratedAt: parsedContent.lastUnlockCodesGeneratedAt
             ? String(parsedContent.lastUnlockCodesGeneratedAt)
             : defaultConfig.lastUnlockCodesGeneratedAt, lastUnlockCodesExportedAt: parsedContent.lastUnlockCodesExportedAt
             ? String(parsedContent.lastUnlockCodesExportedAt)
@@ -348,14 +351,11 @@ const writeDesktopLicenseConfig = (config) => __awaiter(void 0, void 0, void 0, 
     yield fs_1.default.promises.writeFile(DESKTOP_LICENSE_FILE, encryptDesktopLicenseConfig(config), "utf-8");
 });
 // Indique si le nom utilisateur fourni fait partie des créateur de l'applications autorises.
-const isSuperAdminUser = (nomUtilisateur, config) => {
-    // On verifie d'abord la liste des créateur de l'applications enregistrés dans la licence locale.
-    const isListedInLicense = config.superAdminUsers.includes(normalizeUsername(nomUtilisateur));
-    // On garde aussi un accès de secours par le créateur de l'application fixe du projet.
-    const isFixedSuperAdmin = normalizeUsername(nomUtilisateur) === normalizeUsername(sqliteSecurity_1.DESKTOP_SUPERADMIN_USERNAME);
-    // Si l'une des deux conditions est vraie, l'utilisateur est traite comme créateur de l'application.
-    return isListedInLicense || isFixedSuperAdmin;
-};
+const isSuperAdminUser = (nomUtilisateur) => normalizeUsername(nomUtilisateur) === normalizeUsername(sqliteSecurity_1.DESKTOP_SUPERADMIN_USERNAME);
+// Ce nom n'appartient à aucun compte client : la connexion ne l'accepte qu'avec le mot de
+// passe superadmin, sinon une église n'aurait qu'à se nommer ainsi pour n'être jamais bloquée.
+const estNomSuperAdminReserve = (nomUtilisateur) => isSuperAdminUser(nomUtilisateur);
+exports.estNomSuperAdminReserve = estNomSuperAdminReserve;
 // Calcule le nombre de jours restants avant blocage automatique.
 const computeDaysRemaining = (expiresAt) => {
     // On convertit la date d'expiration en timestamp pour la comparer facilement a maintenant.
@@ -372,9 +372,9 @@ const computeDaysRemaining = (expiresAt) => {
 // Retourne l'état calcule de la licence desktop pour un utilisateur donne.
 const getDesktopLicenseStatus = (nomUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
     // On charge d'abord la licence actuellement stockée localement.
-    const config = yield readDesktopLicenseConfig(nomUtilisateur);
+    const config = yield readDesktopLicenseConfig();
     // On détermine si cet utilisateur à un droit créateur de l'application.
-    const isSuperAdmin = isSuperAdminUser(nomUtilisateur, config);
+    const isSuperAdmin = isSuperAdminUser(nomUtilisateur);
     // On verifie si la date de fin a déjà été depassee.
     const isExpired = new Date(config.expiresAt).getTime() <= Date.now();
     const machineBindingStatus = getMachineBindingStatus(config);
@@ -394,28 +394,27 @@ const getDesktopLicenseStatus = (nomUtilisateur) => __awaiter(void 0, void 0, vo
         blockMessage: isMachineMismatch
             ? "Cette licence desktop est liée à un autre ordinateur. Contacte le développeur pour rattacher la licence à ce poste."
             : isExpired
-                ? "La licence desktop a expiré. Seul le créateur de l'application peut renouveler l'accès."
+                ? "Votre accès a expiré. Envoyez le numéro de cet ordinateur pour recevoir un code d'activation."
                 : config.blockMessage,
         // On calcule les jours restants pour l'affichage dans le front.
         daysRemaining: computeDaysRemaining(config.expiresAt),
         unlockCodeStats: getUnlockCodeStats(config),
         machineBinding: machineBindingStatus,
-        // On expose aussi la référence de sécurité locale pour information d'administration.
-        sqliteReferencePassword: sqliteSecurity_1.SQLITE_REFERENCE_PASSWORD,
-        sqliteSecurityNote: sqliteSecurity_1.SQLITE_SECURITY_NOTE,
+        numeroMachine: (0, licence_ticket_1.numeroMachineDepuisEmpreinte)(getCurrentMachineFingerprint().fingerprintHash),
+        licenceActivee: Boolean(config.lastUnlockedAt),
     };
 });
 exports.getDesktopLicenseStatus = getDesktopLicenseStatus;
 // Initialise explicitement la licence locale si elle n'existe pas encore.
-const ensureDesktopLicenseInitialized = (seedSuperAdminUsername) => __awaiter(void 0, void 0, void 0, function* () {
+const ensureDesktopLicenseInitialized = () => __awaiter(void 0, void 0, void 0, function* () {
     // Cette fonction réutilise simplement la lecture, qui sait déjà créer la licence si besoin.
-    return readDesktopLicenseConfig(seedSuperAdminUsername);
+    return readDesktopLicenseConfig();
 });
 exports.ensureDesktopLicenseInitialized = ensureDesktopLicenseInitialized;
 // Renouvelle l'accès desktop local après vérification du créateur de l'application.
 const unlockDesktopLicense = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // On lit la licence actuelle avant toute modification.
-    const config = yield readDesktopLicenseConfig(payload.nomUtilisateur);
+    const config = yield readDesktopLicenseConfig();
     if (!(0, exports.isFixedDesktopSuperAdminCredentials)(payload.nomUtilisateur, payload.password)) {
         // Le renouvellement manuel n'est autorise qu'au superadmin fixe du projet.
         throw new Error("Seul le superadmin fixe peut débloquer l'application desktop.");
@@ -435,7 +434,7 @@ const unlockDesktopLicense = (payload) => __awaiter(void 0, void 0, void 0, func
 exports.unlockDesktopLicense = unlockDesktopLicense;
 // Rattache explicitement une licence au poste courant après vérification superadmin.
 const rebindDesktopLicenseMachine = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const config = yield readDesktopLicenseConfig(payload.nomUtilisateur);
+    const config = yield readDesktopLicenseConfig();
     if (!(0, exports.isFixedDesktopSuperAdminCredentials)(payload.nomUtilisateur, payload.password)) {
         throw new Error("Seul le superadmin fixe peut rattacher la licence à ce poste.");
     }
@@ -443,13 +442,31 @@ const rebindDesktopLicenseMachine = (payload) => __awaiter(void 0, void 0, void 
     return (0, exports.getDesktopLicenseStatus)(payload.nomUtilisateur);
 });
 exports.rebindDesktopLicenseMachine = rebindDesktopLicenseMachine;
+// Active un code signé par le générateur. Il a été fait pour CET ordinateur : il suffit
+// donc aussi après un changement de poste, sans passer par le rattachement superadmin.
+const activerCodeSigne = (payload, config) => __awaiter(void 0, void 0, void 0, function* () {
+    const machine = getCurrentMachineFingerprint();
+    const contenu = (0, licence_ticket_1.verifierCodeSigne)(payload.code, (0, licence_ticket_1.numeroMachineDepuisEmpreinte)(machine.fingerprintHash));
+    if (!contenu) {
+        throw new Error("Ce code n'est pas valable pour cet ordinateur. Vérifiez le numéro envoyé.");
+    }
+    if (config.usedSignedCodeIds.includes(contenu.id)) {
+        throw new Error("Ce code a déjà été utilisé sur cet ordinateur.");
+    }
+    const now = new Date().toISOString();
+    yield writeDesktopLicenseConfig(Object.assign(Object.assign({}, config), { manuallyBlocked: false, expiresAt: buildExtendedExpirationDate(config.expiresAt, contenu.jours), machineBinding: buildCurrentMachineBinding(), lastUnlockedAt: now, lastUnlockedBy: payload.nomUtilisateur || "code-client", usedSignedCodeIds: [...config.usedSignedCodeIds, contenu.id] }));
+    return (0, exports.getDesktopLicenseStatus)(payload.nomUtilisateur);
+});
 // Debloque l'application avec un code offline fourni au client.
 const unlockDesktopLicenseWithCode = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const normalizedCode = normalizeUnlockCode(payload.code);
     if (!normalizedCode) {
         throw new Error("Le code de déblocage est requis.");
     }
-    const config = yield readDesktopLicenseConfig(payload.nomUtilisateur);
+    const config = yield readDesktopLicenseConfig();
+    if ((0, licence_ticket_1.estCodeSigne)(payload.code)) {
+        return activerCodeSigne(payload, config);
+    }
     const machineBindingStatus = getMachineBindingStatus(config);
     if (!machineBindingStatus.isCurrentMachine) {
         throw new Error("Ce code ne peut pas débloquer cette copie: la licence est liée à un autre ordinateur.");
@@ -468,7 +485,7 @@ const unlockDesktopLicenseWithCode = (payload) => __awaiter(void 0, void 0, void
 exports.unlockDesktopLicenseWithCode = unlockDesktopLicenseWithCode;
 // Exporte une seule fois le pack initial génère avec la licence locale.
 const exportPendingDesktopUnlockCodes = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const config = yield readDesktopLicenseConfig(payload.nomUtilisateur);
+    const config = yield readDesktopLicenseConfig();
     if (!(0, exports.isFixedDesktopSuperAdminCredentials)(payload.nomUtilisateur, payload.password)) {
         throw new Error("Seul le superadmin fixe peut exporter les codes de déblocage.");
     }
@@ -488,7 +505,7 @@ const exportPendingDesktopUnlockCodes = (payload) => __awaiter(void 0, void 0, v
 exports.exportPendingDesktopUnlockCodes = exportPendingDesktopUnlockCodes;
 // Génère un nouveau pack et remplace tous les codes non utilisés.
 const generateDesktopUnlockCodes = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const config = yield readDesktopLicenseConfig(payload.nomUtilisateur);
+    const config = yield readDesktopLicenseConfig();
     if (!(0, exports.isFixedDesktopSuperAdminCredentials)(payload.nomUtilisateur, payload.password)) {
         throw new Error("Seul le superadmin fixe peut générer les codes de déblocage.");
     }
@@ -540,5 +557,6 @@ exports.default = {
     restoreSqliteBackup: exports.restoreSqliteBackup,
     getServerNetworkInfo: exports.getServerNetworkInfo,
     isFixedDesktopSuperAdminCredentials: exports.isFixedDesktopSuperAdminCredentials,
+    estNomSuperAdminReserve: exports.estNomSuperAdminReserve,
 };
 //# sourceMappingURL=services.js.map

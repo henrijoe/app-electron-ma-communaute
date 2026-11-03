@@ -204,6 +204,10 @@ const ajouterUtilisateur = (data) => {
         try {
             const normalizedData = normalizeUtilisateurData(data);
             const isSecondaryUser = Number(normalizedData.idUtilisateurParent || 0) > 0;
+            if (services_1.default.estNomSuperAdminReserve(normalizedData.nomUtilisateur)) {
+                reject(new Error("Ce nom d'utilisateur n'est pas disponible."));
+                return;
+            }
             if (isSecondaryUser) {
                 const secondaryCount = yield functions_2.default.countSecondaryUsersByParentId(Number(normalizedData.idUtilisateurParent));
                 if (secondaryCount >= 5) {
@@ -212,7 +216,7 @@ const ajouterUtilisateur = (data) => {
                 }
             }
             else {
-                yield services_1.default.ensureDesktopLicenseInitialized(normalizedData.nomUtilisateur);
+                yield services_1.default.ensureDesktopLicenseInitialized();
                 if (sqliteDB_1.default.isSqliteMode()) {
                     const communityDisplayName = normalizedData.nomEgliseCourt || normalizedData.nomTemple;
                     yield sqlite_1.default.createCommunauteDatabase({
@@ -287,6 +291,10 @@ const supprimerUtilisateur = (idUtilisateur) => {
 const modifierUtilisateur = (data) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {
+            if (services_1.default.estNomSuperAdminReserve(data.nomUtilisateur)) {
+                reject(new Error("Ce nom d'utilisateur n'est pas disponible."));
+                return;
+            }
             const existingUtilisateur = data.idUtilisateur
                 ? yield functions_2.default.recupUtilisateurById(Number(data.idUtilisateur))
                 : [];
@@ -372,6 +380,10 @@ const login = (data) => {
                 resolve(Object.assign(Object.assign({}, superAdminUser), { token: construireJeton(superAdminUser) }));
                 return;
             }
+            if (services_1.default.estNomSuperAdminReserve(data.nomUtilisateur)) {
+                reject(new Error('Nom Utilisateur ou Mot de passe incorrect !.'));
+                return;
+            }
             const desktopLicenseStatus = yield services_1.default.getDesktopLicenseStatus(data.nomUtilisateur);
             if (desktopLicenseStatus.isBlocked) {
                 reject(new Error(desktopLicenseStatus.blockMessage));
@@ -418,6 +430,10 @@ const modifierMotDePasse = (data) => {
             const utilisateur = yield functions_2.default.recupUtilisateurById(data.idUtilisateur);
             if (!utilisateur) {
                 reject({ message: "Une erreur s'est produite" });
+                return;
+            }
+            if (services_1.default.estNomSuperAdminReserve(data.nomUtilisateur)) {
+                reject(new Error("Ce nom d'utilisateur n'est pas disponible."));
                 return;
             }
             const res = yield functions_2.default.modifierLogin(data.idUtilisateur, data.nomUtilisateur, data.confirmPassword);

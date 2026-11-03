@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const db_1 = require("../../db");
+const matricule_1 = require("../../helpers/matricule");
 const functions_1 = require("../functions");
 const functions_2 = __importDefault(require("../utlisateur/functions"));
 // Regarde le réglage "validerInscriptionMembre" de l'église : true (par défaut)
@@ -379,6 +380,10 @@ const ajouterMembre = (data) => {
                     console.error('Erreur lors du renommage:', renameError);
                 }
             }
+            // Le matricule est posé après l'insertion, et non dans la requête
+            // ci-dessus : celle-ci aligne trente-neuf valeurs positionnelles, et y
+            // glisser une colonne de plus décalerait tout sans lever d'erreur.
+            yield (0, matricule_1.attribuerMatricule)(matricule_1.REGISTRE_MEMBRE, Number(insertedId), Number(data.idUtilisateur));
             const membre = yield recupMembreById(insertedId);
             resolve(membre[0]);
         }
@@ -418,6 +423,11 @@ const recupMembreById = (id) => {
 const recupMembreByIdUtilsateur = (idUtilisateur) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
         try {
+            // Les membres saisis avant l'arrivée du matricule reçoivent le leur ici,
+            // au premier affichage de la liste. La table `membre` ne porte aucune
+            // date de création : ces reprises prennent donc l'année courante, dans
+            // leur ordre d'enregistrement.
+            yield (0, matricule_1.reprendreMatricules)(matricule_1.REGISTRE_MEMBRE, idUtilisateur);
             const sql = 'SELECT * FROM membre WHERE idUtilisateur = ? AND COALESCE(estDecede, 0) <> 1;';
             const membre = yield (0, db_1._selectSql)(sql, [idUtilisateur]);
             // Une liste vide est un résultat valide : une église qui vient d'être créée

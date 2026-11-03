@@ -764,6 +764,17 @@ const ensureSharedSchemaTables = (database) => __awaiter(void 0, void 0, void 0,
             // colonne déjà en place
         }
     }
+    // Reprises de contenu : une valeur à choix renommée. Sans effet une fois
+    // passées, et une base où la table n'existe pas encore ne doit pas bloquer le
+    // démarrage pour autant.
+    for (const statement of schema_1.SHARED_DATA_MIGRATIONS) {
+        try {
+            yield execDatabase(database, statement);
+        }
+        catch (_error) {
+            // rien à reprendre sur cette base
+        }
+    }
 });
 /**
  * Ajoute les tables et indexes manquants sur une base SQLite déjà existante.

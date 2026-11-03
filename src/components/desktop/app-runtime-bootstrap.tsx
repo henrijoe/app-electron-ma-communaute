@@ -15,7 +15,7 @@ import {
 import { sanitizeSensitiveData } from 'src/utils/sensitive-data';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 
-const LOCAL_API_PORT = '49300';
+const LOCAL_API_PORT = String(import.meta.env.VITE_LOCAL_API_PORT || '49300');
 
 const SHARED_CHURCH_FIELDS: Array<keyof IUtilisateur> = [
   'logoEglise',

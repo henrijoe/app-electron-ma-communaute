@@ -20,11 +20,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rejeterDemandeEnfant = exports.validerDemandeEnfant = exports.recupDemandesEnfant = exports.ajouterDemandeEnfant = exports.enregistrerAppel = exports.recupPresences = exports.enregistrerNotes = exports.recupNotes = exports.supprimerEvaluation = exports.modifierEvaluation = exports.ajouterEvaluation = exports.recupEvaluations = exports.supprimerCulte = exports.modifierCulte = exports.ajouterCulte = exports.recupCultes = exports.supprimerActivite = exports.modifierActivite = exports.ajouterActivite = exports.recupActivites = exports.supprimerEnfant = exports.modifierEnfant = exports.ajouterEnfant = exports.supprimerImageActivite = exports.ajouterImageActivite = exports.recupImagesActivite = exports.enregistrerPhotoEnfant = exports.recupEnfants = exports.supprimerMoniteur = exports.modifierMoniteur = exports.ajouterMoniteur = exports.recupMoniteurs = exports.recupClassesDuMoniteur = exports.supprimerClasse = exports.modifierClasse = exports.ajouterClasse = exports.recupClasses = exports.supprimerImage = exports.enregistrerImage = exports.dossierMedias = void 0;
+exports.supprimerFinanceDefinitivement = exports.restaurerFinance = exports.supprimerFinance = exports.modifierFinance = exports.ajouterFinance = exports.recupFinancesSupprimees = exports.recupFinances = exports.rejeterDemandeEnfant = exports.validerDemandeEnfant = exports.recupDemandesEnfant = exports.ajouterDemandeEnfant = exports.enregistrerAppel = exports.recupPresences = exports.enregistrerNotes = exports.recupNotes = exports.supprimerEvaluation = exports.modifierEvaluation = exports.ajouterEvaluation = exports.recupEvaluations = exports.supprimerCulte = exports.modifierCulte = exports.ajouterCulte = exports.recupCultes = exports.supprimerActivite = exports.modifierActivite = exports.ajouterActivite = exports.recupActivites = exports.supprimerEnfant = exports.modifierEnfant = exports.ajouterEnfant = exports.supprimerImageActivite = exports.ajouterImageActivite = exports.recupImagesActivite = exports.enregistrerPhotoEnfant = exports.recupEnfants = exports.supprimerMoniteur = exports.modifierMoniteur = exports.ajouterMoniteur = exports.recupMoniteurs = exports.recupClassesDuMoniteur = exports.supprimerClasse = exports.modifierClasse = exports.ajouterClasse = exports.recupClasses = exports.supprimerImage = exports.enregistrerImage = exports.dossierMedias = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const db_1 = require("../../db");
 const sqliteDB_1 = __importDefault(require("../../db/sqliteDB"));
+const matricule_1 = require("../../helpers/matricule");
 // Les images de l'école du dimanche vivent à côté des photos de membres, dans le
 // dossier de données — jamais dans la base : une photo en base64 dans une colonne
 // alourdit chaque lecture de la liste, même quand on ne l'affiche pas.
@@ -313,12 +314,25 @@ const supprimerMoniteur = (idMoniteur, idUtilisateur) => __awaiter(void 0, void 
 });
 exports.supprimerMoniteur = supprimerMoniteur;
 // ----------------------------------------------------------------- enfants
-const recupEnfants = (idUtilisateur) => (0, db_1._selectSql)(`SELECT enfant.*, classe.libelleClasse
+const recupEnfants = (idUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
+    // Les enfants saisis avant l'arrivée du matricule reçoivent le leur ici, au
+    // premier affichage de la liste — comme les rattachements de moniteurs plus
+    // haut. L'année retenue est celle de l'inscription, puis de l'entrée, puis de
+    // la création : un enfant entré en 2024 doit garder 2024 dans son numéro.
+    yield (0, matricule_1.reprendreMatricules)(matricule_1.REGISTRE_ENFANT, idUtilisateur, [
+        "dateInscriptionEcodim",
+        "dateEntreeEcodim",
+        "dateCreation",
+    ]);
+    return (0, db_1._selectSql)(`SELECT enfant.*, classe.libelleClasse
        FROM ecodim_enfant enfant
        LEFT JOIN ecodim_classe classe ON classe.idClasseEcodim = enfant.idClasseEcodim
       WHERE enfant.idUtilisateur = ?
       ORDER BY enfant.nomEnfant ASC, enfant.prenomEnfant ASC`, [idUtilisateur]);
+});
 exports.recupEnfants = recupEnfants;
+/** La case « inscrit » arrive en booléen du formulaire, en nombre d'une ligne relue. */
+const estInscrit = (d) => d.inscritEcodim === true || Number(d.inscritEcodim) === 1;
 /**
  * Les colonnes du dossier enfant, avec la façon d'en extraire la valeur.
  *
@@ -366,6 +380,20 @@ const CHAMPS_ENFANT = [
     { nom: "avecQuiVientEglise", valeur: (d) => texte(d.avecQuiVientEglise) },
     { nom: "responsabiliteTuteurEglise", valeur: (d) => texte(d.responsabiliteTuteurEglise) },
     { nom: "professionTuteur", valeur: (d) => texte(d.professionTuteur) },
+    { nom: "inscritEcodim", valeur: (d) => (estInscrit(d) ? 1 : 0) },
+    // Une date d'inscription sans la case cochée se lirait comme une inscription :
+    // décocher efface donc la date.
+    {
+        nom: "dateInscriptionEcodim",
+        valeur: (d) => (estInscrit(d) ? texte(d.dateInscriptionEcodim) || null : null),
+    },
+    // Même règle pour les frais : décocher l'inscription remet le montant à
+    // zéro, sinon un enfant non inscrit continuerait de peser dans le total
+    // encaissé.
+    {
+        nom: "montantInscriptionEcodim",
+        valeur: (d) => (estInscrit(d) ? Number(d.montantInscriptionEcodim) || 0 : 0),
+    },
     { nom: "dateEntreeEcodim", valeur: (d) => texte(d.dateEntreeEcodim) || null },
     { nom: "niveauEntreeEcodim", valeur: (d) => texte(d.niveauEntreeEcodim) },
     { nom: "niveauActuelEcodim", valeur: (d) => texte(d.niveauActuelEcodim) },
@@ -449,6 +477,13 @@ const ajouterEnfant = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const resultat = yield (0, db_1._executeSql)(`INSERT INTO ecodim_enfant (${COLONNES_ENFANT}, idUtilisateur)
      VALUES (${PLACEHOLDERS_ENFANT},?)`, [...valeursEnfant(data), data.idUtilisateur]);
     const idEnfantEcodim = (_g = (_f = resultat === null || resultat === void 0 ? void 0 : resultat.insertId) !== null && _f !== void 0 ? _f : resultat === null || resultat === void 0 ? void 0 : resultat.lastID) !== null && _g !== void 0 ? _g : null;
+    // Le matricule est posé juste après l'insertion : il se calcule à partir des
+    // matricules déjà attribués, donc une fois la ligne en base. L'année est
+    // celle de l'inscription si elle est connue, sinon l'année courante.
+    if (idEnfantEcodim) {
+        const anneeInscription = Number(String(texte(data.dateInscriptionEcodim) || texte(data.dateEntreeEcodim)).slice(0, 4));
+        yield (0, matricule_1.attribuerMatricule)(matricule_1.REGISTRE_ENFANT, Number(idEnfantEcodim), Number(data.idUtilisateur), anneeInscription > 1900 ? anneeInscription : undefined);
+    }
     // La photo ne peut être nommée qu'une fois l'identifiant connu, comme pour un membre.
     const photoRecue = texte(data.photoEnfant);
     if (idEnfantEcodim && photoRecue.startsWith("data:image/")) {
@@ -858,7 +893,7 @@ const enregistrerNotes = (donnees) => __awaiter(void 0, void 0, void 0, function
 exports.enregistrerNotes = enregistrerNotes;
 // --------------------------------------------------------------- assiduité
 /** Statuts d'appel acceptés. Sans accent, comme les autres valeurs à choix. */
-const STATUTS_PRESENCE = ["present", "absent", "excuse"];
+const STATUTS_PRESENCE = ["present", "absent", "deplacement"];
 /**
  * Appel nominatif, toutes séances confondues.
  *
@@ -1077,6 +1112,117 @@ const rejeterDemandeEnfant = (donnees) => __awaiter(void 0, void 0, void 0, func
     return true;
 });
 exports.rejeterDemandeEnfant = rejeterDemandeEnfant;
+// ----------------------------------------------------------------- finances
+/**
+ * Les colonnes de la caisse, avec la façon d'en extraire la valeur.
+ *
+ * Même principe que pour le cahier de texte et le dossier enfant : les noms de
+ * colonnes, les points d'interrogation et les valeurs dérivent tous de cette
+ * unique liste, pour qu'un champ ajouté ne décale pas la requête d'un cran.
+ */
+const CHAMPS_FINANCE = [
+    { nom: "libelleFinance", valeur: (d) => texte(d.libelleFinance) },
+    // Une ligne est une recette OU une dépense : le type décide lequel des deux
+    // montants est renseigné, et l'autre reste à zéro. Les additionner en aveugle
+    // sur une ligne mal saisie fausserait tout le solde.
+    { nom: "typeFinance", valeur: (d) => (texte(d.typeFinance) === "recette" ? "recette" : "depense") },
+    {
+        nom: "entreeFinance",
+        valeur: (d) => (texte(d.typeFinance) === "recette" ? Number(d.montantFinance) || 0 : 0),
+    },
+    {
+        nom: "sortieFinance",
+        valeur: (d) => (texte(d.typeFinance) === "recette" ? 0 : Number(d.montantFinance) || 0),
+    },
+    { nom: "dateFinance", valeur: (d) => texte(d.dateFinance) || null },
+    { nom: "categorieFinance", valeur: (d) => texte(d.categorieFinance) },
+    { nom: "observationFinance", valeur: (d) => texte(d.observationFinance) },
+    { nom: "idClasseEcodim", valeur: (d) => nombre(d.idClasseEcodim) },
+    { nom: "idActiviteEcodim", valeur: (d) => nombre(d.idActiviteEcodim) },
+];
+const COLONNES_FINANCE = CHAMPS_FINANCE.map((champ) => champ.nom).join(", ");
+const PLACEHOLDERS_FINANCE = CHAMPS_FINANCE.map(() => "?").join(",");
+const AFFECTATIONS_FINANCE = CHAMPS_FINANCE.map((champ) => `${champ.nom} = ?`).join(", ");
+const valeursFinance = (data) => CHAMPS_FINANCE.map((champ) => champ.valeur(data));
+/**
+ * Mouvements de la caisse, du plus récent au plus ancien.
+ *
+ * Les lignes mises à la corbeille sont écartées : `recupFinancesSupprimees` les
+ * rend séparément, comme le fait la comptabilité de l'église.
+ */
+const recupFinances = (idUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
+    const lignes = yield (0, db_1._selectSql)(`SELECT finance.*,
+            classe.libelleClasse,
+            activite.titreActivite
+       FROM ecodim_finance finance
+       LEFT JOIN ecodim_classe classe ON classe.idClasseEcodim = finance.idClasseEcodim
+       LEFT JOIN ecodim_activite activite ON activite.idActiviteEcodim = finance.idActiviteEcodim
+      WHERE finance.idUtilisateur = ?
+        AND COALESCE(finance.estSupprimeFinance, 0) <> 1
+      ORDER BY finance.dateFinance DESC, finance.idFinanceEcodim DESC`, [idUtilisateur]);
+    return Array.isArray(lignes) ? lignes : [];
+});
+exports.recupFinances = recupFinances;
+/** Mouvements mis à la corbeille, pour les relire ou les restaurer. */
+const recupFinancesSupprimees = (idUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
+    const lignes = yield (0, db_1._selectSql)(`SELECT finance.*,
+            classe.libelleClasse,
+            activite.titreActivite
+       FROM ecodim_finance finance
+       LEFT JOIN ecodim_classe classe ON classe.idClasseEcodim = finance.idClasseEcodim
+       LEFT JOIN ecodim_activite activite ON activite.idActiviteEcodim = finance.idActiviteEcodim
+      WHERE finance.idUtilisateur = ?
+        AND COALESCE(finance.estSupprimeFinance, 0) = 1
+      ORDER BY finance.dateSuppressionFinance DESC, finance.idFinanceEcodim DESC`, [idUtilisateur]);
+    return Array.isArray(lignes) ? lignes : [];
+});
+exports.recupFinancesSupprimees = recupFinancesSupprimees;
+const ajouterFinance = (data) => __awaiter(void 0, void 0, void 0, function* () {
+    var _s, _t;
+    const resultat = yield (0, db_1._executeSql)(`INSERT INTO ecodim_finance (${COLONNES_FINANCE}, idUtilisateur)
+     VALUES (${PLACEHOLDERS_FINANCE},?)`, [...valeursFinance(data), data.idUtilisateur]);
+    return (_t = (_s = resultat === null || resultat === void 0 ? void 0 : resultat.insertId) !== null && _s !== void 0 ? _s : resultat === null || resultat === void 0 ? void 0 : resultat.lastID) !== null && _t !== void 0 ? _t : null;
+});
+exports.ajouterFinance = ajouterFinance;
+const modifierFinance = (data) => __awaiter(void 0, void 0, void 0, function* () {
+    yield (0, db_1._executeSql)(`UPDATE ecodim_finance SET ${AFFECTATIONS_FINANCE}
+      WHERE idFinanceEcodim = ? AND idUtilisateur = ?`, [...valeursFinance(data), data.idFinanceEcodim, data.idUtilisateur]);
+    return true;
+});
+exports.modifierFinance = modifierFinance;
+/**
+ * Met un mouvement à la corbeille.
+ *
+ * Une caisse ne se corrige pas en effaçant : une ligne retirée doit rester
+ * consultable, avec son motif, pour que le point financier d'un mois passé
+ * puisse toujours s'expliquer.
+ */
+const supprimerFinance = (idFinanceEcodim, idUtilisateur, motif) => __awaiter(void 0, void 0, void 0, function* () {
+    yield (0, db_1._executeSql)(`UPDATE ecodim_finance
+        SET estSupprimeFinance = 1,
+            dateSuppressionFinance = ?,
+            motifSuppressionFinance = ?
+      WHERE idFinanceEcodim = ? AND idUtilisateur = ?`, [new Date().toISOString(), texte(motif), idFinanceEcodim, idUtilisateur]);
+    return true;
+});
+exports.supprimerFinance = supprimerFinance;
+const restaurerFinance = (idFinanceEcodim, idUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
+    yield (0, db_1._executeSql)(`UPDATE ecodim_finance
+        SET estSupprimeFinance = 0,
+            dateSuppressionFinance = NULL,
+            motifSuppressionFinance = ''
+      WHERE idFinanceEcodim = ? AND idUtilisateur = ?`, [idFinanceEcodim, idUtilisateur]);
+    return true;
+});
+exports.restaurerFinance = restaurerFinance;
+/** Suppression définitive, réservée aux lignes déjà à la corbeille. */
+const supprimerFinanceDefinitivement = (idFinanceEcodim, idUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
+    yield (0, db_1._executeSql)(`DELETE FROM ecodim_finance
+      WHERE idFinanceEcodim = ? AND idUtilisateur = ?
+        AND COALESCE(estSupprimeFinance, 0) = 1`, [idFinanceEcodim, idUtilisateur]);
+    return true;
+});
+exports.supprimerFinanceDefinitivement = supprimerFinanceDefinitivement;
 exports.default = {
     recupClasses: exports.recupClasses,
     ajouterClasse: exports.ajouterClasse,
@@ -1114,5 +1260,12 @@ exports.default = {
     recupDemandesEnfant: exports.recupDemandesEnfant,
     validerDemandeEnfant: exports.validerDemandeEnfant,
     rejeterDemandeEnfant: exports.rejeterDemandeEnfant,
+    recupFinances: exports.recupFinances,
+    recupFinancesSupprimees: exports.recupFinancesSupprimees,
+    ajouterFinance: exports.ajouterFinance,
+    modifierFinance: exports.modifierFinance,
+    supprimerFinance: exports.supprimerFinance,
+    restaurerFinance: exports.restaurerFinance,
+    supprimerFinanceDefinitivement: exports.supprimerFinanceDefinitivement,
 };
 //# sourceMappingURL=functions.js.map
