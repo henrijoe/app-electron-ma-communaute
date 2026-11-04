@@ -87,7 +87,11 @@ export default function DesktopLockedPage() {
     <Box sx={{ py: 8, px: 3 }}>
       <Stack spacing={3} alignItems="center" textAlign="center">
         <Typography variant="h3">
-          {licenceActivee ? 'Votre licence est terminée' : 'Votre essai est terminé'}
+          {/date de cet ordinateur/i.test(desktopMessage || '')
+            ? 'Vérifiez la date de cet ordinateur'
+            : licenceActivee
+              ? 'Votre licence est terminée'
+              : 'Votre essai est terminé'}
         </Typography>
 
         <Typography color="text.secondary" sx={{ maxWidth: 560 }}>
