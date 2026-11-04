@@ -79,6 +79,8 @@ type PrintFooterProps = {
 
 
 
+// Aucune hauteur imposée à html et body : la feuille entière dépasse de la zone
+// imprimable une fois les marges retirées, ce qui ajoutait une page vide à la fin.
 export const PRINT_LANDSCAPE_PAGE_STYLE = `
 @page {
   size: A4 landscape;
@@ -88,7 +90,6 @@ export const PRINT_LANDSCAPE_PAGE_STYLE = `
 @media print {
   html, body {
     width: 297mm;
-    height: 210mm;
     margin:0;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -106,7 +107,6 @@ export const PRINT_PORTRAIT_PAGE_STYLE = `
     html,
     body {
       width: 210mm;
-      min-height: 297mm;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -379,8 +379,9 @@ export function PrintDocumentLayout({
 
 export function PrintTable({ children, minWidth = 760 }: PrintTableProps) {
   return (
+    // Pas de « print-block-avoid-break » ici : un long tableau sauterait d'un bloc à la
+    // page suivante. Ce sont ses lignes qui ne se coupent pas.
     <TableContainer
-      className="print-block-avoid-break"
       sx={{
         borderRadius: 1.6,
         width: '100%',

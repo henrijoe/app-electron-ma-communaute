@@ -1330,6 +1330,16 @@ export const apiClient = {
   getMaladiesByUtilisateur: (idUtilisateur: number | string) =>
     request<IServerResponse>(`communaute/recupmaladiebyutilisateur/${idUtilisateur}`, { method: 'GET' }),
 
+  // Autres cotisations : ce que chaque membre donne, sous un nom saisi librement.
+  getAutresCotisations: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/autrescotisations/byutilisateur/${idUtilisateur}`),
+  createAutreCotisation: (data: any) =>
+    request<IServerResponse>('communaute/insererautrecotisation', { method: 'POST', body: JSON.stringify(data) }),
+  updateAutreCotisation: (data: any) =>
+    request<IServerResponse>('communaute/modifierautrecotisation', { method: 'POST', body: JSON.stringify(data) }),
+  deleteAutreCotisation: (data: any) =>
+    request<IServerResponse>('communaute/supprimerautrecotisation', { method: 'POST', body: JSON.stringify(data) }),
+
   // Crée un cas de maladie.
   createMaladie: (data: any) =>
     request<IServerResponse>('communaute/inserermaladie', {

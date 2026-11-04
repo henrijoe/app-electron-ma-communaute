@@ -11,6 +11,7 @@ import {
   FavoriteRounded as FavoriteRoundedIcon,
   SearchRounded as SearchRoundedIcon,
   SentimentDissatisfiedRounded as SentimentDissatisfiedRoundedIcon,
+  Savings as SavingsIcon,
   VolunteerActivismRounded as VolunteerActivismRoundedIcon,
 } from '@mui/icons-material';
 import {
@@ -53,7 +54,7 @@ import type { IMariage } from 'src/store/mariageSlice';
 import type { IMembre } from 'src/store/membreSlice';
 import type { INaissance } from 'src/store/naissanceSlice';
 import { apiClient } from 'src/utils/apiClient';
-import { canManageModule } from 'src/utils/access-control';
+import { canManageModule, getScopeUserIdFromUser } from 'src/utils/access-control';
 import { subscribeToCommunauteEvent } from 'src/utils/socket-client';
 import { SelectRecherche } from 'src/components/select-recherche';
 import {
@@ -62,6 +63,8 @@ import {
   formatPeriodLabel,
   resolvePeriodRange,
 } from 'src/utils/period-filter';
+
+import { AutresCotisations } from './autres-cotisations';
 
 type SocialCaseType = 'mariage' | 'naissance' | 'deces' | 'maladie';
 
@@ -345,6 +348,8 @@ export function SocialView() {
   const utilisateurData = useSelector((state: any) => state.authentification?.utilisateurData);
   const currentUserId = Number(userConnected?.idUtilisateur || utilisateurData?.idUtilisateur || 0);
   const canManageSocial = canManageModule(userConnected || utilisateurData, 'social');
+  // Les cotisations appartiennent à l'église : un compte secondaire voit celles du compte principal.
+  const scopeUserId = Number(getScopeUserIdFromUser(userConnected || utilisateurData) || currentUserId);
 
   // L'onglet peut être imposé par l'adresse : le suivi pastoral y envoie
   // directement sur la bonne catégorie.
@@ -359,6 +364,11 @@ export function SocialView() {
       setActiveType(typeDemande as SocialCaseType);
     }
   }, [typeDemande]);
+  // Les cotisations ont leur propre logique (membre, montant, total) : elles ne passent
+  // pas par la configuration commune aux quatre autres onglets.
+  const [voletCotisations, setVoletCotisations] = useState(typeDemande === 'cotisation');
+  const [nombreCotisations, setNombreCotisations] = useState(0);
+  const [demandeAjoutCotisation, setDemandeAjoutCotisation] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [records, setRecords] = useState<SocialCaseState>(emptyStateByType);
 
@@ -393,12 +403,13 @@ export function SocialView() {
       }
     };
 
-    const [mariages, naissances, deces, maladies, membres] = await Promise.all([
+    const [mariages, naissances, deces, maladies, membres, cotisations] = await Promise.all([
       safeLoad<IMariage>(() => apiClient.getMariagesByUtilisateur(currentUserId)),
       safeLoad<INaissance>(() => apiClient.getNaissancesByUtilisateur(currentUserId)),
       safeLoad<IDeces>(() => apiClient.getDecesByUtilisateur(currentUserId)),
       safeLoad<IMaladieDraft>(() => apiClient.getMaladiesByUtilisateur(currentUserId)),
       safeLoad<IMembre>(() => apiClient.getMembresByUtilisateur(currentUserId)),
+      safeLoad<unknown>(() => apiClient.getAutresCotisations(scopeUserId)),
     ]);
 
     setRecords({
@@ -408,7 +419,8 @@ export function SocialView() {
       maladie: maladies,
     });
     setAvailableMembres(membres);
-  }, [currentUserId]);
+    setNombreCotisations(cotisations.length);
+  }, [currentUserId, scopeUserId]);
 
   useEffect(() => {
     fetchSocialCases();
@@ -561,6 +573,7 @@ export function SocialView() {
     if (type !== activeType) {
       setActiveType(type);
     }
+    setVoletCotisations(false);
     setEditingId(null);
     setFormState((prev) => ({ ...prev, [type]: emptyFormState[type] as any }));
     setOpenDialog(true);
@@ -751,7 +764,7 @@ export function SocialView() {
               Cas sociaux
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mt: 0.75 }}>
-              Mariages, naissances, décès et maladies au même endroit.
+              Mariages, naissances, décès, maladies et autres cotisations au même endroit.
             </Typography>
           </Box>
 
@@ -764,14 +777,16 @@ export function SocialView() {
               flexWrap: 'wrap',
             }}
           >
-            <PrintEtatSociaux
-              activeType={activeType}
-              identity={utilisateurData}
-              // Le filtrage (recherche + période) ne change pas la forme des lignes,
-              // seulement leur nombre : on réaffirme le type précis perdu par .filter().
-              rows={filteredRows as typeof currentRows}
-              subtitle={printSubtitle}
-            />
+            {!voletCotisations && (
+              <PrintEtatSociaux
+                activeType={activeType}
+                identity={utilisateurData}
+                // Le filtrage (recherche + période) ne change pas la forme des lignes,
+                // seulement leur nombre : on réaffirme le type précis perdu par .filter().
+                rows={filteredRows as typeof currentRows}
+                subtitle={printSubtitle}
+              />
+            )}
           </Stack>
         </Stack>
 
@@ -782,7 +797,7 @@ export function SocialView() {
           sx={{ m: 0, width: 1 }}
         >
           {(Object.keys(socialConfig) as SocialCaseType[]).map((type) => (
-            <Grid item xs={12} sm={6} lg={3} key={type} sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Grid item xs={12} sm={6} lg key={type} sx={{ display: 'flex', justifyContent: 'center' }}>
               <Card
                 sx={{
                   width: 1,
@@ -790,14 +805,17 @@ export function SocialView() {
                   p: { xs: 1.75, sm: 2.5 },
                   borderRadius: 3,
                   border: (muiTheme) =>
-                    `1px solid ${alpha(muiTheme.palette[socialConfig[type].color].main, activeType === type ? 0.35 : 0.12)}`,
+                    `1px solid ${alpha(muiTheme.palette[socialConfig[type].color].main, activeType === type && !voletCotisations ? 0.35 : 0.12)}`,
                   bgcolor: (muiTheme) =>
-                    activeType === type
+                    activeType === type && !voletCotisations
                       ? alpha(muiTheme.palette[socialConfig[type].color].main, 0.08)
                       : muiTheme.palette.background.paper,
                   cursor: 'pointer',
                 }}
-                onClick={() => setActiveType(type)}
+                onClick={() => {
+                  setActiveType(type);
+                  setVoletCotisations(false);
+                }}
               >
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Box sx={{ color: `${socialConfig[type].color}.main` }}>{socialConfig[type].icon}</Box>
@@ -806,7 +824,7 @@ export function SocialView() {
                       size="small"
                       color={socialConfig[type].color}
                       label={periodFilteredRecords[type].length}
-                      variant={activeType === type ? 'filled' : 'outlined'}
+                      variant={activeType === type && !voletCotisations ? 'filled' : 'outlined'}
                     />
                     {canManageSocial && (
                       <Tooltip title={`Ajouter ${socialConfig[type].singularLabel.toLowerCase()}`}>
@@ -836,12 +854,73 @@ export function SocialView() {
               </Card>
             </Grid>
           ))}
+          <Grid item xs={12} sm={6} lg sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Card
+              sx={{
+                width: 1,
+                maxWidth: { xs: 300, sm: 'none' },
+                p: { xs: 1.75, sm: 2.5 },
+                borderRadius: 3,
+                border: (muiTheme) =>
+                  `1px solid ${alpha(muiTheme.palette.warning.main, voletCotisations ? 0.45 : 0.16)}`,
+                bgcolor: (muiTheme) =>
+                  voletCotisations ? alpha(muiTheme.palette.warning.main, 0.1) : muiTheme.palette.background.paper,
+                cursor: 'pointer',
+              }}
+              onClick={() => setVoletCotisations(true)}
+            >
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Box sx={{ color: 'warning.main' }}>
+                  <SavingsIcon />
+                </Box>
+                <Stack direction="row" spacing={0.75} alignItems="center">
+                  <Chip
+                    size="small"
+                    color="warning"
+                    label={nombreCotisations}
+                    variant={voletCotisations ? 'filled' : 'outlined'}
+                  />
+                  {canManageSocial && (
+                    <Tooltip title="Ajouter une cotisation">
+                      <IconButton
+                        size="small"
+                        color="warning"
+                        aria-label="Ajouter une cotisation"
+                        onClick={(event) => {
+                          // Comme sur les autres cartes : le « + » ouvre la saisie, sans
+                          // passer par le clic de la carte, qui change seulement d'onglet.
+                          event.stopPropagation();
+                          setDemandeAjoutCotisation((prev) => prev + 1);
+                        }}
+                        sx={{ border: 1, borderColor: 'divider' }}
+                      >
+                        <AddRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Stack>
+              </Stack>
+              <Typography variant="h6" sx={{ mt: { xs: 1.5, sm: 2 }, fontWeight: 700, fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
+                Autres cotisations
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: { xs: '0.86rem', sm: '0.875rem' } }}>
+                Ce que chaque membre donne : Caisse de Noël, solidarité, évangélisation...
+              </Typography>
+            </Card>
+          </Grid>
         </Grid>
 
         <Card sx={{ borderRadius: 4, overflow: 'hidden', width: 1 }}>
           <Tabs
-            value={activeType}
-            onChange={(_, value: SocialCaseType) => setActiveType(value)}
+            value={voletCotisations ? 'cotisation' : activeType}
+            onChange={(_, value: string) => {
+              if (value === 'cotisation') {
+                setVoletCotisations(true);
+                return;
+              }
+              setVoletCotisations(false);
+              setActiveType(value as SocialCaseType);
+            }}
             variant="scrollable"
             scrollButtons="auto"
             sx={{ px: 2, pt: 1.5 }}
@@ -849,9 +928,25 @@ export function SocialView() {
             {(Object.keys(socialConfig) as SocialCaseType[]).map((type) => (
               <Tab key={type} value={type} label={socialConfig[type].label} />
             ))}
+            <Tab value="cotisation" label="Autres cotisations" />
           </Tabs>
 
           <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 2.5 } }}>
+            {/* Toujours monté, seulement masqué : le clic sur la carte ouvre la boîte de
+                saisie sans changer d'onglet. */}
+            <Box sx={{ display: voletCotisations ? 'block' : 'none' }}>
+              <AutresCotisations
+                canManage={canManageSocial}
+                demandeAjout={demandeAjoutCotisation}
+                identity={utilisateurData}
+                idUtilisateur={scopeUserId}
+                membres={availableMembres}
+                onChange={fetchSocialCases}
+                showNotification={showNotification}
+              />
+            </Box>
+            {!voletCotisations && (
+            <>
             {/* Recherche et période sur une seule ligne : empilées, elles laissaient
                 toute la largeur droite vide pour deux champs étroits.
 
@@ -1149,6 +1244,8 @@ export function SocialView() {
                 labelDisplayedRows={({ from, to, count }) => `${from}–${to} sur ${count}`}
               />
               </>
+            )}
+            </>
             )}
           </Box>
         </Card>

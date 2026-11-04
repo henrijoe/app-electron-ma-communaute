@@ -554,6 +554,23 @@ const ecodimFinance = {
         { name: "dateCreation", type: "datetime", default: "CURRENT_TIMESTAMP" },
     ],
 };
+// Autres cotisations de l'église (Caisse de Noël...) : le nom est saisi librement, et
+// chaque ligne dit quel membre a donné combien.
+const autreCotisation = {
+    name: "autre_cotisation",
+    columns: [
+        { name: "idCotisation", type: "pk" },
+        { name: "nomCotisation", type: "text", notNull: true },
+        { name: "idMembre", type: "int" },
+        // Recopié de la fiche : l'historique garde qui a donné si la fiche disparaît.
+        { name: "nomMembreVersement", type: "text", notNull: true },
+        { name: "montantVersement", type: "int", default: "0" },
+        { name: "dateVersement", type: "text" },
+        { name: "observationVersement", type: "longtext" },
+        { name: "idUtilisateur", type: "int", notNull: true },
+        { name: "dateCreation", type: "datetime", default: "CURRENT_TIMESTAMP" },
+    ],
+};
 exports.SHARED_TABLES = [
     agenda,
     familleJeunesse,
@@ -572,6 +589,7 @@ exports.SHARED_TABLES = [
     ecodimPresence,
     ecodimEnfantDemande,
     ecodimFinance,
+    autreCotisation,
 ];
 // Colonnes ajoutées après coup à des tables qui, elles, existent bien dans le dump.
 // Elles n'étaient posées que sur SQLite : en MySQL, les requêtes qui les utilisent

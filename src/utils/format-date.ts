@@ -13,6 +13,9 @@
 /** Préfixe « AAAA-MM-JJ », qu'il soit suivi d'une heure ou non. */
 const JOUR_ISO = /^(\d{4})-(\d{2})-(\d{2})/;
 
+/** Date déjà au format jj/mm/aaaa, seule ou suivie d'une heure. */
+const JOUR_FRANCAIS = /^(\d{2}\/\d{2}\/\d{4})/;
+
 /**
  * Date au format jj/mm/aaaa.
  *
@@ -43,6 +46,15 @@ export const formaterDate = (
   if (correspondance) {
     const [, annee, mois, jour] = correspondance;
     return `${jour}/${mois}/${annee}`;
+  }
+
+  // À ne surtout pas confier à `new Date`, qui lit le mois d'abord : le 11/10 y
+  // devient le 10 novembre, alors qu'un 25/10 illisible s'afficherait tel quel. Le
+  // défaut ne touchait donc que les jours de 1 à 12.
+  const francaise = brute.match(JOUR_FRANCAIS);
+
+  if (francaise) {
+    return francaise[1];
   }
 
   const date = new Date(brute);
