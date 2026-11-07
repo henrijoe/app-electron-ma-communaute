@@ -64,5 +64,10 @@ ecodimRouter.post("/modifierfinanceecodim", controllers_1.default.modifierFinanc
 ecodimRouter.post("/supprimerfinanceecodim", controllers_1.default.supprimerFinance);
 ecodimRouter.post("/restaurerfinanceecodim", controllers_1.default.restaurerFinance);
 ecodimRouter.post("/supprimerfinanceecodimdefinitivement", controllers_1.default.supprimerFinanceDefinitivement);
+// Programme de direction et d'enseignement des moniteurs sur une période.
+ecodimRouter.get("/recupprogrammeecodimbyutilisateur/:idUtilisateur", controllers_1.default.recupProgrammesByUtilisateur);
+ecodimRouter.post("/insererprogrammeecodim", controllers_1.default.ajouterProgramme);
+ecodimRouter.post("/modifierprogrammeecodim", controllers_1.default.modifierProgramme);
+ecodimRouter.post("/supprimerprogrammeecodim", controllers_1.default.supprimerProgramme);
 exports.default = ecodimRouter;
 //# sourceMappingURL=routes.js.map

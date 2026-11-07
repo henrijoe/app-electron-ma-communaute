@@ -19,6 +19,7 @@ c'est la raison qui permet de décider quoi faire dans un cas voisin.
 | [06 — Licence desktop](06-licence-desktop.md) | Essai, blocage, déblocage, forfaits |
 | [07 — Build et publication](07-build-et-publication.md) | Développer, packager, publier, mettre à jour |
 | [08 — Conventions](08-conventions.md) | Les règles de code à respecter |
+| [09 — GitHub Actions](09-github-actions.md) | Qui déclenche quoi, et les commandes |
 
 ## Les trois choses à savoir avant de toucher au code
 

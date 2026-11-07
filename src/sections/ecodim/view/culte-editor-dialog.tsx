@@ -1,23 +1,24 @@
 import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Unstable_Grid2';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
+import Grid from '@mui/material/Unstable_Grid2';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import ListItemButton from '@mui/material/ListItemButton';
-import DialogContent from '@mui/material/DialogContent';
 import ToggleButton from '@mui/material/ToggleButton';
+import DialogContent from '@mui/material/DialogContent';
+import ListItemButton from '@mui/material/ListItemButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { AddRounded, CloseRounded, DeleteRounded, DoneAllRounded } from '@mui/icons-material';
 
 import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
+
 import { SelectRecherche } from 'src/components/select-recherche';
 
 import { FONCTIONS_MONITEUR } from '../constantes';
@@ -68,6 +69,8 @@ type CulteEditorDialogProps = {
   idUtilisateur: number;
   onClose: () => void;
   onEnregistre: () => void | Promise<void>;
+  /** Faux dans la fenêtre Windows : le cahier s'y relit sans s'enregistrer. */
+  modifiable?: boolean;
   showNotification: (message: string, severite?: 'success' | 'info' | 'warning' | 'error') => void;
 };
 
@@ -215,6 +218,7 @@ export function CulteEditorDialog({
   idUtilisateur,
   onClose,
   onEnregistre,
+  modifiable = true,
   showNotification,
 }: CulteEditorDialogProps) {
   const [formulaire, setFormulaire] = useState<any>(formulaireVide);
@@ -468,7 +472,12 @@ export function CulteEditorDialog({
         </Box>
 
         <Stack direction="row" spacing={1} alignItems="center">
-          <Button variant="contained" onClick={enregistrer} disabled={enregistrement}>
+          <Button
+            variant="contained"
+            onClick={enregistrer}
+            disabled={enregistrement}
+            sx={{ display: modifiable ? undefined : 'none' }}
+          >
             {enregistrement ? 'Enregistrement...' : 'Valider'}
           </Button>
           <IconButton onClick={onClose}>

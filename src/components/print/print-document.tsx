@@ -89,7 +89,6 @@ export const PRINT_LANDSCAPE_PAGE_STYLE = `
 
 @media print {
   html, body {
-    width: 297mm;
     margin:0;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -106,7 +105,7 @@ export const PRINT_PORTRAIT_PAGE_STYLE = `
   @media print {
     html,
     body {
-      width: 210mm;
+      margin: 0;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -119,7 +118,7 @@ const joinAvailableValues = (...values: Array<string | undefined>): string =>
     .filter(Boolean)
     .join(' - ');
 
-const getPrintableLogoUrl = (identity?: PrintIdentity): string | null => {
+export const getPrintableLogoUrl = (identity?: PrintIdentity): string | null => {
   const logoPath = identity?.logoEglise || identity?.logoUtilisateur;
 
   if (!logoPath) {
@@ -146,8 +145,8 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
         gap: 1.5,
         p: 1.35,
         mb: 1.4,
-        border: '1px solid rgba(15, 39, 74, 0.18)',
-        borderBottom: '3px solid #0f274a',
+        border: '1px solid #000',
+        borderBottom: '2px solid #000',
         borderRadius: 1.4,
         backgroundColor: '#ffffff',
       }}
@@ -164,7 +163,7 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
           overflow: 'hidden',
           p: 0.4,
           flexShrink: 0,
-          border: '1px solid rgba(15, 39, 74, 0.14)',
+          border: '1px solid #000',
         }}
       >
         {logoUrl ? (
@@ -175,7 +174,7 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
             sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
         ) : (
-          <Typography sx={{ color: '#0f172a', fontWeight: 900 }}>MC</Typography>
+          <Typography sx={{ color: '#0f172a', fontWeight: 700 }}>MC</Typography>
         )}
       </Box>
 
@@ -183,25 +182,13 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
         <Typography
           sx={{
             fontSize: '1.08rem',
-            fontWeight: 900,
+            fontWeight: 700,
             lineHeight: 1.15,
-            color: '#0f274a',
+            color: '#000',
             overflowWrap: 'anywhere',
           }}
         >
           {identity.nomEgliseCourt || identity.nomTemple || 'Communauté locale'}
-        </Typography>
-        <Typography
-          sx={{
-            mt: 0.25,
-            color: '#63758c',
-            fontSize: '0.72rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: 0.8,
-          }}
-        >
-          État imprimable
         </Typography>
       </Box>
     </Box>
@@ -215,22 +202,18 @@ function PrintFooter({ contactLine, showPagination }: PrintFooterProps) {
       sx={{
         mt: 2,
         pt: 1,
-        borderTop: '1px solid rgba(15, 39, 74, 0.12)',
-        color: '#5b6b7f',
+        borderTop: '1px solid #000',
+        color: '#000',
         fontSize: '0.72rem',
       }}
     >
       <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
         <Typography variant="caption" sx={{ color: 'inherit' }}>
-          {contactLine || "Document interne de l'église"}
+          {contactLine}
         </Typography>
-        {showPagination ? (
-          <Typography variant="caption" sx={{ color: 'inherit' }}>
-            Page 1
-          </Typography>
-        ) : (
-          <Box />
-        )}
+        {/* Plus de « Page 1 » écrit en dur : le vrai numéro de page s'imprime
+            dans la marge pour tous les états (« Page 1 / 3 », voir global.css). */}
+        <Box />
       </Stack>
     </Box>
   );
@@ -257,7 +240,10 @@ export function PrintDocumentLayout({
 
   const logoUrl = getPrintableLogoUrl(mergedIdentity);
   const isPlainVariant = variant === 'plain';
-  const printPageWidth = orientation === 'landscape' ? '281mm' : '190mm';
+  // Toute la largeur imprimable : une largeur fixe en millimètres, plus large ou
+  // plus étroite que la zone réelle, faisait réduire la page ou laissait un vide
+  // à droite.
+  const printPageWidth = '100%';
   const footerContactLine = joinAvailableValues(
     mergedIdentity.lieuEglise,
     mergedIdentity.telephoneSecretariatEglise || mergedIdentity.telephoneUtilisateur,
@@ -339,24 +325,23 @@ export function PrintDocumentLayout({
           }}
         >
           {showDocumentMeta && (
-            <>
-              <Box
+            <Box
                 className="print-block-avoid-break"
                 sx={{
                   mb: isPlainVariant ? 1.2 : 2,
                   px: 2,
                   py: 1.05,
-                  border: '1.5px solid #0f274a',
+                  border: '1.5px solid #000',
                   borderRadius: 1.2,
-                  backgroundColor: '#eef4ff',
+                  backgroundColor: '#fff',
                   textAlign: 'center',
                 }}
               >
                 <Typography
                   sx={{
                     fontSize: orientation === 'landscape' ? '1.08rem' : '1rem',
-                    fontWeight: 900,
-                    color: '#0f274a',
+                    fontWeight: 700,
+                    color: '#000',
                     textTransform: 'uppercase',
                     letterSpacing: 0.8,
                     lineHeight: 1.15,
@@ -365,7 +350,6 @@ export function PrintDocumentLayout({
                   {title}
                 </Typography>
               </Box>
-            </>
           )}
 
           {children}
@@ -381,17 +365,15 @@ export function PrintTable({ children, minWidth = 760 }: PrintTableProps) {
   return (
     // Pas de « print-block-avoid-break » ici : un long tableau sauterait d'un bloc à la
     // page suivante. Ce sont ses lignes qui ne se coupent pas.
+    // Tableau quadrillé, texte noir, en Arial Narrow : les anciens traits gris très
+    // clairs et le texte bleu-gris de 9 à 10 px sortaient pâles à l'impression.
     <TableContainer
       sx={{
-        borderRadius: 1.6,
         width: '100%',
         maxWidth: '100%',
-        border: '1px solid rgba(15, 39, 74, 0.16)',
+        border: '1px solid #000',
         overflow: 'hidden',
         backgroundColor: '#ffffff',
-        '@media print': {
-          borderRadius: 1.2,
-        },
       }}
     >
       <Table
@@ -399,28 +381,38 @@ export function PrintTable({ children, minWidth = 760 }: PrintTableProps) {
           minWidth,
           width: '100%',
           tableLayout: 'fixed',
+          borderCollapse: 'collapse',
+          fontFamily: 'var(--police-etat)',
           '& .MuiTableCell-root': {
-            py: 1.1,
-            px: 1.15,
-            borderColor: 'rgba(15, 39, 74, 0.10)',
-            verticalAlign: 'top',
+            py: 0.6,
+            px: 0.9,
+            border: '1px solid #000',
+            verticalAlign: 'middle',
             whiteSpace: 'normal',
             wordBreak: 'break-word',
-            color: '#10233f',
+            color: '#000',
+            fontFamily: 'var(--police-etat)',
+            fontSize: '0.9rem',
+            lineHeight: 1.25,
           },
           '& .MuiTableHead-root': {
-            backgroundColor: '#eaf2ff',
+            backgroundColor: '#fff',
             '& .MuiTableCell-root': {
-              color: '#0f274a',
-              fontWeight: 800,
+              color: '#000',
+              fontWeight: 700,
               textTransform: 'uppercase',
-              fontSize: '0.7rem',
-              letterSpacing: 0.5,
-              py: 0.9,
+              fontSize: '0.85rem',
+              letterSpacing: 0,
+              py: 0.7,
+              // Un titre de colonne passe à la ligne entre deux mots, jamais au
+              // milieu d'un mot (« PRÉDICATIO / N »).
+              wordBreak: 'normal',
+              overflowWrap: 'normal',
+              hyphens: 'manual',
             },
           },
-          '& .MuiTableBody-root .MuiTableRow-root:nth-of-type(even)': {
-            backgroundColor: '#f8fafc',
+          '& .MuiTableBody-root .MuiTableRow-root': {
+            backgroundColor: '#fff',
           },
           '& .MuiTableRow-root': {
             breakInside: 'avoid',
@@ -429,14 +421,14 @@ export function PrintTable({ children, minWidth = 760 }: PrintTableProps) {
           '@media print': {
             minWidth: '100%',
             '& .MuiTableCell-root': {
-              py: 0.65,
-              px: 0.72,
-              fontSize: '0.68rem',
+              py: 0.45,
+              px: 0.7,
+              fontSize: '10.5pt',
               lineHeight: 1.2,
             },
             '& .MuiTableHead-root .MuiTableCell-root': {
-              fontSize: '0.62rem',
-              lineHeight: 1.1,
+              fontSize: '10pt',
+              lineHeight: 1.15,
             },
           },
         }}

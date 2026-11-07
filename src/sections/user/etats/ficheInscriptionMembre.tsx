@@ -304,7 +304,7 @@ export function FicheInscriptionMembre() {
 
         <Box sx={{ px: 1.4, pb: 0.7, color: '#667085', fontSize: 9.5 }}>
           <Divider sx={{ mb: 0.5 }} />
-          {contactLine || "Document interne de l'église"} | Fiche à remplir lisiblement avant saisie
+          {contactLine ? `${contactLine} | ` : ''}Fiche à remplir lisiblement avant saisie
           dans l&apos;application.
         </Box>
       </Box>

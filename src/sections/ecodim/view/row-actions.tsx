@@ -5,6 +5,8 @@ import MenuList from '@mui/material/MenuList';
 import IconButton from '@mui/material/IconButton';
 import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 
+import { isDesktopAppRuntime } from 'src/utils/access-control';
+
 import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
@@ -22,6 +24,8 @@ export type ActionLigne = {
   masquee?: boolean;
 };
 
+const ACTIONS_ECRITURE = /^(Modifier|Supprimer|Retirer)$/i;
+
 type RowActionsProps = {
   actions: ActionLigne[];
 };
@@ -38,7 +42,12 @@ export function RowActions({ actions }: RowActionsProps) {
 
   const fermer = useCallback(() => setAncre(null), []);
 
-  const visibles = actions.filter((action) => !action.masquee);
+  // Dans la fenêtre Windows, on relit seulement : les entrées qui écrivent en
+  // base disparaissent, comme partout ailleurs hors Paramètres.
+  const lectureSeule = isDesktopAppRuntime();
+  const visibles = actions.filter(
+    (action) => !action.masquee && !(lectureSeule && ACTIONS_ECRITURE.test(action.libelle))
+  );
 
   if (!visibles.length) {
     return null;

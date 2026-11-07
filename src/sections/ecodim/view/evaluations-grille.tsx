@@ -692,7 +692,7 @@ export function EvaluationsGrille({
       {/* Document imprimable : les mêmes lignes, en texte. */}
       <Box sx={{ display: 'none' }}>
         <div ref={referenceImpression} className="grille-notes-print-root">
-          <div style={{ fontFamily: 'Times New Roman, serif', color: '#000', padding: 8 }}>
+          <div style={{ fontFamily: 'var(--police-etat)', color: '#000', padding: 8 }}>
             <div style={{ textAlign: 'center', fontWeight: 700, fontSize: 15 }}>
               RELEVÉ DE NOTES — {(libelleClasse || 'TOUTES LES CLASSES').toUpperCase()}
             </div>

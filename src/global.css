@@ -594,3 +594,38 @@ input[type='number']::-webkit-inner-spin-button {
   }
 
 }
+
+/* ------------------------------------------------------------------------
+   Tous les états imprimés : Arial Narrow, et texte noir dans les tableaux.
+   La police étroite fait tenir plus de colonnes sans réduire la taille du
+   texte. Elle est livrée avec Office : sur un poste qui ne l'a pas, le
+   navigateur prend la suivante de la liste (Arial).
+   ------------------------------------------------------------------------ */
+:root {
+   --police-etat: "Arial Narrow", "Arial Nova Cond", "Liberation Sans Narrow", Arial, sans-serif;
+}
+
+@media print {
+   /* Tout l'état : titres, en-tête de l'église, tableaux et pied de page. */
+   body,
+   body * {
+      font-family: var(--police-etat) !important;
+   }
+
+   table th,
+   table td {
+      color: #000;
+   }
+}
+
+/* Numéro de page en bas à droite de chaque page imprimée, pour tous les états.
+   Les navigateurs récents (Chrome et Edge 131 et plus) savent l'écrire dans la
+   marge de la page ; les plus anciens l'ignorent sans rien casser. */
+@page {
+   @bottom-right {
+      content: "Page " counter(page) " / " counter(pages);
+      font-family: "Arial Narrow", Arial, sans-serif;
+      font-size: 9pt;
+      color: #000;
+   }
+}

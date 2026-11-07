@@ -20,7 +20,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.supprimerFinanceDefinitivement = exports.restaurerFinance = exports.supprimerFinance = exports.modifierFinance = exports.ajouterFinance = exports.recupFinancesSupprimees = exports.recupFinances = exports.rejeterDemandeEnfant = exports.validerDemandeEnfant = exports.recupDemandesEnfant = exports.ajouterDemandeEnfant = exports.enregistrerAppel = exports.recupPresences = exports.enregistrerNotes = exports.recupNotes = exports.supprimerEvaluation = exports.modifierEvaluation = exports.ajouterEvaluation = exports.recupEvaluations = exports.supprimerCulte = exports.modifierCulte = exports.ajouterCulte = exports.recupCultes = exports.supprimerActivite = exports.modifierActivite = exports.ajouterActivite = exports.recupActivites = exports.supprimerEnfant = exports.modifierEnfant = exports.ajouterEnfant = exports.supprimerImageActivite = exports.ajouterImageActivite = exports.recupImagesActivite = exports.enregistrerPhotoEnfant = exports.recupEnfants = exports.supprimerMoniteur = exports.modifierMoniteur = exports.ajouterMoniteur = exports.recupMoniteurs = exports.recupClassesDuMoniteur = exports.supprimerClasse = exports.modifierClasse = exports.ajouterClasse = exports.recupClasses = exports.supprimerImage = exports.enregistrerImage = exports.dossierMedias = void 0;
+exports.modifierProgramme = exports.ajouterProgramme = exports.recupProgrammes = exports.supprimerFinanceDefinitivement = exports.restaurerFinance = exports.supprimerFinance = exports.modifierFinance = exports.ajouterFinance = exports.recupFinancesSupprimees = exports.recupFinances = exports.rejeterDemandeEnfant = exports.validerDemandeEnfant = exports.recupDemandesEnfant = exports.ajouterDemandeEnfant = exports.enregistrerAppel = exports.recupPresences = exports.enregistrerNotes = exports.recupNotes = exports.supprimerEvaluation = exports.modifierEvaluation = exports.ajouterEvaluation = exports.recupEvaluations = exports.supprimerCulte = exports.modifierCulte = exports.ajouterCulte = exports.recupCultes = exports.supprimerActivite = exports.modifierActivite = exports.ajouterActivite = exports.recupActivites = exports.supprimerEnfant = exports.modifierEnfant = exports.ajouterEnfant = exports.supprimerImageActivite = exports.ajouterImageActivite = exports.recupImagesActivite = exports.enregistrerPhotoEnfant = exports.recupEnfants = exports.supprimerMoniteur = exports.modifierMoniteur = exports.ajouterMoniteur = exports.recupMoniteurs = exports.recupClassesDuMoniteur = exports.supprimerClasse = exports.modifierClasse = exports.ajouterClasse = exports.recupClasses = exports.supprimerImage = exports.enregistrerImage = exports.dossierMedias = void 0;
+exports.supprimerProgramme = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const db_1 = require("../../db");
@@ -1223,7 +1224,83 @@ const supprimerFinanceDefinitivement = (idFinanceEcodim, idUtilisateur) => __awa
     return true;
 });
 exports.supprimerFinanceDefinitivement = supprimerFinanceDefinitivement;
+// ------------------------------------------------------- programme des moniteurs
+/**
+ * La grille du programme, telle que l'écran l'envoie.
+ *
+ * Elle arrive en objet ; on la range en texte. Un texte déjà JSON est accepté
+ * tel quel, pour qu'un renvoi de la ligne relue ne la sérialise pas deux fois.
+ */
+const grilleEnTexte = (grille) => {
+    if (grille === null || grille === undefined || grille === "")
+        return "";
+    if (typeof grille === "string")
+        return grille;
+    return JSON.stringify(grille);
+};
+const lireGrille = (texteGrille) => {
+    try {
+        const valeur = JSON.parse(String(texteGrille || ""));
+        return valeur && typeof valeur === "object" ? valeur : null;
+    }
+    catch (_erreur) {
+        return null;
+    }
+};
+const CHAMPS_PROGRAMME = [
+    { nom: "titreProgramme", valeur: (d) => texte(d.titreProgramme) },
+    { nom: "dateDebutProgramme", valeur: (d) => texte(d.dateDebutProgramme) || null },
+    { nom: "dateFinProgramme", valeur: (d) => texte(d.dateFinProgramme) || null },
+    { nom: "enteteProgramme", valeur: (d) => texte(d.enteteProgramme) },
+    { nom: "themeAnnuel", valeur: (d) => texte(d.themeAnnuel) },
+    { nom: "passageTheme", valeur: (d) => texte(d.passageTheme) },
+    { nom: "consignesProgramme", valeur: (d) => texte(d.consignesProgramme) },
+    { nom: "messageFinProgramme", valeur: (d) => texte(d.messageFinProgramme) },
+    { nom: "grilleProgramme", valeur: (d) => { var _a; return grilleEnTexte((_a = d.grilleProgramme) !== null && _a !== void 0 ? _a : d.grille); } },
+    { nom: "dateModification", valeur: () => new Date().toISOString() },
+];
+const COLONNES_PROGRAMME = CHAMPS_PROGRAMME.map((champ) => champ.nom).join(", ");
+const PLACEHOLDERS_PROGRAMME = CHAMPS_PROGRAMME.map(() => "?").join(",");
+const AFFECTATIONS_PROGRAMME = CHAMPS_PROGRAMME.map((champ) => `${champ.nom} = ?`).join(", ");
+const valeursProgramme = (data) => CHAMPS_PROGRAMME.map((champ) => champ.valeur(data));
+const verifierProgramme = (data) => {
+    if (!texte(data === null || data === void 0 ? void 0 : data.titreProgramme)) {
+        throw new Error("Donnez un titre au programme.");
+    }
+};
+/** Programmes de l'église, du plus récent au plus ancien, grille déjà relue. */
+const recupProgrammes = (idUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
+    const lignes = yield (0, db_1._selectSql)(`SELECT * FROM ecodim_programme
+      WHERE idUtilisateur = ?
+      ORDER BY dateDebutProgramme DESC, idProgrammeEcodim DESC`, [idUtilisateur]);
+    return (Array.isArray(lignes) ? lignes : []).map((ligne) => (Object.assign(Object.assign({}, ligne), { grille: lireGrille(ligne.grilleProgramme) })));
+});
+exports.recupProgrammes = recupProgrammes;
+const ajouterProgramme = (data) => __awaiter(void 0, void 0, void 0, function* () {
+    var _u, _v;
+    verifierProgramme(data);
+    const resultat = yield (0, db_1._executeSql)(`INSERT INTO ecodim_programme (${COLONNES_PROGRAMME}, idUtilisateur)
+     VALUES (${PLACEHOLDERS_PROGRAMME},?)`, [...valeursProgramme(data), data.idUtilisateur]);
+    return (_v = (_u = resultat === null || resultat === void 0 ? void 0 : resultat.insertId) !== null && _u !== void 0 ? _u : resultat === null || resultat === void 0 ? void 0 : resultat.lastID) !== null && _v !== void 0 ? _v : null;
+});
+exports.ajouterProgramme = ajouterProgramme;
+const modifierProgramme = (data) => __awaiter(void 0, void 0, void 0, function* () {
+    verifierProgramme(data);
+    yield (0, db_1._executeSql)(`UPDATE ecodim_programme SET ${AFFECTATIONS_PROGRAMME}
+      WHERE idProgrammeEcodim = ? AND idUtilisateur = ?`, [...valeursProgramme(data), data.idProgrammeEcodim, data.idUtilisateur]);
+    return true;
+});
+exports.modifierProgramme = modifierProgramme;
+const supprimerProgramme = (idProgrammeEcodim, idUtilisateur) => __awaiter(void 0, void 0, void 0, function* () {
+    yield (0, db_1._executeSql)(`DELETE FROM ecodim_programme WHERE idProgrammeEcodim = ? AND idUtilisateur = ?`, [idProgrammeEcodim, idUtilisateur]);
+    return true;
+});
+exports.supprimerProgramme = supprimerProgramme;
 exports.default = {
+    recupProgrammes: exports.recupProgrammes,
+    ajouterProgramme: exports.ajouterProgramme,
+    modifierProgramme: exports.modifierProgramme,
+    supprimerProgramme: exports.supprimerProgramme,
     recupClasses: exports.recupClasses,
     ajouterClasse: exports.ajouterClasse,
     modifierClasse: exports.modifierClasse,

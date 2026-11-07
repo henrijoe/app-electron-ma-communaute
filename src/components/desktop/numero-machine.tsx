@@ -35,7 +35,7 @@ export function useStatutMachine(actif = true): StatutMachine {
           });
         }
       })
-      // Sans le numéro, le champ du code reste utilisable : on ne bloque pas l'écran.
+      // Sans le numéro, le champ du code reste utilisable : on ne bloque pas l'écran. 
       .catch(() => undefined);
 
     return () => {

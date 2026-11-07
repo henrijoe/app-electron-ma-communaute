@@ -35,6 +35,13 @@ export const MEMBER_LIST_PRINT_PAGE_STYLE = `
   margin: 5mm;
 }
 
+/* Règle générale aussi : placée en dernier à l'impression (utils/impression.ts),
+   c'est elle qui fixe le paysage — Chrome ne retenait pas la règle nommée. */
+@page {
+  size: A4 landscape;
+  margin: 5mm 5mm 8mm;
+}
+
 .member-list-print-root {
   page: memberListLandscape;
 }
@@ -89,17 +96,20 @@ const joinValues = (...values: Array<string | undefined>): string =>
 // par défaut une cellule laisse son contenu déborder au lieu de le couper).
 const thStyle: React.CSSProperties = {
   border: "1px solid #000",
-  padding: "8px",
+  padding: "4px",
   textAlign: "center",
   fontWeight: "bold",
-  background: "#f2f2f2",
+  background: "#ffffff",
   overflow: "hidden",
-  wordBreak: "break-word",
+  // Un titre de colonne passe à la ligne entre deux mots, pas au milieu
+  // (« Baptisé(e / ) »).
+  wordBreak: "normal",
+  overflowWrap: "normal",
 };
 
 const tdStyle: React.CSSProperties = {
   border: "1px solid #000",
-  padding: "6px",
+  padding: "3px 4px",
   verticalAlign: "middle",
   overflow: "hidden",
   wordBreak: "break-word",
@@ -238,7 +248,6 @@ export const ListeDesMembres = ({ membres, sousTitre }: ListeDesMembresProps) =>
             },
             '.member-list-print-root': {
               boxShadow: 'none !important',
-              paddingBottom: '10mm',
             },
             // Le pied de page reste colle en bas de la feuille et se repete sur
             // chaque page si la liste des membres déborde sur plusieurs pages.
@@ -277,6 +286,10 @@ export const ListeDesMembres = ({ membres, sousTitre }: ListeDesMembresProps) =>
           border: '1px solid #e4e7ec',
           boxShadow: '0 18px 50px rgba(15, 23, 42, 0.16)',
           '@media print': {
+            // Toute la largeur imprimable, quelle que soit l'orientation choisie
+            // dans la fenêtre d'impression : à 281 mm sur une page portrait, la
+            // liste était réduite et laissait de grandes marges.
+            width: '100%',
             border: 0,
             boxShadow: 'none',
           },
@@ -338,11 +351,14 @@ export const ListeDesMembres = ({ membres, sousTitre }: ListeDesMembresProps) =>
         </Box>
 
         {/* Corps du document : tableau HTML natif (plus simple a maitriser en impression que les composants MUI Table). */}
-        <Box sx={{ px: 1.6, pt: 1.6, pb: 1.6 }}>
+        <Box sx={{ px: 1.6, pt: 1.6, pb: 1.6, '@media print': { px: 0, pt: 1, pb: 0 } }}>
         <table
           style={{
             width: "100%",
             borderCollapse: "collapse",
+            // Texte du tableau plus petit, pour tenir plus de membres par page.
+            fontSize: "12px",
+            lineHeight: 1.2,
             // Largeurs de colonnes fixees en % (voir width sur chaque <th> ci-dessous)
             // plutôt que calculées automatiquement, pour un rendu stable à l'impression.
             tableLayout: "fixed",
@@ -415,8 +431,8 @@ export const ListeDesMembres = ({ membres, sousTitre }: ListeDesMembresProps) =>
                         src={photoUrl}
                         alt=""
                         style={{
-                          width: 40,
-                          height: 40,
+                          width: 28,
+                          height: 28,
                           borderRadius: "50%",
                           objectFit: "cover",
                         }}
@@ -424,8 +440,8 @@ export const ListeDesMembres = ({ membres, sousTitre }: ListeDesMembresProps) =>
                     ) : (
                       <div
                         style={{
-                          width: 40,
-                          height: 40,
+                          width: 28,
+                          height: 28,
                           borderRadius: "50%",
                           background: "#ddd",
                           display: "flex",
@@ -433,6 +449,7 @@ export const ListeDesMembres = ({ membres, sousTitre }: ListeDesMembresProps) =>
                           alignItems: "center",
                           margin: "auto",
                           fontWeight: 700,
+                          fontSize: "11px",
                         }}
                       >
                         {`${item.nomMembre?.charAt(0) || ""}${item.prenomMembre?.charAt(0) || ""}`}
@@ -453,9 +470,9 @@ export const ListeDesMembres = ({ membres, sousTitre }: ListeDesMembresProps) =>
 
                     <div
                       style={{
-                        fontSize: "13px",
-                        color: "#666",
-                        marginTop: 2,
+                        fontSize: "11px",
+                        color: "#333",
+                        marginTop: 1,
                         wordBreak: "break-word",
                       }}>
                       {formatContact(item.contactMembre)}
@@ -499,12 +516,7 @@ export const ListeDesMembres = ({ membres, sousTitre }: ListeDesMembresProps) =>
         </table>
         </Box>
 
-        {/* Pied de page : coordonnees de l'eglise, ou mention par defaut si rien n'est renseigne. */}
-        <Box className="member-list-print-footer" sx={{ px: 1.6, pb: 1, mt: 2 }}>
-          <Typography sx={{ color: '#667085', fontSize: 10 }}>
-            {contactLine || "Document interne de l'église"}
-          </Typography>
-        </Box>
+        {/* Plus de pied de page : le numéro de page s'imprime dans la marge (global.css). */}
       </Box>
     </>
   );

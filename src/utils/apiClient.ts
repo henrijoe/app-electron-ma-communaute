@@ -671,6 +671,67 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  // Membres rattachés aux familles de jeunesse (feuille imprimée de la famille).
+  getMembresFamillesJeunesse: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupmembresfamillejeunessebyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  saveMembresFamilleJeunesse: (data: { idFamilleJeunesse: number; idUtilisateur: number; membres: number[] }) =>
+    request<IServerResponse>('communaute/enregistrermembresfamillejeunesse', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Programme d'activités d'une section (jeunesse) sur une période.
+  getProgrammesActivite: (idUtilisateur: number | string, section = 'jeunesse') =>
+    request<IServerResponse>(
+      `communaute/recupprogrammeactivitebyutilisateur/${idUtilisateur}?section=${encodeURIComponent(section)}`,
+      { method: 'GET' }
+    ),
+
+  createProgrammeActivite: (data: any) =>
+    request<IServerResponse>('communaute/insererprogrammeactivite', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateProgrammeActivite: (data: any) =>
+    request<IServerResponse>('communaute/modifierprogrammeactivite', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteProgrammeActivite: (data: { idProgrammeActivite: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/supprimerprogrammeactivite', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Programme de direction et d'enseignement des moniteurs sur une période.
+  getProgrammesEcodim: (idUtilisateur: number | string) =>
+    request<IServerResponse>(`communaute/recupprogrammeecodimbyutilisateur/${idUtilisateur}`, {
+      method: 'GET',
+    }),
+
+  createProgrammeEcodim: (data: any) =>
+    request<IServerResponse>('communaute/insererprogrammeecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateProgrammeEcodim: (data: any) =>
+    request<IServerResponse>('communaute/modifierprogrammeecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteProgrammeEcodim: (data: { idProgrammeEcodim: number; idUtilisateur: number }) =>
+    request<IServerResponse>('communaute/supprimerprogrammeecodim', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // Caisse de l'école du dimanche : recettes et dépenses du département, tenues
   // à part de la comptabilité de l'église.
   getFinancesEcodim: (idUtilisateur: number | string) =>

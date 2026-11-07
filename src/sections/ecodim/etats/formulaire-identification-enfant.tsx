@@ -94,7 +94,7 @@ export function FormulaireIdentificationEnfant({ enfant }: FormulaireIdentificat
           margin: '0 auto',
           color: '#000',
           backgroundColor: '#fff',
-          fontFamily: 'Times New Roman, serif',
+          fontFamily: 'var(--police-etat)',
         }}
       >
         <EnTeteEglise identite={identite} sousTitre="DÉPARTEMENT ENFANTS — ÉCOLE DU DIMANCHE" />

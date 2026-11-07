@@ -10,14 +10,12 @@ import ReactToPrint from 'react-to-print';
 import { useRef, useMemo, useState, useEffect, forwardRef, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
-import Menu from '@mui/material/Menu';
 import Table from '@mui/material/Table';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Tooltip from '@mui/material/Tooltip';
-import MenuItem from '@mui/material/MenuItem';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import TableBody from '@mui/material/TableBody';
@@ -27,27 +25,20 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
 import PrintRounded from '@mui/icons-material/Print';
-import TableContainer from '@mui/material/TableContainer';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import AddRounded from '@mui/icons-material/AddRounded';
+import TableContainer from '@mui/material/TableContainer';
 import EditRounded from '@mui/icons-material/EditRounded';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import CircularProgress from '@mui/material/CircularProgress';
 import EventNoteRounded from '@mui/icons-material/EventNoteRounded';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+
+import { isDesktopAppRuntime } from 'src/utils/access-control';
+import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
 
 import { Scrollbar } from 'src/components/scrollbar';
 import ConfirmDialog from 'src/components/alert/confirmDialog';
-import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
-import {
-  exportDesktopPdf,
-  canUseDesktopPrint,
-  openDesktopPrintPreview,
-} from 'src/utils/desktop-print';
-import { isDesktopAppRuntime } from 'src/utils/access-control';
 import { PRINT_PORTRAIT_PAGE_STYLE } from 'src/components/print/print-document';
 import { useNotificationSnackbar } from 'src/components/alert/notificationSnackbar';
 
@@ -135,8 +126,6 @@ export function ProgrammeEgliseManager({ idUtilisateur }: ProgrammeEgliseManager
   const { showNotification, NotificationComponent } = useNotificationSnackbar();
 
   const printRef = useRef<HTMLDivElement>(null);
-  const [printMenuAnchor, setPrintMenuAnchor] = useState<null | HTMLElement>(null);
-  const isDesktopPrint = canUseDesktopPrint();
   // L'impression ne se propose pas dans l'application installée.
   const isDesktopApp = isDesktopAppRuntime();
 
@@ -312,64 +301,32 @@ export function ProgrammeEgliseManager({ idUtilisateur }: ProgrammeEgliseManager
             : 'Aucun culte programmé pour le moment.'}
         </Typography>
         <Stack direction="row" spacing={1.5} sx={{ flexShrink: 0 }}>
+          {/* Un seul état à imprimer : le bouton l'ouvre directement, sans menu. */}
           {!isDesktopApp && (
-            <Button
-              variant="outlined"
-              color="inherit"
-              startIcon={<PrintRounded fontSize="small" />}
-              endIcon={<KeyboardArrowDownIcon fontSize="small" />}
-              disabled={programmes.length === 0}
-              onClick={(event) => setPrintMenuAnchor(event.currentTarget)}
-            >
-              Imprimer
+            <ReactToPrint
+              trigger={() => (
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  startIcon={<PrintRounded fontSize="small" />}
+                  disabled={programmes.length === 0}
+                >
+                  Imprimer
+                </Button>
+              )}
+              content={() => printRef.current}
+              pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
+              documentTitle="Programme de service"
+            />
+          )}
+          {!isDesktopApp && (
+            <Button variant="contained" startIcon={<AddRounded />} onClick={openAddDialog}>
+              Ajouter un programme
             </Button>
           )}
-          <Button variant="contained" startIcon={<AddRounded />} onClick={openAddDialog}>
-            Ajouter un programme
-          </Button>
         </Stack>
       </Stack>
 
-      <Menu anchorEl={printMenuAnchor} open={Boolean(printMenuAnchor)} onClose={() => setPrintMenuAnchor(null)}>
-        {isDesktopPrint ? (
-          [
-            <MenuItem
-              key="preview"
-              onClick={async () => {
-                setPrintMenuAnchor(null);
-                await openDesktopPrintPreview(printRef.current, {
-                  title: 'Aperçu - Programme de service',
-                  fileName: 'programme-eglise',
-                  orientation: 'portrait',
-                });
-              }}
-            >
-              <VisibilityIcon fontSize="small" sx={{ mr: 1 }} /> Aperçu
-            </MenuItem>,
-            <MenuItem
-              key="pdf"
-              onClick={async () => {
-                setPrintMenuAnchor(null);
-                await exportDesktopPdf(printRef.current, {
-                  title: 'Programme de service',
-                  fileName: 'programme-eglise',
-                  orientation: 'portrait',
-                });
-              }}
-            >
-              <PictureAsPdfIcon fontSize="small" sx={{ mr: 1 }} /> Exporter en PDF
-            </MenuItem>,
-          ]
-        ) : (
-          <MenuItem onClick={() => setPrintMenuAnchor(null)}>
-            <ReactToPrint
-              trigger={() => <div>Imprimer</div>}
-              content={() => printRef.current}
-              pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
-            />
-          </MenuItem>
-        )}
-      </Menu>
 
       <div style={{ display: 'none' }}>
         <ComponentToPrint ref={printRef} programmes={programmes} horaires={horaires} themeAnnee={themeAnnee} />
@@ -404,7 +361,7 @@ export function ProgrammeEgliseManager({ idUtilisateur }: ProgrammeEgliseManager
                         <TableCell>Offrandes</TableCell>
                         <TableCell>Annonces</TableCell>
                         <TableCell>Thématiques / Observations</TableCell>
-                        <TableCell align="right">Actions</TableCell>
+                        {!isDesktopApp && <TableCell align="right">Actions</TableCell>}
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -418,6 +375,7 @@ export function ProgrammeEgliseManager({ idUtilisateur }: ProgrammeEgliseManager
                           <TableCell>{programme.offrandes || '-'}</TableCell>
                           <TableCell>{programme.annonces || '-'}</TableCell>
                           <TableCell>{programme.thematique || '-'}</TableCell>
+                          {!isDesktopApp && (
                           <TableCell align="right">
                             <Tooltip title="Modifier">
                               <IconButton size="small" onClick={() => openEditDialog(programme)}>
@@ -430,6 +388,7 @@ export function ProgrammeEgliseManager({ idUtilisateur }: ProgrammeEgliseManager
                               </IconButton>
                             </Tooltip>
                           </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>

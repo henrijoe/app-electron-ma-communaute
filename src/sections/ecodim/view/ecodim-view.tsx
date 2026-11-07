@@ -42,6 +42,7 @@ import {
   EventRounded,
   FactCheckRounded,
   SavingsRounded,
+  CalendarMonthRounded,
   TableChartRounded,
   PhotoCameraRounded,
   PersonRounded,
@@ -74,6 +75,7 @@ import { SelecteurMembre } from './selecteur-membre';
 import { ClassesDuMoniteur } from './classes-du-moniteur';
 import { AssiduiteGrille } from './assiduite-grille';
 import { FinancesGrille } from './finances-grille';
+import { ProgrammesGrille } from './programmes-grille';
 import { InscriptionQrEnfant } from './inscription-qr-enfant';
 import { EvaluationsGrille } from './evaluations-grille';
 import { RowActions } from './row-actions';
@@ -309,6 +311,13 @@ const CARTES = [
     couleur: 'success' as const,
     icone: <SavingsRounded />,
   },
+  {
+    // Ajouté après les finances, pour la même raison : ne décaler aucun onglet.
+    libelle: 'Programmes',
+    ajout: 'Nouveau programme',
+    couleur: 'primary' as const,
+    icone: <CalendarMonthRounded />,
+  },
 ];
 
 /**
@@ -333,6 +342,7 @@ const FILTRES_PAR_ONGLET: ('classe' | 'periode' | 'moniteur' | 'inscription')[][
   ['classe', 'periode', 'moniteur'], // Activités
   [], // Assiduité : la grille porte ses propres filtres
   ['periode'], // Finances
+  [], // Programmes : chaque programme porte déjà sa période
 ];
 
 /**
@@ -494,6 +504,8 @@ export function EcodimView() {
   const [finances, setFinances] = useState<any[]>([]);
   /** Compteur d'ouvertures demandées au dialogue de saisie de la caisse. */
   const [demandeAjoutFinance, setDemandeAjoutFinance] = useState(0);
+  const [programmes, setProgrammes] = useState<any[]>([]);
+  const [demandeAjoutProgramme, setDemandeAjoutProgramme] = useState(0);
   const [culteEnEdition, setCulteEnEdition] = useState<any | null>(null);
   const [editeurCulteOuvert, setEditeurCulteOuvert] = useState(false);
   const [recherche, setRecherche] = useState('');
@@ -538,6 +550,7 @@ export function EcodimView() {
       setNotes([]);
       setPresences([]);
       setFinances([]);
+      setProgrammes([]);
       return;
     }
 
@@ -554,6 +567,7 @@ export function EcodimView() {
         notesRes,
         presencesRes,
         financesRes,
+        programmesRes,
       ] = await Promise.allSettled([
           apiClient.getClassesEcodim(idUtilisateur),
           apiClient.getMoniteursEcodim(idUtilisateur),
@@ -564,6 +578,7 @@ export function EcodimView() {
           apiClient.getNotesEcodim(idUtilisateur),
           apiClient.getPresencesEcodim(idUtilisateur),
           apiClient.getFinancesEcodim(idUtilisateur),
+          apiClient.getProgrammesEcodim(idUtilisateur),
         ]);
 
       const extraire = (resultat: PromiseSettledResult<any>): any[] =>
@@ -580,6 +595,7 @@ export function EcodimView() {
       setNotes(extraire(notesRes));
       setPresences(extraire(presencesRes));
       setFinances(extraire(financesRes));
+      setProgrammes(extraire(programmesRes));
     } finally {
       setChargement(false);
     }
@@ -950,6 +966,7 @@ export function EcodimView() {
       // grille elle-même, où il tient en toutes lettres avec sa devise ; réduit
       // au chiffre nu d'une carte, il se confondrait avec un effectif.
       financesFiltrees.length,
+      programmes.length,
     ],
     [
       classesFiltrees,
@@ -960,6 +977,7 @@ export function EcodimView() {
       activitesFiltrees,
       seancesAppelees,
       financesFiltrees,
+      programmes,
     ]
   );
 
@@ -974,6 +992,8 @@ export function EcodimView() {
     // L'assiduité non plus : elle a ses propres filtres de classe et de mois.
     0,
     // La caisse porte sa propre pagination, comme les deux grilles ci-dessus.
+    0,
+    // Les programmes aussi ont leur propre liste.
     0,
   ][onglet];
 
@@ -1019,6 +1039,8 @@ export function EcodimView() {
       // successifs sur le « + » doivent rouvrir la saisie, ce qu'un booléen
       // déjà à vrai ne ferait pas.
       setDemandeAjoutFinance((precedent) => precedent + 1);
+    } else if (index === 8) {
+      setDemandeAjoutProgramme((precedent) => precedent + 1);
     }
 
     // L'assiduité n'ouvre aucun formulaire : l'appel se saisit dans la grille.
@@ -1033,7 +1055,7 @@ export function EcodimView() {
    * sous les yeux. Le bouton disparaît donc sur ces deux onglets.
    */
   const voletExportable = (
-    ['classes', 'moniteurs', 'enfants', 'cultes', null, 'activites', null, 'finances'] as const
+    ['classes', 'moniteurs', 'enfants', 'cultes', null, 'activites', null, 'finances', null] as const
   )[onglet];
 
   const apresEcriture = useCallback(
@@ -1492,6 +1514,8 @@ export function EcodimView() {
           <Tab label="Évaluations" />
           <Tab label="Activités" />
           <Tab label="Assiduité" />
+          <Tab label="Finances" />
+          <Tab label="Programmes" />
         </Tabs>
 
         <Divider />
@@ -1499,7 +1523,7 @@ export function EcodimView() {
         {/* Les deux grilles — évaluations et assiduité — ont leurs propres filtres
             de classe et de période. La recherche générale n'agit pas sur elles :
             l'afficher là promettrait quelque chose qui ne se produit pas. */}
-        {onglet !== 4 && onglet !== 6 && (
+        {onglet !== 4 && onglet !== 6 && onglet !== 8 && (
           <Box sx={{ p: 2 }}>
             <Stack
               direction={{ xs: 'column', md: 'row' }}
@@ -2190,11 +2214,31 @@ export function EcodimView() {
           {onglet === 7 && (
             <Box sx={{ p: 2 }}>
               <FinancesGrille
+                modifiable={!isDesktopApp}
                 finances={financesFiltrees}
                 classes={classes}
                 idUtilisateur={idUtilisateur}
                 chargement={chargement}
                 demandeAjout={demandeAjoutFinance}
+                onEnregistre={charger}
+                onNotifier={showNotification}
+              />
+            </Box>
+          )}
+
+          {onglet === 8 && (
+            <Box sx={{ p: 2 }}>
+              <ProgrammesGrille
+                programmes={programmes}
+                classes={classes}
+                moniteurs={moniteurs}
+                idUtilisateur={idUtilisateur}
+                nomEglise={
+                  (sessionUser as any)?.nomTemple || (sessionUser as any)?.nomEgliseCourt || ''
+                }
+                modifiable={!isDesktopApp}
+                chargement={chargement}
+                demandeAjout={demandeAjoutProgramme}
                 onEnregistre={charger}
                 onNotifier={showNotification}
               />
@@ -2224,7 +2268,7 @@ export function EcodimView() {
             paginées : elles comptent leurs propres lignes et portent leur propre
             pagination. Cette barre y affichait « 0–0 sur 0 », ce qui laissait
             croire à un tableau vide juste en dessous de vingt-quatre lignes. */}
-        {onglet !== 4 && onglet !== 6 && onglet !== 7 && (
+        {onglet !== 4 && onglet !== 6 && onglet !== 7 && onglet !== 8 && (
           <TablePagination
             component="div"
             page={page}
@@ -3562,6 +3606,7 @@ export function EcodimView() {
       </Dialog>
 
       <CulteEditorDialog
+        modifiable={!isDesktopApp}
         ouvert={editeurCulteOuvert}
         culte={culteEnEdition}
         classes={classes}

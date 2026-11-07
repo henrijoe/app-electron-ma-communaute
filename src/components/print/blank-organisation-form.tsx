@@ -22,6 +22,11 @@ export type BlankOrganisationField = {
   size?: number;
   type?: 'line' | 'textarea' | 'checks';
   options?: string[];
+  /**
+   * Valeur déjà connue : la fiche s'imprime alors remplie, la valeur écrite sur
+   * la ligne. Pour des cases à cocher, l'option égale à la valeur est cochée.
+   */
+  value?: string | number | null;
 };
 
 export type BlankOrganisationSection = {
@@ -35,7 +40,7 @@ type BlankOrganisationFormProps = {
   sections: BlankOrganisationSection[];
 };
 
-type BlankLineProps = Pick<BlankOrganisationField, 'label' | 'type' | 'options'>;
+type BlankLineProps = Pick<BlankOrganisationField, 'label' | 'type' | 'options' | 'value'>;
 
 const getLogoUrl = (identity: PrintIdentity): string | null => {
   const logoPath = identity.logoEglise || identity.logoUtilisateur;
@@ -53,7 +58,9 @@ const joinValues = (...values: Array<string | undefined>): string =>
     .filter(Boolean)
     .join(' - ');
 
-function BlankLine({ label, type = 'line', options = [] }: BlankLineProps) {
+function BlankLine({ label, type = 'line', options = [], value }: BlankLineProps) {
+  const valeur = value === null || value === undefined ? '' : String(value).trim();
+
   if (type === 'checks') {
     return (
       <Box>
@@ -69,8 +76,16 @@ function BlankLine({ label, type = 'line', options = [] }: BlankLineProps) {
                   height: 14,
                   border: '1.6px solid #0f274a',
                   borderRadius: 0.4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 11,
+                  fontWeight: 900,
+                  lineHeight: 1,
                 }}
-              />
+              >
+                {valeur && valeur.toLowerCase() === option.toLowerCase() ? '✓' : ''}
+              </Box>
               <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: '#344054' }}>
                 {option}
               </Typography>
@@ -95,8 +110,21 @@ function BlankLine({ label, type = 'line', options = [] }: BlankLineProps) {
               ? 'repeating-linear-gradient(to bottom, transparent 0, transparent 22px, #101828 23px)'
               : 'none',
           backgroundSize: '100% 23px',
+          // La valeur connue s'écrit sur la ligne, comme on l'aurait écrite à la main.
+          display: 'flex',
+          alignItems: type === 'textarea' ? 'flex-start' : 'flex-end',
+          px: 0.5,
+          pb: '2px',
+          fontSize: 13,
+          fontWeight: 700,
+          color: '#000',
+          lineHeight: '23px',
+          whiteSpace: type === 'textarea' ? 'pre-wrap' : 'nowrap',
+          overflow: 'hidden',
         }}
-      />
+      >
+        {valeur}
+      </Box>
     </Box>
   );
 }
@@ -240,7 +268,7 @@ export function BlankOrganisationForm({ title, subtitle, sections }: BlankOrgani
               <Grid container spacing={1.25}>
                 {section.fields.map((field) => (
                   <Grid item xs={field.size || 6} key={`${section.title}-${field.label}`}>
-                    <BlankLine label={field.label} type={field.type} options={field.options} />
+                    <BlankLine label={field.label} type={field.type} options={field.options} value={field.value} />
                   </Grid>
                 ))}
               </Grid>
@@ -271,7 +299,7 @@ export function BlankOrganisationForm({ title, subtitle, sections }: BlankOrgani
 
         <Box className="blank-organisation-form-footer" sx={{ px: 1.4, pb: 1.1, mt: 'auto' }}>
           <Typography sx={{ color: '#667085', fontSize: 10 }}>
-            {contactLine || "Document interne de l'église"}
+            {contactLine}
           </Typography>
         </Box>
       </Box>

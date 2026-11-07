@@ -4,6 +4,8 @@ import { Router } from 'src/routes/sections';
 
 import { useScrollToTop } from 'src/hooks/use-scroll-to-top';
 
+import { installerOrdreDesStylesDImpression } from 'src/utils/impression';
+
 import { ThemeProvider } from 'src/theme/theme-provider';
 
 import { AppRuntimeBootstrap } from 'src/components/desktop/app-runtime-bootstrap';
@@ -11,6 +13,9 @@ import { DesktopUpdateDialog } from 'src/components/desktop/desktop-update-dialo
 import { DesktopSecurityBootstrap } from 'src/components/desktop/desktop-security-bootstrap';
 
 // ----------------------------------------------------------------------
+
+// Chaque état imprime avec son propre format de page (voir utils/impression.ts).
+installerOrdreDesStylesDImpression();
 
 export default function App() {
   useScrollToTop();

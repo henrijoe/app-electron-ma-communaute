@@ -52,14 +52,15 @@ const styleTableau: React.CSSProperties = {
 };
 
 const styleCellule: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
+  border: '1px solid #4b5563',
+  color: '#000',
   padding: '6px 8px',
   textAlign: 'left',
 };
 
 const styleEntete: React.CSSProperties = {
   ...styleCellule,
-  backgroundColor: '#eef2f7',
+  backgroundColor: '#dbe5f1',
   fontWeight: 700,
 };
 

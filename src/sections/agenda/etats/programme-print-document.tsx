@@ -60,21 +60,21 @@ export function ProgrammePrintDocument({ programmes, horaires, themeAnnee }: Pro
         <PrintTable minWidth={720}>
           <TableHead>
             <TableRow>
-              <TableCell>Jour</TableCell>
-              <TableCell align="center">Date</TableCell>
+              <TableCell sx={{ width: '11%' }}>Jour</TableCell>
+              <TableCell align="center" sx={{ width: '7%' }}>Date</TableCell>
               <TableCell>Direction</TableCell>
               <TableCell>Sainte Cène</TableCell>
               <TableCell>Prédication</TableCell>
               <TableCell>Offrandes</TableCell>
               <TableCell>Annonces</TableCell>
-              <TableCell>Thématiques / Observations</TableCell>
+              <TableCell sx={{ width: '20%' }}>Thématiques / Observations</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {groups.map(([month, monthProgrammes]) => (
               <Fragment key={month}>
                 <TableRow>
-                  <TableCell colSpan={8} sx={{ fontWeight: 900, bgcolor: '#eaf2ff !important' }}>
+                  <TableCell colSpan={8} sx={{ fontWeight: 700 }}>
                     {month}
                   </TableCell>
                 </TableRow>

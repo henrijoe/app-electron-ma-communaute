@@ -1,8 +1,8 @@
 import type { IMembre } from 'src/store/membreSlice';
 
 import * as XLSX from 'xlsx';
-import ReactToPrint from 'react-to-print';
 import { useDispatch, useSelector } from 'react-redux';
+import ReactToPrint, { useReactToPrint } from 'react-to-print';
 import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
 import { useTheme } from '@mui/material/styles';
@@ -11,22 +11,29 @@ import {
   AddRounded,
   EditRounded,
   PrintRounded,
+  GroupsRounded,
   DeleteRounded,
   SearchRounded,
   VisibilityRounded,
   FileDownloadRounded,
+  DescriptionOutlined,
+  KeyboardArrowDownRounded,
 } from '@mui/icons-material';
 import {
   Box,
+  Tab,
+  Menu,
   Card,
   Chip,
   Grid,
+  Tabs,
   Alert,
   Stack,
   Table,
   Button,
   Dialog,
   Tooltip,
+  MenuItem,
   TableRow,
   TableBody,
   TableCell,
@@ -36,6 +43,7 @@ import {
   Typography,
   DialogTitle,
   Autocomplete,
+  ListSubheader,
   DialogActions,
   DialogContent,
   InputAdornment,
@@ -64,10 +72,14 @@ import {
   PrintTable,
   PrintEmptyState,
   PrintDocumentLayout,
+  getPrintableLogoUrl,
   PRINT_PORTRAIT_PAGE_STYLE,
   PRINT_LANDSCAPE_PAGE_STYLE,
 } from 'src/components/print/print-document';
 
+import { MembresFamilleDialog } from './membres-famille-dialog';
+import { ProgrammeActiviteManager } from './programme-activite-manager';
+import { FeuilleFamilleJeunesse } from '../etats/feuille-famille-jeunesse';
 import { FicheFamilleJeunesseRenseignement } from '../ficheFamilleJeunesseRenseignement';
 
 type MemberOption = {
@@ -142,6 +154,20 @@ export function FamilleJeunesseView() {
     || null;
   const canManageFamille = canManageModule(appUserConnected || authUtilisateurData, 'familleJeunesse');
 
+  const [onglet, setOnglet] = useState(0);
+  // Famille dont on gère les membres (et imprime la feuille).
+  const [familleMembres, setFamilleMembres] = useState<IFamilleJeunesse | null>(null);
+  const feuilleViergeRef = useRef<HTMLDivElement>(null);
+  const [menuImpression, setMenuImpression] = useState<HTMLElement | null>(null);
+  const [menuModeles, setMenuModeles] = useState<HTMLElement | null>(null);
+  // Famille de la fiche de renseignement à imprimer : null pour la fiche vierge.
+  const [familleFiche, setFamilleFiche] = useState<IFamilleJeunesse | null>(null);
+  const [demandeFiche, setDemandeFiche] = useState(0);
+  // Membres rattachés à chaque famille, pour la feuille remplie.
+  const [liensFamilles, setLiensFamilles] = useState<any[]>([]);
+  // Famille de la feuille à imprimer : null pour la feuille vierge.
+  const [familleFeuille, setFamilleFeuille] = useState<IFamilleJeunesse | null>(null);
+  const [demandeFeuille, setDemandeFeuille] = useState(0);
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<IMembre[]>([]);
   const [filterName, setFilterName] = useState('');
@@ -398,10 +424,105 @@ export function FamilleJeunesseView() {
     showNotification(`${rows.length} famille(s) exportée(s).`, 'success');
   }, [filteredData, formatMemberWithContact, showNotification]);
 
+
+  const chargerLiensFamilles = useCallback(async () => {
+    if (!currentUserId) return;
+    try {
+      const reponse = await apiClient.getMembresFamillesJeunesse(currentUserId);
+      setLiensFamilles(Array.isArray(reponse?.data) ? reponse.data : []);
+    } catch {
+      setLiensFamilles([]);
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    chargerLiensFamilles();
+  }, [chargerLiensFamilles]);
+
+  const membresDeLaFamille = (famille: IFamilleJeunesse) =>
+    liensFamilles.filter((lien) => Number(lien.idFamilleJeunesse) === Number(famille.idFamilleJeunesse));
+
+  const imprimerListe = useReactToPrint({
+    content: () => printListRef.current,
+    pageStyle: PRINT_LANDSCAPE_PAGE_STYLE,
+    documentTitle: 'familles-de-jeunesse',
+  });
+  const imprimerFiche = useReactToPrint({
+    content: () => ficheRenseignementRef.current,
+    pageStyle: PRINT_PORTRAIT_PAGE_STYLE,
+    documentTitle: familleFiche
+      ? `fiche-famille-${familleFiche.nomFamilleJeunesse}`
+      : 'fiche-renseignement-famille-jeunesse',
+  });
+  // États remplis : une page par famille affichée (la recherche réduit la liste).
+  const fichesRempliesRef = useRef<HTMLDivElement>(null);
+  const feuillesRempliesRef = useRef<HTMLDivElement>(null);
+  const imprimerFichesRemplies = useReactToPrint({
+    content: () => fichesRempliesRef.current,
+    pageStyle: PRINT_PORTRAIT_PAGE_STYLE,
+    documentTitle: 'fiches-renseignement-familles-jeunesse',
+  });
+  const imprimerFeuillesRemplies = useReactToPrint({
+    content: () => feuillesRempliesRef.current,
+    pageStyle: PRINT_LANDSCAPE_PAGE_STYLE,
+    documentTitle: 'feuilles-membres-familles-jeunesse',
+  });
+
+  const imprimerFeuille = useReactToPrint({
+    content: () => feuilleViergeRef.current,
+    pageStyle: PRINT_LANDSCAPE_PAGE_STYLE,
+    documentTitle: familleFeuille ? `famille-${familleFeuille.nomFamilleJeunesse}` : 'feuille-famille-jeunesse',
+  });
+
+  // La feuille doit être redessinée avec la famille choisie AVANT l'impression :
+  // on pose la famille, puis on imprime au rendu suivant.
+  const demanderFeuille = (famille: IFamilleJeunesse | null) => {
+    setMenuImpression(null);
+    setMenuModeles(null);
+    setFamilleFeuille(famille);
+    setDemandeFeuille((n) => n + 1);
+  };
+
+  const demanderFiche = (famille: IFamilleJeunesse | null) => {
+    setMenuImpression(null);
+    setMenuModeles(null);
+    setFamilleFiche(famille);
+    setDemandeFiche((n) => n + 1);
+  };
+
+  useEffect(() => {
+    if (demandeFiche > 0) imprimerFiche();
+    // Seul le compteur déclenche l'impression.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demandeFiche]);
+
+  useEffect(() => {
+    if (demandeFeuille > 0) imprimerFeuille();
+    // Seul le compteur déclenche l'impression.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demandeFeuille]);
+
   return (
     <DashboardContent>
       <NotificationComponent />
 
+      {/* Deux volets : l'organisation des familles, et le programme d'activités
+          de la jeunesse sur une période. */}
+      <Tabs value={onglet} onChange={(_, valeur) => setOnglet(valeur)} sx={{ mb: 3 }}>
+        <Tab label="Familles" />
+        <Tab label="Programme d'activités" />
+      </Tabs>
+
+      {onglet === 1 && (
+        <ProgrammeActiviteManager
+          idUtilisateur={Number(currentUserId) || 0}
+          membres={members}
+          modifiable={!isDesktopApp}
+          onNotifier={showNotification}
+        />
+      )}
+
+      {onglet === 0 && (
       <Stack spacing={3}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between">
           <Box>
@@ -419,68 +540,81 @@ export function FamilleJeunesseView() {
               flexWrap: 'wrap',
             }}
           >
+            {/* Deux boutons : « Imprimer » sort les états remplis avec les données de
+                l'application, « Modèles vierges » les mêmes feuilles à remplir à la main. */}
             {!isDesktopApp && (
               <>
-              <ReactToPrint
-                documentTitle="fiche-renseignement-famille-jeunesse"
-                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
-                trigger={() => (
-                  <Tooltip title="Fiche de renseignement">
-                    <IconButton
-                      color="primary"
-                      sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}
-                    >
-                      <PrintRounded />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                content={() => ficheRenseignementRef.current}
-              />
-              <ReactToPrint
-                documentTitle="familles-de-jeunesse"
-                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
-                trigger={() => (
-                  <Tooltip title="Imprimer">
-                    <IconButton
-                      color="primary"
-                      sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}
-                    >
-                      <PrintRounded />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                content={() => printListRef.current}
-              />
-              <ReactToPrint
-                documentTitle="fiche-renseignement-famille-jeunesse"
-                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
-                trigger={() => (
-                  <Button
-                    variant="outlined"
-                    color="inherit"
-                    startIcon={<PrintRounded />}
-                    sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                <Tooltip title="Imprimer">
+                  <IconButton
+                    color="primary"
+                    onClick={(event) => setMenuImpression(event.currentTarget)}
+                    sx={{ display: { xs: 'inline-flex', sm: 'none' }, border: 1, borderColor: 'divider', borderRadius: 1 }}
+                  >
+                    <PrintRounded />
+                  </IconButton>
+                </Tooltip>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  startIcon={<PrintRounded />}
+                  endIcon={<KeyboardArrowDownRounded />}
+                  onClick={(event) => setMenuImpression(event.currentTarget)}
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                >
+                  Imprimer
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  startIcon={<DescriptionOutlined />}
+                  endIcon={<KeyboardArrowDownRounded />}
+                  onClick={(event) => setMenuModeles(event.currentTarget)}
+                >
+                  Modèles vierges
+                </Button>
+
+                <Menu
+                  anchorEl={menuImpression}
+                  open={Boolean(menuImpression)}
+                  onClose={() => setMenuImpression(null)}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      setMenuImpression(null);
+                      imprimerListe();
+                    }}
+                  >
+                    Liste des familles
+                  </MenuItem>
+                  <MenuItem
+                    disabled={!filteredData.length}
+                    onClick={() => {
+                      setMenuImpression(null);
+                      imprimerFichesRemplies();
+                    }}
                   >
                     Fiche de renseignement
-                  </Button>
-                )}
-                content={() => ficheRenseignementRef.current}
-              />
-              <ReactToPrint
-                documentTitle="familles-de-jeunesse"
-                pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
-                trigger={() => (
-                  <Button
-                    variant="outlined"
-                    color="inherit"
-                    startIcon={<PrintRounded />}
-                    sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                  </MenuItem>
+                  <MenuItem
+                    disabled={!filteredData.length}
+                    onClick={() => {
+                      setMenuImpression(null);
+                      imprimerFeuillesRemplies();
+                    }}
                   >
-                    Imprimer
-                  </Button>
-                )}
-                content={() => printListRef.current}
-              />
+                    Feuille des membres
+                  </MenuItem>
+                  <ListSubheader sx={{ lineHeight: 1.6, py: 1, fontSize: 12, maxWidth: 300, whiteSpace: 'normal' }}>
+                    {filteredData.length
+                      ? `Une page par famille affichée (${filteredData.length}). Pour une seule famille, recherchez-la d'abord.`
+                      : "Aucune famille à imprimer : ajoutez-en une, ou utilisez les modèles vierges."}
+                  </ListSubheader>
+                </Menu>
+
+                <Menu anchorEl={menuModeles} open={Boolean(menuModeles)} onClose={() => setMenuModeles(null)}>
+                  <MenuItem onClick={() => demanderFiche(null)}>Fiche de renseignement (vierge)</MenuItem>
+                  <MenuItem onClick={() => demanderFeuille(null)}>Feuille des membres (vierge)</MenuItem>
+                </Menu>
               </>
             )}
             <Tooltip title="Exporter vers Excel">
@@ -598,6 +732,9 @@ export function FamilleJeunesseView() {
                       <IconButton size="small" onClick={() => setDetailItem(item)}>
                         <VisibilityRounded fontSize="small" />
                       </IconButton>
+                      <IconButton size="small" onClick={() => setFamilleMembres(item)}>
+                        <GroupsRounded fontSize="small" />
+                      </IconButton>
                       {canManageFamille && (
                         <>
                           <IconButton size="small" color="primary" onClick={() => openEditDialog(item)}>
@@ -711,6 +848,11 @@ export function FamilleJeunesseView() {
                               <VisibilityRounded fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title="Membres de la famille">
+                            <IconButton size="small" onClick={() => setFamilleMembres(item)}>
+                              <GroupsRounded fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                           {canManageFamille && (
                             <>
                               <Tooltip title="Modifier">
@@ -748,6 +890,7 @@ export function FamilleJeunesseView() {
         )}
 
       </Stack>
+      )}
 
       <Dialog open={openDialog} onClose={closeDialog} fullScreen={isMobile} fullWidth maxWidth="md">
         <DialogTitle>{formData.idFamilleJeunesse ? 'Modifier une famille de jeunesse' : 'Ajouter une famille de jeunesse'}</DialogTitle>
@@ -874,9 +1017,67 @@ export function FamilleJeunesseView() {
           />
         </Box>
         <Box ref={ficheRenseignementRef}>
-          <FicheFamilleJeunesseRenseignement />
+          <FicheFamilleJeunesseRenseignement
+            famille={familleFiche}
+            nombreMembresRattaches={familleFiche ? membresDeLaFamille(familleFiche).length : undefined}
+            contactDe={(nom) => getMemberContact(nom)}
+          />
         </Box>
+        <Box ref={fichesRempliesRef}>
+          {filteredData.map((famille: IFamilleJeunesse, index: number) => (
+            <Box
+              key={famille.idFamilleJeunesse}
+              sx={{ breakAfter: index < filteredData.length - 1 ? 'page' : 'auto' }}
+            >
+              <FicheFamilleJeunesseRenseignement
+                famille={famille}
+                nombreMembresRattaches={membresDeLaFamille(famille).length}
+                contactDe={(nom) => getMemberContact(nom)}
+              />
+            </Box>
+          ))}
+        </Box>
+        <Box ref={feuillesRempliesRef}>
+          {filteredData.map((famille: IFamilleJeunesse, index: number) => (
+            <Box
+              key={famille.idFamilleJeunesse}
+              sx={{ breakAfter: index < filteredData.length - 1 ? 'page' : 'auto' }}
+            >
+              <FeuilleFamilleJeunesse
+                nomEglise={String(
+                  appUserConnected?.nomTemple || authUtilisateurData?.nomTemple || appUserConnected?.nomEgliseCourt || ''
+                )}
+                logoUrl={getPrintableLogoUrl({ ...(authUtilisateurData || {}), ...(appUserConnected || {}) })}
+                nomFamille={famille.nomFamilleJeunesse}
+                membres={membresDeLaFamille(famille)}
+              />
+            </Box>
+          ))}
+        </Box>
+        <FeuilleFamilleJeunesse
+          ref={feuilleViergeRef}
+          nomFamille={familleFeuille?.nomFamilleJeunesse || ''}
+          membres={familleFeuille ? membresDeLaFamille(familleFeuille) : []}
+          nomEglise={String(
+            appUserConnected?.nomTemple || authUtilisateurData?.nomTemple || appUserConnected?.nomEgliseCourt || ''
+          )}
+          logoUrl={getPrintableLogoUrl({ ...(authUtilisateurData || {}), ...(appUserConnected || {}) })}
+        />
       </Box>
+
+      <MembresFamilleDialog
+        famille={familleMembres}
+        familles={Array.isArray(familles) ? familles : []}
+        membresEglise={members}
+        idUtilisateur={Number(currentUserId) || 0}
+        modifiable={canManageFamille}
+        imprimable={!isDesktopApp}
+        onClose={() => {
+          setFamilleMembres(null);
+          chargerLiensFamilles();
+        }}
+        onNotifier={showNotification}
+      />
 
       <ConfirmDialog
         open={Boolean(deleteItem)}

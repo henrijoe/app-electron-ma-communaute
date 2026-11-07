@@ -1,6 +1,14 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import {
+  AddRounded,
+  EditRounded,
+  DeleteRounded,
+  SavingsRounded,
+  TrendingUpRounded,
+  TrendingDownRounded,
+} from '@mui/icons-material';
+import {
   Box,
   Card,
   Chip,
@@ -25,17 +33,10 @@ import {
   TablePagination,
   CircularProgress,
 } from '@mui/material';
-import {
-  AddRounded,
-  EditRounded,
-  DeleteRounded,
-  SavingsRounded,
-  TrendingUpRounded,
-  TrendingDownRounded,
-} from '@mui/icons-material';
 
 import { formaterDate } from 'src/utils/format-date';
 import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
+
 import { SelectRecherche } from 'src/components/select-recherche';
 
 // ----------------------------------------------------------------------
@@ -52,11 +53,28 @@ import { SelectRecherche } from 'src/components/select-recherche';
 // qu'une suppression sèche. Une ligne retirée doit rester explicable, sinon le
 // point d'un mois passé ne se refait plus.
 
-/** Les deux sens d'un mouvement. Valeur stockée sans accent, comme ailleurs. */
-const TYPES = [
-  { valeur: 'recette', libelle: 'Recette' },
-  { valeur: 'depense', libelle: 'Dépense' },
+/**
+ * Les choix du champ « Sens ».
+ *
+ * Un don, une cotisation ou une autre recette restent des RECETTES : en base,
+ * le sens vaut toujours « recette » ou « depense », et le choix range seulement
+ * la ligne dans la catégorie du même nom. Les totaux, le solde et les lignes
+ * déjà saisies ne changent donc pas.
+ */
+const SENS = [
+  { valeur: 'recette', type: 'recette', categorie: '', libelle: 'Recette' },
+  { valeur: 'don', type: 'recette', categorie: 'Don', libelle: 'Don' },
+  { valeur: 'cotisation', type: 'recette', categorie: 'Cotisation', libelle: 'Cotisation' },
+  { valeur: 'autre', type: 'recette', categorie: 'Autre', libelle: 'Autre recette' },
+  { valeur: 'depense', type: 'depense', categorie: '', libelle: 'Dépense' },
 ];
+
+/** Le choix « Sens » qui correspond à une ligne : son type, et sa catégorie pour une recette. */
+const sensDeLaLigne = (typeFinance: string, categorieFinance: string): string => {
+  if (typeFinance !== 'recette') return 'depense';
+  const special = SENS.find((sens) => sens.categorie && sens.categorie === categorieFinance);
+  return special ? special.valeur : 'recette';
+};
 
 /**
  * Catégories proposées, tirées de ce qu'une école du dimanche manipule
@@ -103,6 +121,8 @@ type FinancesGrilleProps = {
    * de rouvrir après une fermeture sans être remis à faux par le parent.
    */
   demandeAjout?: number;
+  /** Faux dans la fenêtre Windows : la caisse s'y relit, la saisie se fait au navigateur. */
+  modifiable?: boolean;
   onEnregistre: () => void;
   onNotifier: (message: string, severite: 'success' | 'error' | 'info') => void;
 };
@@ -113,6 +133,7 @@ export function FinancesGrille({
   idUtilisateur,
   chargement = false,
   demandeAjout = 0,
+  modifiable = true,
   onEnregistre,
   onNotifier,
 }: FinancesGrilleProps) {
@@ -165,10 +186,10 @@ export function FinancesGrille({
   // grille. La valeur de départ est ignorée : seuls les incréments comptent,
   // sinon la boîte s'ouvrirait toute seule au premier affichage de l'onglet.
   useEffect(() => {
-    if (demandeAjout > 0) {
+    if (demandeAjout > 0 && modifiable) {
       ouvrirAjout();
     }
-  }, [demandeAjout, ouvrirAjout]);
+  }, [demandeAjout, modifiable, ouvrirAjout]);
 
   const ouvrirModification = useCallback((ligne: any) => {
     setFormulaire({
@@ -326,9 +347,11 @@ export function FinancesGrille({
           {lignes.length} mouvement{lignes.length > 1 ? 's' : ''}
         </Typography>
 
-        <Button variant="contained" startIcon={<AddRounded />} onClick={ouvrirAjout}>
-          Ajouter un mouvement
-        </Button>
+        {modifiable && (
+          <Button variant="contained" startIcon={<AddRounded />} onClick={ouvrirAjout}>
+            Ajouter un mouvement
+          </Button>
+        )}
       </Stack>
 
       {/* ----------------------------------------------------------- tableau */}
@@ -341,7 +364,7 @@ export function FinancesGrille({
               <TableCell>Catégorie</TableCell>
               <TableCell align="right">Recette</TableCell>
               <TableCell align="right">Dépense</TableCell>
-              <TableCell align="right">Actions</TableCell>
+              {modifiable && <TableCell align="right">Actions</TableCell>}
             </TableRow>
           </TableHead>
 
@@ -389,6 +412,7 @@ export function FinancesGrille({
                   )}
                 </TableCell>
 
+                {modifiable && (
                 <TableCell align="right">
                   <Tooltip title="Modifier">
                     <IconButton size="small" onClick={() => ouvrirModification(ligne)}>
@@ -408,6 +432,7 @@ export function FinancesGrille({
                     </IconButton>
                   </Tooltip>
                 </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
@@ -464,12 +489,26 @@ export function FinancesGrille({
               <SelectRecherche
                 fullWidth
                 label="Sens *"
-                value={formulaire.typeFinance}
-                onChange={(evenement: any) => changer('typeFinance', evenement.target.value)}
+                value={sensDeLaLigne(formulaire.typeFinance, formulaire.categorieFinance)}
+                onChange={(evenement: any) => {
+                  const choix = SENS.find((sens) => sens.valeur === evenement.target.value);
+                  if (!choix) return;
+                  setFormulaire((precedent) => ({
+                    ...precedent,
+                    typeFinance: choix.type,
+                    // Don, Cotisation, Autre : la catégorie suit le choix. Revenir à
+                    // « Recette » ou « Dépense » libère la catégorie qu'il avait posée.
+                    categorieFinance: choix.categorie
+                      ? choix.categorie
+                      : SENS.some((sens) => sens.categorie === precedent.categorieFinance)
+                        ? ''
+                        : precedent.categorieFinance,
+                  }));
+                }}
               >
-                {TYPES.map((type) => (
-                  <MenuItem key={type.valeur} value={type.valeur}>
-                    {type.libelle}
+                {SENS.map((sens) => (
+                  <MenuItem key={sens.valeur} value={sens.valeur}>
+                    {sens.libelle}
                   </MenuItem>
                 ))}
               </SelectRecherche>

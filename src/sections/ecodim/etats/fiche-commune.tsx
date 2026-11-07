@@ -28,10 +28,10 @@ export const styleCadre: React.CSSProperties = {
 export const BLEU_OFFICIEL = '#1F3864';
 
 /** Serif du corps des fiches, dans l'esprit du Cambria des originaux. */
-export const POLICE_FICHE = 'Cambria, Georgia, "Times New Roman", serif';
+export const POLICE_FICHE = 'var(--police-etat)';
 
 /** Sans-serif de l'en-tête, en capitales et en gras sur les originaux. */
-export const POLICE_ENTETE = 'Arial, Helvetica, sans-serif';
+export const POLICE_ENTETE = 'var(--police-etat)';
 
 export const styleTableau: React.CSSProperties = {
   width: '100%',

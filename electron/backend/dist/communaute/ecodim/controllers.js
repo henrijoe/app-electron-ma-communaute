@@ -367,7 +367,43 @@ const supprimerFinanceDefinitivement = (req, res) => {
     })
         .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
 };
+// ------------------------------------------------- programme des moniteurs
+const recupProgrammesByUtilisateur = (req, res) => repondre(res, functions_2.default.recupProgrammes(Number(req.params.idUtilisateur)));
+const ajouterProgramme = (req, res) => {
+    const data = req.body;
+    return functions_2.default
+        .ajouterProgramme(data)
+        .then((result) => {
+        diffuser(req, "ajouterProgrammeEcodim", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur, data: result });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
+const modifierProgramme = (req, res) => {
+    const data = req.body;
+    return functions_2.default
+        .modifierProgramme(data)
+        .then((result) => {
+        diffuser(req, "modifierProgrammeEcodim", { idUtilisateur: data === null || data === void 0 ? void 0 : data.idUtilisateur, data: result });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
+const supprimerProgramme = (req, res) => {
+    const { idProgrammeEcodim, idUtilisateur } = req.body;
+    return functions_2.default
+        .supprimerProgramme(Number(idProgrammeEcodim), Number(idUtilisateur))
+        .then((result) => {
+        diffuser(req, "supprimerProgrammeEcodim", { idUtilisateur, idProgrammeEcodim });
+        res.status(200).send({ status: 1, data: result });
+    })
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
+};
 exports.default = {
+    recupProgrammesByUtilisateur,
+    ajouterProgramme,
+    modifierProgramme,
+    supprimerProgramme,
     recupClassesByUtilisateur,
     ajouterClasse,
     modifierClasse,

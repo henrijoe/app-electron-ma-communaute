@@ -322,7 +322,7 @@ export function MemberProfilePrint({
 
         <Box sx={{ px: 2, pb: 1, color: '#667085', fontSize: 11 }}>
           <Divider sx={{ mb: 1 }} />
-          {contactLine || "Document interne de l'église"} | Généré depuis Ma Communauté
+          {contactLine ? `${contactLine} | ` : ''}Généré depuis Ma Communauté
         </Box>
       </Box>
     </>

@@ -22,7 +22,7 @@ const ajouterUtilisateur = (req, res) => {
         req.io.emit('ajouterUtilisateur', result);
         res.status(200).send({ status: 1, data: result });
     })
-        .catch((error) => res.status(400).send({ status: 0, error }));
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
 };
 const creerBaseSqlite = (req, res) => {
     const data = req.body;
@@ -31,7 +31,7 @@ const creerBaseSqlite = (req, res) => {
         .then((result) => {
         res.status(200).send({ status: 1, data: result });
     })
-        .catch((error) => res.status(400).send({ status: 0, error }));
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
 };
 const recupUtilisateur = (req, res) => {
     services_1.default
@@ -39,7 +39,7 @@ const recupUtilisateur = (req, res) => {
         .then((result) => {
         res.status(200).send({ status: 1, data: result });
     })
-        .catch((error) => res.status(400).send({ status: 0, error }));
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
 };
 const recupUtilisateurByParentId = (req, res) => {
     services_1.default
@@ -47,7 +47,7 @@ const recupUtilisateurByParentId = (req, res) => {
         .then((result) => {
         res.status(200).send({ status: 1, data: result });
     })
-        .catch((error) => res.status(400).send({ status: 0, error }));
+        .catch((error) => res.status(400).send({ status: 0, error: (0, functions_1.errorMsg)(error) }));
 };
 const supprimerUtilisateur = (req, res) => {
     const { idUtilisateur } = req.body;

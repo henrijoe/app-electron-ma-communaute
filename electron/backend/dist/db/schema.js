@@ -554,6 +554,81 @@ const ecodimFinance = {
         { name: "dateCreation", type: "datetime", default: "CURRENT_TIMESTAMP" },
     ],
 };
+/**
+ * Programme de direction et d'enseignement des moniteurs sur une période
+ * (« Programme de novembre – janvier 2027 »).
+ *
+ * Le tableau lui-même — une ligne par dimanche, qui dirige et qui apporte le
+ * message dans chaque classe, et le moniteur à contacter — est rangé en JSON
+ * dans `grilleProgramme`. C'est un document qu'on saisit, relit et imprime d'un
+ * bloc, jamais une liste sur laquelle on filtre : le découper en tables
+ * multiplierait les écritures pour une seule feuille.
+ *
+ * La grille garde le NOM de chaque moniteur à côté de son identifiant, comme les
+ * signatures du cahier de texte : un programme passé doit continuer de porter le
+ * nom de celui qui était prévu, même si sa fiche change ou disparaît.
+ */
+const ecodimProgramme = {
+    name: "ecodim_programme",
+    columns: [
+        { name: "idProgrammeEcodim", type: "pk" },
+        { name: "titreProgramme", type: "text", notNull: true },
+        { name: "dateDebutProgramme", type: "text" },
+        { name: "dateFinProgramme", type: "text" },
+        // Ligne d'en-tête de la feuille : « DEEADCI : ANDOKOI TEMPLE PENIEL ».
+        { name: "enteteProgramme", type: "text", default: "''" },
+        { name: "themeAnnuel", type: "longtext", default: "''" },
+        { name: "passageTheme", type: "text", default: "''" },
+        // NB : une consigne par ligne.
+        { name: "consignesProgramme", type: "longtext", default: "''" },
+        // Rappel imprimé en gras au bas de la feuille.
+        { name: "messageFinProgramme", type: "longtext", default: "''" },
+        { name: "grilleProgramme", type: "longtext", default: "''" },
+        { name: "idUtilisateur", type: "int", notNull: true },
+        { name: "dateCreation", type: "datetime", default: "CURRENT_TIMESTAMP" },
+        { name: "dateModification", type: "text" },
+    ],
+};
+/**
+ * Membres d'une famille de jeunesse : un lien par membre, un membre dans une
+ * seule famille. Sert à la feuille imprimée de la famille.
+ */
+const familleJeunesseMembre = {
+    name: "famille_jeunesse_membre",
+    columns: [
+        { name: "idFamilleJeunesseMembre", type: "pk" },
+        { name: "idFamilleJeunesse", type: "int", notNull: true },
+        { name: "idMembre", type: "int", notNull: true },
+        { name: "idUtilisateur", type: "int", notNull: true },
+        { name: "dateCreation", type: "datetime", default: "CURRENT_TIMESTAMP" },
+    ],
+};
+/**
+ * Programme d'activités d'une section de l'église (la jeunesse d'abord) sur une
+ * période : une ligne par rencontre — date, direction, orateur, activité,
+ * thèmes, lieu — rangées en JSON dans `lignesProgramme`, comme la grille du
+ * programme des moniteurs de l'Ecodim.
+ */
+const programmeActivite = {
+    name: "programme_activite",
+    columns: [
+        { name: "idProgrammeActivite", type: "pk" },
+        // Valeur stockée sans accent : jeunesse.
+        { name: "sectionProgramme", type: "text", default: "'jeunesse'" },
+        { name: "titreProgramme", type: "text", notNull: true },
+        { name: "dateDebutProgramme", type: "text" },
+        { name: "dateFinProgramme", type: "text" },
+        // En-tête libre, une ligne par ligne imprimée (nom de l'association, siège...).
+        { name: "enteteProgramme", type: "longtext", default: "''" },
+        { name: "themeAnnuel", type: "longtext", default: "''" },
+        { name: "passageTheme", type: "text", default: "''" },
+        { name: "afficherOrateurs", type: "int", default: "1" },
+        { name: "lignesProgramme", type: "longtext", default: "''" },
+        { name: "idUtilisateur", type: "int", notNull: true },
+        { name: "dateCreation", type: "datetime", default: "CURRENT_TIMESTAMP" },
+        { name: "dateModification", type: "text" },
+    ],
+};
 // Autres cotisations de l'église (Caisse de Noël...) : le nom est saisi librement, et
 // chaque ligne dit quel membre a donné combien.
 const autreCotisation = {
@@ -589,6 +664,9 @@ exports.SHARED_TABLES = [
     ecodimPresence,
     ecodimEnfantDemande,
     ecodimFinance,
+    ecodimProgramme,
+    programmeActivite,
+    familleJeunesseMembre,
     autreCotisation,
 ];
 // Colonnes ajoutées après coup à des tables qui, elles, existent bien dans le dump.
