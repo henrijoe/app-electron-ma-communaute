@@ -147,9 +147,7 @@ export function MemberProfilePrint({
                   alt="Logo église"
                   sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
-              ) : (
-                <Typography sx={{ color: '#0f172a', fontWeight: 900 }}>MC</Typography>
-              )}
+              ) : null}
             </Box>
             <Box>
               <Typography sx={{ fontSize: 13, letterSpacing: 1.6, textTransform: 'uppercase' }}>

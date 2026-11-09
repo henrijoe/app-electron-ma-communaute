@@ -33,7 +33,7 @@ import {
 import { formaterDate } from 'src/utils/format-date';
 import { apiClient, getApiErrorMessage } from 'src/utils/apiClient';
 import { SelectRecherche } from 'src/components/select-recherche';
-import { PrintDocumentLayout } from 'src/components/print/print-document';
+import { PrintDocumentLayout, PRINT_LANDSCAPE_PAGE_STYLE } from 'src/components/print/print-document';
 
 // Styles des états imprimés : les mêmes que les listes de l'école du dimanche.
 const styleTableau: React.CSSProperties = {
@@ -586,6 +586,7 @@ export function AssiduiteGrille({
                 PDF
               </Button>
             )}
+            pageStyle={PRINT_LANDSCAPE_PAGE_STYLE}
             content={() => referenceImpression.current}
           />
         )}

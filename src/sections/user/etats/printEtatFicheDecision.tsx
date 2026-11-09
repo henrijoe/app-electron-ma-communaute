@@ -3,6 +3,7 @@ import React, { useRef } from 'react';
 import ReactToPrint from 'react-to-print';
 
 import { isDesktopAppRuntime } from 'src/utils/access-control';
+import { PRINT_PORTRAIT_PAGE_STYLE } from 'src/components/print/print-document';
 
 import { FicheDecision } from './ficheDecision';
 
@@ -33,6 +34,7 @@ function PrintFicheDecision() {
               Fiche de décision
             </Typography>
           )}
+          pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
           content={() => componentRef.current}
         />
         <Box sx={{ display: 'none' }}>

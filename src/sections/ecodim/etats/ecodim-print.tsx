@@ -8,7 +8,10 @@ import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
 import { PrintRounded } from '@mui/icons-material';
 
-import { PrintDocumentLayout } from 'src/components/print/print-document';
+import {
+  PrintDocumentLayout,
+  PRINT_PORTRAIT_PAGE_STYLE,
+} from 'src/components/print/print-document';
 import { formaterDate } from 'src/utils/format-date';
 import { buildEcodimMediaUrl } from 'src/utils/apiClient';
 
@@ -335,6 +338,12 @@ export function EcodimPrint({
             key={cible}
             trigger={() => <MenuItem>{titres[cible]}</MenuItem>}
             content={() => references[cible].current}
+            // Sans « pageStyle », react-to-print applique son defaut —
+            // « @page { margin: 0mm } » — et ces listes sortaient collees aux
+            // quatre bords de la feuille. La regle posee par
+            // PrintDocumentLayout ne suffit pas : celle de react-to-print est
+            // injectee apres, et a specificite egale la derniere l'emporte.
+            pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
             onAfterPrint={() => setAncre(null)}
           />
         ))}

@@ -4,6 +4,7 @@ import { Box, Typography } from '@mui/material';
 import ReactToPrint from 'react-to-print';
 
 import { isDesktopAppRuntime } from 'src/utils/access-control';
+import { PRINT_PORTRAIT_PAGE_STYLE } from 'src/components/print/print-document';
 
 import CoursDeBaseForm from './ficheCoursDebase';
 
@@ -34,6 +35,7 @@ function PrintFicheCoursDeBase() {
               Fiche de cours de base
             </Typography>
           )}
+          pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
           content={() => componentRef.current}
         />
         <Box sx={{ display: 'none' }}>

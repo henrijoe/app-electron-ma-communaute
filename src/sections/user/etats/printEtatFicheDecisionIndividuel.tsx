@@ -4,6 +4,7 @@ import { Typography, Box } from '@mui/material';
 import ReactToPrint from 'react-to-print';
 
 import { isDesktopAppRuntime } from 'src/utils/access-control';
+import { PRINT_PORTRAIT_PAGE_STYLE } from 'src/components/print/print-document';
 
 import { FicheIndividuelDecision } from './ficheDecisionIndividuel';
 
@@ -31,6 +32,7 @@ function PrintFicheIndividuelDecision() {
             Fiche de décision
           </Typography>
         )}
+        pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
         content={() => componentRef.current}
       />
       <Box sx={{ display: 'none' }}>

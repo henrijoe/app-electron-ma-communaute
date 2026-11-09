@@ -177,9 +177,7 @@ function MemberCard({
         >
           {logoUrl ? (
             <Box component="img" src={logoUrl} alt="" sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          ) : (
-            <Typography sx={{ color: brown[900], fontWeight: 900, fontSize: '3mm' }}>MC</Typography>
-          )}
+          ) : null}
         </Box>
         <Typography sx={{ fontSize: '2.6mm', letterSpacing: '0.3mm', textTransform: 'uppercase', opacity: 0.85 }}>
           {identity.nomEgliseCourt || identity.nomTemple || 'Ma Communauté'}

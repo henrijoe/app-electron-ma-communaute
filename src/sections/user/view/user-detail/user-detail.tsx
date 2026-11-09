@@ -38,6 +38,7 @@ import {
 
 import { DashboardContent } from 'src/layouts/dashboard';
 import { isDesktopAppRuntime } from 'src/utils/access-control';
+import { PRINT_PORTRAIT_PAGE_STYLE } from 'src/components/print/print-document';
 
 import { getPhotoUrl } from '../../utils';
 import { dataResponsabilite } from '../../../../store/membreSlice';
@@ -226,6 +227,7 @@ export function MembreDetailView() {
                     Imprimer la fiche
                   </Button>
                 )}
+                pageStyle={PRINT_PORTRAIT_PAGE_STYLE}
                 content={() => profilePrintRef.current}
               />
             )}

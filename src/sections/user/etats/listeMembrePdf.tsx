@@ -324,9 +324,7 @@ export const ListeDesMembres = ({ membres, sousTitre }: ListeDesMembresProps) =>
                   alt="Logo église"
                   sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
-              ) : (
-                <Typography sx={{ color: '#0f172a', fontWeight: 900 }}>MC</Typography>
-              )}
+              ) : null}
             </Box>
 
             <Box sx={{ minWidth: 0 }}>

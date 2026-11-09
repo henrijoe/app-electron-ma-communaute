@@ -84,7 +84,7 @@ type PrintFooterProps = {
 export const PRINT_LANDSCAPE_PAGE_STYLE = `
 @page {
   size: A4 landscape;
-  margin: 5mm;
+  margin: 12mm;
 }
 
 @media print {
@@ -99,7 +99,7 @@ export const PRINT_LANDSCAPE_PAGE_STYLE = `
 export const PRINT_PORTRAIT_PAGE_STYLE = `
   @page {
     size: A4 portrait;
-    margin: 5mm;
+    margin: 12mm;
   }
 
   @media print {
@@ -163,7 +163,11 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
           overflow: 'hidden',
           p: 0.4,
           flexShrink: 0,
-          border: '1px solid #000',
+          // La bordure n'encadre que s'il y a quelque chose à encadrer. Sans
+          // logo, elle laisserait un carré noir vide — plus voyant encore que
+          // la pastille « MC » qu'on vient de retirer. L'emplacement reste
+          // réservé pour que le titre ne se décale pas d'un état à l'autre.
+          border: logoUrl ? '1px solid #000' : 'none',
         }}
       >
         {logoUrl ? (
@@ -173,9 +177,7 @@ function PrintHeader({ identity, logoUrl }: PrintHeaderProps) {
             alt="Logo église"
             sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
-        ) : (
-          <Typography sx={{ color: '#0f172a', fontWeight: 700 }}>MC</Typography>
-        )}
+        ) : null}
       </Box>
 
       <Box sx={{ minWidth: 0 }}>
@@ -257,7 +259,7 @@ export function PrintDocumentLayout({
         styles={{
           '@page': {
             size: `A4 ${orientation}`,
-            margin: '5mm',
+            margin: '12mm',
           },
           '@media print': {
             'html, body': {
