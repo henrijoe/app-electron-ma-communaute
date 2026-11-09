@@ -1,11 +1,12 @@
 {
-  "version": "1.0.13",
-  "date": "2026-10-24",
+  "version": "1.0.19",
+  "date": "2026-11-09",
   "taille": "93 Mo",
   "nouveautes": [
-    "Caisse de l'école du dimanche : recettes, dépenses et point financier",
-    "Appel du dimanche et suivi de l'assiduité des enfants",
-    "Matricule unique pour chaque membre et chaque enfant",
-    "Fiches officielles du département enfants, prêtes à imprimer"
+    "Programmes de l'école du dimanche : planification et suivi",
+    "Liste des membres de chaque famille de la jeunesse",
+    "Autres cotisations dans le suivi des cas sociaux",
+    "Nouveaux états : enfants inscrits et frais par classe",
+    "Marges d'impression corrigées sur toutes les fiches"
   ]
 }
