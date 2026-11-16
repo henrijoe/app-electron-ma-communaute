@@ -183,6 +183,110 @@
         font-size: 0.9rem;
       }
 
+      /* ------------------------------------------ acceptation de la politique */
+      .accord {
+        margin: 22px auto 0;
+        max-width: 520px;
+        text-align: left;
+      }
+
+      .accord label {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        cursor: pointer;
+        color: var(--texte-doux);
+        font-size: 0.95rem;
+      }
+
+      .accord input {
+        margin: 5px 0 0;
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
+
+      .accord a {
+        color: var(--accent);
+      }
+
+      /*
+        Tant que la case n'est pas cochée, le bouton s'éteint — mais il reste
+        cliquable : le clic ouvre la politique au lieu de ne rien faire. Un
+        bouton mort sans explication est la pire des réponses.
+      */
+      .bouton.en-attente {
+        background: var(--bord);
+        color: var(--texte-doux);
+      }
+
+      .bouton.en-attente:hover {
+        background: var(--bord);
+        transform: none;
+      }
+
+      /* ------------------------------------------- boîte de la politique */
+      dialog.politique {
+        width: min(760px, calc(100vw - 28px));
+        height: min(82vh, 780px);
+        max-width: none;
+        max-height: none;
+        padding: 0;
+        border: 1px solid var(--bord);
+        border-radius: 18px;
+        background: var(--carte);
+        color: var(--texte);
+        box-shadow: var(--ombre);
+        overflow: hidden;
+      }
+
+      dialog.politique::backdrop {
+        background: rgba(15, 23, 42, 0.55);
+      }
+
+      dialog.politique form {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        margin: 0;
+      }
+
+      dialog.politique iframe {
+        flex: 1;
+        width: 100%;
+        border: none;
+        background: var(--fond);
+      }
+
+      .actions-politique {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--bord);
+        background: var(--carte);
+      }
+
+      .actions-politique button {
+        font-family: inherit;
+        font-size: 0.98rem;
+        font-weight: 700;
+        padding: 11px 24px;
+        border-radius: 11px;
+        cursor: pointer;
+        border: 1px solid var(--bord);
+        background: transparent;
+        color: var(--texte-doux);
+      }
+
+      .actions-politique button.principal {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
       /* ------------------------------------------------------------- sections */
       h2 {
         font-size: 1.32rem;
@@ -350,6 +454,30 @@
         </div>
 
         <div class="essai">30 jours d'essai, sans engagement</div>
+
+        <!--
+          Le bloc reste caché jusqu'à ce que le script l'affiche. Sans
+          JavaScript, la page retrouve exactement son comportement d'avant :
+          un bouton qui télécharge. Une case que personne ne pourrait cocher
+          et qui bloquerait le fichier serait le pire des deux mondes — et la
+          politique reste atteignable par le lien du pied de page.
+
+          La case ne se coche pas d'un clic : le clic ouvre la boîte, et c'est
+          son bouton « Accepter » qui coche. On ne peut donc pas accepter un
+          texte qui ne s'est jamais affiché.
+        -->
+        <div class="accord" id="accord" hidden>
+          <label>
+            <input type="checkbox" id="case-accord" />
+            <span>
+              J'ai lu et j'accepte la
+              <a href="confidentialite.html" id="lien-politique"
+                >politique de confidentialité</a
+              >
+              : mes données restent sur mon ordinateur.
+            </span>
+          </label>
+        </div>
       </section>
 
       <!-- --------------------------------------------------- fonctionnalités -->
@@ -482,12 +610,34 @@
           Le format international de la Côte d'Ivoire garde le zéro de tête des
           dix chiffres : +225 0574313410.
         -->
-        Ma Communauté · Besoin d'aide ?
+        Ma Communauté ·
+        <a href="confidentialite.html">Politique de confidentialité</a>
+        · Besoin d'aide ?
         <a href="https://wa.me/2250574313410" target="_blank" rel="noopener">
           WhatsApp 05 74 31 34 10
         </a>
       </footer>
     </div>
+
+    <!--
+      Le document est affiché dans un cadre plutôt que recopié ici : il n'existe
+      qu'à un seul endroit, « confidentialite.html ». Deux copies d'un texte
+      qu'on fait accepter finiraient par diverger, et c'est la mauvaise qui
+      serait lue.
+    -->
+    <dialog class="politique" id="boite-politique" aria-label="Politique de confidentialité">
+      <form method="dialog">
+        <iframe
+          id="cadre-politique"
+          title="Politique de confidentialité de Ma Communauté"
+        ></iframe>
+
+        <div class="actions-politique">
+          <button type="submit" value="fermer">Fermer</button>
+          <button type="submit" value="accepter" class="principal">Accepter</button>
+        </div>
+      </form>
+    </dialog>
 
     <script>
       /*
@@ -502,8 +652,86 @@
       */
       const LIEN_EXE = 'ma-communaute-setup.exe';
       const LIEN_VERSION = 'version.json';
+      const LIEN_POLITIQUE = 'confidentialite.html';
 
-      document.getElementById('lien-telechargement').href = LIEN_EXE;
+      const lienTelechargement = document.getElementById('lien-telechargement');
+
+      lienTelechargement.href = LIEN_EXE;
+
+      /*
+        ------------------------------------------------------------------
+        Acceptation de la politique de confidentialité.
+
+        Le bloc de la case est caché dans le HTML et n'est révélé qu'ici :
+        si ce script ne tourne pas, ou si le navigateur ne connaît pas
+        <dialog>, la page redevient ce qu'elle était — un bouton qui
+        télécharge. Mieux vaut un visiteur qui n'a pas vu la case qu'un
+        visiteur bloqué devant un fichier qu'il est venu chercher.
+
+        L'acceptation n'est pas mémorisée d'une visite à l'autre : une case
+        déjà cochée à l'arrivée n'est pas une lecture, et le geste ne coûte
+        qu'un clic.
+        ------------------------------------------------------------------
+      */
+      const boitePolitique = document.getElementById('boite-politique');
+      const blocAccord = document.getElementById('accord');
+      const caseAccord = document.getElementById('case-accord');
+      const cadrePolitique = document.getElementById('cadre-politique');
+      const lienPolitique = document.getElementById('lien-politique');
+
+      if (boitePolitique && typeof boitePolitique.showModal === 'function') {
+        /** Ouvre la boîte, en chargeant le document à la première demande. */
+        const ouvrirPolitique = (evenement) => {
+          if (evenement) {
+            evenement.preventDefault();
+          }
+
+          if (!cadrePolitique.getAttribute('src')) {
+            cadrePolitique.src = LIEN_POLITIQUE;
+          }
+
+          boitePolitique.showModal();
+        };
+
+        /** Allume ou éteint le bouton selon l'état de la case. */
+        const refletAccord = () => {
+          const accepte = caseAccord.checked;
+
+          lienTelechargement.classList.toggle('en-attente', !accepte);
+          lienTelechargement.setAttribute('aria-disabled', accepte ? 'false' : 'true');
+        };
+
+        blocAccord.hidden = false;
+        refletAccord();
+
+        lienPolitique.addEventListener('click', ouvrirPolitique);
+
+        // Cocher passe forcément par la boîte ; décocher reste libre.
+        caseAccord.addEventListener('click', (evenement) => {
+          if (caseAccord.checked) {
+            ouvrirPolitique(evenement);
+          }
+        });
+
+        caseAccord.addEventListener('change', refletAccord);
+
+        // « Accepter » coche la case ; « Fermer » laisse les choses en l'état.
+        boitePolitique.addEventListener('close', () => {
+          if (boitePolitique.returnValue === 'accepter') {
+            caseAccord.checked = true;
+          }
+
+          refletAccord();
+        });
+
+        // Le bouton de téléchargement n'est jamais muet : tant que la case
+        // n'est pas cochée, il montre ce qu'il attend.
+        lienTelechargement.addEventListener('click', (evenement) => {
+          if (!caseAccord.checked) {
+            ouvrirPolitique(evenement);
+          }
+        });
+      }
 
       /** Affiche un détail du manifeste, et révèle le bloc qui le porte. */
       const poser = (idBloc, idValeur, valeur) => {

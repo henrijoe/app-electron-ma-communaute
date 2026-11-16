@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ma Communauté — Politique de confidentialité</title>
+    <meta
+      name="description"
+      content="Où sont enregistrées les données de votre église, qui peut les lire, et les engagements de l'éditeur de Ma Communauté."
+    />
+    <link rel="icon" href="assets/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;900&display=swap"
+    />
+
+    <style>
+      /*
+        Cette page est lue de deux façons : seule, à son adresse, et à
+        l'intérieur de la boîte de dialogue de la page de téléchargement, qui
+        l'affiche dans un cadre. Elle doit donc tenir debout dans les deux cas :
+        pas d'en-tête envahissant, pas de pied de page qui ferait doublon.
+
+        Les couleurs reprennent celles de la page de téléchargement. Elles sont
+        recopiées plutôt que partagées : deux fichiers statiques valent mieux
+        qu'une feuille de style commune que l'on oublierait de déployer.
+      */
+      :root {
+        --fond: #f6f8fb;
+        --carte: #ffffff;
+        --texte: #0f172a;
+        --texte-doux: #51627c;
+        --bord: #e2e8f0;
+        --accent: #1668e3;
+        --succes: #0f8a53;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --fond: #0b1220;
+          --carte: #141d2e;
+          --texte: #e8eefb;
+          --texte-doux: #9babc6;
+          --bord: #243149;
+          --accent: #4d94ff;
+          --succes: #35c88a;
+        }
+      }
+
+      :root[data-theme='dark'] {
+        --fond: #0b1220;
+        --carte: #141d2e;
+        --texte: #e8eefb;
+        --texte-doux: #9babc6;
+        --bord: #243149;
+        --accent: #4d94ff;
+        --succes: #35c88a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--fond);
+        color: var(--texte);
+        font-family: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .page {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 32px 16px 56px;
+      }
+
+      h1 {
+        font-size: clamp(1.5rem, 4vw, 2rem);
+        line-height: 1.2;
+        letter-spacing: -0.5px;
+        margin: 0 0 4px;
+      }
+
+      .sous-titre {
+        color: var(--texte-doux);
+        margin: 0 0 6px;
+      }
+
+      .date {
+        color: var(--texte-doux);
+        font-size: 0.88rem;
+        margin: 0 0 28px;
+      }
+
+      /* L'essentiel tient en un encadré : beaucoup ne liront que celui-là. */
+      .essentiel {
+        background: var(--carte);
+        border: 1px solid var(--bord);
+        border-left: 4px solid var(--succes);
+        border-radius: 14px;
+        padding: 20px 22px;
+        margin-bottom: 36px;
+      }
+
+      .essentiel p {
+        margin: 0;
+        font-size: 1.04rem;
+      }
+
+      h2 {
+        font-size: 1.14rem;
+        letter-spacing: -0.2px;
+        margin: 34px 0 8px;
+      }
+
+      p {
+        margin: 0 0 12px;
+        color: var(--texte-doux);
+      }
+
+      p.fort {
+        color: var(--texte);
+        font-weight: 600;
+      }
+
+      ul {
+        margin: 0 0 12px;
+        padding-left: 20px;
+        color: var(--texte-doux);
+      }
+
+      li {
+        margin-bottom: 7px;
+      }
+
+      strong {
+        color: var(--texte);
+      }
+
+      code {
+        background: var(--carte);
+        border: 1px solid var(--bord);
+        border-radius: 6px;
+        padding: 1px 6px;
+        font-size: 0.92em;
+        color: var(--texte);
+        white-space: nowrap;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      .rappel {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid var(--bord);
+        color: var(--texte-doux);
+        font-size: 0.92rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page">
+      <h1>Politique de confidentialité</h1>
+      <p class="sous-titre">
+        Et engagement de l'éditeur sur les données de votre église.
+      </p>
+      <p class="date">Dernière mise à jour : 16 novembre 2026</p>
+
+      <div class="essentiel">
+        <p>
+          <strong>Vos données restent chez vous.</strong> Le registre de vos
+          membres, vos finances et vos cas sociaux sont enregistrés sur
+          l'ordinateur de votre église, et nulle part ailleurs. L'éditeur de
+          Ma&nbsp;Communauté n'y a pas accès — non pas par engagement seulement,
+          mais parce que l'application n'envoie jamais ces informations.
+        </p>
+      </div>
+
+      <h2>1. Où sont enregistrées vos données</h2>
+      <p>
+        Dans le dossier <code>C:\base-communaute</code> de l'ordinateur sur
+        lequel l'application est installée. Ce dossier contient la base de
+        données de votre église et les fichiers qui l'accompagnent : photos des
+        membres, logo de l'église, médias de l'école du dimanche.
+      </p>
+      <p>
+        Il n'existe pas de copie ailleurs. Pas de serveur, pas de « cloud », pas
+        de compte en ligne. L'application fonctionne entièrement hors connexion.
+      </p>
+      <p class="fort">
+        La conséquence est importante : si cet ordinateur est perdu, volé ou
+        reformaté et qu'aucune sauvegarde n'a été faite, les données sont
+        perdues. Personne ne peut vous les restituer. La sauvegarde régulière,
+        depuis l'onglet <em>Paramètres</em>, vous appartient.
+      </p>
+
+      <h2>2. Ce que l'éditeur ne peut pas faire</h2>
+      <p>L'éditeur de Ma Communauté ne peut pas :</p>
+      <ul>
+        <li>consulter le registre de vos membres ;</li>
+        <li>lire vos comptes, vos offrandes ou vos dîmes ;</li>
+        <li>accéder aux dossiers de vos cas sociaux ;</li>
+        <li>se connecter à distance à votre installation.</li>
+      </ul>
+      <p>
+        Aucune de ces opérations n'est prévue dans l'application, et aucune
+        fonction cachée ne les permet. Ce n'est pas une faveur : c'est la
+        conséquence directe du choix d'une application locale.
+      </p>
+
+      <h2>3. Les seules connexions à Internet</h2>
+      <p>
+        Quand l'ordinateur est connecté, l'application établit deux connexions,
+        et deux seulement :
+      </p>
+      <ul>
+        <li>
+          <strong>La vérification des mises à jour.</strong> L'application
+          demande à GitHub, qui héberge les versions publiées, s'il en existe
+          une plus récente, et la télécharge le cas échéant. GitHub voit alors
+          l'adresse Internet de votre connexion et le numéro de version
+          installé. Aucune donnée de votre église n'accompagne cette demande.
+        </li>
+        <li>
+          <strong>Certaines icônes de l'interface.</strong> Une partie des
+          pictogrammes est chargée depuis Iconify, un service public d'icônes.
+          Même remarque : ce service voit l'adresse Internet de votre connexion,
+          rien d'autre. Si l'ordinateur n'est pas connecté, ces pictogrammes ne
+          s'affichent pas, et l'application continue de fonctionner normalement.
+        </li>
+      </ul>
+      <p class="fort">
+        Il n'y a rien d'autre. Aucune statistique d'usage, aucun mouchard,
+        aucune publicité, aucun envoi de vos informations.
+      </p>
+
+      <h2>4. L'activation de votre licence</h2>
+      <p>
+        Pour activer l'application, vous envoyez par WhatsApp le numéro unique
+        qu'elle affiche, et vous recevez en retour un code à recopier.
+      </p>
+      <p>
+        Ce numéro est une empreinte calculée à partir de l'identifiant que
+        Windows attribue à l'ordinateur. Il ne contient ni le nom de votre
+        église, ni le nom de l'ordinateur, ni aucune de vos données, et on ne
+        peut pas remonter de ce numéro à votre installation. Le code qui vous
+        est renvoyé est vérifié par l'application elle-même, sans connexion.
+      </p>
+      <p>
+        L'éditeur conserve, de son côté, le numéro de l'ordinateur et le nom de
+        l'église, pour le seul suivi des licences accordées.
+      </p>
+
+      <h2>5. L'usage depuis un téléphone</h2>
+      <p>
+        L'onglet <em>Paramètres</em> permet d'ouvrir l'application depuis un
+        téléphone ou un autre ordinateur du même réseau — pour inscrire un
+        membre par QR code pendant le culte, par exemple.
+      </p>
+      <p>
+        Cette liaison passe par votre réseau local et ne sort pas sur Internet.
+        En revanche, elle n'est pas chiffrée : utilisez-la sur le réseau de
+        l'église ou un partage de connexion que vous maîtrisez, jamais sur un
+        Wi-Fi public.
+      </p>
+
+      <h2>6. Vos sauvegardes</h2>
+      <p>
+        Une sauvegarde est un fichier que vous créez vous-même, à l'endroit que
+        vous choisissez. Il contient l'intégralité du registre.
+      </p>
+      <p>
+        Traitez-le comme le cahier des membres : rangé, sur une clé USB ou un
+        disque qui reste à l'église, et non envoyé à la légère en pièce jointe.
+      </p>
+
+      <h2>7. L'assistance</h2>
+      <p>
+        Si vous demandez de l'aide, il peut arriver qu'on vous demande une
+        capture d'écran ou un fichier de sauvegarde pour comprendre un problème.
+        Dans ce cas :
+      </p>
+      <ul>
+        <li>c'est vous qui envoyez le fichier, jamais l'application ;</li>
+        <li>vous pouvez refuser, et chercher une autre voie avec nous ;</li>
+        <li>
+          l'éditeur s'engage à ne s'en servir que pour résoudre le problème
+          signalé, à ne le communiquer à personne, et à le supprimer une fois
+          le problème réglé.
+        </li>
+      </ul>
+
+      <h2>8. Ce qui reste sous votre responsabilité</h2>
+      <p>
+        L'application enregistre des informations sensibles : appartenance
+        religieuse, situation familiale, santé et difficultés sociales des
+        personnes suivies. Vous en êtes responsable devant vos membres et devant
+        la loi de votre pays.
+      </p>
+      <p class="fort">
+        Toute personne qui peut ouvrir cet ordinateur, ou simplement copier le
+        dossier <code>C:\base-communaute</code>, peut lire la base.
+      </p>
+      <p>Il vous revient donc de :</p>
+      <ul>
+        <li>
+          protéger la session Windows du poste par un mot de passe, et ne pas le
+          laisser accessible à tous ;
+        </li>
+        <li>
+          n'ouvrir de comptes dans l'application qu'aux personnes qui en ont
+          réellement besoin, avec les seuls accès nécessaires ;
+        </li>
+        <li>
+          n'imprimer et n'exporter que ce qui est utile, et ranger ces documents
+          comme vous rangez vos registres ;
+        </li>
+        <li>
+          informer vos membres de ce que vous enregistrez à leur sujet, et le
+          corriger ou l'effacer s'ils le demandent.
+        </li>
+      </ul>
+
+      <h2>9. Modifications de ce document</h2>
+      <p>
+        Ce document peut évoluer si l'application évolue. La date de dernière
+        mise à jour figure en haut de cette page, et la version en vigueur est
+        toujours celle publiée ici.
+      </p>
+
+      <div class="rappel">
+        Éditeur : Ma Communauté · Une question sur ce document ?
+        <a href="https://wa.me/2250574313410" target="_blank" rel="noopener">
+          WhatsApp 05 74 31 34 10
+        </a>
+      </div>
+    </div>
+  </body>
+</html>
